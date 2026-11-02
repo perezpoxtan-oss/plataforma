@@ -130,10 +130,11 @@ class AccesosTest extends TestCase
             ->assertSee('No hay personal en sitio.')
             ->assertSee('Registro Inteligente de Ingreso')->assertSee('Registrar y dejar pasar')->assertSee('data-boton-registrar', false)->assertSee('Guardar y capturar siguiente')
             ->assertSee('PERSONAL EXTERNO / VISITA')->assertSee('CONTRATISTA (OBRA)')->assertSee('SERVICIO DE EMERGENCIA')
-            ->assertSee('Gafete Asignado')->assertSee('Host — ¿Quién lo citó?')->assertSee('ID Custodiada')->assertSee('Enviar a')
+            ->assertSee('Gafete Asignado')->assertSee('¿A quién viene?')->assertSee('ID Custodiada')->assertSee('Enviar a')
             // Donde SEGCAT escaneaba (gafete, colaborador, host, a quién visita, placas) va el lector universal
             ->assertSee('data-lector', false)->assertSee('data-tipos="gafete"', false)->assertSee('data-tipos="colaborador"', false)
-            ->assertSee('data-tipos="vehiculo"', false)->assertSee('id="ingreso_host"', false)->assertSee('id="ingreso_visita"', false)
+            // C-09: host y «a quién visita» son un solo buscador «¿A quién viene?»
+            ->assertSee('data-tipos="vehiculo"', false)->assertSee('id="ingreso_a_quien_proveedor"', false)->assertSee('id="ingreso_a_quien_visita"', false)
             ->assertSee('Dar Salida')->assertSee('Cambiar Zona')->assertSee('Salida a Tour')->assertSee('Regreso de Tour')
             ->assertDontSee('onclick')->assertDontSee('jsQR.js"></script>', false);
     }
@@ -272,15 +273,15 @@ class AccesosTest extends TestCase
         $this->actingAs($this->admin)->getJson('/altas-por-verificar/parecidos?padron=proveedores&origen=accesos&nombre=Jesus')->assertOk();
         $this->actingAs($this->admin)->get('/', ['X-Requested-With' => 'XMLHttpRequest', 'Accept' => 'text/html']);
         $this->actingAs($this->admin)->get('/accesos')->assertOk()
-            ->assertSee('Revisa los datos:')->assertSee('Indica quién citó al proveedor/contratista (Host).')->assertSee('value="Jesús Balam"', false);
+            ->assertSee('Revisa los datos:')->assertSee('Indica a quién viene: la persona que lo citó o el área.')->assertSee('value="Jesús Balam"', false);
         // La pantalla sí lo consume: al recargar ya no sale
-        $this->actingAs($this->admin)->get('/accesos')->assertOk()->assertDontSee('Indica quién citó al proveedor/contratista (Host).');
+        $this->actingAs($this->admin)->get('/accesos')->assertOk()->assertDontSee('Indica a quién viene: la persona que lo citó o el área.');
     }
 
     public function test_proveedor_nace_pendiente_necesita_host_y_se_autoriza(): void
     {
         $this->registrar(['tipo' => 'proveedor', 'nombre' => 'Jesús Balam'])
-            ->assertSessionHasErrors(['host_colaborador_id' => 'Indica quién citó al proveedor/contratista (Host).']);
+            ->assertSessionHasErrors(['host_colaborador_id' => 'Indica a quién viene: la persona que lo citó o el área.']);
 
         $a = $this->proveedorPendiente(['modo_arribo' => 'auto', 'placas' => 'UPS-03-CL', 'marca' => 'Isuzu', 'tipo_visita' => 'ejecucion', 'area_trabajo' => 'cuarto de máquinas', 'actividad' => 'Mantenimiento']);
         $this->assertSame(['pendiente', 'ABARROTES DEL CARIBE', 'ejecucion', 'CUARTO DE MÁQUINAS'], [$a->estado, $a->empresa_procedencia, $a->tipo_visita, $a->area_trabajo]);
@@ -292,7 +293,7 @@ class AccesosTest extends TestCase
         $this->assertSame(['proveedor', $proveedor->id], [$persona->tipo, $persona->proveedor_id]);
 
         $this->actingAs($this->admin)->get('/accesos?pestana=pendientes')->assertOk()
-            ->assertSee('Pendientes de Autorización (1)')->assertSee('PENDIENTE')->assertSee('Host (citó):')->assertSee('Carlos Hernández Cruz')
+            ->assertSee('Pendientes de Autorización (1)')->assertSee('PENDIENTE')->assertSee('Viene con:')->assertSee('CARLOS HERNÁNDEZ CRUZ')
             ->assertSee('Confirmar Autorización')->assertSee('Ejecución de Trabajo');
 
         // Pendiente → salida no se permite
@@ -326,11 +327,11 @@ class AccesosTest extends TestCase
         $datos = ['tipo' => 'proveedor', 'nombre' => 'Jesús Balam Tun', 'empresa_procedencia' => 'Abarrotes del Caribe', 'host_colaborador_id' => $host->id];
         // Quien puede aprobar: confirma con el host y toca Confirmar Autorización
         $this->registrar($datos)->assertRedirect(route('accesos.index', ['pestana' => 'pendientes']))
-            ->assertSessionHas('ok', 'Registrado: JESÚS BALAM TUN queda pendiente de autorización. Confirma con el host (Carlos Hernández Cruz) y toca Confirmar Autorización.');
+            ->assertSessionHas('ok', 'Registrado: JESÚS BALAM TUN queda pendiente de autorización. Confirma con quien lo citó (Carlos Hernández Cruz) y toca Confirmar Autorización.');
         // El agente no aprueba: su supervisor confirma
         $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
         $this->registrar($datos + ['persona_decision' => 'misma'], $agente)
-            ->assertSessionHas('ok', 'Registrado: JESÚS BALAM TUN queda pendiente de autorización. Confirma con el host (Carlos Hernández Cruz); tu supervisor confirma la autorización en el sistema.');
+            ->assertSessionHas('ok', 'Registrado: JESÚS BALAM TUN queda pendiente de autorización. Confirma con quien lo citó (Carlos Hernández Cruz); tu supervisor confirma la autorización en el sistema.');
         // Entra directo: ¿otro ingreso?
         $this->registrar(['tipo' => 'emergencia'])->assertSessionHas('ok', 'Registrado y en sitio: UNIDAD DE EMERGENCIA. ¿Otro ingreso? Toca Nuevo Ingreso.');
     }
@@ -426,7 +427,7 @@ class AccesosTest extends TestCase
         $this->registrar(['tipo' => 'visitante', 'nombre' => 'X', 'modo_arribo' => 'auto', 'placas' => 'AB12', 'zona_estacionamiento_id' => $zonaPlaya->id])
             ->assertSessionHasErrors(['zona_estacionamiento_id' => 'Elige una zona activa de esta sede (o déjalo «Sin asignar»).']);
         $this->registrar(['tipo' => 'visitante', 'nombre' => 'X', 'motivo_visita' => 'colaborador'])
-            ->assertSessionHasErrors(['visita_colaborador_id' => 'Indica a quién visita (busca o escanea al colaborador).']);
+            ->assertSessionHasErrors(['visita_colaborador_id' => 'Indica a quién visita (búscalo en «¿A quién viene?»).']);
         $this->registrar(['tipo' => 'visitante', 'nombre' => 'X', 'num_acompanantes' => 16])
             ->assertSessionHasErrors(['num_acompanantes' => 'Máximo 15 acompañantes por registro.']);
         $this->registrar(['tipo' => 'visitante', 'nombre' => 'X', 'sede_id' => 999999])

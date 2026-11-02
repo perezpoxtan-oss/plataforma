@@ -1,5 +1,7 @@
 # Adaptación por giro (etapa 1: adaptar lo que ya existe)
 
+> **Etapa 5 (C-10, C-09):** el residente ya no es «el colaborador con otro nombre»: es un tipo de persona con vivienda (Padrones → Residentes) y «Colaborador» se dice «Personal» en condominio y fraccionamiento; el nivel del árbol en condominio es «Vivienda». La visita usa «¿A quién viene?». Ver [quien-decide-en-caseta.md](quien-decide-en-caseta.md); lo de abajo describe la primera adaptación.
+
 Cada empresa tiene un **giro** (`empresas.rubro_id` → `rubros.clave`): `hotel`, `corporativo` («Corporativo / industria»), `condominio` o `fraccionamiento`, con su terminología en `rubros.terminologia` (`database/seeders/RubrosSeeder.php`). Antes solo la usaban los espacios, los menús y las sedes; la Bitácora de accesos y los textos de la plataforma eran de hotel para todos. Esta etapa adapta lo que ya existe, **sin tablas nuevas, sin migraciones y sin cambiar datos**.
 
 **Garantía de hotel:** para una empresa de giro `hotel` (o sin giro, o con una clave desconocida) todo queda exactamente igual: mismos tipos, mismos textos, mismo manual, mismo HTML (la sustitución ni siquiera se ejecuta). Las pruebas existentes no cambiaron.
@@ -23,7 +25,7 @@ Las claves internas (`colaborador`, `huesped`, `visitante`, `proveedor`, `contra
 
 | Clave | Hotel | Corporativo | Condominio / fraccionamiento |
 |---|---|---|---|
-| `colaborador` | Colaborador | Colaborador | Residente |
+| `colaborador` | Colaborador | Colaborador | Residente o personal (la tarjeta dice «Residente» o «Personal» según la persona; Etapa 5, C-10) |
 | `huesped` | Huésped (habitación, reserva, pase, agencia, conductor, tour) | — no se ofrece | — no se ofrece |
 | `visitante` | Personal Externo / Visita | Visitante | Visita (motivo «Visita a Residente» o «Visita a Administración»; «¿A qué departamento/casa va?») |
 | `proveedor` | Proveedor | Proveedor | Servicio / Proveedor (tarjeta: «Servicio») |
@@ -48,8 +50,8 @@ Qué cambia (en este orden; cuida mayúsculas, plural y el artículo: «la habit
 | Devuelto al Huésped / Nombre del huésped / Huésped o persona externa | Devuelto a su dueño / Nombre de quien lo perdió / Persona externa | igual | igual |
 | Huésped(es) | Visitante(s) | Visita(s) | Visita(s) |
 | Personal Externo | Visitante | Visita | Visita |
-| Habitación(es) | Oficina(s) | Departamento(s) | Casa(s) |
-| Colaborador(es) | (sin cambio) | Residente(s) | Residente(s) |
+| Habitación(es) | Oficina(s) | Vivienda(s) | Casa(s) |
+| Colaborador(es) | (sin cambio) | Personal | Personal |
 
 Qué **no** toca: `<script>`, `<style>`, `<textarea>`, comentarios, valores de campos y atributos que no se leen (solo cambia `placeholder`, `title`, `aria-label`, `alt`, `data-confirmar`, `data-titulo` y `label`), ni lo que esté entre `<!--terminos:no-->` y `<!--terminos:si-->`. Esas marcas protegen el **formato de Accidente** (en el expediente de la novedad y en su impresión: el formulario no se toca) y las pastillas de registros de antes. Un atajo evita las expresiones regulares cuando el texto no tiene ninguna palabra que cambiar.
 

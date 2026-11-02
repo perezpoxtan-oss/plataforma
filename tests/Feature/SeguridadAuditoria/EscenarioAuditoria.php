@@ -151,6 +151,8 @@ trait EscenarioAuditoria
             'area' => 'reserva_areas',
             // Privacidad: solicitudes ARCO
             'solicitud' => 'solicitudes_arco',
+            // Etapa 5 · C-10: residentes (filas de colaboradores con tipo residente)
+            'residente' => 'colaboradores',
         ][$parametro] ?? null;
     }
 

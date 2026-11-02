@@ -127,6 +127,14 @@
             {{-- Giros: la lista sugerida de hotel no aplica; cada empresa da de alta sus servicios --}}
             <p class="campo-ayuda mb-2"><i class="bi bi-info-circle" aria-hidden="true"></i> Da de alta los servicios que ofreces con <strong>Nuevo servicio</strong> (por ejemplo: limpieza del salón, asador, mobiliario, proyector).</p>
             @endif
+            {{-- C-34 (D-10): servicios sin departamento (o con uno dado de baja): nadie recibe su orden --}}
+            @php $sinDepto = $servicios->filter(fn ($s) => $s->activo && ($s->departamento === null || ! $s->departamento->activo)); @endphp
+            @if ($sinDepto->isNotEmpty())
+                <div class="alert alert-warning small py-2 px-3 mt-2" role="status" data-servicios-sin-departamento>
+                    <i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>
+                    {{ $sinDepto->count() === 1 ? 'Este servicio no tiene' : 'Estos servicios no tienen' }} un departamento activo que reciba su orden: <strong>{{ $sinDepto->pluck('nombre')->join(', ', ' y ') }}</strong>. Edítalos y elige quién los atiende.
+                </div>
+            @endif
             <div class="fichas-grid mt-2">
                 <button type="button" class="ficha-card ficha-create" data-abrir-dialogo="dialogoNuevo-servicios">
                     <i class="bi bi-plus-circle-fill" aria-hidden="true"></i>
@@ -140,7 +148,7 @@
                             <ul class="list-unstyled small text-muted mt-2 pt-2 border-top m-0">
                                 <li><i class="bi bi-rulers me-1" aria-hidden="true"></i> {{ ReservaServicio::UNIDADES[$s->unidad][0] }}</li>
                                 <li><i class="bi bi-cash-coin me-1" aria-hidden="true"></i> {{ $s->costo !== null ? Cotizador::dinero($s->costo, $moneda) : 'Sin costo' }}</li>
-                                <li><i class="bi bi-diagram-3 me-1" aria-hidden="true"></i> {{ $s->departamento?->nombre ?? 'Sin departamento' }}{{ $s->departamento && $s->requiere_aprobacion ? ' (aprueba)' : '' }}</li>
+                                <li><i class="bi bi-diagram-3 me-1" aria-hidden="true"></i> {{ $s->departamento?->nombre ?? 'Sin departamento' }}{{ $s->departamento && ! $s->departamento->activo ? ' (dado de baja)' : '' }}{{ $s->departamento && $s->requiere_aprobacion ? ' (aprueba)' : '' }}</li>
                             </ul>
                         </div>
                         <div class="ficha-footer">

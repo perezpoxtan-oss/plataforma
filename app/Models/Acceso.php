@@ -68,6 +68,15 @@ class Acceso extends Model
     /** Pasó con «Autorizar por excepción» (el motivo queda en motivo_excepcion). */
     public const POR_EXCEPCION = 'excepcion';
 
+    /**
+     * C-09 (DD-12): la caseta llamó a quien visita (residente o habitación del
+     * huésped) y autorizó: queda constancia de quién llamó y cuándo.
+     */
+    public const POR_LLAMADA = 'llamada';
+
+    /** C-09: la caseta llamó y NO autorizó (el registro queda cerrado como constancia). */
+    public const LLAMADA_NO = 'llamada_no';
+
     /** Pueden salir un rato y volver sin cerrar su visita (tour / salida temporal). */
     public const CON_SALIDA_TEMPORAL = ['huesped', 'proveedor', 'contratista'];
 
@@ -141,7 +150,7 @@ class Acceso extends Model
         'gafete_id', 'gafete_texto', 'modo_arribo', 'vehiculo_id', 'placas', 'zona_estacionamiento_id',
         'conductor', 'num_acompanantes', 'tiene_reserva', 'numero_reserva', 'tipo_pase', 'habitacion',
         'tipo_visita', 'departamento_id', 'viene_a', 'area_trabajo', 'actividad', 'tipo_emergencia', 'observaciones',
-        'entrada_at', 'aviso_padron',
+        'entrada_at', 'aviso_padron', 'espacio_id',
     ];
 
     protected function casts(): array
@@ -185,6 +194,21 @@ class Acceso extends Model
     public function visitaColaborador(): BelongsTo
     {
         return $this->belongsTo(Colaborador::class, 'visita_colaborador_id');
+    }
+
+    /** C-30: el lugar del catálogo (habitación, vivienda o área de trabajo). */
+    public function espacio(): BelongsTo
+    {
+        return $this->belongsTo(Espacio::class);
+    }
+
+    /**
+     * C-09: «¿A quién viene?» en una sola persona para todos los tipos (la
+     * visita y, en proveedores y contratistas, quien lo citó).
+     */
+    public function aQuienViene(): ?Colaborador
+    {
+        return $this->visitaColaborador ?? $this->host;
     }
 
     public function gafete(): BelongsTo
@@ -265,7 +289,13 @@ class Acceso extends Model
     /** Nombre del tipo según el giro de su empresa (Giros: «Visitante», «Residente»…; en hotel, el de siempre). */
     public function etiquetaTipo(): string
     {
-        return $this->terminos()->etiquetaTipo($this->tipo);
+        $terminos = $this->terminos();
+        // C-10: en giros residenciales la tarjeta dice si entró un residente o alguien del personal
+        if ($this->tipo === 'colaborador' && $terminos->esResidencial() && $this->colaborador_id !== null && $this->colaborador !== null) {
+            return $this->colaborador->esResidente() ? $terminos->residente() : $terminos->colaborador();
+        }
+
+        return $terminos->etiquetaTipo($this->tipo);
     }
 
     /** Palabras del giro de la empresa del registro (docs/tecnico/giros.md). */

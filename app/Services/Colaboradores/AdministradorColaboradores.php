@@ -60,6 +60,8 @@ class AdministradorColaboradores
         'candidatos' => 'colaborador_id', // Recepción: el colaborador que resultó de contratar al candidato
         'postulaciones' => 'colaborador_id', // Candidatos fase 1: la postulación con la que se le contrató
         'candidato_documentos' => 'colaborador_id', // Candidatos fase 3: expediente de documentos de contratación
+        'autorizaciones' => 'colaborador_id', // Etapa 5 (C-09): la persona citada que autoriza su visita
+        'reservas' => 'residente_id', // Etapa 5 (C-34): el residente que reservó
     ];
 
     /**
@@ -718,7 +720,7 @@ class AdministradorColaboradores
      * @param  list<int>|null  $sedes  null = todas
      * @return array{resultados: list<array<string, mixed>>, todas_ya_tienen_usuario: bool}
      */
-    public function buscar(string $texto, ?array $sedes, bool $sinUsuario, ?int $exceptoUsuario = null): array
+    public function buscar(string $texto, ?array $sedes, bool $sinUsuario, ?int $exceptoUsuario = null, bool $soloPersonal = false): array
     {
         $texto = trim((string) preg_replace('/\s+/u', ' ', $texto));
         if (mb_strlen($texto) < 2) {
@@ -728,6 +730,7 @@ class AdministradorColaboradores
         $comodin = fn (string $t) => '%'.addcslashes(mb_strtolower($t), '%_\\').'%';
         $consulta = Colaborador::query()
             ->where('colaboradores.activo', true)
+            ->when($soloPersonal, fn ($q) => $q->personal()) // C-10: cuentas y pases son del personal, no de los residentes
             ->when($sedes !== null, fn ($q) => $q->enSedes($sedes))
             ->where(function ($q) use ($texto, $comodin) {
                 $q->whereRaw('LOWER(colaboradores.num_empleado) LIKE ?', [addcslashes(mb_strtolower($texto), '%_\\').'%']);
@@ -746,7 +749,7 @@ class AdministradorColaboradores
             $consulta->whereDoesntHave('usuario', fn ($u) => $u->when($exceptoUsuario !== null, fn ($x) => $x->where('users.id', '!=', $exceptoUsuario)));
         }
 
-        $resultados = $consulta->with(['puesto:id,nombre', 'departamento:id,nombre', 'sede:id,nombre'])
+        $resultados = $consulta->with(['puesto:id,nombre', 'departamento:id,nombre', 'sede:id,nombre', 'vivienda:id,nombre'])
             ->orderBy('colaboradores.nombre')->orderBy('colaboradores.apellido_paterno')
             ->limit(15)
             ->get()
@@ -767,6 +770,9 @@ class AdministradorColaboradores
 
         return [
             'id' => $c->id,
+            // C-10: residente con su vivienda (la caseta lo distingue del personal)
+            'residente' => $c->esResidente(),
+            'vivienda' => $c->esResidente() ? $c->vivienda?->nombre : null,
             'num_empleado' => $c->num_empleado,
             'nombre_completo' => $c->nombreCompleto(),
             'puesto' => $c->puesto?->nombre,

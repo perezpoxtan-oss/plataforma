@@ -1493,3 +1493,11 @@ html.modo-sol .recibir-llave-escaneo, html.modo-sol .reloj-llave, html.modo-sol 
 html.modo-sol .btn-accion-lector.principal { background: #000; color: #fff; }
 /* Fin Mejoras activos */
 html.modo-noche .firma-falta-texto { color: #fca5a5; }
+
+/* Etapa 5: aviso de llamada y tickets de departamento */
+html.modo-sol .caja-llamada { background: #fff; border: 2px solid #000; color: #000; }
+html.modo-sol .caja-llamada .btn-decision { background: #fff; border: 2px solid #000; color: #000; }
+html.modo-noche .caja-llamada { background: rgba(251, 146, 60, 0.12); border-color: rgba(251, 146, 60, 0.45); color: #fed7aa; }
+html.modo-noche .caja-llamada .btn-decision { background: transparent; border-color: rgba(251, 146, 60, 0.6); color: #fed7aa; }
+html.modo-noche .ticket-departamento { background: var(--superficie); }
+html.modo-sol .ticket-departamento { border: 1px solid #000; border-left-width: 6px; }

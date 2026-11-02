@@ -2998,6 +2998,7 @@ document.addEventListener('click', function (e) {
             c.disabled = !!c.closest('[data-condicion][hidden]');
         });
         form.querySelectorAll('[data-etiqueta-tipo]').forEach(function (e) { e.hidden = lista(e.dataset.etiquetaTipo).indexOf(tipo) === -1; });
+        form.querySelectorAll('[data-a-quien]').forEach(function (c) { mostrarLlamada(c); });
         sugerirTipoGafete(form, tipo, motivo);
         acotarPorSede(form, sedeDe(form));
         actualizarBotonRegistrar(form);
@@ -3013,10 +3014,48 @@ document.addEventListener('click', function (e) {
         return !!sede && String(lista || '').split(',').indexOf(String(sede)) !== -1;
     }
 
+    /* ---------- C-09 (DD-12): «¿A quién viene?» y la llamada al residente o a la habitación ---------- */
+    function aQuienVisible(form) {
+        var visibles = Array.prototype.filter.call(form.querySelectorAll('[data-a-quien]'), function (c) { return !c.closest('[data-condicion][hidden]'); });
+        return visibles[0] || null;
+    }
+
+    // ¿La caseta debe llamar? Lo elegido lo dice (residente, vivienda, huésped); sin elegir, el texto escrito en residenciales y en hotel
+    function requiereLlamada(caja) {
+        if (!caja || caja.closest('[data-condicion][hidden]')) { return false; }
+        var clave = caja.querySelector('[data-a-quien-clave]');
+        var texto = caja.querySelector('[data-a-quien-texto]');
+        if (clave && clave.value) { return caja.dataset.llamar === '1'; }
+        return caja.dataset.llamarTexto === '1' && !!(texto && texto.value.trim());
+    }
+
+    function mostrarLlamada(caja) {
+        var llamar = requiereLlamada(caja);
+        var box = caja.querySelector('[data-caja-llamada]');
+        var campo = caja.querySelector('[data-llamada]');
+        if (box) { box.hidden = !llamar; }
+        if (campo) { campo.disabled = !llamar; }
+        var no = caja.querySelector('[data-no-autorizo]');
+        if (no) { no.disabled = !llamar; }
+        var aviso = caja.querySelector('[data-texto-llamada]');
+        if (aviso && llamar) {
+            var tel = caja.dataset.telefono || '';
+            var nombre = (caja.querySelector('[data-a-quien-texto]') || {}).value || '';
+            // Revisión Etapa 5 (A-4): un área común (alberca, salón) no es una vivienda: se confirma con la administración
+            aviso.textContent = caja.dataset.areaComun === '1'
+                ? 'Va a ' + (nombre || 'un área común') + ': confirma con la administración antes de dejarlo pasar.'
+                : 'Llama a ' + (nombre || 'quien visita') + (tel ? ' (' + tel + ')' : '') + ' antes de dejarlo pasar.';
+        }
+    }
+
     function naceraPendiente(form) {
         var d = dialogoIngreso();
         if (!d) { return false; }
         var tipo = radio(form, 'tipo');
+        var caja = aQuienVisible(form);
+        if (requiereLlamada(caja)) { return false; } // la llamada lo resuelve en el momento
+        // La persona citada con cuenta autoriza (proveedores y, si la empresa lo pide, visitas)
+        if (caja && caja.dataset.cuenta === '1' && (tipo !== 'visitante' || d.dataset.visitasEsperan === '1')) { return true; }
         if (tipo === 'proveedor' || tipo === 'contratista') { return true; }
         if (tipo !== 'visitante') { return false; }
         var sede = sedeDe(form);
@@ -3026,11 +3065,8 @@ document.addEventListener('click', function (e) {
         var deptos = {};
         try { deptos = JSON.parse(d.dataset.departamentosConResponsable || '{}') || {}; } catch (x) { deptos = {}; }
         var depto = '';
-        if (motivo === 'departamento') {
-            var sel = form.querySelector('#ingreso_depto_visita');
-            depto = sel ? sel.value : '';
-        } else if (motivo === 'colaborador') {
-            depto = form.dataset.visitaDepartamento || '';
+        if (motivo === 'colaborador' || motivo === 'departamento') {
+            depto = caja ? (caja.dataset.departamento || '') : '';
         }
         if (!depto) { return false; }
         // C-08 / DD-11: sin quien autorice en la sede, también espera (al supervisor o al jefe de seguridad)
@@ -3042,7 +3078,8 @@ document.addEventListener('click', function (e) {
         var texto = form.querySelector('[data-texto-registrar]');
         if (!texto) { return; }
         var pendiente = naceraPendiente(form);
-        texto.textContent = pendiente ? 'Registrar · queda pendiente de autorización' : 'Registrar y dejar pasar';
+        var llamada = requiereLlamada(aQuienVisible(form));
+        texto.textContent = llamada ? 'Llamé y autorizó · dejar pasar' : (pendiente ? 'Registrar · queda pendiente de autorización' : 'Registrar y dejar pasar');
         var boton = texto.closest('button');
         if (boton) { boton.classList.toggle('queda-pendiente', pendiente); }
     }
@@ -3249,12 +3286,6 @@ document.addEventListener('click', function (e) {
     document.addEventListener('lector:elegido', function (e) {
         var envoltura = e.target.closest && e.target.closest('[data-sugerir]');
         if (envoltura) { ocultarSugerencias(envoltura); }
-        // «¿A quién visita?»: el departamento del colaborador decide si la visita esperará autorización (botón honesto)
-        var formVisita = e.target.closest && e.target.closest('[data-form-acceso]');
-        if (formVisita && e.target.closest('[data-visita-colaborador]')) {
-            formVisita.dataset.visitaDepartamento = e.detail && e.detail.departamento_id ? String(e.detail.departamento_id) : '';
-            actualizarBotonRegistrar(formVisita);
-        }
         // Dar Salida: el gafete que devuelven dice quién era
         if (e.target.closest && e.target.closest('[data-salida-gafete]')) { buscarEnSitio('gafete=' + encodeURIComponent(e.detail.id)); return; }
         if (!envoltura) { return; }
@@ -3289,11 +3320,6 @@ document.addEventListener('click', function (e) {
     // "Cambiar" en el lector de placas: se olvidan las placas y los datos del vehículo
     document.addEventListener('click', function (e) {
         var limpiar = e.target.closest('[data-lector-limpiar]');
-        var formVisita = limpiar && limpiar.closest('[data-form-acceso]');
-        if (formVisita && limpiar.closest('[data-visita-colaborador]')) {
-            formVisita.dataset.visitaDepartamento = '';
-            actualizarBotonRegistrar(formVisita);
-        }
         var envoltura = limpiar && limpiar.closest('[data-sugerir="vehiculo"]');
         if (!envoltura) { return; }
         var placas = envoltura.querySelector('[data-placas]');
@@ -3314,6 +3340,75 @@ document.addEventListener('click', function (e) {
             }
         }).observe(estado, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     }
+
+    // «¿A quién viene?»: personas, áreas, viviendas, habitaciones y huéspedes en sitio, en una sola lista
+    function elegirAQuien(caja, it) {
+        var texto = caja.querySelector('[data-a-quien-texto]');
+        var clave = caja.querySelector('[data-a-quien-clave]');
+        if (texto) { texto.value = (it.titulo || '').toUpperCase(); }
+        if (clave) { clave.value = it.clave || ''; }
+        caja.dataset.llamar = it.llamar ? '1' : '0';
+        caja.dataset.cuenta = it.cuenta ? '1' : '0';
+        caja.dataset.departamento = it.departamento_id ? String(it.departamento_id) : '';
+        caja.dataset.telefono = it.telefono || '';
+        caja.dataset.areaComun = it.area_comun ? '1' : '0';
+        var form = caja.closest('form');
+        mostrarLlamada(caja);
+        if (form) { actualizarBotonRegistrar(form); }
+    }
+
+    document.addEventListener('input', function (e) {
+        var campo = e.target;
+        if (!campo.matches || !campo.matches('[data-a-quien-texto]')) { return; }
+        var caja = campo.closest('[data-a-quien]');
+        var form = campo.form;
+        var clave = caja.querySelector('[data-a-quien-clave]');
+        if (clave) { clave.value = ''; }
+        caja.dataset.llamar = '0';
+        caja.dataset.cuenta = '0';
+        caja.dataset.departamento = '';
+        caja.dataset.telefono = '';
+        caja.dataset.areaComun = '0';
+        mostrarLlamada(caja);
+        if (form) { actualizarBotonRegistrar(form); }
+        var envoltura = campo.closest('.buscador-acceso');
+        if (campo.value.trim().length < 1) { ocultarSugerencias(envoltura); return; }
+        esperar('aquien', function () {
+            pedirJson(urlDe('urlBuscar') + '?que=destino&contexto=' + encodeURIComponent(caja.dataset.aQuien) + '&q=' + encodeURIComponent(campo.value)
+                + (sedeDe(form) ? '&sede=' + encodeURIComponent(sedeDe(form)) : ''))
+                .then(function (d) {
+                    var items = (d.resultados || []).slice(0, 12);
+                    var vacio = caja.dataset.llamarTexto === '1' ? 'Sin coincidencias: se queda lo escrito (sin catálogo). Llama antes de dejarlo pasar.' : 'Sin coincidencias. Prueba con otra palabra (nombre o área).';
+                    pintarSugerencias(envoltura, items, vacio, function (it) { elegirAQuien(caja, it); });
+                })
+                .catch(function () { ocultarSugerencias(envoltura); });
+        });
+    });
+
+    // C-30: lugares del catálogo (habitación del huésped, área de trabajo); si no está, se queda el texto
+    document.addEventListener('input', function (e) {
+        var campo = e.target;
+        if (!campo.matches || !campo.matches('[data-lugar-texto]')) { return; }
+        var envoltura = campo.closest('[data-sugerir-lugar]');
+        var form = campo.form;
+        var id = envoltura.querySelector('[data-lugar-id]');
+        if (id) { id.value = ''; }
+        if (campo.value.trim().length < 1) { ocultarSugerencias(envoltura); return; }
+        var sedeCampo = form && form.querySelector('[data-acceso-sede], [data-nov-sede], [data-lugar-sede]');
+        var sede = sedeCampo ? sedeCampo.value : '';
+        esperar('lugar', function () {
+            pedirJson(envoltura.dataset.urlLugares + '?niveles=' + encodeURIComponent(envoltura.dataset.sugerirLugar) + '&q=' + encodeURIComponent(campo.value)
+                + (sede ? '&sede=' + encodeURIComponent(sede) : ''))
+                .then(function (d) {
+                    var items = (d.resultados || []).slice(0, 8).map(function (l) { return { id: l.id, titulo: l.nombre, detalle: l.ruta, ruta: l.ruta }; });
+                    pintarSugerencias(envoltura, items, 'No está en Zonas y edificios: se queda lo escrito (sin catálogo).', function (it) {
+                        campo.value = envoltura.dataset.sugerirLugar === 'especificos' ? it.titulo.toUpperCase().slice(0, 20) : it.ruta;
+                        if (id) { id.value = it.id; }
+                    });
+                })
+                .catch(function () { ocultarSugerencias(envoltura); });
+        });
+    });
 
     /* ---------- Nombre (Padrón de personas) y empresa / agencia (Proveedores) ---------- */
     document.addEventListener('input', function (e) {
@@ -5048,7 +5143,7 @@ document.addEventListener('click', function (e) {
     function buscarColaboradores(form, texto) {
         var url = form.getAttribute('data-url-buscar-colaborador');
         if (!url || !texto) { return Promise.resolve([]); }
-        return fetch(url + '?q=' + encodeURIComponent(texto), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        return fetch(url + (url.indexOf('?') < 0 ? '?' : '&') + 'q=' + encodeURIComponent(texto), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
             .then(function (r) { if (!r.ok) { throw new Error(String(r.status)); } return r.json(); })
             .then(function (d) { return d.resultados || []; });
     }
@@ -5057,7 +5152,8 @@ document.addEventListener('click', function (e) {
         if (!window.Lector || !caja || !c || !c.id) { return; }
         window.Lector.elegir(caja, {
             id: c.id, titulo: c.nombre_completo, activo: true,
-            detalle: (c.num_empleado ? 'Núm. ' + c.num_empleado : 'provisional') + (c.puesto ? ' · ' + c.puesto : ''),
+            // Revisión Etapa 5 (A-3): el residente se reconoce por su vivienda
+            detalle: c.residente ? 'Residente' + (c.vivienda ? ' · ' + c.vivienda : '') : (c.num_empleado ? 'Núm. ' + c.num_empleado : 'provisional') + (c.puesto ? ' · ' + c.puesto : ''),
             departamento: c.departamento || null, puesto: c.puesto || null
         });
     }
@@ -5088,7 +5184,7 @@ document.addEventListener('click', function (e) {
                     b.className = 'lector-opcion';
                     var t = document.createElement('strong'); t.textContent = c.nombre_completo;
                     var d = document.createElement('span');
-                    d.textContent = (c.num_empleado ? 'Núm. ' + c.num_empleado : 'Provisional') + (c.puesto ? ' · ' + c.puesto : '') + (c.departamento ? ' · ' + c.departamento : '') + (c.sede ? ' · ' + c.sede : '');
+                    d.textContent = (c.residente ? 'Residente' + (c.vivienda ? ' · ' + c.vivienda : '') : (c.num_empleado ? 'Núm. ' + c.num_empleado : 'Provisional') + (c.puesto ? ' · ' + c.puesto : '') + (c.departamento ? ' · ' + c.departamento : '')) + (c.sede ? ' · ' + c.sede : '');
                     b.appendChild(t); b.appendChild(d);
                     b.addEventListener('click', function () { elegirColaborador(caja, c); });
                     opciones.appendChild(b);

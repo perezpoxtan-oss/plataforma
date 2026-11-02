@@ -51,6 +51,8 @@ class Reserva extends Model
         // Orden de evento (migración 2026_11_07_000100)
         'departamento_solicitante_id', 'excede_aforo', 'motivo_excepcion_aforo', 'dia_completo', 'montaje_minutos', 'desmontaje_minutos', 'indicaciones_montaje',
         'para_cliente', 'cliente_nombre', 'cliente_empresa', 'cliente_correo', 'cliente_telefono',
+        // C-34: el residente que reserva y su vivienda
+        'residente_id', 'vivienda_id',
         'tarifa', 'importe_area', 'importe_area_manual', 'importe_servicios', 'descuento', 'cortesia', 'ajuste_motivo',
         'iva_porcentaje', 'iva', 'total', 'moneda', 'notas',
     ];
@@ -65,6 +67,17 @@ class Reserva extends Model
             'importe_area' => 'decimal:2', 'importe_area_manual' => 'decimal:2', 'importe_servicios' => 'decimal:2', 'descuento' => 'decimal:2',
             'iva_porcentaje' => 'decimal:2', 'iva' => 'decimal:2', 'total' => 'decimal:2',
         ];
+    }
+
+    /** C-34 (D-11): residente que reserva (condominio y fraccionamiento). */
+    public function residente(): BelongsTo
+    {
+        return $this->belongsTo(Colaborador::class, 'residente_id');
+    }
+
+    public function vivienda(): BelongsTo
+    {
+        return $this->belongsTo(Espacio::class, 'vivienda_id');
     }
 
     public function sede(): BelongsTo

@@ -22,11 +22,16 @@
     $valor = $valor ?? null;
     $tipoInicial = $valor['tipo'] ?? 'colaborador';
     $externo = $tipoInicial !== 'colaborador';
+    // Revisión Etapa 5 (C-10 + C-16): en condominio y fraccionamiento el residente se elige en la misma opción
+    // que el personal (es una persona del directorio con su vivienda), sin un camino aparte
+    $residencial = \App\Support\Terminos::actual()->esResidencial();
+    $textosTipo = $residencial ? ['colaborador' => 'Residente o personal'] + \App\Support\Receptor::TIPOS : \App\Support\Receptor::TIPOS;
+    $ayudaColaborador = $residencial ? 'Escanea su gafete o escribe su nombre: residente o personal.' : ($ayuda ?? 'Escanea su gafete o escribe su número de nómina o su nombre.');
 @endphp
 <div class="receptor" data-receptor data-url="{{ route('receptores.buscar') }}">
     <span class="campo-etiqueta d-block">{{ $etiqueta ?? '¿A quién se le entrega?' }}</span>
     <div class="receptor-tipos" role="radiogroup" aria-label="{{ $etiqueta ?? '¿A quién se le entrega?' }}">
-        @foreach (\App\Support\Receptor::TIPOS as $clave => $texto)
+        @foreach ($textosTipo as $clave => $texto)
             <label class="receptor-tipo">
                 <input type="radio" name="_{{ $id }}_tipo" value="{{ $clave }}" data-receptor-opcion @checked($tipoInicial === $clave) @if ($clave === 'colaborador') data-por-defecto @endif>
                 <span>{{ $texto }}</span>
@@ -40,7 +45,7 @@
         @include('componentes.lector', ['id' => $id.'_colaborador', 'tipos' => 'colaborador', 'nombre' => 'colaborador_id',
             'requerido' => ($requerido ?? false) && ! $externo,
             'valor' => ! $externo ? ($valor['id'] ?? null) : null, 'elegido' => ! $externo ? ($valor['titulo'] ?? null) : null,
-            'ayuda' => $ayuda ?? 'Escanea su gafete o escribe su número de nómina o su nombre.'])
+            'ayuda' => $ayudaColaborador])
     </div>
     <div data-receptor-panel="externo" @unless ($externo) hidden @endunless>
         <div class="lector-elegido" data-receptor-elegido @unless ($externo && ! empty($valor['titulo'])) hidden @endunless>

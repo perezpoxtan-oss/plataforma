@@ -96,7 +96,7 @@ class ConfiguracionReservasController extends Controller
             $catalogos = [
                 'montajes' => ReservaMontaje::orderBy('orden')->orderBy('nombre')->get(),
                 'tipos' => ReservaTipoUso::orderBy('orden')->orderBy('nombre')->get(),
-                'servicios' => ReservaServicio::with('departamento:id,nombre')->orderBy('categoria')->orderBy('orden')->orderBy('nombre')->get(),
+                'servicios' => ReservaServicio::with('departamento:id,nombre,activo')->orderBy('categoria')->orderBy('orden')->orderBy('nombre')->get(),
             ];
             $ocultas = ['areas' => $todas->where('reservable', false)->count()]
                 + array_map(fn ($lista) => $lista->where('activo', false)->count(), $catalogos);

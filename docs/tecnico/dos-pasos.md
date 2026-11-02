@@ -43,7 +43,7 @@ La exportación de empresa ya excluye columnas `*secret` y `*recovery_codes` (`E
 **Al entrar.** `SesionController::iniciar` valida la contraseña con el `Autenticador` de siempre (bloqueos incluidos). Con verificación activa y sin dispositivo recordado, **no** abre la sesión: regenera la sesión y guarda `dos_pasos.pendiente` (id + hora) y lleva a `GET /login/verificacion`. El código (o uno de respaldo) se valida en `POST /login/verificacion`:
 
 - Pendiente vence a los **10 minutos** (`MINUTOS_PENDIENTE`).
-- **5 intentos** por cuenta cada 15 minutos (`RateLimiter` `dos-pasos:{id}`), además de `throttle:10,1` por equipo. Al agotarlos se olvida la cuenta pendiente; volver a poner la contraseña no da más intentos.
+- **5 intentos** por cuenta cada 15 minutos (`RateLimiter` `dos-pasos:{id}`), además de `throttle:login.dos-pasos.verificar` (10 por minuto por equipo). Al agotarlos se olvida la cuenta pendiente; volver a poner la contraseña no da más intentos.
 - Cada fallo se audita: `cuenta.dos_pasos_fallido` (origen con IP recortada).
 - Un código de respaldo se consume (`cuenta.dos_pasos_respaldo_usado`) y se avisa cuántos quedan (aviso `aviso` en la sesión; Inicio, `panel.index`, incluye `administracion.partes.avisos` para pintarlo).
 
@@ -57,7 +57,7 @@ Si al entrar la cuenta la necesita y no la tiene, `completarInicio` pone la marc
 
 **Restablecer.** Quien tiene `usuarios.desbloquear` (mismo alcance y jerarquía que desbloquear; nunca la propia cuenta ni al Super Administrador) quita la verificación de otra cuenta: se borran clave y códigos, se cierran sus sesiones, se audita `usuarios.dos_pasos_restablecida` y se avisa a la persona por campana y correo (`AvisoGeneral`). Si la cuenta tenía una petición «Perdí mi teléfono» abierta, queda atendida (`SolicitudesCuenta::atendidas`).
 
-**«Perdí mi teléfono: pedir ayuda» (C-36, E-14).** En la pantalla del código, `POST /login/verificacion/perdi-mi-telefono` (`throttle:5,1`) solo funciona con la cuenta **pendiente** en la sesión (ya escribió su contraseña): crea una `solicitudes_cuenta` de tipo `dos_pasos` (una abierta por cuenta y tipo), la audita (`usuarios.solicitud_cuenta`), avisa por campana (`cuenta_solicitud`) a quien puede atenderla y olvida la cuenta pendiente (`acceso = dos_pasos_pedido`). Ver [usuarios.md](usuarios.md#pedir-a-mi-administrador-c-36).
+**«Perdí mi teléfono: pedir ayuda» (C-36, E-14).** En la pantalla del código, `POST /login/verificacion/perdi-mi-telefono` (`throttle:login.dos-pasos.ayuda`, 5 por minuto) solo funciona con la cuenta **pendiente** en la sesión (ya escribió su contraseña): crea una `solicitudes_cuenta` de tipo `dos_pasos` (una abierta por cuenta y tipo), la audita (`usuarios.solicitud_cuenta`), avisa por campana (`cuenta_solicitud`) a quien puede atenderla y olvida la cuenta pendiente (`acceso = dos_pasos_pedido`). Ver [usuarios.md](usuarios.md#pedir-a-mi-administrador-c-36).
 
 **Super Administrador sin terminal (C-36, DD-21, E-14).** El hospedaje no tiene terminal, así que la recuperación del Super Administrador no depende de la consola:
 1. **Códigos de respaldo** (10, de un solo uso), como cualquier cuenta. La tarjeta de Super Administradores muestra cuántos le quedan a cada uno.

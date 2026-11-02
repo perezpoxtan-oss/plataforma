@@ -69,9 +69,16 @@ La reserva sigue el formato de una **orden de evento**: dónde, cuándo, cuánta
 
 ![Excepción de aforo con su motivo](img/reservas/orden-excepcion-aforo.png)
 
+<!-- solo: hotel, corporativo -->
 8. En **¿Para quién es?** elige:
    - **Uso interno**: no tiene costo.
    - **Para un cliente de la sede**: escribe el nombre del cliente (y, si quieres, su empresa, correo y teléfono) y elige la **Tarifa del área**. Con **Día completo** se propone la tarifa de día. Abajo verás el **Costo estimado** con IVA.
+<!-- fin -->
+<!-- solo: condominio, fraccionamiento -->
+8. En **¿Para quién es?** elige **Para un residente** y después al **Residente** de la lista (sale con su vivienda): la reserva queda en el historial de su vivienda. Para una asamblea o un trabajo de la administración, elige **Uso de la administración**.
+
+   El montaje y los servicios por departamento quedan dentro de **Avanzado**: ábrelo solo si los necesitas.
+<!-- fin -->
 9. En **Servicios por departamento** hay una tarjeta por departamento (Steward, Alimentos y bebidas, Cocina, Mantenimiento…). Marca la casilla de lo que necesitas: aparecen la **cantidad** (se sugiere sola: por persona, el número de personas; por hora, las horas del evento; por evento o pieza, 1) y una **nota** corta, por ejemplo «Agua» junto a Bebidas.
 10. Si tu empresa lo configuró, el **Tipo de montaje** (Tipo U, Escuela, Auditorio, Banquete…) está dentro de la tarjeta del departamento que monta (por ejemplo Steward). Si no, está en **¿Para qué?**.
 11. ¿Falta algo en la lista? Toca **+ Otro servicio** en la tarjeta del departamento que lo debe atender y escribe qué es y una nota. En la tarjeta **Otros** también eliges el departamento.
@@ -153,6 +160,8 @@ Solo se modifica antes de que empiece.
 | «Elige un departamento de tu empresa.» | El departamento que solicita (o el de un otro servicio) ya no existe. | Elige otro de la lista. |
 | «La reserva debe empezar más tarde que ahora.» | La hora de inicio ya pasó. | Revisa el día y la hora. |
 | «Escribe el nombre del cliente (persona de contacto).» | Elegiste «Para un cliente» sin su nombre. | Escribe el nombre o cambia a «Uso interno». |
+| «Elige al residente que reserva.» | Elegiste «Para un residente» sin elegirlo. | Elige al residente o cambia a «Uso de la administración». |
+| «Ese departamento está dado de baja: elige uno activo.» | El departamento que solicita (o el de un servicio) ya no está activo. | Elige otro departamento. |
 | «No puedes reservar en esa sede.» | Tu rol no reserva en la sede de esa área. | Pide a tu administrador que te dé permiso en esa sede. |
 | «Esta reserva ya no se puede modificar…» | Ya empezó, terminó, se rechazó o se canceló. | Haz una reserva nueva. |
 

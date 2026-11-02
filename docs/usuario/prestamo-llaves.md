@@ -30,7 +30,7 @@ resumen: Prestar una llave a un colaborador, a una persona externa o a una empre
 1. Toca **Prestar Llave**. El cursor ya está en **Llave a Prestar**.
 2. Revisa la **Sede**; si solo tienes una, ya viene elegida.
 3. **Escanea la llave**: el QR del llavero con la cámara, su etiqueta NFC, el lector USB, o escribe su nombre (por ejemplo `HDC-101`) y elígela.
-4. En **Solicitante (¿a quién se le presta?)** deja **Colaborador** y **escanea su gafete**, o escribe su número de nómina o su nombre y elígelo. Si es alguien de fuera, toca **Persona externa** o **Empresa externa** (ver «Cómo prestar a alguien de fuera»).
+4. En **Solicitante (¿a quién se le presta?)** deja **Colaborador** y **escanea su gafete**, o escribe su número de nómina o su nombre y elígelo. Si es alguien de fuera, toca **Persona externa** o **Empresa externa** (ver «Cómo prestar a alguien de fuera»). En condominio y fraccionamiento la primera opción se llama **Residente o personal**: ahí se busca igual a un residente o a alguien de la administración.
 5. Elige la **ID Dejada en Garantía**: Gafete interno, INE, Licencia, Pasaporte o **Ninguna (Riesgo)**. Con **Gafete interno**, el **Folio** se llena solo con el número del gafete que escaneaste; con las demás, si quieres, escribe el folio o un detalle.
 6. Toca **Registrar y Capturar Siguiente**.
 

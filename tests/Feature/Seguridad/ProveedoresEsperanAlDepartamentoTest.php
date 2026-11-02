@@ -176,15 +176,16 @@ class ProveedoresEsperanAlDepartamentoTest extends TestCase
         $this->registrar(['tipo' => 'contratista', 'departamento_id' => ''])->assertSessionHasErrors(['departamento_id' => 'Indica a qué departamento viene.']);
         $this->assertSame(0, $this->enEmpresa(fn () => Acceso::count()));
         // El formulario lo pide con su nombre nuevo y el aviso de qué pasará
-        $this->actingAs($this->agente)->get('/accesos')->assertOk()->assertSee('¿A qué departamento viene?')
-            ->assertSee('el responsable del departamento recibe el aviso y autoriza', false);
+        // C-09: el departamento se elige (o se deduce de la persona) en «¿A quién viene?»
+        $this->actingAs($this->agente)->get('/accesos')->assertOk()->assertSee('¿A quién viene?')->assertDontSee('¿A qué departamento viene?')
+            ->assertSee('el responsable de su departamento recibe el aviso y autoriza', false);
     }
 
     // ------------------------------------------------------------------ Excepciones
 
     public function test_sin_responsable_la_caseta_autoriza_por_excepcion_con_motivo(): void
     {
-        $this->registrar()->assertSessionHas('ok', 'Registrado: LUIS CHI queda pendiente. Mantenimiento no tiene quien autorice en esta sede: confirma con el host; tu supervisor lo autoriza por excepción (ya se le avisó).');
+        $this->registrar()->assertSessionHas('ok', 'Registrado: LUIS CHI queda pendiente. Mantenimiento no tiene quien autorice en esta sede: confirma con quien lo citó; tu supervisor lo autoriza por excepción (ya se le avisó).');
         $acceso = $this->ultimo();
         $this->assertSame(['pendiente', Acceso::SIN_RESPONSABLE], [$acceso->estado, $acceso->autorizacion]);
         $this->assertNull($this->solicitudDe($acceso));
@@ -283,11 +284,11 @@ class ProveedoresEsperanAlDepartamentoTest extends TestCase
 
         // Proveedor: como hoy (departamento opcional, se confirma con el host, sin solicitud)
         $this->registrar(['departamento_id' => ''], $this->supervisor)
-            ->assertSessionHas('ok', 'Registrado: LUIS CHI queda pendiente de autorización. Confirma con el host (Carlos Hernández) y toca Confirmar Autorización.');
+            ->assertSessionHas('ok', 'Registrado: LUIS CHI queda pendiente de autorización. Confirma con quien lo citó (Carlos Hernández) y toca Confirmar Autorización.');
         $acceso = $this->ultimo();
         $this->assertSame(['pendiente', null], [$acceso->estado, $acceso->autorizacion]);
         $this->assertNull($this->solicitudDe($acceso));
-        $this->actingAs($this->supervisor)->get('/accesos?pestana=pendientes')->assertSee('Confirma con el host: Carlos Hernández')->assertSee('Confirmar Autorización');
+        $this->actingAs($this->supervisor)->get('/accesos?pestana=pendientes')->assertSee('Confirma con quien lo citó: Carlos Hernández')->assertSee('Confirmar Autorización');
         $this->actingAs($this->supervisor)->patch("/accesos/{$acceso->id}/autorizar")->assertSessionHas('ok');
         $this->assertSame('en_sitio', $this->ultimo()->estado);
         $this->excepcion($this->ultimo(), 'telefono')->assertSessionHas('error', 'Este acceso ya no espera la autorización del departamento. Revisa la lista.');

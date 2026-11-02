@@ -10,6 +10,10 @@
     $diaCompleto = filter_var(old('dia_completo', $valores['dia_completo'] ? '1' : '0'), FILTER_VALIDATE_BOOLEAN);
     $conExcepcion = $errors->has('motivo_excepcion_aforo') || trim((string) old('motivo_excepcion_aforo', $valores['motivo_excepcion_aforo'] ?? '')) !== '';
     $siguienteOtro = $otros->count();
+    // C-34 (D-11): sin servicios en el catálogo (o en condominio y fraccionamiento), montaje y servicios van en «Avanzado»
+    $residencial = $residencial ?? false;
+    $sinServicios = collect($grupos)->every(fn ($g) => $g['servicios']->isEmpty()) && $otros->isEmpty();
+    $avanzado = ($residencial || $sinServicios) && ! $errors->hasAny(['montaje_minutos', 'desmontaje_minutos', 'otros', 'servicios']);
     $puede = ['crear' => true, 'ver' => auth()->user()->can('reservas.ver'), 'aprobar' => auth()->user()->can('reservas.aprobar'),
         'configurar' => auth()->user()->can('reservas.configurar'), 'exportar' => false];
 @endphp
@@ -91,6 +95,7 @@
                 <span><strong>Día completo</strong> <span class="res-meta">· todo el horario del área ese día</span></span>
             </label>
             <div class="res-meta mt-1" data-res-dia-nota aria-live="polite"></div>
+            @if ($avanzado)<details class="mt-3" @if ($v('montaje_minutos') !== '' || $v('desmontaje_minutos') !== '' || $v('indicaciones_montaje')) open @endif><summary class="campo-etiqueta">Avanzado <span class="res-meta fw-normal">(montaje y desmontaje)</span></summary>@endif
             <div class="res-rejilla mt-3">
                 <div>
                     <label class="campo-etiqueta" for="montaje_minutos">Montaje antes (minutos)</label>
@@ -106,6 +111,7 @@
                 </div>
             </div>
             <p class="res-meta mt-1 mb-0">Se proponen los tiempos del área; si los cambias, el área queda ocupada ese tiempo antes y después del evento.</p>
+            @if ($avanzado)</details>@endif
             <div class="res-ocupado mt-3" data-res-ocupado aria-live="polite">
                 <span class="res-meta">Elige el área y el día para ver los horarios ocupados.</span>
             </div>
@@ -149,6 +155,28 @@
                 <p class="res-meta mb-0 mt-1">Quien aprueba el área verá la excepción y su motivo; también sale en la orden de evento.</p>
             </div>
 
+            @if ($residencial)
+                {{-- C-34 (D-11): en condominio y fraccionamiento se reserva para un residente (historial por vivienda) o para la administración --}}
+                @php $paraResidente = filter_var(old('para_residente', ($valores['residente_id'] ?? '') !== '' || ! $reserva ? '1' : '0'), FILTER_VALIDATE_BOOLEAN); @endphp
+                <input type="hidden" name="para_cliente" value="0">
+                <div data-res-cliente hidden><select id="tarifa" class="campo" data-res-tarifa data-valor="" aria-hidden="true" tabindex="-1"></select></div>
+                <fieldset class="mt-3">
+                    <legend class="campo-etiqueta">¿Para quién es?</legend>
+                    <div class="res-opciones">
+                        <label class="res-opcion"><input type="radio" name="para_residente" value="1" @checked($paraResidente)> <span><strong>Para un residente</strong><br><span class="res-meta">Queda en el historial de su {{ mb_strtolower($terminos->espacio()) }}</span></span></label>
+                        <label class="res-opcion"><input type="radio" name="para_residente" value="0" @checked(! $paraResidente)> <span><strong>Uso de la administración</strong><br><span class="res-meta">Asambleas, mantenimiento…</span></span></label>
+                    </div>
+                </fieldset>
+                <div class="mt-2">
+                    <label class="campo-etiqueta" for="residente_id">Residente <span class="res-meta fw-normal">(con su {{ mb_strtolower($terminos->espacio()) }})</span></label>
+                    <select id="residente_id" name="residente_id" class="campo">
+                        <option value="">-- Elige al residente --</option>
+                        @foreach ($residentes as $r)
+                            <option value="{{ $r->id }}" @selected((string) $v('residente_id') === (string) $r->id)>{{ $r->nombreCompleto() }}{{ $r->vivienda ? ' · '.$terminos->espacio().' '.$r->vivienda->nombre : '' }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @else
             <fieldset class="mt-3">
                 <legend class="campo-etiqueta">¿Para quién es?</legend>
                 <div class="res-opciones">
@@ -178,10 +206,12 @@
                     <select id="tarifa" name="tarifa" class="campo" data-res-tarifa data-valor="{{ $v('tarifa') }}"></select>
                 </div>
             </div>
+            @endif
         </section>
 
         {{-- ===== Servicios por departamento (formato de orden de evento) ===== --}}
-        <section class="res-bloque" aria-labelledby="t-servicios">
+        @if ($avanzado)<details class="res-bloque"><summary class="fw-bold"><i class="bi bi-sliders me-1 text-success" aria-hidden="true"></i>Avanzado <span class="res-meta fw-normal">(servicios por departamento)</span></summary>@endif
+        <section class="{{ $avanzado ? 'mt-3' : 'res-bloque' }}" aria-labelledby="t-servicios">
             <h2 id="t-servicios"><i class="bi bi-clipboard-check me-1 text-success" aria-hidden="true"></i>Servicios por departamento <span class="res-meta fw-normal">(opcional)</span></h2>
             <p class="res-meta">Marca lo que necesitas; aparecen la cantidad y una nota corta (ej. «Agua»). Cada departamento aprueba lo suyo y, al confirmarse, recibe su orden de servicio.</p>
             <div class="res-deptos">
@@ -228,6 +258,7 @@
             </div>
             <input type="hidden" data-res-siguiente-otro value="{{ $siguienteOtro }}">
         </section>
+        @if ($avanzado)</details>@endif
 
         <details class="res-bloque" @if ($v('notas')) open @endif>
             <summary class="fw-bold"><i class="bi bi-sliders me-1 text-success" aria-hidden="true"></i>Avanzado <span class="res-meta fw-normal">(notas para quien aprueba)</span></summary>

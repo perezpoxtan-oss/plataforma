@@ -36,6 +36,7 @@
         data-url-buscar="{{ route('accesos.buscar') }}" data-url-gafetes="{{ route('accesos.gafetes') }}" data-url-en-sitio="{{ route('accesos.en-sitio') }}"
         data-rh-espera-en="{{ implode(',', $anticipo['rh_espera_en']) }}" data-visitas-esperan="{{ $anticipo['visitas_esperan'] ? 1 : 0 }}"
         data-departamentos-con-responsable="{{ json_encode($deptosConResponsable) }}" data-sin-cobertura-espera="{{ $sinCoberturaEspera ? 1 : 0 }}"
+        data-esperan-departamento="{{ implode(',', $esperanDepto) }}"
         @if ($trasError || $sig) data-abrir-al-cargar @endif>
     <div class="dialogo-cabecera">
         <h2 id="titulo-ingreso">
@@ -219,14 +220,15 @@
 
                 {{-- Personal externo: motivo y a quién visita --}}
                 <div class="bloque-perfil" data-condicion data-solo-tipos="visitante">
-                    <span class="campo-etiqueta">Motivo de la Visita</span>
+                    @if (count($motivosVisita ?? $giro->motivos()) > 1)<span class="campo-etiqueta">Motivo de la Visita</span>@endif
                     {{-- C-04: motivos según el giro y lo contratado; ninguno viene marcado salvo que la empresa elija uno en Configuración --}}
                     @php
                         $listaMotivos = $motivosVisita ?? $giro->motivos();
                         $iconosMotivo = ['rh' => 'bi-person-vcard', 'colaborador' => $giro->esResidencial() ? 'bi-house-heart' : 'bi-people-fill', 'departamento' => 'bi-diagram-2-fill',
                             'general' => 'bi-person-walking', 'huesped' => 'bi-door-closed'];
                     @endphp
-                    <div class="modo-toggle motivos-visita">
+                    {{-- C-09: con un solo motivo (condominio, fraccionamiento) no se pregunta: viene marcado --}}
+                    <div class="modo-toggle motivos-visita" @if (count($listaMotivos) === 1) hidden @endif>
                         @foreach ($listaMotivos as $claveMotivo => $textoMotivo)
                             <label class="modo-opt"><input type="radio" name="motivo_visita" value="{{ $claveMotivo }}" @checked($previo('motivo_visita', $motivoOmision ?? null) === $claveMotivo) @if (($motivoOmision ?? null) === $claveMotivo) data-por-defecto @endif data-acceso-motivo><i class="bi {{ $iconosMotivo[$claveMotivo] ?? 'bi-person' }}" aria-hidden="true"></i><span>{{ $textoMotivo }}</span></label>
                         @endforeach
@@ -236,30 +238,15 @@
                         <label class="campo-etiqueta" for="ingreso_persona_visita_general">¿A quién o a qué viene? *</label>
                         <input type="text" id="ingreso_persona_visita_general" name="persona_visita" class="campo text-uppercase" maxlength="150" value="{{ $previo('persona_visita') }}" placeholder="Ej: Mensajería, entrega de documentos, cliente de ventas...">
                     </div>
+                    {{-- C-09: Visita a huésped → «¿A quién viene?» (huésped en sitio o habitación del catálogo) y la llamada a la habitación --}}
                     <div data-condicion data-solo-motivo="huesped">
-                        <label class="campo-etiqueta" for="ingreso_persona_visita_huesped">¿A qué huésped visita? *</label>
-                        <input type="text" id="ingreso_persona_visita_huesped" name="persona_visita" class="campo text-uppercase" maxlength="150" value="{{ $previo('persona_visita') }}" placeholder="Nombre del huésped">
-                        <label class="campo-etiqueta" for="ingreso_habitacion_huesped">Habitación <span class="text-lowercase fw-normal">(opcional)</span></label>
-                        <input type="text" id="ingreso_habitacion_huesped" name="habitacion" class="campo text-uppercase campo-corto" maxlength="20" value="{{ $previo('habitacion') }}" placeholder="Ej: 101" autocomplete="off">
-                        <p class="campo-ayuda mt-0">Llama a la habitación antes de dejarlo pasar.</p>
+                        @include('seguridad.accesos._a-quien', ['contexto' => 'huesped'])
                     </div>
-                    <div data-condicion data-solo-motivo="colaborador" data-sugerir="colaborador" data-visita-colaborador>
-                        @include('componentes.lector', ['id' => 'ingreso_visita', 'etiqueta' => '¿A quién visita?', 'tipos' => 'colaborador', 'nombre' => 'visita_colaborador_id',
-                            'valor' => $previo('visita_colaborador_id'), 'elegido' => $previos['visita_colaborador_id'] ?? null])
-                        <div class="acceso-sugerencias" data-sugerencias hidden></div>
+                    {{-- C-09: «Visita a persona o área» (en residenciales, al residente o a la vivienda): un solo campo --}}
+                    <div data-condicion data-solo-motivo="colaborador" data-visita-colaborador>
+                        @include('seguridad.accesos._a-quien', ['contexto' => 'visita'])
                     </div>
-                    @include('rh.recepcion._ingreso-acceso', ['previo' => $previo, 'departamentos' => $departamentos]){{-- Recepción: candidato y visita a departamento (ADR-0007) --}}
-                    @if ($giro->visitaLlevaEspacio())
-                        {{-- Giros: a qué departamento o casa va (sugerencias del árbol de Zonas y edificios, como la habitación del huésped) --}}
-                        <label class="campo-etiqueta" for="ingreso_espacio_visita">¿A qué {{ mb_strtolower($giro->espacio()) }} va? <span class="text-lowercase fw-normal">(opcional)</span></label>
-                        <input type="text" id="ingreso_espacio_visita" name="habitacion" class="campo text-uppercase campo-corto" maxlength="20" value="{{ $previo('habitacion') }}"
-                               placeholder="Ej: 101" list="lista_espacios_visita" autocomplete="off">
-                        <datalist id="lista_espacios_visita">
-                            @foreach ($espaciosVisita ?? [] as $esp)
-                                <option value="{{ mb_substr($esp->nombre, 0, 20) }}">{{ $sedesAlta->count() > 1 ? ($sedesAlta->firstWhere('id', $esp->sede_id)?->nombre ?? '') : '' }}</option>
-                            @endforeach
-                        </datalist>
-                    @endif
+                    @include('rh.recepcion._ingreso-acceso', ['previo' => $previo, 'departamentos' => $departamentos]){{-- Recepción: candidato (ADR-0007) --}}
                 </div>
 
                 {{-- Proveedor / contratista --}}
@@ -270,19 +257,10 @@
                         <input type="hidden" name="proveedor_id" value="{{ $previo('proveedor_id') }}" data-proveedor-id>
                         <div class="acceso-sugerencias" data-sugerencias hidden></div>
                     </div>
-                    <div data-sugerir="colaborador">
-                        @include('componentes.lector', ['id' => 'ingreso_host', 'etiqueta' => 'Host — ¿Quién lo citó?', 'tipos' => 'colaborador', 'nombre' => 'host_colaborador_id',
-                            'valor' => $previo('host_colaborador_id'), 'elegido' => $previos['host_colaborador_id'] ?? null, 'requerido' => true])
-                        <div class="acceso-sugerencias" data-sugerencias hidden></div>
+                    {{-- C-09 (DD-12): «¿A quién viene?» reemplaza a «Host — ¿Quién lo citó?» y «¿A qué departamento viene?» (el departamento sale de la persona) --}}
+                    <div data-visita-colaborador>
+                        @include('seguridad.accesos._a-quien', ['contexto' => 'proveedor'])
                     </div>
-                    {{-- «¿A qué departamento viene?»: su responsable autoriza el ingreso (obligatorio si la empresa lo pide para el tipo) --}}
-                    <label class="campo-etiqueta" for="ingreso_departamento">{{ $giro->esResidencial() ? '¿A qué área de la administración viene?' : '¿A qué departamento viene?' }}@foreach ($esperanDepto as $t)<span data-etiqueta-tipo="{{ $t }}"> *</span>@endforeach</label>
-                    <select id="ingreso_departamento" name="departamento_id" class="campo" data-departamento-sede>
-                        <option value="">-- Seleccionar --</option>
-                        @foreach ($departamentos as $dep)
-                            <option value="{{ $dep->id }}" data-todas="{{ $dep->todas_las_sedes ? 1 : 0 }}" data-sedes="{{ $dep->sedes->pluck('id')->join(',') }}" @selected((string) $previo('departamento_id') === (string) $dep->id)>{{ $dep->nombre }}</option>
-                        @endforeach
-                    </select>
                     <details class="mas-detalles" @if ($previo('area_trabajo') || $previo('actividad') || ($previo('tipo_visita', 'cortesia') !== 'cortesia')) open @endif>
                         <summary class="campo-etiqueta">Más detalles <span class="text-lowercase fw-normal">(opcional)</span></summary>
                         <span class="campo-etiqueta mt-2">Tipo de Visita</span>
@@ -292,17 +270,24 @@
                                     <i class="bi {{ ['cortesia' => 'bi-cup-hot', 'levantamiento' => 'bi-clipboard-data', 'ejecucion' => 'bi-tools'][$clave] }}" aria-hidden="true"></i><span>{{ $texto }}</span></label>
                             @endforeach
                         </div>
+                        {{-- C-30: el área de trabajo se elige del árbol de Zonas y edificios; si no está, se queda el texto («sin catálogo») --}}
                         <label class="campo-etiqueta" for="ingreso_area">Área de Trabajo Específica</label>
-                        <input type="text" id="ingreso_area" name="area_trabajo" class="campo" maxlength="150" value="{{ $previo('area_trabajo') }}" placeholder="Ej: Cuarto de máquinas, Alberca...">
+                        <div class="buscador-acceso" data-sugerir-lugar="todos" data-url-lugares="{{ route('lugares.buscar') }}">
+                            <input type="text" id="ingreso_area" name="area_trabajo" class="campo" maxlength="150" value="{{ $previo('area_trabajo') }}" placeholder="Ej: Cuarto de máquinas, Alberca..." autocomplete="off" data-lugar-texto>
+                            <input type="hidden" name="area_espacio_id" value="{{ $previo('area_espacio_id') }}" data-lugar-id>
+                            <div class="acceso-sugerencias" data-sugerencias hidden></div>
+                        </div>
                         <label class="campo-etiqueta" for="ingreso_actividad">Actividad a Realizar</label>
                         <input type="text" id="ingreso_actividad" name="actividad" class="campo" maxlength="500" value="{{ $previo('actividad') }}" placeholder="Describe brevemente la actividad">
                     </details>
                     @foreach (Acceso::CON_AUTORIZACION as $t)
                         <p class="nota-pendiente" data-etiqueta-tipo="{{ $t }}"><i class="bi bi-info-circle" aria-hidden="true"></i>
-                            @if (in_array($t, $esperanDepto, true))
-                                El registro queda <strong>Pendiente</strong>: el responsable del departamento recibe el aviso y autoriza (esta tarjeta cambia sola). Si el departamento no tiene responsable o no contesta a tiempo, quien supervisa la caseta lo pasa con <strong>Autorizar por excepción</strong>.
+                            @if ($giro->esResidencial())
+                                Si viene con un residente, llámale y toca <strong>Llamé y autorizó</strong>. Si viene a un área de la administración, el registro queda <strong>Pendiente</strong> y su responsable recibe el aviso (esta tarjeta cambia sola).
+                            @elseif (in_array($t, $esperanDepto, true))
+                                El registro queda <strong>Pendiente</strong>: la persona a quien viene (si tiene cuenta) o el responsable de su departamento recibe el aviso y autoriza (esta tarjeta cambia sola). Si nadie puede responder o no contesta a tiempo, quien supervisa la caseta lo pasa con <strong>Autorizar por excepción</strong>.
                             @else
-                                El registro queda <strong>Pendiente</strong>: la persona pasa cuando confirmes en el sistema que el Host la autorizó.
+                                El registro queda <strong>Pendiente</strong>: si la persona a quien viene tiene cuenta, recibe el aviso y autoriza; si no, la persona pasa cuando confirmes en el sistema que te la autorizó.
                             @endif
                         </p>
                     @endforeach
@@ -398,8 +383,13 @@
                 <div class="bloque-perfil" data-condicion data-solo-tipos="huesped">
                     <details class="mas-detalles" @if ($previo('habitacion') || $previo('numero_reserva') || $previo('empresa_procedencia') || $reservaElegida === '0') open @endif>
                         <summary class="campo-etiqueta">Más detalles <span class="text-lowercase fw-normal">(opcional)</span></summary>
+                        {{-- C-30: la habitación se elige del catálogo (si no está, se queda lo escrito) --}}
                         <label class="campo-etiqueta mt-2" for="ingreso_habitacion">Número de Habitación</label>
-                        <input type="text" id="ingreso_habitacion" name="habitacion" class="campo text-uppercase campo-corto" maxlength="20" value="{{ $previo('habitacion') }}" placeholder="Ej: 204">
+                        <div class="buscador-acceso campo-corto" data-sugerir-lugar="especificos" data-url-lugares="{{ route('lugares.buscar') }}">
+                            <input type="text" id="ingreso_habitacion" name="habitacion" class="campo text-uppercase" maxlength="20" value="{{ $previo('habitacion') }}" placeholder="Ej: 204" autocomplete="off" data-lugar-texto>
+                            <input type="hidden" name="habitacion_id" value="{{ $previo('habitacion_id') }}" data-lugar-id>
+                            <div class="acceso-sugerencias" data-sugerencias hidden></div>
+                        </div>
                         <span class="campo-etiqueta">¿Tiene Reserva?</span>
                         <div class="modo-toggle">
                             <label class="modo-opt"><input type="radio" name="tiene_reserva" value="1" @checked($reservaElegida === '1') data-por-defecto data-acceso-reserva><i class="bi bi-journal-check" aria-hidden="true"></i><span>Sí</span></label>

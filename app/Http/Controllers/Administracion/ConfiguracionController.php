@@ -208,7 +208,7 @@ class ConfiguracionController extends Controller
         'noche' => ['la aprobación por excepción del agente volvió', 'cfg-noche'],
         'equipos_pc' => ['la frecuencia de revisión de los equipos volvió', 'cfg-equipos-pc'],
         'menu' => ['los nombres del menú volvieron', 'cfg-menu'],
-        'novedades' => ['el nombre de la bitácora, la categoría del hallazgo y el reloj de los tickets volvieron', 'novedades'],
+        'novedades' => ['el nombre de la bitácora, la categoría del hallazgo, el reloj de los tickets y el departamento que recibe los accidentes de personal volvieron', 'novedades'],
         'lost_found' => ['los días de resguardo de Lost & Found volvieron', 'lost-found'],
         'auditoria' => ['lo que ve «Su sede» en la Bitácora de auditoría volvió', 'config-auditoria'],
         'dos_pasos' => ['a quién se exige la verificación en dos pasos volvió', 'cfg-dos-pasos'],
@@ -241,7 +241,9 @@ class ConfiguracionController extends Controller
             // C-22: «Reloj y suplente» regresa sus horas generales y lo de cada módulo
             'vobo' => [$this->restablecerCaseta($actor, $empresa, AjustesCaseta::GRUPOS['vobo']), $this->restablecerPreferencias($actor, $empresa->refresh(), [AjustesRelojes::CLAVE])],
             'menu' => $this->restablecerMenu($actor, $empresa),
-            'novedades' => app(AjustesNovedades::class)->guardar($actor, $empresa, ['nombre_opcion' => AjustesNovedades::NOMBRE_OMISION, 'categoria_hallazgo_pc' => AjustesNovedades::CATEGORIA_HALLAZGO_OMISION, 'reloj_horas' => []]),
+            // Revisión Etapa 5 (A-6): también el «Departamento que recibe accidentes de personal» (vuelve el de fábrica)
+            'novedades' => app(AjustesNovedades::class)->guardar($actor, $empresa, ['nombre_opcion' => AjustesNovedades::NOMBRE_OMISION, 'categoria_hallazgo_pc' => AjustesNovedades::CATEGORIA_HALLAZGO_OMISION, 'reloj_horas' => []],
+                departamentoAccidentesDeFabrica: true),
             'lost_found' => $this->tenant->conEmpresa($empresaId, fn () => $this->lostFound->guardarUmbrales($actor, ['dias' => LostFoundUmbral::POR_OMISION])),
             'auditoria', 'avisos' => $this->restablecerPreferencias($actor, $empresa, $ajuste === 'auditoria' ? ['auditoria_sede'] : ['avisos', 'avisos_modulos']),
             'dos_pasos' => $this->restablecerPreferencias($actor, $empresa, ['dos_pasos']),
@@ -425,7 +427,7 @@ class ConfiguracionController extends Controller
         $empresaId = $this->empresa->id($request->user());
         abort_if($empresaId === null, 404);
 
-        app(AjustesNovedades::class)->guardar($request->user(), Empresa::findOrFail($empresaId), $request->only(['nombre_opcion', 'nombre_menu', 'categoria_hallazgo_pc', 'reloj_horas']));
+        app(AjustesNovedades::class)->guardar($request->user(), Empresa::findOrFail($empresaId), $request->only(['nombre_opcion', 'nombre_menu', 'categoria_hallazgo_pc', 'reloj_horas', 'departamento_accidentes']));
 
         return redirect()->to(route('configuracion.index').'#novedades')->with('ok', 'Ajustes de '.app(AjustesNovedades::class)->bitacoraConArticulo($empresaId).' guardados.');
     }

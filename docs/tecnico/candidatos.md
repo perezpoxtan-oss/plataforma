@@ -147,7 +147,7 @@ Obligatorio (`acepta_privacidad`) para guardar el CV desde el kiosco y para la c
 | `POST /candidatos/{c}/canalizar` | `candidatos.editar` | Canalizar, segunda entrevista o reprogramar (`vacante_id`, `departamento_id`, `entrevistador_id`, `cuando`, `fecha`, `hora`, `lugar`, `avisar_candidato`) |
 | `POST /candidatos/{c}/no-se-presento` | `candidatos.editar` | No se presentó (cita ya pasada) |
 | `GET /entrevistas` | `candidatos.evaluar` | Mis entrevistas: por evaluar (con su cita) y ya evaluadas |
-| `GET /entrevistas/{p}` · `POST /entrevistas/{p}` | `candidatos.evaluar` + asignado o delegado | Pantalla Entrevistar y su evaluación (`throttle:60,1`) |
+| `GET /entrevistas/{p}` · `POST /entrevistas/{p}` | `candidatos.evaluar` + asignado o delegado | Pantalla Entrevistar y su evaluación (`throttle:entrevistas.evaluar`, 60 por minuto) |
 | `GET /entrevistas/{p}/cv` | `candidatos.evaluar` + vacante con «El jefe puede ver el CV» | CV en PDF (disco privado) |
 | `GET /entrevistas/{p}/correo` | `candidatos.evaluar` + firma vigente | Botón del correo: valida la firma y abre la entrevista |
 | `GET /vacantes/{v}/candidatos` | `vacantes.ver` + (`candidatos.ver` o `candidatos.evaluar`) | Tabla «Candidatos de esta vacante» |

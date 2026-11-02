@@ -69,7 +69,7 @@ class Escalamiento
         $escaladosIds = [];
         foreach ($pendientes as $a) {
             $aut = $this->autorizacionDe($a);
-            if ($aut !== null && $aut->tipo === 'visita' && $aut->departamento_id !== null) {
+            if ($aut !== null && $aut->tipo === 'visita' && $aut->departamento_id !== null && $aut->colaborador_id === null) {
                 $avisar[$aut->departamento_id.'-'.$aut->sede_id] ??= $this->autorizaciones->aQuienAvisar((int) $aut->departamento_id, (int) $aut->sede_id);
             }
             foreach ((array) ($aut?->escalado_a ?? []) as $id) {
@@ -79,6 +79,7 @@ class Escalamiento
         $escalados = $escaladosIds === [] ? collect() : User::whereIn('id', array_unique($escaladosIds))->get(['id', 'name'])->keyBy('id');
 
         $resultado = [];
+        $delegados = []; // persona citada y sede => nombre del delegado (o null), una vez por par
         foreach ($pendientes as $a) {
             $aut = $this->autorizacionDe($a);
             $minutos = (int) max(0, $a->entrada_at?->diffInMinutes(now()) ?? 0);
@@ -86,6 +87,13 @@ class Escalamiento
             $escaladoA = $aut !== null ? collect((array) ($aut->escalado_a ?? []))->map(fn ($id) => $escalados[(int) $id]->name ?? null)->filter()->join(', ', ' y ') : '';
             if ($aut !== null && $aut->tipo === 'recepcion') {
                 $texto = 'Espera a: Recursos Humanos';
+            } elseif ($aut !== null && $aut->tipo === 'visita' && $aut->colaborador_id !== null) {
+                // C-09 (DD-12): espera a la persona citada; su departamento es el suplente
+                $nombres = $aut->colaborador?->nombreCompleto() ?? '';
+                // Revisión Etapa 5 (A-5): si delegó, el aviso le llegó a su delegado (la misma regla que al avisar)
+                $delegado = $this->delegadoDeLaPersonaCitada($aut, $delegados);
+                $texto = 'Espera a: '.($nombres !== '' ? $nombres : 'la persona citada').($delegado !== null ? ' (delegó en '.$delegado.')' : '')
+                    .(($depto = $aut->departamento?->nombre) ? ($delegado !== null ? ' · suplente: '.$depto : ' (suplente: '.$depto.')') : '');
             } elseif ($aut !== null && $aut->tipo === 'visita') {
                 $nombres = ($avisar[$aut->departamento_id.'-'.$aut->sede_id] ?? collect())->pluck('name')->join(', ', ' y ');
                 $depto = $aut->departamento?->nombre ?? $a->departamento?->nombre;
@@ -96,7 +104,7 @@ class Escalamiento
                     .(in_array($a->tipo, Acceso::CON_AUTORIZACION, true) ? 'el supervisor lo autoriza por excepción' : 'espera al supervisor o al jefe de seguridad');
             } elseif (in_array($a->tipo, Acceso::CON_AUTORIZACION, true)) {
                 $nombres = $a->host?->nombreCompleto() ?? '';
-                $texto = 'Confirma con el host: '.($nombres !== '' ? $nombres : '—');
+                $texto = 'Confirma con quien lo citó: '.($nombres !== '' ? $nombres : '—');
             } else {
                 $texto = 'Espera autorización';
             }
@@ -111,6 +119,26 @@ class Escalamiento
         }
 
         return $resultado;
+    }
+
+    /**
+     * Revisión Etapa 5 (A-5): nombre de quien recibió el aviso de la persona
+     * citada cuando ella delegó sus aprobaciones (C-12), o null si le llegó a
+     * ella. Usa la misma regla que solicitarVisita().
+     *
+     * @param  array<string, ?string>  $memoria
+     */
+    private function delegadoDeLaPersonaCitada(Autorizacion $aut, array &$memoria): ?string
+    {
+        $llave = $aut->colaborador_id.'-'.$aut->sede_id;
+        if (! array_key_exists($llave, $memoria)) {
+            // La cuenta de la persona citada (la autorización solo guarda colaborador_id cuando tenía cuenta)
+            $cuenta = User::where('colaborador_id', $aut->colaborador_id)->where('empresa_id', $aut->empresa_id)->where('activo', true)->first();
+            $destino = $cuenta === null ? null : $this->autorizaciones->destinoDeLaPersonaCitada($cuenta, (int) $aut->sede_id);
+            $memoria[$llave] = $destino !== null && (int) $destino->id !== (int) $cuenta->id ? (string) $destino->name : null;
+        }
+
+        return $memoria[$llave];
     }
 
     /**
@@ -138,7 +166,7 @@ class Escalamiento
 
     private function autorizacionDe(Acceso $a): ?Autorizacion
     {
-        $aut = $a->relationLoaded('autorizacionDepartamento') ? $a->autorizacionDepartamento : $a->autorizacionDepartamento()->with('departamento:id,nombre')->first();
+        $aut = $a->relationLoaded('autorizacionDepartamento') ? $a->autorizacionDepartamento : $a->autorizacionDepartamento()->with(['departamento:id,nombre', 'colaborador:id,nombre,apellido_paterno,apellido_materno'])->first();
 
         return $aut !== null && $aut->pendiente() ? $aut : null;
     }
@@ -251,7 +279,8 @@ class Escalamiento
         $titulo = "Recordatorio: {$nombre} lleva {$minutos} min esperando tu respuesta";
         $texto = $a->tipo === 'recepcion'
             ? 'Sigue en caseta esperando que digas «Que pase». Sede: '.($a->sede?->nombre ?? '').'.'
-            : 'Sigue en caseta esperando la autorización de '.($a->departamento?->nombre ?? 'tu departamento').'. Sede: '.($a->sede?->nombre ?? '').'.';
+            : ($a->colaborador_id !== null ? 'Sigue en caseta esperando tu autorización. Sede: '.($a->sede?->nombre ?? '').'.'
+                : 'Sigue en caseta esperando la autorización de '.($a->departamento?->nombre ?? 'tu departamento').'. Sede: '.($a->sede?->nombre ?? '').'.');
         $this->avisar($a, $usuarios, $titulo, $texto, true);
         $this->auditar($a, 'autorizaciones.recordatorio', ['minutos' => $minutos, 'avisados' => $usuarios->pluck('id')->all()]);
 
@@ -276,7 +305,8 @@ class Escalamiento
         $titulo = "Nadie ha respondido: {$nombre} lleva {$minutos} min en caseta";
         $texto = $a->tipo === 'recepcion'
             ? 'Espera que Recursos Humanos diga «Que pase» y nadie ha contestado. Sede: '.($a->sede?->nombre ?? '').'.'
-            : 'Espera la autorización de '.($a->departamento?->nombre ?? 'su departamento').' y su responsable no ha contestado. Sede: '.($a->sede?->nombre ?? '').'.';
+            : ($a->colaborador_id !== null ? 'Espera la autorización de la persona a quien viene y no ha contestado; te toca como suplente. Sede: '.($a->sede?->nombre ?? '').'.'
+                : 'Espera la autorización de '.($a->departamento?->nombre ?? 'su departamento').' y su responsable no ha contestado. Sede: '.($a->sede?->nombre ?? '').'.');
         // Quien puede responder recibe los botones; el Jefe de seguridad, el enlace a la bitácora para confirmar en caseta
         $responden = $usuarios->filter(fn (User $u) => $this->autorizaciones->puedeResponder($u, $a))->values();
         $soloVen = $usuarios->reject(fn (User $u) => $responden->contains('id', $u->id))->values();
@@ -322,8 +352,10 @@ class Escalamiento
 
             return $rh->concat($jefes)->unique('id')->values();
         }
-        $suplentes = $this->autorizaciones->responsablesDe((int) $a->departamento_id, (int) $a->sede_id)
-            ->filter(fn ($r) => (bool) $r->es_suplente)->pluck('usuario');
+        // C-09 (DD-12): si esperaba a la persona citada, pasa a los responsables de su departamento (el suplente)
+        $suplentes = $a->colaborador_id !== null
+            ? ($a->departamento_id === null ? collect() : $this->autorizaciones->responsablesDe((int) $a->departamento_id, (int) $a->sede_id)->pluck('usuario'))
+            : $this->autorizaciones->responsablesDe((int) $a->departamento_id, (int) $a->sede_id)->filter(fn ($r) => (bool) $r->es_suplente)->pluck('usuario');
         // C-12 (misma regla que el primer aviso): el suplente que delegó pasa al último de su cadena que pueda responder en la sede
         $cadena = $this->autorizaciones->cadena();
         $cobertura = $this->autorizaciones->cobertura();

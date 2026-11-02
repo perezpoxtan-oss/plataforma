@@ -181,7 +181,7 @@ class AdministradorReservas
     private const CAMPOS = [
         'area' => 'área', 'inicio' => 'inicio', 'fin' => 'fin', 'titulo' => 'título', 'tipo_uso' => 'tipo de uso', 'montaje' => 'montaje',
         'asistentes' => 'personas', 'para_cliente' => 'para quién', 'cliente' => 'cliente', 'tarifa' => 'tarifa', 'servicios' => 'servicios',
-        'notas' => 'notas', 'total' => 'total', 'departamento' => 'departamento que solicita', 'excepcion_aforo' => 'excepción de aforo',
+        'notas' => 'notas', 'total' => 'total', 'departamento' => 'departamento que solicita', 'residente' => 'residente', 'excepcion_aforo' => 'excepción de aforo',
         'dia_completo' => 'día completo', 'montaje_minutos' => 'tiempo de montaje', 'desmontaje_minutos' => 'tiempo de desmontaje', 'indicaciones' => 'indicaciones de montaje',
     ];
 
@@ -197,7 +197,7 @@ class AdministradorReservas
             // En orden fijo: el formulario puede mandar los mismos servicios en otro orden
             'servicios' => $r->items->sortBy(fn ($i) => mb_strtolower($i->nombre).'|'.$i->departamento_id)->map(fn ($i) => $i->nombre.' × '.$i->cantidadTexto().($i->notas ? ' ('.$i->notas.')' : ''))->join(', '), 'notas' => $r->notas,
             'total' => number_format((float) $r->total, 2, '.', ''),
-            'departamento' => $r->departamento_solicitante_id, 'excepcion_aforo' => $r->excede_aforo ? $r->motivo_excepcion_aforo : null,
+            'departamento' => $r->departamento_solicitante_id, 'residente' => $r->residente_id, 'excepcion_aforo' => $r->excede_aforo ? $r->motivo_excepcion_aforo : null,
             'dia_completo' => (bool) $r->dia_completo, 'montaje_minutos' => $r->montaje_minutos, 'desmontaje_minutos' => $r->desmontaje_minutos,
             'indicaciones' => $r->indicaciones_montaje,
         ];
@@ -271,7 +271,9 @@ class AdministradorReservas
         }
         [$desde, $hasta] = $this->disponibilidad->validar($area, $inicio, $fin, $montajeId, $asistentes, $actual?->id, true, $excede, $montajeMin, $desmontajeMin);
 
-        $paraCliente = filter_var($datos['para_cliente'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        // C-34 (D-11): en condominio y fraccionamiento la reserva es de un residente y su vivienda (historial por vivienda)
+        [$residenteId, $viviendaId] = $this->residente($area, $datos, $actual);
+        $paraCliente = $residenteId === null && filter_var($datos['para_cliente'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $cliente = ['cliente_nombre' => null, 'cliente_empresa' => null, 'cliente_correo' => null, 'cliente_telefono' => null];
         if ($paraCliente) {
             $cliente = [
@@ -309,7 +311,7 @@ class AdministradorReservas
             'sede_id' => $area->sede_id, 'reserva_area_id' => $area->id, 'espacio_id' => $area->espacio_id,
             'titulo' => mb_substr($titulo, 0, 150), 'tipo_uso_id' => $tipoUso, 'montaje_id' => $montajeId, 'asistentes' => $asistentes,
             'excede_aforo' => $excede, 'motivo_excepcion_aforo' => $excede ? $motivoAforo : null,
-            'departamento_solicitante_id' => $departamento,
+            'departamento_solicitante_id' => $departamento, 'residente_id' => $residenteId, 'vivienda_id' => $viviendaId,
             'inicio' => $inicio, 'fin' => $fin, 'dia_completo' => $diaCompleto, 'bloqueo_desde' => $desde, 'bloqueo_hasta' => $hasta,
             'montaje_minutos' => $montajeMin, 'desmontaje_minutos' => $desmontajeMin, 'indicaciones_montaje' => $indicaciones,
             'para_cliente' => $paraCliente, 'tarifa' => $costo['tarifa'],
@@ -335,12 +337,48 @@ class AdministradorReservas
         if ($id === null || $id === '') {
             return null;
         }
-        // Scope de la empresa: un departamento de otra empresa no existe aquí
+        // Scope de la empresa: un departamento de otra empresa no existe aquí. C-34 (D-10): y debe estar activo (el que ya tenía se conserva)
         if (! is_numeric($id) || ! Departamento::whereKey((int) $id)->exists()) {
             throw ValidationException::withMessages(['departamento_solicitante_id' => 'Elige un departamento de tu empresa.']);
         }
+        if ((int) $id !== (int) $actual?->departamento_solicitante_id && ! Departamento::whereKey((int) $id)->where('activo', true)->exists()) {
+            throw ValidationException::withMessages(['departamento_solicitante_id' => 'Ese departamento está dado de baja: elige uno activo.']);
+        }
 
         return (int) $id;
+    }
+
+    /**
+     * C-34 (D-11): «¿Para quién? Residente» en condominio y fraccionamiento.
+     * El residente debe estar activo y vivir en la sede del área; la vivienda
+     * sale sola de él. Al modificar sin indicarlo, se conserva.
+     *
+     * @param  array<string, mixed>  $datos
+     * @return array{0: ?int, 1: ?int}
+     */
+    private function residente(ReservaArea $area, array $datos, ?Reserva $actual): array
+    {
+        if (! array_key_exists('residente_id', $datos)) {
+            return [$actual?->residente_id, $actual?->vivienda_id];
+        }
+        $id = $datos['residente_id'];
+        if ($id === null || $id === '' || ! filter_var($datos['para_residente'] ?? '1', FILTER_VALIDATE_BOOLEAN)) {
+            if (filter_var($datos['para_residente'] ?? '0', FILTER_VALIDATE_BOOLEAN)) {
+                throw ValidationException::withMessages(['residente_id' => 'Elige al residente que reserva.']);
+            }
+
+            return [null, null];
+        }
+        $residente = Colaborador::residentes()->where('activo', true)->whereNull('fusionado_en_id')->find(is_numeric($id) ? (int) $id : 0);
+        $esElActual = $actual !== null && (int) $id === (int) $actual->residente_id;
+        if ($residente === null && ! $esElActual) {
+            throw ValidationException::withMessages(['residente_id' => 'Elige un residente activo de la lista.']);
+        }
+        if ($residente !== null && ! $esElActual && $residente->sede_id !== null && (int) $residente->sede_id !== (int) $area->sede_id) {
+            throw ValidationException::withMessages(['residente_id' => 'Ese residente no vive en la sede del área.']);
+        }
+
+        return [(int) $id, $residente?->espacio_id ?? $actual?->vivienda_id];
     }
 
     /** Departamento del colaborador vinculado al usuario (si lo tiene y es de la empresa). */
@@ -426,11 +464,11 @@ class AdministradorReservas
         // «+ Otro servicio» de cada departamento: nombre y nota libres
         $otros = collect((array) ($datos['otros'] ?? []))->filter(fn ($f) => is_array($f) && trim((string) ($f['nombre'] ?? '')) !== '')->take(30);
         $deptos = $otros->pluck('departamento_id')->filter(fn ($d) => is_numeric($d))->map(fn ($d) => (int) $d)->unique()->values();
-        $validos = $deptos->isEmpty() ? collect() : Departamento::whereIn('id', $deptos)->pluck('id')->map(fn ($d) => (int) $d);
+        $validos = $deptos->isEmpty() ? collect() : Departamento::whereIn('id', $deptos)->where('activo', true)->pluck('id')->map(fn ($d) => (int) $d); // C-34: activos
         foreach ($otros as $fila) {
             $depto = is_numeric($fila['departamento_id'] ?? null) ? (int) $fila['departamento_id'] : null;
             if ($depto !== null && ! $validos->contains($depto)) {
-                throw ValidationException::withMessages(['otros' => 'Elige un departamento de tu empresa para cada servicio adicional.']);
+                throw ValidationException::withMessages(['otros' => 'Elige un departamento activo de tu empresa para cada servicio adicional.']);
             }
             $items[] = [
                 'servicio_id' => null, 'departamento_id' => $depto, 'nombre' => mb_substr(trim((string) $fila['nombre']), 0, 80), 'unidad' => 'pieza',

@@ -16,6 +16,7 @@ use App\Services\Permisos\AdministradorRoles;
 use App\Support\Espacios\Etiquetas;
 use App\Support\ImagenSegura;
 use App\Support\Tenancy\Tenant;
+use App\Support\Terminos;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -101,6 +102,11 @@ class CatalogosReservas
             $departamento = ($datos['departamento_id'] ?? null) ? (int) $datos['departamento_id'] : null;
             if ($departamento !== null && ! Departamento::whereKey($departamento)->exists()) {
                 throw ValidationException::withMessages(['departamento_id' => 'Elige un departamento de la empresa.']);
+            }
+            // C-34 (D-10): un departamento dado de baja ya no recibe órdenes (el que ya tenía el servicio se conserva)
+            if ($departamento !== null && $departamento !== (int) ($registro?->getAttribute('departamento_id') ?? 0)
+                && ! Departamento::whereKey($departamento)->where('activo', true)->exists()) {
+                throw ValidationException::withMessages(['departamento_id' => 'Ese departamento está dado de baja: elige uno activo.']);
             }
             $costo = ($datos['costo'] ?? '') === '' || $datos['costo'] === null ? null : round((float) $datos['costo'], 2);
             if ($costo !== null && ($costo < 0 || $costo > 9999999)) {
@@ -210,6 +216,10 @@ class CatalogosReservas
         $this->ultimosInteriores = 0;
 
         return DB::transaction(function () use ($actor, $espacio, $modo, $interiores) {
+            // Revisión Etapa 5: en condominio y fraccionamiento, lo que se reserva es un área común, no una vivienda
+            if ($espacio->nivel === Espacio::AREA_ESPECIFICA && ! $espacio->esAreaComun() && Terminos::actual()->esResidencial()) {
+                $espacio->forceFill(['uso' => Espacio::USO_AREA_COMUN])->save();
+            }
             $area = ReservaArea::firstWhere('espacio_id', $espacio->id);
             if ($area !== null) {
                 if (! $area->reservable) {

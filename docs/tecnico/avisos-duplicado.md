@@ -64,7 +64,7 @@ Se reutilizan las reglas de «¿Es alguno de estos?» de las altas por verificar
 | `GET /personas/duplicado` (`personas.duplicado`) | `visitantes.crear` o `visitantes.editar` | `folio_identificacion` (exacto, normalizado como al guardar: **existe**), `nombre_completo` (parecidos: **parecido**) |
 | `GET /espacios/duplicado` (`espacios.duplicado`) | `espacios.crear` o `espacios.editar` | `nombre` (igual en el mismo lugar: **existe**; parecido: **parecido**), `codigo` (misma clave en la misma sede y nivel: **parecido**), `tipo` (tipo propio ya en la lista: **existe**), `seccion` (misma sede: **existe**) |
 
-Las dos rutas llevan `throttle:120,1`, están en el bloque `// Padrones: Ajustes Ronda 5 (parte 2)` de `routes/web.php` y siempre:
+Las dos rutas llevan su propio límite (`throttle:personas.duplicado` y `throttle:espacios.duplicado`, 120 por minuto; ver `App\Support\Limitadores`), están en el bloque `// Padrones: Ajustes Ronda 5 (parte 2)` de `routes/web.php` y siempre:
 
 - Corren con la empresa de trabajo (`Tenant::conEmpresa`): lo de otra empresa no existe.
 - En Zonas y áreas solo miran las **sedes visibles** del usuario (`espacios.ver`); un contenedor (`padre_id`) o un registro (`excluir`) de otra sede responde `nada`.
@@ -83,7 +83,7 @@ Las dos rutas llevan `throttle:120,1`, están en el bloque `// Padrones: Ajustes
 
 ### Ronda 6: los demás padrones pasan al mismo mecanismo
 
-Proveedores, Vehículos, Colaboradores, Gafetes, Equipos y Equipos de Protección Civil dejaron sus avisos propios (`data-nombres-existentes` en Proveedores, `data-placas-existentes`, `data-numeros-existentes`, `data-series-existentes` y la caja de homónimos `data-homonimos` del alta de Colaboradores). Ahora usan `data-duplicado`, con `App\Http\Controllers\Padrones\DuplicadoController` (bloque `// Padrones: Ajustes Ronda 6` de `routes/web.php`, `throttle:120,1`):
+Proveedores, Vehículos, Colaboradores, Gafetes, Equipos y Equipos de Protección Civil dejaron sus avisos propios (`data-nombres-existentes` en Proveedores, `data-placas-existentes`, `data-numeros-existentes`, `data-series-existentes` y la caja de homónimos `data-homonimos` del alta de Colaboradores). Ahora usan `data-duplicado`, con `App\Http\Controllers\Padrones\DuplicadoController` (bloque `// Padrones: Ajustes Ronda 6` de `routes/web.php`; cada ruta con su propio límite `throttle:<nombre de la ruta>`, 120 por minuto):
 
 | Ruta | Permiso (cualquiera) | Campo | existe | parecido |
 |---|---|---|---|---|
@@ -106,7 +106,7 @@ Reglas comunes:
 
 ### Ronda 7: los últimos padrones
 
-Llaves, Departamentos, Puestos, Turnos y Usuarios dejaron sus avisos propios (`data-nombres-existentes`, `data-nombres-por-sede`, `data-aviso-nombre` y la caja de homónimos `data-homonimos` de Usuarios; se quitó la ruta `GET /usuarios/homonimos`). Ya no queda ningún aviso propio: **todo usa `data-duplicado`**. Controlador `App\Http\Controllers\Padrones\DuplicadoCatalogosController`, bloque `// Padrones: Ajustes Ronda 7` de `routes/web.php` (`throttle:120,1`):
+Llaves, Departamentos, Puestos, Turnos y Usuarios dejaron sus avisos propios (`data-nombres-existentes`, `data-nombres-por-sede`, `data-aviso-nombre` y la caja de homónimos `data-homonimos` de Usuarios; se quitó la ruta `GET /usuarios/homonimos`). Ya no queda ningún aviso propio: **todo usa `data-duplicado`**. Controlador `App\Http\Controllers\Padrones\DuplicadoCatalogosController`, bloque `// Padrones: Ajustes Ronda 7` de `routes/web.php` (cada ruta con su propio límite `throttle:<nombre de la ruta>`, 120 por minuto):
 
 | Ruta | Permiso | Campo | existe | parecido |
 |---|---|---|---|---|
@@ -124,7 +124,7 @@ El endpoint `GET /colaboradores/homonimos` se conserva (lo usan pruebas). Para u
 ## Agregar el aviso a otro módulo
 
 1. Agrega `duplicado(Request $request): JsonResponse` al controlador: `Gate`/`abort_unless` con el permiso de crear o editar, la empresa de trabajo y el alcance de sedes. Responde con `AvisoDuplicado::existe()`, `parecido()`, `libre()` o `nada()`.
-2. Agrega la ruta GET con `throttle:120,1` (el recorrido de `tests/Feature/SeguridadAuditoria` la visita sola).
+2. Agrega la ruta GET con `throttle:<nombre de la ruta>` y su límite en `App\Support\Limitadores::POR_MINUTO` (120; el recorrido de `tests/Feature/SeguridadAuditoria` la visita sola).
 3. Pon `data-duplicado="{{ route('…duplicado') }}"` en el campo.
 4. Prueba: existe, parecido, libre, edición (`excluir`), otra empresa, otra sede y un usuario sin permiso (403).
 

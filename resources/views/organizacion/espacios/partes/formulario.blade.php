@@ -78,6 +78,15 @@
                 </select>
             @endif
 
+            {{-- Revisión Etapa 5: en condominio y fraccionamiento, una alberca o un salón no es una vivienda --}}
+            @if ($nivel === 'area_especifica' && \App\Support\Terminos::actual()->esResidencial())
+                <input type="hidden" name="area_comun" value="0">
+                <label class="d-flex align-items-start gap-2 mb-3 small" for="{{ $id }}_area_comun">
+                    <input type="checkbox" id="{{ $id }}_area_comun" name="area_comun" value="1" class="form-check-input mt-1" @checked((bool) $v('area_comun'))>
+                    <span><strong>Es un área común</strong> (alberca, salón, asador): no es una vivienda y no se le asignan residentes.</span>
+                </label>
+            @endif
+
             @if (isset($secciones))
                 <label class="campo-etiqueta" for="{{ $id }}_seccion">Sección <span class="text-lowercase fw-normal">(opcional)</span></label>
                 <select id="{{ $id }}_seccion" name="grupo_espacio_id" class="campo">

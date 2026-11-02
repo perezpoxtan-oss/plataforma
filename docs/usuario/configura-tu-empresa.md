@@ -20,7 +20,7 @@ resumen: La guía de Inicio con los pasos para dejar lista una empresa nueva; ca
 | 2. Sedes | Da de alta cada lugar que vas a operar. | Hay al menos una sede activa. |
 | 3. Departamentos y responsables | Crea los departamentos y nombra a su responsable. | Cada departamento tiene quien autorice en cada una de sus sedes (si falta, el paso dice «Sin quien autorice en …»). |
 | 4. Usuarios y roles | Da acceso a tu equipo con el rol de cada quien. | Hay al menos otro usuario activo además de ti. |
-| 5. Importar colaboradores | Sube tu plantilla de personal desde Excel. | Hay colaboradores activos. |
+| 5. Importar colaboradores | Sube tu plantilla de personal desde Excel. En condominios y fraccionamientos este paso se llama **Personal de la administración** y se agrega **Residentes y viviendas** (quién vive en cada vivienda). | Hay colaboradores activos (y residentes con vivienda). |
 | 6. Zonas y edificios | Captura o importa tus zonas, pisos y habitaciones. | Hay al menos una zona o edificio. |
 | 7. Padrones | Registra o importa empresas externas, personas y vehículos. | Hay al menos un registro en alguno de los tres padrones. |
 

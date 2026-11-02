@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Services\Firmas\Firmas;
 use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Novedades\AjustesNovedades;
+use App\Services\Novedades\CanalizarDepartamento;
 use App\Services\Novedades\CoincidenciasLostFound;
 use App\Services\Novedades\FichaHechos\FichaDeHechos;
 use App\Services\Novedades\TurnosNovedades;
@@ -438,7 +439,7 @@ class NovedadController extends Controller
             $valores += $formato->valores($novedad);
         }
         $valores = [
-            'categoria' => $novedad->categoria, 'asignado_a' => $novedad->asignado_a,
+            'categoria' => $novedad->categoria, 'asignado_a' => $novedad->asignado_a, 'departamento_id' => $novedad->departamento_id,
             'area_edificio_id' => $novedad->area?->nivel === Espacio::AREA ? $novedad->area->padre_id : $novedad->area_id,
             'area_piso_id' => $novedad->area?->nivel === Espacio::AREA ? $novedad->area_id : null,
             'area_especifica_id' => $novedad->area_especifica_id, 'involucrados' => $novedad->involucrados, 'como_sucedio' => $novedad->como_sucedio,
@@ -474,7 +475,7 @@ class NovedadController extends Controller
             'sede:id,nombre,zona_horaria,empresa_id', 'area:id,nombre,nivel,padre_id', 'area.padre:id,nombre', 'areaEspecifica:id,nombre',
             'creador:id,name', 'editor:id,name', 'asignado:id,name', 'cerrador:id,name', 'origen:id,numero,categoria',
             'reportadoColaborador:id,departamento_id,puesto_id', 'reportadoColaborador.departamento:id,nombre', 'reportadoColaborador.puesto:id,nombre',
-            'notas', 'testigos',
+            'notas', 'testigos', 'departamento:id,nombre', 'departamentoAtendidoPor:id,name', // C-28
         ]);
         $formato = $this->novedades->formato($novedad->categoria);
         if ($formato !== null) {
@@ -510,7 +511,9 @@ class NovedadController extends Controller
                 's' => $c->sede_id === null ? 'todas' : collect([$c->sede_id])->merge($c->sedesAdicionales->pluck('id'))->unique()->join(' '),
             ])->values();
 
-        return ['espacios' => $espacios, 'usuarios' => $usuarios, 'colaboradores' => $colaboradores];
+        // C-28: departamentos a los que se puede canalizar
+        return ['espacios' => $espacios, 'usuarios' => $usuarios, 'colaboradores' => $colaboradores,
+            'departamentos' => app(CanalizarDepartamento::class)->opciones()];
     }
 
     /**

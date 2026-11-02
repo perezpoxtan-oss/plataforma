@@ -65,6 +65,10 @@ class AdministradorEspacios
                 'tipo_espacio_id' => $datos['tipo_espacio_id'] ?? null,
                 'grupo_espacio_id' => $datos['grupo_espacio_id'] ?? null,
             ]);
+            // Revisión Etapa 5: vivienda o área común (solo el nivel «área específica»)
+            if ($nivel === Espacio::AREA_ESPECIFICA && array_key_exists('area_comun', $datos)) {
+                $espacio->forceFill(['uso' => filter_var($datos['area_comun'], FILTER_VALIDATE_BOOL) ? Espacio::USO_AREA_COMUN : null]);
+            }
             $espacio->save();
 
             $espacio->forceFill([
@@ -160,7 +164,12 @@ class AdministradorEspacios
             'codigo' => $datos['codigo'] ?? null,
             'tipo_espacio_id' => $datos['tipo_espacio_id'] ?? null,
             'grupo_espacio_id' => $espacio->nivel === Espacio::AREA_ESPECIFICA ? ($datos['grupo_espacio_id'] ?? null) : null,
-        ])->save();
+        ]);
+        // Revisión Etapa 5: vivienda o área común (sin el campo, se conserva)
+        if ($espacio->nivel === Espacio::AREA_ESPECIFICA && array_key_exists('area_comun', $datos)) {
+            $espacio->forceFill(['uso' => filter_var($datos['area_comun'], FILTER_VALIDATE_BOOL) ? Espacio::USO_AREA_COMUN : null]);
+        }
+        $espacio->save();
 
         $this->auditoria->auditar($actor, 'espacios.actualizado', $espacio, $antes, $this->foto($espacio));
 
@@ -535,6 +544,6 @@ class AdministradorEspacios
      */
     private function foto(Espacio $espacio): array
     {
-        return $espacio->only(['sede_id', 'padre_id', 'nivel', 'nombre', 'codigo', 'tipo_espacio_id', 'grupo_espacio_id', 'activo']);
+        return $espacio->only(['sede_id', 'padre_id', 'nivel', 'uso', 'nombre', 'codigo', 'tipo_espacio_id', 'grupo_espacio_id', 'activo']);
     }
 }

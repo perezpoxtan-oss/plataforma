@@ -406,6 +406,10 @@ class UsuarioController extends Controller
         if ($colaborador === null) {
             throw ValidationException::withMessages(['colaborador_id' => 'El colaborador no existe en esta empresa.']);
         }
+        // C-10: las cuentas son del personal; un residente no tiene cuenta (su portal llegará después)
+        if ($colaborador->esResidente() && $id !== (int) $usuario?->colaborador_id) {
+            throw ValidationException::withMessages(['colaborador_id' => 'Esa persona es residente: las cuentas se vinculan solo al personal.']);
+        }
         if (! $colaborador->activo && $id !== (int) $usuario?->colaborador_id) {
             throw ValidationException::withMessages(['colaborador_id' => 'Ese colaborador está dado de baja.']);
         }

@@ -14,5 +14,6 @@
         <a href="{{ route('espacios.show', $miga->id) }}"><small>{{ $etiquetas[$miga->nivel]['singular'] ?? '' }}</small>{{ $miga->nombre }}</a>
     @endforeach
     <i class="bi bi-chevron-right" aria-hidden="true"></i>
-    <span class="actual" aria-current="page"><small>{{ $etiquetas[$nodo->nivel]['singular'] ?? '' }}</small>{{ $nodo->nombre }}</span>
+    {{-- Revisión Etapa 5 (A-4): en condominio y fraccionamiento, el área común no se titula «Vivienda» --}}
+    <span class="actual" aria-current="page"><small>{{ $nodo->nivel === \App\Models\Espacio::AREA_ESPECIFICA && $nodo->esAreaComun() && \App\Support\Terminos::actual()->esResidencial() ? 'Área común' : ($etiquetas[$nodo->nivel]['singular'] ?? '') }}</small>{{ $nodo->nombre }}</span>
 </nav>

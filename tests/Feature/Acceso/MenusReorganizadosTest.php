@@ -433,6 +433,9 @@ class MenusReorganizadosTest extends TestCase
         // memorizado en la petición), más la zona de las sedes para la permanencia: unas 28 fijas, nunca una por renglón
         // DD-17 suma las rutas del día (sedes y horarios con su ruta, y lo registrado en una sola consulta) y los
         // equipos de Protección Civil (recargas, y equipos con su última revisión): unas 6 fijas, nunca una por renglón
-        $this->assertLessThan(135, count(DB::getQueryLog()));
+        // Etapa 5 (C-09, C-28) cabe en el mismo límite: el reloj de «Tickets de tu departamento» suma una consulta y
+        // «visitas propias» solo se consulta para quien no es responsable de ningún departamento
+        // Revisión Etapa 5: a quien le delegan, una fija más (las personas citadas de sus titulares, C-12)
+        $this->assertLessThan(136, count(DB::getQueryLog()));
     }
 }

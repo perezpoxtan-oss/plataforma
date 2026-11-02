@@ -67,7 +67,7 @@
                         @if ($reserva->excede_aforo)<span class="res-estado estado-cambio_pedido ms-1">Excede aforo</span>@endif</div></div>
                     <div><div class="res-dato-etiqueta">Montaje</div><div class="res-dato-valor">{{ $reserva->montaje?->nombre ?? 'Sin montaje especial' }}</div></div>
                     <div><div class="res-dato-etiqueta">Tipo de uso</div><div class="res-dato-valor">{{ $reserva->tipoUso?->nombre ?? '—' }}</div></div>
-                    <div><div class="res-dato-etiqueta">Para</div><div class="res-dato-valor">{{ $reserva->para_cliente ? 'Cliente: '.trim($reserva->cliente_nombre.($reserva->cliente_empresa ? ' · '.$reserva->cliente_empresa : '')) : 'Uso interno (sin costo)' }}</div></div>
+                    <div><div class="res-dato-etiqueta">Para</div><div class="res-dato-valor">{{ $reserva->residente_id ? 'Residente: '.($reserva->residente?->nombreCompleto() ?? '—').($reserva->vivienda ? ' · '.\App\Support\Terminos::actual()->espacio().' '.$reserva->vivienda->nombre : '') : ($reserva->para_cliente ? 'Cliente: '.trim($reserva->cliente_nombre.($reserva->cliente_empresa ? ' · '.$reserva->cliente_empresa : '')) : 'Uso interno (sin costo)') }}</div></div>
                     @if ($reserva->para_cliente && ($reserva->cliente_correo || $reserva->cliente_telefono))
                         <div><div class="res-dato-etiqueta">Contacto del cliente</div><div class="res-dato-valor">{{ collect([$reserva->cliente_correo, $reserva->cliente_telefono])->filter()->join(' · ') }}</div></div>
                     @endif

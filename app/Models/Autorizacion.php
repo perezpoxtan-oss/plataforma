@@ -61,7 +61,7 @@ class Autorizacion extends Model
 
     protected $attributes = ['estado' => 'pendiente'];
 
-    protected $fillable = ['empresa_id', 'sede_id', 'departamento_id', 'tipo', 'acceso_id', 'candidato_id', 'solicitada_en', 'avisados'];
+    protected $fillable = ['empresa_id', 'sede_id', 'departamento_id', 'colaborador_id', 'tipo', 'acceso_id', 'candidato_id', 'solicitada_en', 'avisados'];
 
     protected function casts(): array
     {
@@ -72,6 +72,12 @@ class Autorizacion extends Model
     public function sede(): BelongsTo
     {
         return $this->belongsTo(Sede::class)->withTrashed();
+    }
+
+    /** C-09 (DD-12): la persona citada que autoriza su propia visita (con su departamento como suplente). */
+    public function colaborador(): BelongsTo
+    {
+        return $this->belongsTo(Colaborador::class);
     }
 
     public function departamento(): BelongsTo

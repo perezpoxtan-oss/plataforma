@@ -29,6 +29,8 @@
     $pideValor = (bool) ($formulario['pideValor'] ?? false);
     $conRegreso = array_values(array_diff(array_keys(\App\Models\PaseSalida::MOTIVOS), \App\Models\PaseSalida::SIN_REGRESO));
     $buscarNombres = auth()->user()->can('colaboradores.ver') || auth()->user()->can('colaboradores.provisional');
+    // Revisión Etapa 5 (A-3): en condominio y fraccionamiento el residente pide o se lleva un pase igual que el personal
+    $residencial = \App\Support\Terminos::actual()->esResidencial();
     $idDialogo = $corrigiendo ? 'dialogoCorregirPase' : 'dialogoNuevoPase';
 @endphp
 <dialog id="{{ $idDialogo }}" class="dialogo extra-ancho dialogo-pase" aria-labelledby="titulo-{{ $idDialogo }}" @if ($reabrir) data-abrir-al-cargar @endif>
@@ -38,7 +40,7 @@
     </div>
     <div class="dialogo-cuerpo">
         <form action="{{ $corrigiendo ? route('pases-salida.update', $paseEditar->id) : route('pases-salida.store') }}" method="POST" autocomplete="off" data-form-pase
-              data-url-equipo="{{ route('pases-salida.equipo', 0) }}" @if ($buscarNombres) data-url-buscar-colaborador="{{ route('colaboradores.buscar') }}" @endif>
+              data-url-equipo="{{ route('pases-salida.equipo', 0) }}" @if ($buscarNombres) data-url-buscar-colaborador="{{ route('colaboradores.buscar', ['residentes' => 1]) }}" @endif>
             @csrf
             @if ($corrigiendo) @method('PUT') @endif
             <input type="hidden" name="_dialogo" value="{{ $modoFormulario }}">
@@ -79,7 +81,7 @@
             @endif
             <div class="fila-con-boton" data-pase-colaborador data-para="solicitante">
                 <div class="flex-fill min-w-0">
-                    @include('componentes.lector', ['id' => 'ps_solicitante', 'etiqueta' => 'Solicitante (escanea su gafete o busca su nombre)', 'tipos' => 'colaborador',
+                    @include('componentes.lector', ['id' => 'ps_solicitante', 'etiqueta' => $residencial ? 'Solicitante: residente o personal (escanea su gafete o busca su nombre)' : 'Solicitante (escanea su gafete o busca su nombre)', 'tipos' => 'colaborador',
                         'nombre' => 'colaborador_id', 'requerido' => true, 'valor' => $previo('colaborador_id', $formulario['solicitanteFijo']['id'] ?? ''),
                         'elegido' => $anteriores['colaborador_id'] ?? ($formulario['solicitanteFijo']['texto'] ?? null)])
                 </div>
@@ -138,7 +140,7 @@
             <div data-mostrar-si='{"destino_tipo":["colaborador"]}'>
                 <div class="fila-con-boton" data-pase-colaborador data-para="destino">
                     <div class="flex-fill min-w-0">
-                        @include('componentes.lector', ['id' => 'ps_colaborador_destino', 'etiqueta' => 'Colaborador que se lo lleva (escanea su gafete o busca su nombre)', 'tipos' => 'colaborador',
+                        @include('componentes.lector', ['id' => 'ps_colaborador_destino', 'etiqueta' => $residencial ? 'Residente o personal que se lo lleva (escanea su gafete o busca su nombre)' : 'Colaborador que se lo lleva (escanea su gafete o busca su nombre)', 'tipos' => 'colaborador',
                             'nombre' => 'colaborador_destino_id', 'valor' => $previo('colaborador_destino_id'), 'elegido' => $anteriores['colaborador_destino_id'] ?? null])
                     </div>
                     @if ($puede['colaborador'])

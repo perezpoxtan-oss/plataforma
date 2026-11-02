@@ -73,7 +73,7 @@
             <div class="buscador filtro-texto">
                 <i class="bi bi-search" aria-hidden="true"></i>
                 <input type="search" name="q" value="{{ $filtros['q'] ?? '' }}" maxlength="100" autocomplete="off"
-                       placeholder="Buscar por nombre, gafete, empresa, placas o host..." aria-label="Buscar acceso" data-filtro-accesos-texto>
+                       placeholder="Buscar por nombre, gafete, empresa, placas o a quién viene..." aria-label="Buscar acceso" data-filtro-accesos-texto>
             </div>
             <select name="tipo" class="filtro-select" aria-label="Filtrar por tipo de persona" data-filtro-accesos-tipo>
                 <option value="">Todos los tipos</option>

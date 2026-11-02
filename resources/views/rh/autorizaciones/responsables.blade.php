@@ -44,7 +44,7 @@
                     </label>
                 @endforeach
             </div>
-            <p class="small text-muted mb-2">La caseta elige a qué departamento viene la persona. Si ese departamento tiene quien autorice en la sede, la persona queda «Esperando autorización» hasta que él responda (una visita a un colaborador espera al responsable de su departamento). Proveedor o contratista sin marcar: se confirma con el host, como antes.</p>
+            <p class="small text-muted mb-2">La caseta elige a qué departamento viene la persona. Si ese departamento tiene quien autorice en la sede, la persona queda «Esperando autorización» hasta que él responda (una visita a un colaborador espera al responsable de su departamento). Proveedor o contratista sin marcar: si la persona a quien viene tiene cuenta, ella autoriza; si no, se confirma con quien lo citó.</p>
             {{-- C-08 / DD-11: qué pasa si el departamento no tiene quien autorice en la sede --}}
             <fieldset class="mb-2">
                 <legend class="campo-etiqueta">Si el departamento no tiene quien autorice en la sede, la visita…</legend>

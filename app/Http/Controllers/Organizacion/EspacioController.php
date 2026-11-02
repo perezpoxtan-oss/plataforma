@@ -584,6 +584,7 @@ class EspacioController extends Controller
             'codigo' => ['nullable', 'string', 'max:20', 'regex:/^[A-Z0-9-]+$/'],
             'tipo_espacio_id' => ['nullable', 'integer'],
             'grupo_espacio_id' => ['nullable', 'integer'],
+            'area_comun' => ['nullable', 'boolean'], // revisión Etapa 5: vivienda o área común (giros residenciales)
         ], [
             'codigo.regex' => 'El código solo puede tener letras, números y guiones (sin espacios ni acentos).',
             'nombre.required_without' => 'Escribe un nombre o elige un tipo.',

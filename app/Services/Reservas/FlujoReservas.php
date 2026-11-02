@@ -13,6 +13,7 @@ use App\Models\ReservaServicioItem;
 use App\Models\User;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Notificaciones\CentroNotificaciones;
+use App\Services\Recepcion\Destinatarios;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -313,6 +314,23 @@ class FlujoReservas
         $usuarios = $this->responsables->delDepartamento((int) $orden->departamento_id, (int) $reserva->sede_id, (int) $reserva->empresa_id);
         $depto = (string) ($orden->departamento?->nombre ?? 'Departamento');
         $this->evento($reserva, 'orden', "{$encabezado} para {$depto}", $actor);
+        // C-34 (D-10): si nadie atiende la orden, se marca y se avisa a quien configura las reservas
+        $sinQuien = $usuarios->isEmpty() && $orden->estado !== ReservaOrden::CANCELADA;
+        if ((bool) $orden->sin_quien_atienda !== $sinQuien) {
+            $orden->forceFill(['sin_quien_atienda' => $sinQuien])->saveQuietly();
+        }
+        if ($sinQuien) {
+            $configuran = collect($this->responsables->generales((int) $reserva->empresa_id))
+                ->merge(app(Destinatarios::class)->conPermiso((int) $reserva->empresa_id, 'reservas.configurar', (int) $reserva->sede_id)->pluck('id'))
+                ->map(fn ($id) => (int) $id)->unique()->reject(fn ($id) => $id === (int) $actor->id)->values();
+            if ($configuran->isNotEmpty()) {
+                $this->centro->avisar((int) $reserva->empresa_id, $configuran, 'reserva_orden_sin_quien', [
+                    'titulo' => "Orden de servicio sin quien la atienda ({$depto}): {$reserva->titulo}",
+                    'texto' => $this->textos->resumen($reserva).' · '.$depto.' no tiene responsable en la sede. Nombra a quien la atienda en Responsables por departamento.',
+                    'url' => route('reservas.ordenes'), 'referencia_tipo' => 'reserva_orden', 'referencia_id' => (int) $orden->id,
+                ]);
+            }
+        }
         if ($usuarios->isEmpty()) {
             return;
         }

@@ -26,6 +26,13 @@ class Espacio extends Model
 
     public const ELEMENTO = 'elemento';
 
+    /**
+     * Revisión Etapa 5: en condominio y fraccionamiento, el nivel «área
+     * específica» guarda viviendas y áreas comunes (alberca, salón, asador).
+     * espacios.uso = «area_comun» las distingue; vacío = vivienda.
+     */
+    public const USO_AREA_COMUN = 'area_comun';
+
     /** Nivel => niveles de padre permitidos (null = cuelga de la sede). */
     public const PADRES = [
         self::EDIFICIO => [null],
@@ -48,6 +55,12 @@ class Espacio extends Model
     protected function casts(): array
     {
         return ['activo' => 'boolean', 'profundidad' => 'integer', 'orden' => 'integer'];
+    }
+
+    /** ¿Área común (alberca, salón…) y no una vivienda? Solo tiene sentido en giros residenciales. */
+    public function esAreaComun(): bool
+    {
+        return ($this->getAttributes()['uso'] ?? null) === self::USO_AREA_COMUN;
     }
 
     public function sede(): BelongsTo

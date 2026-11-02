@@ -3,6 +3,7 @@
 namespace App\Support\Menu;
 
 use App\Models\Acceso;
+use App\Models\Autorizacion;
 use App\Models\Candidato;
 use App\Models\Colaborador;
 use App\Models\DepartamentoResponsable;
@@ -134,7 +135,15 @@ class MisPendientes
 
         // Autorizaciones: solo responsables o delegados de algún departamento
         $autorizaciones = app(Autorizaciones::class);
-        if ($actor->can('autorizaciones.responder') && $autorizaciones->departamentosQueAtiende($actor) !== []) {
+        // C-09: también la persona citada con cuenta (sus visitas la esperan a ella)
+        // (la consulta de «propias» solo corre para quien no es responsable de ningún departamento)
+        $responsable = $actor->can('autorizaciones.responder') && $autorizaciones->departamentosQueAtiende($actor) !== [];
+        // (revisión Etapa 5: también las de las personas citadas que le delegaron, C-12)
+        $personas = $responsable ? [] : array_values(array_filter([($actor->getAttributes()['colaborador_id'] ?? null) === null ? null : (int) $actor->colaborador_id,
+            ...$autorizaciones->personasQueLeDelegan($actor)['personas']]));
+        $propias = $personas !== []
+            && Autorizacion::where('estado', 'pendiente')->where('tipo', 'visita')->whereIn('colaborador_id', $personas)->exists();
+        if ($responsable || $propias) {
             $porResponder = $autorizaciones->pendientesPara($actor);
             // C-12 «No molestar»: lo que mi delegado puede responder no me espera a mí
             // (directa o en cadena: basta con que alguien de mi cadena pueda responderla)
@@ -144,7 +153,8 @@ class MisPendientes
                     ->contains(fn (int $id) => $autorizaciones->puedeResponder($autorizaciones->cadena()->usuario($id), $a)));
             }
             $items[] = $this->item('autorizaciones', 'Autorizaciones por responder', 'bi-patch-check',
-                $porResponder->count(), route('autorizaciones.index'));
+                $porResponder->count(), $actor->can('autorizaciones.ver') || $porResponder->isEmpty()
+                    ? route('autorizaciones.index') : route('autorizaciones.show', $porResponder->first()->id)); // C-09: la persona citada va directo a su visita
         }
 
         // C-08 / DD-11: visitas que esperan al supervisor porque su departamento no tiene quien autorice en la sede
