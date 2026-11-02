@@ -84,7 +84,10 @@ class EspaciosPorSedeTest extends TestCase
     {
         $this->zona($this->centro, 'Torre A');
         $villas = $this->zona($this->playa, 'Villas');
-        $this->actingAs($this->admin)->post('/espacios', ['nivel' => 'area_especifica', 'padre_id' => $villas->id, 'nombre' => 'V1']);
+        // Nombre con «ñ» a propósito: un texto corto en ASCII como «V1» aparece al azar
+        // en el token CSRF (40 caracteres aleatorios, ~1 de cada 100 corridas) y hacía
+        // fallar el assertDontSee de la pestaña Secciones de la otra sede.
+        $this->actingAs($this->admin)->post('/espacios', ['nivel' => 'area_especifica', 'padre_id' => $villas->id, 'nombre' => 'Cabaña 1']);
         $this->actingAs($this->admin)->post('/espacios/secciones', ['sede_id' => $this->centro->id, 'nombre' => 'Alberca']);
         $this->actingAs($this->admin)->post('/espacios/secciones', ['sede_id' => $this->playa->id, 'nombre' => 'Jardín']);
         $this->flushSession();
@@ -97,9 +100,9 @@ class EspaciosPorSedeTest extends TestCase
             ->assertDontSee('data-filtro-sede="zonas"', false);
 
         $this->actingAs($this->admin)->get(route('espacios.sede', ['sede' => $this->centro->id, 'pestana' => 'secciones']))->assertOk()
-            ->assertSee('Alberca')->assertDontSee('Jardín')->assertDontSee('V1');
+            ->assertSee('Alberca')->assertDontSee('Jardín')->assertDontSee('Cabaña 1');
         $this->actingAs($this->admin)->get(route('espacios.sede', ['sede' => $this->playa->id, 'pestana' => 'secciones']))->assertOk()
-            ->assertSee('Jardín')->assertSee('V1')->assertDontSee('Alberca');
+            ->assertSee('Jardín')->assertSee('Cabaña 1')->assertDontSee('Alberca');
 
         // La ruta de arriba: «Sede» lleva a su pantalla y «Zonas y edificios» a las tarjetas
         $this->actingAs($this->admin)->get("/espacios/{$villas->id}")->assertOk()

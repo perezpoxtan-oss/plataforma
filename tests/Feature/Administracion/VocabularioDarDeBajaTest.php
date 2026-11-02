@@ -73,10 +73,13 @@ class VocabularioDarDeBajaTest extends TestCase
 
     public function test_usuarios_dice_dar_de_baja_y_reactivar(): void
     {
+        // Nombre fijo con apóstrofo: con uno aleatorio de la factory (p. ej. «Bruce O'Connell»)
+        // la aserción sin escapar fallaba de vez en cuando, porque la vista lo escribe como O&#039;Connell.
         $agente = $this->crearUsuario($this->empresa, 'Agente');
+        $agente->forceFill(['name' => "Bruce O'Connell"])->save();
 
         $this->actingAs($this->admin)->get('/usuarios')->assertOk()
-            ->assertSee('title="Dar de baja"', false)->assertSee('aria-label="Dar de baja a '.$agente->name.'"', false)
+            ->assertSee('title="Dar de baja"', false)->assertSee('aria-label="Dar de baja a '.e($agente->name).'"', false)
             ->assertSee('¿Dar de baja la cuenta de '.$agente->name.'?')
             ->assertSee('Cuenta activa (si la das de baja, no podrá iniciar sesión)')
             ->assertDontSee('Desactivar');
