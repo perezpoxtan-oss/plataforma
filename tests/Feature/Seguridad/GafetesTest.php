@@ -79,7 +79,7 @@ class GafetesTest extends TestCase
     public function test_lista_con_textos_de_segcat_tipos_basicos_y_filtros(): void
     {
         $this->actingAs($this->admin)->get('/gafetes')->assertOk()
-            ->assertSee('Inventario Gafetes')->assertSee('Plásticos físicos para accesos.')
+            ->assertSee('<h1>Gafetes</h1>', false)->assertSee('Plásticos físicos para accesos.')
             ->assertSee('Generar Lote')->assertSee('Todavía no hay gafetes');
         // La primera vez se crean los tipos de siempre (como la semilla de SEGCAT)
         $this->assertSame(['Contratista', 'Proveedor', 'Visitante'], $this->enEmpresa(fn () => TipoGafete::orderBy('nombre')->pluck('nombre')->all()));

@@ -21,7 +21,7 @@ Sin configurar nada todo funciona como siempre; lo único nuevo que se ve es la 
 
 ## Práctica 1 · Canalizar avisa (supervisor.demo y agente.demo)
 
-1. Con `supervisor.demo` abre **Operación → Incidentes → Novedades** y toca **Nuevo Ticket**. Llena lo mínimo y en **¿A quién se canaliza?** elige al agente de `agente.demo`. Toca **Despachar Ticket**: el mensaje dice «Le avisamos a …».
+1. Con `supervisor.demo` abre **Operación → Bitácora → Novedades** y toca **Nuevo Ticket**. Llena lo mínimo y en **¿A quién se canaliza?** elige al agente de `agente.demo`. Toca **Despachar Ticket**: el mensaje dice «Le avisamos a …».
 2. Con `agente.demo` abre la **campana**: «Te canalizaron el ticket #…» con el botón **Atender**. Abre **Mis pendientes**: aparece **Tickets canalizados a mí** y te lleva a la lista solo con los tuyos.
 3. Con `agente.demo` cierra el ticket (Resuelto y Cerrado con su resolución). Con `supervisor.demo` mira la campana: «Ticket #… resuelto» con la resolución.
 
@@ -42,12 +42,12 @@ Comprueba: en **Mis pendientes** de los agentes aparece **Pendientes de turno si
 ## Práctica 4 · Objeto encontrado (agente.demo)
 
 1. **Nuevo Ticket** con categoría **Lost & Found**: aparece **Objeto encontrado**. Escribe «Paraguas negro» y despacha: el mensaje dice el folio **LF-…** y el objeto ya está en el archivo.
-2. En **Operación → Incidentes → Lost & Found** toca **Registrar objeto encontrado**: qué, dónde, quién (**Fui yo**) y **Guardar**. Usa el botón **Imprimir etiqueta de la bolsa** del mensaje.
+2. En **Operación → Bitácora → Lost & Found** toca **Registrar objeto encontrado**: qué, dónde, quién (**Fui yo**) y **Guardar**. Usa el botón **Imprimir etiqueta de la bolsa** del mensaje.
 3. Si hay tickets en **Sin artículos capturados aún**, toca **Agregar el objeto aquí**, escribe el objeto y **Guardar objeto**: el ticket sale de la lista.
 
 ## Práctica 5 · Robo en una sola ficha (supervisor.demo)
 
-1. Abre **Operación → Incidentes → Robo** y toca **Abrir Expediente** en un caso: se abre el expediente de la bitácora con **Volver a Seguimiento de robos**.
+1. Abre **Operación → Bitácora → Robo** y toca **Abrir Expediente** en un caso: se abre el expediente de la bitácora con **Volver a Seguimiento de robos**.
 2. Anota algo en el Minuto a Minuto y toca **Guardar Expediente**: regresas a la lista de robos.
 
 ## Práctica 6 · Recorridos con fallas (agente.demo, jefe.demo y admin.demo)

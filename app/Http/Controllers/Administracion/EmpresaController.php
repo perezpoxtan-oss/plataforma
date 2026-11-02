@@ -262,7 +262,7 @@ class EmpresaController extends Controller
         ], [
             'nombre_comercial' => 'nombre comercial',
             'razon_social' => 'razón social',
-            'rubro_id' => 'rubro',
+            'rubro_id' => 'giro',
             'zona_horaria' => 'zona horaria',
             'logo' => 'logo',
         ]);

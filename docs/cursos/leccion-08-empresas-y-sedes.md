@@ -5,7 +5,7 @@
 ## Práctica (en QA)
 
 1. Como **Super Administrador**:
-   - abre Estructura → Empresas y da de alta "Grupo Caribe" con RFC `GCA200101AB1`, rubro Hotel y zona horaria Cancún;
+   - abre Estructura → Empresas y da de alta "Grupo Caribe" con RFC `GCA200101AB1`, giro Hotel y zona horaria Cancún;
    - en **Empresa de trabajo** elige Grupo Caribe y verifica que ya tiene sus roles base (Roles).
 2. Como `admin.demo`:
    - abre Estructura → Sedes y da de alta la **Nueva Sede** "Hotel Demo Aeropuerto" con código `AER`, ciudad Cancún y estado Quintana Roo;

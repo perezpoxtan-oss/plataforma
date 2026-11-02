@@ -25,3 +25,26 @@ Un solo lugar por ajuste (ningún ajuste se pierde; las rutas no cambian, solo l
 - Migración `2026_11_17_000100_avisos_de_autorizaciones_en_la_caseta`: el interruptor general del grupo nuevo (`preferencias.avisos_modulos.autorizaciones`) hereda el de `candidatos` cuando estaba apagado, para que ninguna empresa empiece a recibir un correo que no recibía. `down()` quita la llave (el aviso vuelve a obedecer al interruptor de Candidatos).
 - Mi cuenta (`PreferenciasAvisos`) agrupa el aviso con su grupo nuevo.
 - Pruebas: `EtapaSieteConfiguracionTest`.
+
+## C-39 · Glosario único (DD-20)
+
+El glosario está en el manual: `docs/usuario/glosario.md` (Primeros pasos, visible para todos). Revisión de títulos, menús y mensajes:
+
+| Dónde | Antes | Ahora |
+|---|---|---|
+| Accesos (título) | Control de Accesos | **Bitácora de accesos** (como el menú) |
+| Accesos (tarjeta y Excel) | «Espera a que el Host autorice», columna «Visita a / Host» | «Espera a que quien lo citó autorice», columna «A quién viene» |
+| Accesos (¿A quién viene? \*) | — | Se revisó: el asterisco es correcto, el campo es obligatorio para visita, huésped, proveedor y contratista (`RegistroAccesos`). |
+| Préstamo de llaves (título) | Bitácora de Llaves | **Préstamo de llaves** (como el menú) |
+| Préstamo de llaves (garantía) | Gafete interno / GAFETE INTERNO / «GAFETE NÚM.» | **Credencial de empleado** / CREDENCIAL DE EMPLEADO / «CREDENCIAL NÚM.» (la clave `gafete_interno` no cambia: los préstamos de antes muestran el texto nuevo) |
+| Gafetes (título) | Inventario Gafetes | **Gafetes** |
+| Tablero (título y hoja impresa) | Consola de Monitoreo | **Tablero** |
+| Usuarios (título) | Usuarios Operativos / Usuarios del Sistema | **Usuarios** |
+| Turnos (subtítulo) | Horarios corporativos predefinidos | Horarios de trabajo de cada sede (corporativo es un giro) |
+| Empresas (alta y edición) | Rubro | **Giro** (también el mensaje de validación) |
+| Menú Operación | Sección «Incidentes» (con la bitácora renombrada: «Operación → Incidentes → Incidentes») | Sección **Bitácora**: Novedades/Incidentes, Lost & Found y Robo. Migración `2026_11_17_000200_seccion_bitacora_en_operacion` (solo si la sección seguía con su nombre de fábrica; `down()` probado) |
+| Candidatos | Considerar / cartera | Considerar (C-35) |
+
+- **Sin tocar:** Accidentes (formato, vistas, textos, «Huésped» y el anexo de **guardavidas**, que es parte del formato de Accidente y de su sección en Tendencias). El nombre del módulo **Proveedores** en la Matriz de permisos se dejó como estaba (decisión de la reorganización de menús); el menú y la pantalla ya dicen **Empresas externas**.
+- **Plural de residente:** se revisaron Residentes, Colaboradores y el manual en condominio; ninguno dice «residente(es)».
+- Prueba `EtapaSieteGlosarioTest`: ninguna palabra retirada vuelve a vistas, mensajes del código, `plataforma.js` ni el manual (fuera de comentarios y de Accidentes); el título de cada pantalla es el nombre de su menú; la migración de la sección.

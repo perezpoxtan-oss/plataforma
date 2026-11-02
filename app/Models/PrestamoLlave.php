@@ -34,7 +34,7 @@ class PrestamoLlave extends Model
 
     /** clave => texto en pantalla (SEGCAT: tipo_id_garantia, en mayúsculas) */
     public const GARANTIAS = [
-        'gafete_interno' => 'GAFETE INTERNO',
+        'gafete_interno' => 'CREDENCIAL DE EMPLEADO', // C-39: credencial = la del empleado; gafete = el plástico de visita
         'ine' => 'INE',
         'licencia' => 'LICENCIA',
         'pasaporte' => 'PASAPORTE',
@@ -43,7 +43,7 @@ class PrestamoLlave extends Model
 
     /** Texto de cada opción del formulario (como en SEGCAT; "Sede" en lugar de "Hotel"). */
     public const GARANTIAS_OPCIONES = [
-        'gafete_interno' => 'Gafete interno de la empresa',
+        'gafete_interno' => 'Credencial de empleado',
         'ine' => 'INE / IFE',
         'licencia' => 'Licencia de Conducir',
         'pasaporte' => 'Pasaporte',

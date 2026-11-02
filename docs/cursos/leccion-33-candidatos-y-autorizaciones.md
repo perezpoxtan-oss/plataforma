@@ -17,7 +17,7 @@ Usa el demo (`plataforma:demo`). Usuarios: **agente.demo** (caseta, sede Centro)
 
 ## Práctica 1 · La caseta registra un candidato (agente.demo)
 
-1. **Operación → Control de Accesos → Nuevo Ingreso**.
+1. **Operación → Caseta → Bitácora de accesos → Nuevo Ingreso**.
 2. **Personal Externo / Visita**, nombre «Marco Pech Ucán», motivo **Recursos Humanos**.
 3. En **¿A qué viene?** elige **Busca empleo** y, en **¿A qué vacante?**, **-- No sabe / otra --** (el puesto y el departamento los pone Recursos Humanos).
 4. Abre **Fotos** y toma (o elige) una foto.

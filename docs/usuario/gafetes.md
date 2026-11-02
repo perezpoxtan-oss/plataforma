@@ -10,7 +10,7 @@ resumen: Inventario de los gafetes de plástico que se prestan en caseta, con su
 
 **¿Para qué sirve?** Aquí están los gafetes de plástico que la caseta presta a visitantes, proveedores y contratistas. Cada gafete tiene un nombre corto (su **nomenclatura**, por ejemplo `HOT-CEN-VIS-001`) y un **código QR** para encontrarlo rápido con el lector.
 
-![Inventario de gafetes](img/gafetes/lista.png)
+![Lista de gafetes](img/gafetes/lista.png)
 
 ## Antes de empezar
 

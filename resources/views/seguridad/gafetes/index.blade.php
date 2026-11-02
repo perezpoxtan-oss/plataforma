@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('titulo', 'Inventario Gafetes')
+@section('titulo', 'Gafetes')
 
 @section('contenido')
 <div class="tema-gafetes">
@@ -11,7 +11,7 @@
     @if ($sinEmpresa)
         <div class="encabezado-pantalla mb-4">
             <div class="icono"><i class="bi bi-vignette text-dark" aria-hidden="true"></i></div>
-            <div><h1>Inventario Gafetes</h1><p>Plásticos físicos para accesos.</p></div>
+            <div><h1>Gafetes</h1><p>Plásticos físicos para accesos.</p></div>
         </div>
         <div class="tarjeta estado-vacio">
             <div class="icono"><i class="bi bi-buildings" aria-hidden="true"></i></div>
@@ -41,7 +41,7 @@
             <div class="encabezado-pantalla m-0">
                 <div class="icono"><i class="bi bi-vignette text-dark" aria-hidden="true"></i></div>
                 <div>
-                    <h1>Inventario Gafetes</h1>
+                    <h1>Gafetes</h1>
                     <p>Plásticos físicos para accesos.</p>
                     <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Inventario de: <strong>{{ $empresaNombre }}</strong></p>
                 </div>

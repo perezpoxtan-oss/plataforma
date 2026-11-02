@@ -83,7 +83,7 @@ class MenusReorganizadosTest extends TestCase
         $this->assertSame([
             // Mapa de procesos: Vouchers de reposición junto a lo de la caseta
             'Caseta' => ['accesos', 'prestamo_llaves', 'vouchers', 'pases_salida', 'transporte'],
-            'Incidentes' => ['novedades', 'lost_found', 'robo'],
+            'Bitácora' => ['novedades', 'lost_found', 'robo'],
             'Protección civil' => ['recorridos_pc'],
             'Activos' => ['responsivas'],
             'Consulta' => ['procedimientos'],
@@ -211,6 +211,10 @@ class MenusReorganizadosTest extends TestCase
     {
         // Etapa 1 (C-01): la foto de hoy es la de una instalación nueva; las migraciones de antes arman el menú de antes
         $hoy = $this->acomodo();
+        // Etapa 7 (C-39): la sección «Bitácora» de Operación la pone su propia migración, al final
+        $bitacora = require database_path('migrations/2026_11_17_000200_seccion_bitacora_en_operacion.php');
+        $bitacora->down();
+        $hoyAntesDeLaEtapa7 = $this->acomodo();
         $this->menuDeAntesDeLaEtapa1();
         // Mapa de procesos: Vouchers de reposición pasa después a la Caseta (su propia migración)
         $actual = $this->acomodo();
@@ -270,6 +274,8 @@ class MenusReorganizadosTest extends TestCase
         // Y la migración de la Etapa 1 deja el menú como en una instalación nueva
         $etapa1 = require database_path('migrations/2026_11_10_000200_organizacion_base_y_paquetes_coherentes.php');
         $etapa1->up();
+        $this->assertSame($hoyAntesDeLaEtapa7, $this->acomodo());
+        $bitacora->up();
         $this->assertSame($hoy, $this->acomodo());
     }
 

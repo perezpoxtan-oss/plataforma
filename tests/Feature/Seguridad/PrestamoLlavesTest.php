@@ -101,7 +101,7 @@ class PrestamoLlavesTest extends TestCase
         $devuelta = $this->prestamo($l2, $c, ['estado' => PrestamoLlave::DEVUELTA, 'devuelto_en' => now(), 'recibido_por' => $this->admin->id]);
 
         $this->actingAs($this->admin)->get('/prestamo-llaves')->assertOk()
-            ->assertSee('Bitácora de Llaves')->assertSee('Registro operativo, préstamos y devoluciones.')
+            ->assertSee('<h1>Préstamo de llaves</h1>', false)->assertSee('Registro operativo, préstamos y devoluciones.')
             ->assertSee('Llaves en Uso (<span data-conteo-en-uso>1</span>)', false)->assertSee('Historial de Entregas')
             ->assertSee('Excel (Auditoría)')->assertSee('Prestar Llave')->assertSee('Escáner Listo')
             ->assertSee('Buscar por colaborador, nómina o llave...')

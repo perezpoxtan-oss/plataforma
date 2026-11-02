@@ -39,7 +39,7 @@ Comprueba: el renglón desaparece de Mis pendientes y el aviso de la campana que
 
 ## Práctica 4 · Quién tuvo la llave
 
-1. Abre un robo en una habitación (**Operación → Incidentes → Robo → Abrir Expediente**). Elige la habitación y guarda.
+1. Abre un robo en una habitación (**Operación → Bitácora → Robo → Abrir Expediente**). Elige la habitación y guarda.
 2. Toca **Ficha de Hechos (habitación, llaves y más)**.
 
 Comprueba: aparece «Préstamo de llave · abre esta habitación» con quién la tuvo y cuándo la devolvió, y los accesos ligados a la habitación.

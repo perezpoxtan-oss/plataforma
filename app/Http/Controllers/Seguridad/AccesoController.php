@@ -392,7 +392,7 @@ class AccesoController extends Controller
             fwrite($salida, "\xEF\xBB\xBF");
             // Giros: «Habitación» se llama como el área específica del giro (Departamento, Casa, Oficina)
             Csv::fila($salida, array_map(fn (string $t) => $terminos->texto($t), ['Folio', 'Sede', 'Tipo', 'Movimiento', 'Nombre', 'Empresa / Procedencia', 'Gafete', 'Placas', 'Vehículo', 'Zona',
-                'Conductor', 'Visita a / Host', 'Departamento', 'Habitación', 'Pase', 'ID custodiada', 'Acompañantes',
+                'Conductor', 'A quién viene', 'Departamento', 'Habitación', 'Pase', 'ID custodiada', 'Acompañantes',
                 'Entrada', 'Autorizado', 'Salida', 'Registró', 'Autorizó', 'Dio salida']));
             foreach ($filas as $a) {
                 Csv::fila($salida, [

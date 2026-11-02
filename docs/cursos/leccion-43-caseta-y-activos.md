@@ -35,7 +35,7 @@ Usa la empresa de práctica con `admin.demo` (Administrador), `agente.demo` (cas
 ## Práctica 3 · Recibir llaves escaneando y semáforo (agente.demo, admin.demo y jefe.demo)
 
 1. Con `agente.demo` abre **Préstamo de llaves**. Arriba está **Recibir: escanea la llave que te devuelven**. Escribe `hdc-bod-01` y toca **Recibir**: «Llave «HDC-BOD-01» recibida de … Devuelve su garantía: …».
-2. Toca **Prestar Llave**, deja la garantía en **Gafete interno** y escanea el gafete `1007`: el **Folio** se llena con «GAFETE NÚM. 1007».
+2. Toca **Prestar Llave**, deja la garantía en **Credencial de empleado** y escanea la credencial `1007`: el **Folio** se llena con «CREDENCIAL NÚM. 1007».
 3. Con `admin.demo`, en **Caseta y activos**, pon **1** y **2** horas en **Préstamo de llaves** y guarda.
 4. Con `agente.demo` recarga: `HDC-MASTER-01` (prestada desde hace días) aparece en **rojo** con «Fuera hace … · pasó del límite». Las recién prestadas, en verde.
 5. En unos minutos (cuando corra la revisión automática) llegan los avisos: a `agente.demo` el recordatorio y a `jefe.demo` el aviso rojo. **Mis pendientes → Llaves fuera de tiempo** muestra cuántas.

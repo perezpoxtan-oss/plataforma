@@ -482,7 +482,7 @@ class MejorasActivosTest extends TestCase
     public function test_folio_de_garantia_se_llena_con_el_gafete_escaneado(): void
     {
         $this->actingAs($this->agente)->get('/prestamo-llaves')->assertOk()
-            ->assertSee('data-folio-garantia', false)->assertSee('Con «Gafete interno» se llena solo con el número del gafete que escaneaste.');
+            ->assertSee('data-folio-garantia', false)->assertSee('Con «Credencial de empleado» se llena solo con el número de la credencial que escaneaste.');
     }
 
     public function test_semaforo_y_avisos_de_llaves_que_llevan_mucho_tiempo_fuera(): void

@@ -14,7 +14,7 @@ resumen: Dónde está cada pantalla, qué es «Mis pendientes», la campana y lo
 ## Cómo abrir una pantalla desde el menú (computadora)
 
 1. En la barra de arriba toca el nombre del menú, por ejemplo **Operación**.
-2. Se abre la lista, dividida en grupos (por ejemplo **Caseta**, **Incidentes**, **Activos**).
+2. Se abre la lista, dividida en grupos (por ejemplo **Caseta**, **Bitácora**, **Activos**).
 3. Toca la pantalla que necesitas, por ejemplo **Préstamo de llaves**.
 
 ![Menú Operación abierto](img/menus/menu-operacion.png)
@@ -25,7 +25,7 @@ Los menús y sus grupos:
 
 | Menú | Grupos y pantallas |
 |---|---|
-| **Operación** | **Caseta:** Bitácora de accesos, Préstamo de llaves, Vouchers de reposición, Pases de salida, Bitácora de transporte. **Incidentes:** Novedades, Lost & Found, Robo. **Protección civil:** Recorridos de Protección Civil. **Activos:** Responsivas. **Consulta:** Procedimientos. |
+| **Operación** | **Caseta:** Bitácora de accesos, Préstamo de llaves, Vouchers de reposición, Pases de salida, Bitácora de transporte. **Bitácora:** Novedades, Lost & Found, Robo. **Protección civil:** Recorridos de Protección Civil. **Activos:** Responsivas. **Consulta:** Procedimientos. |
 | **Padrones** | **Personas y vehículos:** Empresas externas, Padrón de personas, Padrón vehicular. **Inventarios:** Catálogo de llaves, Gafetes, Equipos de seguridad, Equipos de Protección Civil. **Instalaciones:** Estacionamientos y zonas de descarga, Rutas de transporte. **Herramientas:** Etiquetas QR. |
 | **Recursos Humanos** | **Recepción y candidatos:** Vacantes, Recepción de RR. HH., Candidatos y **Mis entrevistas** (si puedes entrevistar candidatos). Solo si tu plan incluye Recursos Humanos. |
 | **Informes** | **Informes:** Tablero, Bitácora del día, Tendencias, Informe ejecutivo (solo si tu rol puede ver alguno). |

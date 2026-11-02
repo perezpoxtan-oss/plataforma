@@ -20,7 +20,7 @@ resumen: Levantar un ticket por cada incidente, documentarlo en su expediente y 
 
 ## Cómo leer la lista
 
-1. Entra a **Operación → Incidentes → Novedades** (en el celular, el botón **Novedades** de abajo).
+1. Entra a **Operación → Bitácora → Novedades** (en el celular, el botón **Novedades** de abajo).
 2. Usa el buscador (número de ticket, ubicación o lo que se reportó) y los filtros de **categoría** y **sede**. En el filtro de categoría, **Protección Civil (todos)** junta los siniestros, el mantenimiento de equipo y los recorridos de antes; también puedes elegir solo uno de ellos.
 3. Tienes dos pestañas: **Tickets Abiertos / Asignados** (borde rojo) e **Historial Resueltos** (borde verde).
 
@@ -129,7 +129,7 @@ Si tu sede no tiene turnos registrados (Estructura → Turnos), el aviso al pers
 
 Si respondes por un departamento (Mantenimiento, Recursos Humanos…), Seguridad te puede canalizar un incidente. No necesitas ver toda la bitácora: solo ves los tickets de tu departamento.
 
-1. Te llega el aviso **Ticket #… para (tu departamento)** a la **campana** y aparece en **Mis pendientes → Tickets de tu departamento**. También está en **Operación → Incidentes → Tickets de mi departamento**.
+1. Te llega el aviso **Ticket #… para (tu departamento)** a la **campana** y aparece en **Mis pendientes → Tickets de tu departamento**. También está en **Operación → Bitácora → Tickets de mi departamento**.
 2. Ábrelo: ves dónde y cuándo pasó, qué sucedió y el **Minuto a Minuto**.
 3. Si quieres dejar constancia de un avance, escribe en **Agregar nota** y toca **Guardar nota**. Seguridad la ve en el expediente.
 4. Cuando hayas hecho tu parte, escribe (si quieres) **¿Qué se hizo?** y toca **Atender**.

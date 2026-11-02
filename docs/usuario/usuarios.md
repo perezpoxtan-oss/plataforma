@@ -23,7 +23,7 @@ La contraseña es de su dueño: por omisión **la persona la crea** con un enlac
 
 ## Cómo encontrar una cuenta
 
-1. Entra a **Estructura → Usuarios**. Se abre **Usuarios Operativos**.
+1. Entra a **Estructura → Usuarios**. Se abre **Usuarios**.
 2. Escribe en **Buscar por nombre, correo o rol...**. Si hay varias sedes, usa **Todas las sedes**.
 
 **Qué debes ver:** fichas con el nombre, el usuario (@…), el rol, el correo, si está vinculado a un colaborador, la sede y el último acceso.

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('titulo', 'Usuarios del Sistema')
+@section('titulo', 'Usuarios')
 
 @section('contenido')
 <div class="tema-rojo">
@@ -11,7 +11,7 @@
     @if ($sinEmpresa)
         <div class="encabezado-pantalla mb-4">
             <div class="icono"><i class="bi bi-people-fill text-danger" aria-hidden="true"></i></div>
-            <div><h1>Usuarios Operativos</h1><p>Control de credenciales y visibilidad del sistema.</p></div>
+            <div><h1>Usuarios</h1><p>Control de credenciales y visibilidad del sistema.</p></div>
         </div>
         <div class="tarjeta estado-vacio">
             <div class="icono"><i class="bi bi-buildings" aria-hidden="true"></i></div>
@@ -27,7 +27,7 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div class="encabezado-pantalla m-0">
                 <div class="icono"><i class="bi bi-people-fill text-danger" aria-hidden="true"></i></div>
-                <div><h1>Usuarios Operativos</h1><p>Usuarios de «{{ $empresaNombre }}»: control de credenciales y visibilidad del sistema.</p></div>
+                <div><h1>Usuarios</h1><p>Usuarios de «{{ $empresaNombre }}»: control de credenciales y visibilidad del sistema.</p></div>
             </div>
             <div class="barra-filtros justify-content-md-end">
                 @if ($sedes->count() > 1)

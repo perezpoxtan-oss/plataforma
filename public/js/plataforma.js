@@ -9515,8 +9515,8 @@ document.addEventListener('click', function (e) {
    Mejoras activos (ADR-0014)
    - Préstamo de llaves: «Recibir: escanea la llave que te devuelven» se envía
      solo con lo que entrega el lector (QR, NFC o la pistola con Enter).
-   - Prestar Llave: con «Gafete interno» el folio de la garantía se llena con
-     el número del gafete escaneado (si la persona no escribió otro).
+   - Prestar Llave: con «Credencial de empleado» el folio de la garantía se llena con
+     el número de la credencial escaneada (si la persona no escribió otro).
    ========================================================================== */
 (function () {
     'use strict';
@@ -9541,7 +9541,7 @@ document.addEventListener('click', function (e) {
         var autollenado = folio.dataset.autollenado || '';
         var libre = folio.value.trim() === '' || folio.value === autollenado;
         if (!libre) { return; }
-        var texto = tipo.value === 'gafete_interno' && form.dataset.numeroGafete ? 'GAFETE NÚM. ' + form.dataset.numeroGafete : '';
+        var texto = tipo.value === 'gafete_interno' && form.dataset.numeroGafete ? 'CREDENCIAL NÚM. ' + form.dataset.numeroGafete : '';
         folio.value = texto;
         folio.dataset.autollenado = texto;
     }

@@ -327,7 +327,7 @@ Si la zona elegida ya está llena, la plataforma te avisa «La zona … está ll
 
 ## Si la persona o la empresa tiene el acceso restringido
 
-Al registrar un ingreso, la plataforma revisa el Padrón de personas, el Padrón de vehículos y Proveedores:
+Al registrar un ingreso, la plataforma revisa el Padrón de personas, el Padrón de vehículos y Empresas externas:
 
 - **Acceso restringido:** si la persona, el vehículo o la empresa tiene el acceso restringido, no se puede registrar. El mensaje dice el motivo y hasta cuándo.
 - **Nombre parecido:** si la empresa se escribe distinto a una restringida (por ejemplo, «Elevadores Sur» y «Elevadores del Sur S.A.»), sale la pregunta **¿Es la misma?**. Si contestas **Sí, es la misma**, no puede pasar. Si contestas **No, es otra**, puede pasar y la tarjeta queda marcada para que tu supervisor lo vea.

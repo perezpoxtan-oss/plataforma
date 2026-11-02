@@ -124,7 +124,7 @@ class AccesosTest extends TestCase
     public function test_pantalla_con_textos_de_segcat_pestanas_y_lector_universal(): void
     {
         $this->actingAs($this->admin)->get('/accesos')->assertOk()
-            ->assertSee('Control de Accesos')->assertSee('Registro dinámico según el tipo de persona que ingresa.')
+            ->assertSee('<h1>Bitácora de accesos</h1>', false)->assertSee('Registro dinámico según el tipo de persona que ingresa.')
             ->assertSee('Nuevo Ingreso')->assertSee('Gente en Sitio (0)')->assertSee('Historial Finalizados')
             ->assertDontSee('Pendientes de Autorización')
             ->assertSee('No hay personal en sitio.')
@@ -641,7 +641,7 @@ class AccesosTest extends TestCase
         $this->flushSession(); // el mensaje de éxito del administrador no es del agente
 
         $this->actingAs($agente)->get('/accesos?pestana=pendientes')->assertOk()->assertSee('JESÚS BALAM TUN')
-            ->assertDontSee('Confirmar Autorización')->assertSee('Espera a que el Host autorice');
+            ->assertDontSee('Confirmar Autorización')->assertSee('Espera a que quien lo citó autorice');
         $this->actingAs($agente)->patch("/accesos/{$a->id}/autorizar")->assertForbidden();
         $this->actingAs($agente)->get('/accesos/exportar')->assertForbidden();
         $this->actingAs($agente)->get('/accesos?pestana=historial')->assertDontSee('Exportar a Excel');

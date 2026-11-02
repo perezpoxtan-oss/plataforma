@@ -266,7 +266,7 @@
     @elseif ($modo === 'pendientes' && $a->autorizacion === \App\Models\Acceso::SIN_RESPONSABLE){{-- C-08 / DD-11 --}}
         <p class="aviso-sin-permiso"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Su departamento no tiene quien autorice en esta sede: espera a tu supervisor o al jefe de seguridad (ya se les avisó).</p>
     @elseif ($modo === 'pendientes' && ! in_array($a->autorizacion, ['esperando', 'espera'], true)){{-- Recepción: la visita espera al departamento (o a RR. HH.), no al host --}}
-        <p class="aviso-sin-permiso"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Espera a que el Host autorice; tu supervisor confirma la autorización en el sistema.</p>
+        <p class="aviso-sin-permiso"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Espera a que quien lo citó autorice; tu supervisor confirma la autorización en el sistema.</p>
     @endif
     @if ($modo === 'pendientes' && ! $puede['aprobar'] && ($puede['crear'] ?? false))
         @include('seguridad.accesos._noche')

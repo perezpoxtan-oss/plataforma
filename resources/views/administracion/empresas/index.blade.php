@@ -222,7 +222,7 @@
                         </div>
                         @if ($esSuperadmin)
                             <div style="flex: 1">
-                                <label class="campo-etiqueta" for="{{ $modo }}_rubro">Rubro</label>
+                                <label class="campo-etiqueta" for="{{ $modo }}_rubro">Giro</label>
                                 <select id="{{ $modo }}_rubro" name="rubro_id" class="campo" required>
                                     <option value="">-- Selecciona --</option>
                                     @foreach ($rubros as $rubro)
@@ -233,7 +233,7 @@
                         @endif
                     </div>
                     @if ($esSuperadmin && $esNueva)
-                        <p class="campo-ayuda mb-3"><i class="bi bi-info-circle" aria-hidden="true"></i> El rubro define la terminología de la operación (Habitación, Oficina, Departamento, Casa…). Al crearla se activan sus módulos y se copian los roles base.</p>
+                        <p class="campo-ayuda mb-3"><i class="bi bi-info-circle" aria-hidden="true"></i> El giro define las palabras de la operación (Habitación, Oficina, Departamento, Casa…). Al crearla se activan sus módulos y se copian los roles base.</p>
                     @endif
 
                     <label class="campo-etiqueta" for="{{ $modo }}_zona">Zona Horaria</label>

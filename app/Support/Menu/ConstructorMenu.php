@@ -176,7 +176,7 @@ class ConstructorMenu
         $seccion = match ($menu) {
             'estructura' => MenuSeeder::SECCION_ORGANIZACION,
             'padrones' => self::SECCION_PADRONES,
-            'operacion' => 'Incidentes',
+            'operacion' => 'Bitácora', // C-39
             default => self::SECCION_PERSONAL,
         };
         foreach ($extras as $item) {
