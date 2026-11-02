@@ -16,7 +16,7 @@ Usa una empresa de prueba con Reservas, Préstamo de llaves e Incidentes, con un
 
 ## Práctica 1 · Eventos de hoy
 
-1. Entra a **Operación → Caseta → Accesos**.
+1. Entra a **Operación → Caseta → Bitácora de accesos**.
 2. Arriba de las tarjetas abre **Eventos de hoy**.
 
 Comprueba: ves el horario, el salón, el nombre del evento, cuántas personas vienen y desde qué hora es el montaje.

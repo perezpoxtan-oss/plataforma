@@ -179,7 +179,7 @@ Todo lo que espera tiene **reloj, color y suplente**. No tienes que vigilar nada
 
 **Qué debes ver:** el renglón pasa de verde a ámbar y a rojo, y, cuando se escaló, la caja de abajo dice «Se escaló a: Sergio Díaz y Julia Torres».
 
-> Si te confirman por teléfono o en persona que puede pasar, tu supervisor (o el Jefe de seguridad) usa **Aprobar ingreso** en la tarjeta de la visita; en la de un proveedor o contratista, **Aprobar por excepción**. Los minutos se cambian en **Estructura → Autorizaciones → Responsables por departamento** (con Recursos Humanos, también en **Recursos Humanos → Recepción → Ajustes**) (ver [Autorizaciones](autorizaciones.md)).
+> Si te confirman por teléfono o en persona que puede pasar, tu supervisor (o el Jefe de seguridad) usa **Aprobar ingreso** en la tarjeta de la visita; en la de un proveedor o contratista, **Aprobar por excepción**. Los minutos se cambian en **Estructura → Autorizaciones → Responsables por departamento** (con Recursos Humanos, también en **Recursos Humanos → Recepción de RR. HH. → Ajustes**) (ver [Autorizaciones](autorizaciones.md)).
 
 ## Cómo canalizar al supervisor para que autorice (caseta de noche)
 
@@ -407,7 +407,7 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 - **¿Cómo sé quién registró a alguien?** En la tarjeta, junto a la hora de ingreso, dice «por …».
 - **¿Puedo usar la cámara del celular para el gafete?** Sí: toca el botón del código QR junto al campo, tanto al registrar como al dar salida.
 - **¿Por qué el botón de registrar cambia de texto?** Para que sepas qué va a pasar antes de tocarlo: «dejar pasar» o «queda pendiente de autorización».
-- **¿Quién decide los minutos del ámbar y el rojo?** Quien configura Autorizaciones en tu empresa, en **Estructura → Autorizaciones → Responsables por departamento** (con Recursos Humanos, también en **Recursos Humanos → Recepción → Ajustes**).
+- **¿Quién decide los minutos del ámbar y el rojo?** Quien configura Autorizaciones en tu empresa, en **Estructura → Autorizaciones → Responsables por departamento** (con Recursos Humanos, también en **Recursos Humanos → Recepción de RR. HH. → Ajustes**).
 
 ## Relacionado
 

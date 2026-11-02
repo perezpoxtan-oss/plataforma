@@ -122,7 +122,7 @@ En **Mis pendientes**, el renglón **Vales de taxi por autorizar** también se p
 
 - **¿Tengo que llenar placas y chofer?** No es obligatorio en un servicio normal, pero ayuda a llevar el control.
 - **¿Qué pasa si el guardia no firma en pantalla?** El vale impreso trae las líneas para firmar a mano.
-- **¿Se puede firmar solo una vez?** Sí. El administrador elige en **Estructura → Configuración → Caseta y activos** quién firma en la pantalla: los dos (como siempre), solo el guardia, solo el taxista o nadie. Quien no firma en pantalla firma a mano en el vale impreso.
+- **¿Se puede firmar solo una vez?** Sí. El administrador elige en **Estructura → Configuración → Transporte** quién firma en la pantalla: los dos (como siempre), solo el guardia, solo el taxista o nadie. Quien no firma en pantalla firma a mano en el vale impreso.
 - **¿A quién le llega el correo del vale?** A las personas que el administrador puso en **Estructura → Configuración → Avisos por correo**.
 - **¿Puedo borrar un registro?** No; se anula y queda en el historial.
 

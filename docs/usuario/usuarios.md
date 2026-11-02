@@ -202,7 +202,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | El nombre de usuario solo puede tener letras, números, punto, guion y guion bajo (sin espacios). | Escribiste espacios o acentos. | Por ejemplo `juan.perez`. |
 | Ya existe un usuario con ese nombre: @… ¿Es la misma persona? | Hay otra cuenta con ese nombre. | Edita la existente o marca **Sí, es otra persona con el mismo nombre**. |
 | Ese colaborador ya tiene una cuenta de usuario: búscala en la lista en vez de crear otra. | El colaborador ya tiene cuenta. | Edita su cuenta. |
-| Ese colaborador está dado de baja. | El colaborador está dado de baja. | Pide a Recursos Humanos que lo reingrese o no lo vincules. |
+| Ese colaborador está dado de baja. | El colaborador está dado de baja. | Pide a Recursos Humanos que lo **Reactive** en Colaboradores, o no lo vincules. |
 | Ya existe otro usuario registrado con ese número de colaborador. | Ese número ya está en otra cuenta. | Revisa el número. |
 | El campo contraseña es obligatorio. | Elegiste **Escribir la contraseña ahora** (o no hay correo configurado) y la dejaste vacía. | Escríbela, o elige **Enviar enlace de bienvenida por correo**. |
 | Usuario «…» creado, pero el correo de bienvenida no se pudo enviar. | La cuenta existe, pero el correo no salió. | Revisa su correo y toca la **llave** para reenviar el enlace o escribirle una contraseña. |

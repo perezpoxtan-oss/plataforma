@@ -16,7 +16,7 @@ Usa una empresa de prueba de giro condominio o fraccionamiento y otra de hotel o
 
 ## Práctica 1 · Visita a una persona o a un área (hotel o corporativo)
 
-1. En **Operación → Caseta → Accesos** toca **Nuevo Ingreso** y elige **Visitante** (o **Personal Externo / Visita**).
+1. En **Operación → Caseta → Bitácora de accesos** toca **Nuevo Ingreso** y elige **Visitante** (o **Personal Externo / Visita**).
 2. Toca **Visita a persona o área** y escribe en **¿A quién viene?** el nombre de la persona. Elígela de la lista.
 3. Fíjate en el botón grande: si la persona tiene cuenta, dice **Registrar · queda pendiente de autorización**.
 4. Toca el botón.

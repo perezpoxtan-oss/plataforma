@@ -156,7 +156,7 @@ La pantalla se acomoda al celular: una ficha por renglón y la ventana de prést
 
 - **¿Puedo prestar varias llaves seguidas?** Sí: la ventana se queda abierta con **Guardar y capturar siguiente**.
 - **¿Y recibir varias seguidas?** Sí: escanea una tras otra en **Recibir: escanea la llave que te devuelven**.
-- **¿Quién decide cuántas horas puede estar fuera una llave?** El administrador, en **Configuración → Caseta y activos** (ver [Configuración](configuracion.md)).
+- **¿Quién decide cuántas horas puede estar fuera una llave?** El administrador, en **Configuración → Activos** (ver [Configuración](configuracion.md)).
 - **¿Qué pasa si el colaborador no deja identificación?** Elige **Ninguna (Riesgo)**; queda anotado.
 - **¿Dónde veo quién tiene una llave desde el catálogo?** En el [Catálogo de llaves](llaves.md) la llave dice **EN USO por …**.
 - **¿Se le puede prestar a un proveedor?** Sí: a una persona del padrón o a una empresa externa (ver «Cómo prestar a alguien de fuera»).

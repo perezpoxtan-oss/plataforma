@@ -40,7 +40,7 @@ Comprueba: al jefe de seguridad le llega «Nadie ha respondido» y al agente «Y
 
 ## Práctica 3 · Rebasaron su tiempo (Supervisor)
 
-1. Abre **Operación → Caseta → Accesos → Gente en Sitio**.
+1. Abre **Operación → Caseta → Bitácora de accesos → Gente en Sitio**.
 2. Toca el filtro **Rebasaron su tiempo**.
 
 Comprueba: aparecen las visitas con más de 4 horas, los proveedores con más de 8 y quien salió temporalmente hace más de 2. Cada tarjeta dice cuánto lleva. Al darles salida, desaparecen.
