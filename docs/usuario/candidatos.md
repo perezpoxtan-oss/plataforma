@@ -31,7 +31,7 @@ Cada persona tiene **una sola ficha** (sus datos, su solicitud, sus documentos y
 | **Evaluado por el departamento** | El jefe lo calificó y no lo eligió (pidió considerarlo o lo rechazó). | Recursos Humanos | **Segunda entrevista** (si tú quieres darle otra oportunidad) |
 | **Elegido** | El jefe lo eligió. | Recursos Humanos | Reunir **Documentos** · **Contrato firmado** · **Contratar** |
 | **Contratado** | Ya es colaborador. | — | — |
-| **Considerar / cartera** | No ahora, pero se guarda para otra vacante. | Recursos Humanos | **Atender** |
+| **Considerar** | No ahora, pero se guarda para otra vacante. | Recursos Humanos | **Atender** |
 | **Rechazado** | No sigue (con motivo). | — | **Atender** (si te equivocaste) |
 | **No se presentó** | No llegó a su cita con el departamento. | Recursos Humanos | **Reprogramar** |
 
@@ -55,7 +55,7 @@ Si viene a su **Entrevista** con el departamento, a quien lo entrevista le llega
 ## Cómo encontrar a un candidato
 
 1. Entra a **Recursos Humanos → Candidatos**.
-2. Escribe en **Buscar por nombre o vacante...** y, si quieres, elige **Todas las sedes**, **Todos los departamentos** o **Todas las vacantes**.
+2. Escribe en **Buscar por nombre o vacante...**. Para filtrar por sede, departamento o vacante, abre **Avanzado** y elige **Todas las sedes**, **Todos los departamentos** o **Todas las vacantes**. En **Avanzado** también están **Recepción**, **Criterios de entrevista**, **Documentos y plazos** y la exportación a Excel.
 3. Toca un filtro: **Todos**, **En proceso**, **Por entrevistar** (los que están **Con RR. HH.**), **Solicitudes por revisar** (lo que el candidato llenó en su celular o por internet y aún no revisas), una etapa en particular, **Archivadas** o **Por caducar** (ver [Caducidad](#caducidad-archivadas-y-fichas-por-caducar)). **Limpiar** quita los filtros.
 4. Toca la tarjeta para abrir su **ficha**.
 
@@ -66,6 +66,7 @@ Si viene a su **Entrevista** con el departamento, a quien lo entrevista le llega
 1. Toca **Nuevo candidato**.
 2. Elige la **Sede** (si solo tienes una, ya viene puesta).
 3. Captura lo esencial: nombre(s), apellidos y teléfono celular. Lo demás se completa después en su ficha, o lo llena él mismo en el kiosco.
+   En **Puesto al que aplica**, elige en **¿A qué vacante o puesto?** una vacante publicada o un puesto: el departamento sale solo. Si no está en la lista, elige **Otro (no está en la lista)** y escríbelo en **¿Cuál?** (si lo que escribes coincide con una vacante o un puesto, la plataforma lo liga al catálogo). Para poner otro departamento, abre **Avanzado: elegir otro departamento**.
 4. Si al escribir el **teléfono** o el **CURP** aparece el aviso amarillo «Ya existe la ficha de «…» con ese teléfono…», toca **Abrir su ficha**: es la misma persona y no hace falta capturarla otra vez.
 
 ![Aviso de ficha existente](img/recepcion-y-candidatos/candidatos-nuevo-duplicado.png)
@@ -145,7 +146,7 @@ Te llega el aviso «El departamento evaluó a …» o «Elegido por el departame
 
 - Si lo **eligió**, el candidato queda **Elegido**: sigue con sus documentos y su contrato y tócale **Contratar** (o **Rechazar** con el motivo, por ejemplo «No entregó documentos»).
 - Si pidió **Segunda entrevista**, te llega «Pide segunda entrevista: ponle fecha a …». El candidato sigue en **Entrevista con el departamento** con la misma persona (es su 2.ª entrevista) pero **sin fecha**: toca **Ponle fecha (reprogramar)** y elige la cita.
-- Si pidió **Considerar** o lo **rechazó**, el candidato queda **Evaluado por el departamento**: tú cierras el contacto y lo pasas a **Rechazar** o a **Considerar** (cartera, para otra vacante). Si crees que vale otra oportunidad, **Segunda entrevista** lo canaliza otra vez (puedes elegir a otra persona).
+- Si pidió **Considerar** o lo **rechazó**, el candidato queda **Evaluado por el departamento**: tú cierras el contacto y lo pasas a **Rechazar** o a **Considerar** (se guarda para otra vacante). Si crees que vale otra oportunidad, **Segunda entrevista** lo canaliza otra vez (puedes elegir a otra persona).
 - El jefe tiene **15 minutos** para corregir su evaluación después de guardarla (hasta que tú la atiendas); si lo hace, te llega «Corrigió su evaluación de …». Si la cita era **Ahora, está en sala**, el propio jefe puede marcar **No se presentó** y te llega el aviso.
 
 > Si la vacante tiene **plazas** y el jefe elige a tantas personas como plazas, los demás candidatos de esa vacante que seguían con el departamento pasan solos a **Considerar** con el comentario «Se eligió a otra persona para esta vacante», y te llega el aviso «Vacante cubierta» con el botón **Cerrar como cubierta** (ver [Vacantes](vacantes.md)).
@@ -184,7 +185,7 @@ Para cada documento tienes dos caminos:
 
 1. Con el candidato **Elegido**, toca **Contratar**.
 2. Si falta algún documento obligatorio o el contrato, la ventana te lo dice. Puedes cerrar y completarlo, o marcar **Contratar de todos modos** y escribir por qué (por ejemplo, «Entrega el acta la próxima semana»). El motivo queda en el historial y en la bitácora.
-3. Revisa **Nombre(s)**, **Apellido paterno** y **Apellido materno**, y la **Sede**, el **Departamento** y el **Puesto**.
+3. Revisa **Nombre(s)**, **Apellido paterno** y **Apellido materno**, y la **Sede**, el **Departamento**, el **Puesto** y el **Turno**. El turno ya viene con el de la vacante (si ese turno se usa en la sede); cámbialo o elige **Sin turno** si hace falta.
 4. Escribe el **Número de empleado**.
 5. Toca **Dar de alta como colaborador**.
 
@@ -225,7 +226,7 @@ Todo queda en la [Bitácora de auditoría](auditoria.md) sin datos personales.
 
 Necesitas que tu rol pueda **configurar** Candidatos en toda la empresa (si no ves el botón, pide a tu administrador que lo haga).
 
-1. En **Recursos Humanos → Candidatos**, toca **Documentos y plazos**.
+1. En **Recursos Humanos → Candidatos**, abre **Avanzado** y toca **Documentos y plazos**.
 2. En **Documentos para contratar**, escribe un documento por renglón (hasta 15) y marca **Obligatorio** en los que detienen la contratación. Deja vacío el renglón que no uses. El currículum, «Otro documento» y el contrato siempre existen y no van en la lista.
 3. Toca **Guardar lista de documentos**.
 4. En **Plazos de candidatos**, ajusta los días u horas de cada paso y, en **Caducidad y privacidad**, los meses para archivar y para borrar (borrar siempre va después de archivar).
@@ -250,7 +251,7 @@ Si el candidato tiene correo, también puedes tocar **Enviar enlace por correo**
 
 ## Cómo cambiar los criterios de entrevista
 
-1. En **Candidatos** toca **Criterios de entrevista**.
+1. En **Candidatos** abre **Avanzado** y toca **Criterios de entrevista**.
 2. Escribe, uno por renglón, lo que Recursos Humanos y el jefe califican de 1 a 5 estrellas en cada entrevista (hasta 8). Deja vacío el renglón que no uses. De inicio vienen: Presentación, Experiencia para el puesto, Actitud y comunicación, Disponibilidad (turnos, horario, fecha de inicio) y Expectativa económica.
 3. Toca **Guardar criterios**.
 
@@ -259,6 +260,8 @@ Si el candidato tiene correo, también puedes tocar **Enviar enlace por correo**
 **Qué debes ver:** «Criterios de entrevista guardados. Las evaluaciones anteriores conservan los suyos.» Necesitas el permiso **Configurar** de *Candidatos* con alcance de empresa; con alcance de sede solo los consultas.
 
 ## Cómo exportar a Excel
+
+Abre **Avanzado** en la lista de **Candidatos**:
 
 - **Exportar a Excel:** descarga la lista (con los filtros que tengas puestos) sin datos personales, con la etapa y los promedios de RR. HH. y del departamento.
 - **Con datos personales:** agrega teléfono, correo, CURP, RFC, NSS y domicilio. Te pide confirmar y queda registrado en la [Bitácora de auditoría](auditoria.md). Guarda el archivo en un lugar seguro.

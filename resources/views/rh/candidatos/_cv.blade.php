@@ -207,39 +207,50 @@
                value="{{ $valor('vacante', $c?->puestoVisible()) }}" placeholder="Ej. Camarista, Cocinero, Recepcionista">
         <datalist id="{{ $id }}_puestos">@foreach ($puestos as $p)<option value="{{ $p }}"></option>@endforeach</datalist>
     @else
-        <div class="rejilla-cv">
-            <div>
-                <label class="campo-etiqueta" for="{{ $id }}_departamento">Departamento</label>
-                <select id="{{ $id }}_departamento" name="departamento_id" class="campo">
-                    <option value="">-- Sin definir --</option>
-                    @foreach ($departamentos as $d)
-                        <option value="{{ $d->id }}" @selected((string) $valor('departamento_id', $c?->departamento_id) === (string) $d->id)>{{ $d->nombre }}</option>
+        {{-- C-35 (X-02): un solo campo «¿A qué vacante o puesto?». Busca en las vacantes publicadas y en los puestos
+             del catálogo y deduce el departamento; el texto libre solo se usa si no está en el catálogo. --}}
+        @php
+            $vacantesAQue = $vacantesElegibles ?? collect();
+            $aQueActual = $c === null ? '' : ($c->vacante_id ? 'v:'.$c->vacante_id : ($c->puesto_id ? 'p:'.$c->puesto_id : (($c->vacante ?? '') !== '' ? 'otro' : '')));
+            $aQue = (string) $valor('a_que', $aQueActual);
+            // El departamento solo va marcado si se eligió a mano (distinto del que sale de la vacante o el puesto)
+            $deptoDeducido = $c ? app(\App\Services\Candidatos\AdministradorCandidatos::class)->departamentoDeducido($c->vacante_id, $c->puesto_id) : null;
+            $deptoManual = (string) $valor('departamento_id', $c && $c->departamento_id && (int) $c->departamento_id !== $deptoDeducido ? $c->departamento_id : '');
+        @endphp
+        <label class="campo-etiqueta" for="{{ $id }}_a_que">¿A qué vacante o puesto?</label>
+        <select id="{{ $id }}_a_que" name="a_que" class="campo">
+            <option value="">-- Sin definir --</option>
+            @if ($vacantesAQue->isNotEmpty())
+                <optgroup label="Vacantes publicadas">
+                    @foreach ($vacantesAQue as $v)
+                        <option value="v:{{ $v->id }}" @selected($aQue === 'v:'.$v->id)>{{ $v->titulo }}{{ $v->estado !== 'publicada' ? ' ('.\App\Models\Vacante::ESTADOS[$v->estado].')' : '' }}</option>
                     @endforeach
-                </select>
-            </div>
-            <div>
-                <label class="campo-etiqueta" for="{{ $id }}_puesto">Puesto (catálogo)</label>
-                <select id="{{ $id }}_puesto" name="puesto_id" class="campo">
-                    <option value="">-- Sin definir --</option>
+                </optgroup>
+            @endif
+            @if ($puestos->isNotEmpty())
+                <optgroup label="Puestos">
                     @foreach ($puestos as $p)
-                        <option value="{{ $p->id }}" @selected((string) $valor('puesto_id', $c?->puesto_id) === (string) $p->id)>{{ $p->nombre }}</option>
+                        <option value="p:{{ $p->id }}" @selected($aQue === 'p:'.$p->id)>{{ $p->nombre }}</option>
                     @endforeach
-                </select>
-            </div>
+                </optgroup>
+            @endif
+            <option value="otro" @selected($aQue === 'otro')>Otro (no está en la lista)</option>
+        </select>
+        <p class="campo-ayuda mt-0">El departamento sale de la vacante o del puesto.</p>
+        <div data-mostrar-si='{"a_que":["otro"]}' @if ($aQue !== 'otro') hidden @endif>
+            <label class="campo-etiqueta" for="{{ $id }}_vacante">¿Cuál?</label>
+            <input type="text" id="{{ $id }}_vacante" name="vacante" class="campo" maxlength="150" value="{{ $valor('vacante', $c?->vacante) }}" placeholder="Ej. Ayudante de cocina (temporada)" @disabled($aQue !== 'otro')>
         </div>
-        <label class="campo-etiqueta" for="{{ $id }}_vacante">Vacante (si no está en el catálogo)</label>
-        <input type="text" id="{{ $id }}_vacante" name="vacante" class="campo" maxlength="150" value="{{ $valor('vacante', $c?->vacante) }}" placeholder="Ej. Ayudante de cocina (temporada)">
-        {{-- Vacantes (bolsa de trabajo) --}}
-        @isset($vacantesElegibles)
-            <label class="campo-etiqueta" for="{{ $id }}_vacante_id">Vacante publicada</label>
-            <select id="{{ $id }}_vacante_id" name="vacante_id" class="campo">
-                <option value="">-- Ninguna --</option>
-                @foreach ($vacantesElegibles as $v)
-                    <option value="{{ $v->id }}" @selected((string) $valor('vacante_id', $c?->vacante_id) === (string) $v->id)>{{ $v->titulo }}{{ $v->estado !== 'publicada' ? ' ('.\App\Models\Vacante::ESTADOS[$v->estado].')' : '' }}</option>
+        <details class="avanzado-cv mt-2" @if ($deptoManual !== '') open @endif>
+            <summary class="small">Avanzado: elegir otro departamento</summary>
+            <label class="campo-etiqueta" for="{{ $id }}_departamento">Departamento</label>
+            <select id="{{ $id }}_departamento" name="departamento_id" class="campo">
+                <option value="">-- El de la vacante o el puesto --</option>
+                @foreach ($departamentos as $d)
+                    <option value="{{ $d->id }}" @selected($deptoManual === (string) $d->id)>{{ $d->nombre }}</option>
                 @endforeach
             </select>
-        @endisset
-        {{-- Fin Vacantes --}}
+        </details>
     @endif
 </x-seccion>
 @endunless

@@ -62,7 +62,7 @@ Laterales: considerar (comentario) y rechazado (motivo) desde casi todas; consid
 | `evaluado` | Evaluado por el departamento | canalizado (segunda entrevista), considerar, rechazado |
 | `elegido` | Elegido | contratado, rechazado |
 | `no_se_presento` | No se presentó | canalizado, considerar, rechazado |
-| `considerar` | Considerar / cartera | con_rh, rechazado |
+| `considerar` | Considerar | con_rh, rechazado |
 | `rechazado` | Rechazado | con_rh |
 | `contratado` | Contratado | — |
 

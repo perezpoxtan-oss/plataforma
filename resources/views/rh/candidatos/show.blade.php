@@ -104,7 +104,7 @@
         </ol>
         @if (in_array($etapa, Candidato::LATERALES, true))
             <p class="aviso-etapa-lateral etapa-{{ $etapa }}"><i class="bi {{ ['considerar' => 'bi-archive', 'rechazado' => 'bi-x-octagon', 'no_se_presento' => 'bi-calendar-x'][$etapa] }} me-1" aria-hidden="true"></i>
-                {{ ['considerar' => 'Considerar / cartera: se guarda para una vacante futura.', 'rechazado' => 'Rechazado', 'no_se_presento' => 'No se presentó a su entrevista con el departamento.'][$etapa] }}@if ($activa?->motivo_descarte && $etapa !== 'no_se_presento') — {{ $activa->motivo_descarte }}@endif
+                {{ ['considerar' => 'Considerar: se guarda para una vacante futura.', 'rechazado' => 'Rechazado', 'no_se_presento' => 'No se presentó a su entrevista con el departamento.'][$etapa] }}@if ($activa?->motivo_descarte && $etapa !== 'no_se_presento') — {{ $activa->motivo_descarte }}@endif
                 @if ($activa?->decisionPor && $etapa !== 'no_se_presento') <span class="texto-traza">({{ $activa->decisionPor->name }} · @fecha($activa->decision_en))</span>@endif</p>
         @endif
 
@@ -849,6 +849,17 @@
                             </select>
                         </div>
                     </div>
+                    {{-- C-35: el turno de la vacante pasa al colaborador --}}
+                    <label class="campo-etiqueta" for="con_turno">Turno</label>
+                    <select id="con_turno" name="turno_id" class="campo">
+                        <option value="">-- Sin turno --</option>
+                        @foreach ($turnosContratar as $t)
+                            <option value="{{ $t->id }}" @selected((string) ($reabrir ? old('turno_id') : $turnoVacante) === (string) $t->id)>{{ $t->nombre }} ({{ $t->inicio() }}–{{ substr((string) $t->hora_fin, 0, 5) }})</option>
+                        @endforeach
+                    </select>
+                    @if ($turnoVacante)
+                        <p class="campo-ayuda mt-0">Es el turno de la vacante. Si se usa otro, cámbialo aquí.</p>
+                    @endif
                     <div class="dialogo-acciones">
                         <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
                         <button type="submit" class="btn-verde">Dar de alta como colaborador</button>

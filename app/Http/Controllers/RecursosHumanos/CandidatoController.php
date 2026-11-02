@@ -9,6 +9,7 @@ use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Postulacion;
 use App\Models\Puesto;
+use App\Models\Turno;
 use App\Models\Vacante;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\CaducidadCandidatos;
@@ -174,6 +175,9 @@ class CandidatoController extends Controller
                 'vacantesElegibles' => Vacante::where(fn ($q) => $q->whereIn('estado', ['publicada', 'pausada'])->orWhere('id', $c->vacante_id))
                     ->orderBy('titulo')->get(['id', 'titulo', 'estado']),
                 'sedesContratar' => $actor->can('candidatos.contratar') ? $this->candidatos->sedesParaElegir($actor, 'colaboradores.crear') : collect(),
+                // C-35: el turno de la vacante pasa al colaborador (se puede cambiar al contratar)
+                'turnosContratar' => $actor->can('candidatos.contratar') ? Turno::where('activo', true)->orderBy('hora_inicio')->orderBy('nombre')->get(['id', 'nombre', 'hora_inicio', 'hora_fin']) : collect(),
+                'turnoVacante' => $this->candidatos->turnoDeLaVacante($activa?->vacante_id ?? $c->vacante_id, (int) ($activa->sede_id ?? $c->sede_id)),
                 'partes' => $partes,
                 'privacidad' => app(AjustesRecepcion::class)->textoPrivacidad(Empresa::findOrFail($empresaId)),
                 'criterios' => $entrevistas->criterios($empresaId),
