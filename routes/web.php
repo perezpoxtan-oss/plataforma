@@ -766,6 +766,13 @@ Route::middleware('auth')->group(function () {
     });
     // Fin Padrones: Candidatos fase 3
 
+    // C-44 (Etapa 8): credencialización desde la ficha del colaborador (ver docs/tecnico/credenciales.md)
+    Route::controller('App\Http\Controllers\RecursosHumanos\CredencialController')->group(function () {
+        Route::post('/colaboradores/{colaborador}/credencial', 'darSalida')->whereNumber('colaborador')->name('credenciales.salida');
+        Route::patch('/credenciales/{credencial}/recibir', 'recibir')->whereNumber('credencial')->name('credenciales.recibir');
+        Route::post('/credenciales/{credencial}/baja', 'baja')->whereNumber('credencial')->name('credenciales.baja');
+    });
+
     // Padrones: Manual (ayuda dentro de la plataforma: toda sesión entra; cada página se filtra por los módulos que el usuario puede ver; ver docs/tecnico/manual.md)
     Route::controller('App\Http\Controllers\ManualController')->group(function () {
         Route::get('/manual', 'index')->name('manual.index');

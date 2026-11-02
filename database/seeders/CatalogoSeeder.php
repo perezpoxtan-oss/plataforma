@@ -41,6 +41,8 @@ class CatalogoSeeder extends Seeder
         'importar' => 'Importar',
         // C-33 (D-14): pestaña de solo lectura «Accidentes» en la ficha del colaborador
         'accidentes' => 'Ver accidentes',
+        // C-44 (Etapa 8): credencialización (dar salida, recibir y dar de baja la credencial del colaborador)
+        'credencial' => 'Credencial',
     ];
 
     private const CRUD = ['ver', 'crear', 'editar', 'eliminar'];
@@ -122,7 +124,7 @@ class CatalogoSeeder extends Seeder
                 // Organización base en todos los planes (plan de correcciones C-01, ADR-0004): el directorio
                 // de colaboradores, sus catálogos y quién autoriza. "aprobar" = validar las altas provisionales
                 // que hace la caseta; "provisional" = darlas de alta. El expediente y los datos personales son de RR. HH.
-                'colaboradores' => ['Colaboradores', 'bi-people', ['exportar', 'datos_personales', 'aprobar', 'provisional', 'importar', 'accidentes']],
+                'colaboradores' => ['Colaboradores', 'bi-people', ['exportar', 'datos_personales', 'aprobar', 'provisional', 'importar', 'accidentes', 'credencial']],
                 'departamentos' => ['Departamentos', 'bi-diagram-2', []],
                 'puestos' => ['Puestos', 'bi-person-badge', []],
                 'turnos' => ['Turnos', 'bi-clock', []],

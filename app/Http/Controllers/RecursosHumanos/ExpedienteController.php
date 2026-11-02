@@ -8,6 +8,7 @@ use App\Models\Auditoria;
 use App\Models\Candidato;
 use App\Models\CandidatoDocumento;
 use App\Models\Colaborador;
+use App\Models\Credencial;
 use App\Models\Equipo;
 use App\Models\EquipoResponsiva;
 use App\Models\Novedad;
@@ -20,6 +21,7 @@ use App\Models\User;
 use App\Services\Candidatos\DocumentosCandidato;
 use App\Services\Candidatos\DocumentosParaContratar;
 use App\Services\Colaboradores\AdministradorColaboradores;
+use App\Services\Credenciales\AdministradorCredenciales;
 use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Procedimientos\AdministradorProcedimientos;
 use App\Support\EstadoActivo;
@@ -150,7 +152,15 @@ class ExpedienteController extends Controller
             $editable = $actor->can('colaboradores.editar')
                 && $this->colaboradores->limitar(Colaborador::query(), $actor, 'colaboradores.editar')->whereKey($c->id)->exists();
 
+            // C-44 (Etapa 8): su credencial (la vigente o la última) y si quien entra la maneja
+            $credencial = Credencial::where('colaborador_id', $c->id)->with(['entrego:id,name', 'recibio:id,name'])
+                ->orderByRaw("CASE WHEN estado = 'baja' THEN 1 ELSE 0 END")->orderByDesc('id')->first();
+            $puedeCredencial = $actor->can(AdministradorCredenciales::PERMISO)
+                && $this->colaboradores->limitar(Colaborador::query(), $actor, AdministradorCredenciales::PERMISO)->whereKey($c->id)->exists();
+
             return view('organizacion.colaboradores.expediente', [
+                'credencial' => $credencial,
+                'puedeCredencial' => $puedeCredencial && ! $pendiente,
                 'c' => $c,
                 'movimientos' => $movimientos,
                 'autores' => $autores,
