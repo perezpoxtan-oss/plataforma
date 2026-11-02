@@ -5,8 +5,12 @@ namespace Tests\Feature\Seguridad;
 use App\Models\Acceso;
 use App\Models\Colaborador;
 use App\Models\Empresa;
+use App\Models\Notificacion;
 use App\Models\Sede;
 use App\Models\User;
+use App\Services\Accesos\ArticulosDelProveedor;
+use App\Services\Notificaciones\CentroNotificaciones;
+use App\Services\Notificaciones\PreferenciasAvisos;
 use App\Services\Privacidad\DatosDePersona;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -90,5 +94,27 @@ class RevisionEtapaSeisTest extends TestCase
         $a->refresh();
         $this->assertNull($a->articulos_nota);
         $this->assertSame('distinto', $a->articulos_salida); // el hecho se conserva, sin el texto libre
+    }
+
+    /**
+     * C-19 contra la campana y Mi cuenta (reglas 1 y 3 de la Etapa 4): el
+     * aviso «Salió con algo distinto» espera una acción («Atender»), así que
+     * se ve como alerta, aparece en Mi cuenta con su módulo y, si se silencia,
+     * el asunto sigue en su renglón de Mis pendientes.
+     */
+    public function test_el_aviso_de_salida_con_algo_distinto_es_alerta_con_su_renglon_y_aparece_en_mi_cuenta(): void
+    {
+        $this->assertSame(['bi-tools', 'alerta'], CentroNotificaciones::TIPOS[ArticulosDelProveedor::TIPO_AVISO] ?? null);
+        $this->assertSame('articulos_caseta', PreferenciasAvisos::RENGLON_DE_TIPO[ArticulosDelProveedor::TIPO_AVISO] ?? null);
+        $this->assertFalse(PreferenciasAvisos::noSilenciable(ArticulosDelProveedor::TIPO_AVISO)); // tiene su renglón en Mis pendientes
+
+        $jefe = $this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->centro);
+        $this->proveedorQueSalioConAlgoDistinto();
+        $this->assertTrue(Notificacion::withoutGlobalScopes()->where('user_id', $jefe->id)->where('tipo', ArticulosDelProveedor::TIPO_AVISO)->exists());
+
+        // En Mi cuenta sale con su módulo y su texto, no como «Otros avisos: Acceso articulos»
+        $campana = app(PreferenciasAvisos::class)->opciones($jefe)['campana'];
+        $this->assertArrayHasKey(ArticulosDelProveedor::TIPO_AVISO, $campana['Bitácora de accesos'] ?? []);
+        $this->assertArrayNotHasKey(ArticulosDelProveedor::TIPO_AVISO, $campana['Otros avisos'] ?? []);
     }
 }

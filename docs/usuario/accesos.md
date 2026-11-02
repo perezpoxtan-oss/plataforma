@@ -297,7 +297,7 @@ Si al entrar se anotó lo que trae un proveedor o contratista, la tarjeta dice *
 
 ![Sale con lo mismo al dar salida](img/accesos/sale-con-lo-mismo.png)
 
-**Qué debes ver:** si salió con lo mismo, en el historial la tarjeta dice «salió con lo mismo». Si quitaste la marca, el mensaje verde dice «No salió con lo mismo que trajo: ya se avisó a tu supervisor para que lo revise». Al supervisor y al jefe de seguridad les llega el aviso a la campana y a **Mis pendientes → Salidas con algo distinto por revisar**, con su reloj. El supervisor revisa el caso y toca **Atender**.
+**Qué debes ver:** si salió con lo mismo, en el historial la tarjeta dice «salió con lo mismo». Si quitaste la marca, el mensaje verde dice «No salió con lo mismo que trajo: ya se avisó a tu supervisor para que lo revise». Al supervisor y al jefe de seguridad les llega el aviso a la campana y a **Mis pendientes → Salidas con algo distinto por revisar**, con su reloj. El supervisor revisa el caso y toca **Atender**. En **Mi cuenta → Avisos** este aviso aparece en «Bitácora de accesos» como «Un proveedor o contratista salió con algo distinto de lo que trajo»; si lo silencias, el caso sigue en Mis pendientes.
 
 Si la empresa del proveedor tiene un **pase de salida aprobado** en tu sede (por ejemplo, equipo de la empresa que se lleva a reparar), la confirmación lo dice: «Su empresa tiene el pase de salida PS-… aprobado en esta sede» con **Ver pase**. Al dar salida queda ligado al pase; el pase sigue su paso en **Pases de salida**.
 
