@@ -45,6 +45,8 @@ class CentroNotificaciones
         // C-25: la caseta de noche
         'excepcion_pedida' => ['bi-megaphone-fill', 'alerta'],
         'excepcion_agente' => ['bi-shield-exclamation', 'alerta'],
+        // Etapa 6 (C-19): el proveedor salió con algo distinto; espera «Atender» del supervisor
+        'acceso_articulos' => ['bi-tools', 'alerta'],
         // C-24: resultado del vale al guardia y equipo faltante al supervisor
         'vale_resultado' => ['bi-taxi-front', 'info'],
         'faltante_por_recibir' => ['bi-question-octagon-fill', 'alerta'],

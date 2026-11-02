@@ -280,6 +280,26 @@
                         <label class="campo-etiqueta" for="ingreso_actividad">Actividad a Realizar</label>
                         <input type="text" id="ingreso_actividad" name="actividad" class="campo" maxlength="500" value="{{ $previo('actividad') }}" placeholder="Describe brevemente la actividad">
                     </details>
+                    {{-- C-19 (DD-18): lista corta y opcional de lo que trae; plegada para no agregar pasos si no trae nada.
+                         Al darle salida, el guardia la compara («Sale con lo mismo»). --}}
+                    @php
+                        $articulosPrevios = array_values(array_filter((array) ($trasError ? old('articulos', []) : []), fn ($f) => is_array($f) && trim((string) ($f['articulo'] ?? '')) !== ''));
+                        $filasArticulos = max(2, count($articulosPrevios));
+                    @endphp
+                    <details class="mas-detalles trae-equipo" data-trae-equipo @if ($articulosPrevios || $errors->has('articulos*')) open @endif>
+                        <summary class="campo-etiqueta"><i class="bi bi-tools me-1" aria-hidden="true"></i>¿Trae herramienta o equipo? <span class="text-lowercase fw-normal">(opcional)</span></summary>
+                        <p class="campo-ayuda mt-1 mb-2">Anota lo que es suyo (taladro, escalera, laptop…). Al darle salida, lo comparas con lo que lleva.</p>
+                        <div class="filas-articulos" data-filas-articulos data-maximo="{{ \App\Models\ArticuloAcceso::MAXIMO }}">
+                            @for ($i = 0; $i < $filasArticulos; $i++)
+                                @include('seguridad.accesos._articulo', ['i' => $i, 'fila' => $articulosPrevios[$i] ?? []])
+                            @endfor
+                        </div>
+                        <template data-plantilla-articulo>@include('seguridad.accesos._articulo', ['i' => '__i__', 'fila' => []])</template>
+                        <button type="button" class="btn-agregar-articulo" data-agregar-articulo><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Otro artículo</button>
+                        @foreach ($errors->get('articulos*') as $mensajes)
+                            @foreach ((array) $mensajes as $m)<p class="text-danger small mb-1">{{ $m }}</p>@endforeach
+                        @endforeach
+                    </details>
                     @foreach (Acceso::CON_AUTORIZACION as $t)
                         <p class="nota-pendiente" data-etiqueta-tipo="{{ $t }}"><i class="bi bi-info-circle" aria-hidden="true"></i>
                             @if ($giro->esResidencial())

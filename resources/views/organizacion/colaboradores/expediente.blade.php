@@ -19,6 +19,8 @@
         'expediente' => ['Expediente', 'bi-folder2-open', $personales],
         'codigo' => ['Código y etiqueta', 'bi-qr-code', ! empty($c->codigo_qr)],
         'historial' => ['Historial', 'bi-clock-history', true],
+        // C-33 (D-14): solo lectura, con su permiso propio «Colaboradores → Ver accidentes»
+        'accidentes' => ['Accidentes', 'bi-bandaid', $accidentes !== null],
     ], fn (array $p) => $p[2]);
     $primera = array_key_first($pestanas);
 @endphp

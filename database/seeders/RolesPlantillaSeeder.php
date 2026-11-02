@@ -61,6 +61,9 @@ class RolesPlantillaSeeder extends Seeder
      */
     public const AUDITORIA_JEFE = ['auditoria.ver'];
 
+    /** C-33 (D-14): el Jefe de seguridad consulta los accidentes de los colaboradores de su sede (pestaña de solo lectura). */
+    public const ACCIDENTES_JEFE = ['colaboradores.accidentes'];
+
     // Menús (lección 35): catálogos que se ven en otro menú pero siguen siendo padrón para la plantilla
     public const PADRONES_EN_OTRO_MENU = ['vouchers'];
     // Fin Menús
@@ -101,7 +104,7 @@ class RolesPlantillaSeeder extends Seeder
                 ? Alcance::Empresa
                 : (in_array($ma->modulo->clave, self::CONSULTA_RH, true) && $ma->accion->clave === 'ver' ? Alcance::Empresa : null)],
             'Jefe de seguridad' => [30, 'Opera y supervisa seguridad en su sede', fn ($ma) => $deSeguridad($ma) || $provisional($ma)
-                || in_array($ma->clave(), [...self::USUARIOS_JEFE, ...self::AUDITORIA_JEFE], true) ? Alcance::Sede : null],
+                || in_array($ma->clave(), [...self::USUARIOS_JEFE, ...self::AUDITORIA_JEFE, ...self::ACCIDENTES_JEFE], true) ? Alcance::Sede : null],
             self::ASISTENTE => [40, 'Apoyo de gestión de seguridad en su sede', fn ($ma) => ($deSeguridad($ma)
                 && in_array($ma->accion->clave, self::ACCIONES_ASISTENTE, true)) || $provisional($ma) ? Alcance::Sede : null],
             'Supervisor' => [50, 'Da seguimiento a la operación de su sede', fn ($ma) => ($deSeguridad($ma) && $ma->accion->clave !== 'eliminar') || $provisional($ma) ? Alcance::Sede : null],

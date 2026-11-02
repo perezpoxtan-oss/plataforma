@@ -21,7 +21,7 @@ resumen: Levantar un ticket por cada incidente, documentarlo en su expediente y 
 ## Cómo leer la lista
 
 1. Entra a **Operación → Incidentes → Novedades** (en el celular, el botón **Novedades** de abajo).
-2. Usa el buscador (número de ticket, ubicación o lo que se reportó) y los filtros de **categoría** y **sede**.
+2. Usa el buscador (número de ticket, ubicación o lo que se reportó) y los filtros de **categoría** y **sede**. En el filtro de categoría, **Protección Civil (todos)** junta los siniestros, el mantenimiento de equipo y los recorridos de antes; también puedes elegir solo uno de ellos.
 3. Tienes dos pestañas: **Tickets Abiertos / Asignados** (borde rojo) e **Historial Resueltos** (borde verde).
 
 ![Lista de tickets](img/novedades/lista.png)
@@ -68,15 +68,21 @@ Para un objeto sencillo también puedes usar **Registrar objeto encontrado** en 
 
 **Qué debes ver:** tu nota aparece en el Minuto a Minuto con fecha, hora y tu nombre. Lo escrito ahí **no se puede borrar ni cambiar**.
 
+Si tu empresa asoció un procedimiento a la categoría del ticket, arriba del expediente aparece **¿Qué hacer? Ver procedimiento «…»**: tócalo para leer los pasos en otra pestaña.
+
+**Cambiar la categoría:** un ticket de Lost & Found con objetos **en resguardo**, o un robo que ya tiene su detalle capturado, no se puede cambiar a otra categoría (los objetos o el detalle se quedarían sin su ticket). Primero entrega los objetos o regístralos en otro ticket de Lost & Found; si el robo fue un error, ciérralo con su resolución y abre un ticket nuevo.
+
 | Categoría | Qué se captura |
 |---|---|
-| **Reporte General** | Quién fue observado, qué hacía, por qué y acciones inmediatas. |
+| **Reporte General** | **Tipo de reporte** (opcional; por ejemplo Ruido, Mascotas o Fuga de agua, según la lista de tu empresa), quién fue observado, qué hacía, por qué y acciones inmediatas. La ficha dice, por ejemplo, «Reporte General · Ruido». |
 | **Accidente / Lesión** | Formato de huésped o colaborador, dictamen médico con el mapa del cuerpo, anexo de guardavidas, Recursos Humanos y firmas. |
+<!-- solo: hotel -->
 | **Valores a la Vista** | Habitación, personas, puertas y ventanas, caja fuerte y valores por zona. |
+<!-- fin -->
 | **Siniestro Protección Civil** | Tipo de evento, alarma, evacuación, servicios externos, lesionados, daños y causa. Si hubo lesionados, se abre solo un ticket de Accidente ligado. |
 | **Lost & Found (Objetos Perdidos)** | Artículos encontrados (folio LF-…) y reportes de pérdida (folio RP-…). |
 | **Robo** | Circunstancias, qué se llevaron, sospechoso, testigos, policía y canalización. |
-| **Mantenimiento de equipo PC** | Lo abre solo un Recorrido de Protección Civil (si tu empresa lo eligió así): muestra los equipos con falla. Anota en el Minuto a Minuto lo que se reparó. |
+| **Mantenimiento de equipo PC** | Lo abre solo un Recorrido de Protección Civil cuando un equipo falla (por ejemplo, un extintor sin presión): muestra los equipos con falla. Anota en el Minuto a Minuto lo que se reparó. No cuenta como siniestro en el Tablero ni en Tendencias. |
 
 En los formatos largos cada apartado se abre o se cierra tocando su título; si tiene un error, se abre solo y dice **Revisar**.
 
@@ -90,6 +96,8 @@ En los formatos largos cada apartado se abre o se cierra tocando su título; si 
 ![Accidente con mapa del cuerpo](img/novedades/accidente.png)
 
 **Qué debes ver:** las firmas guardadas aparecen en el expediente y en la hoja impresa (botón de la impresora, arriba a la derecha).
+
+En un caso nuevo, la **Fecha** y la **Hora del Accidente** ya vienen sugeridas con las de «¿Cuándo sucedió?» del ticket, el **No. Habitación** con la habitación del ticket y el **Lugar o área del accidente** con su ubicación. Son sugerencias: cámbialas si no son. Si en **Turno** no escribes nada, al guardar se toma el turno de la ficha del colaborador; si escribes otro (porque cubría a alguien), se respeta lo que escribiste. El formato es el mismo de siempre.
 
 ## Cómo dejar un ticket para el siguiente turno
 
@@ -165,6 +173,9 @@ Si respondes por un departamento (Mantenimiento, Recursos Humanos…), Seguridad
 | «Elige el lugar de la lista o escribe dónde pasó (por ejemplo: Piso 2, cerca del elevador).» | Falta el lugar. | Elígelo en «¿Dónde pasó?» o escríbelo. |
 | «Este caso ya está Resuelto. Para editarlo usa «Reabrir Caso para Editar» y escribe el motivo.» | El caso está cerrado. | Reábrelo con el motivo. |
 | «Escribe el motivo antes de continuar: un caso resuelto no se puede reabrir sin justificación.» | Falta el motivo de reapertura. | Explica por qué se reabre. |
+| «Este ticket tiene objetos en resguardo (LF-…). Primero entrégalos o regístralos en otro ticket de Lost & Found; después cambia la categoría.» | Quisiste cambiar de categoría un ticket con objetos guardados. | Entrega los objetos o muévelos a otro ticket de Lost & Found. |
+| «Este robo ya tiene su detalle capturado…» | Quisiste cambiar de categoría un robo ya documentado. | Ciérralo con su resolución y abre un ticket nuevo con la categoría correcta. |
+| «Elige una opción válida en «Tipo de reporte».» | Ese tipo ya no está en la lista de tu empresa. | Elige otro de la lista o déjalo **— Sin tipo —**. |
 | No deja marcar Resuelto | Falta **Estatus Final / Resolución**. | Escribe cómo se concluyó. |
 | Franja roja arriba: «Tu envío no llegó completo y no se guardó. Revisa los datos y vuelve a guardar. Si se repite, avisa a tu administrador con la hora.» | Lo que guardaste (por ejemplo, el expediente con sus firmas) no llegó a la plataforma: se cortó en el camino. | Abre el expediente, revisa qué falta (las firmas se ven en «Firmas»), vuelve a firmar si hace falta y toca **Guardar**. Si se repite, anota la hora y avisa a tu administrador. |
 | Página «La acción no llegó completa» | Se perdió la conexión al guardar o se envió de una forma que no se esperaba. | Toca «Ir al inicio», abre el expediente y revisa si tus cambios ya están. |
@@ -177,6 +188,8 @@ Si respondes por un departamento (Mantenimiento, Recursos Humanos…), Seguridad
 - **¿Cómo imprimo el expediente?** Con el botón de la impresora, arriba a la derecha del expediente.
 - **¿Dónde se hacen los recorridos de Protección Civil?** En su propia pantalla: [Recorridos de Protección Civil](recorridos-pc.md).
 - **¿Cómo sé qué tickets me canalizaron?** En **Mis pendientes → Tickets canalizados a mí**: abre la lista solo con los tuyos.
+- **¿Por qué no veo Valores a la Vista?** Es una categoría de hotel (la revisión de la habitación con la camarista). En otros giros no se ofrece; usa **Reporte General** con su tipo.
+- **¿Quién decide los tipos de Reporte General?** Tu administrador, en **Estructura → Configuración → Bitácora de novedades → Avanzado: tipos de «Reporte General»**.
 - **¿Por qué en mi menú dice «Incidentes»?** Tu empresa le cambió el nombre en Configuración; es la misma Bitácora de novedades.
 
 ## Relacionado

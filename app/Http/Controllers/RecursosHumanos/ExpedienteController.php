@@ -10,6 +10,7 @@ use App\Models\CandidatoDocumento;
 use App\Models\Colaborador;
 use App\Models\Equipo;
 use App\Models\EquipoResponsiva;
+use App\Models\Novedad;
 use App\Models\PaseSalida;
 use App\Models\PaseSalidaArticulo;
 use App\Models\Postulacion;
@@ -19,6 +20,7 @@ use App\Models\User;
 use App\Services\Candidatos\DocumentosCandidato;
 use App\Services\Candidatos\DocumentosParaContratar;
 use App\Services\Colaboradores\AdministradorColaboradores;
+use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Procedimientos\AdministradorProcedimientos;
 use App\Support\EstadoActivo;
 use App\Support\Tenancy\EmpresaDeTrabajo;
@@ -120,6 +122,18 @@ class ExpedienteController extends Controller
                 $procedimientos = $usuario !== null && $usuario->activo ? app(AdministradorProcedimientos::class)->pendientesDe($usuario) : collect();
             }
 
+            // C-33 (D-14): sus accidentes, en solo lectura y con su permiso propio (el formato de Accidente no cambia)
+            $accidentes = $actor->can('colaboradores.accidentes')
+                && $this->colaboradores->limitar(Colaborador::query(), $actor, 'colaboradores.accidentes')->whereKey($c->id)->exists()
+                ? Novedad::where('categoria', 'accidente')->whereHas('accidenteColaborador', fn ($q) => $q->where('colaborador_id', $c->id))
+                    ->with(['sede:id,nombre', 'accidenteColaborador:id,novedad_id,fecha_accidente,hora_accidente,turno', 'accidenteIncapacidad:id,novedad_id,dias_incapacidad,fecha_presenta',
+                        'accidenteDictamen:id,novedad_id,tipos_herida'])
+                    ->orderByDesc('created_at')->limit(50)->get()
+                : null;
+            $novedadesVisibles = $accidentes !== null && $accidentes->isNotEmpty()
+                ? app(AdministradorNovedades::class)->limitar(Novedad::query(), $actor, 'ver')->whereIn('novedades.id', $accidentes->pluck('id'))->pluck('novedades.id')->all()
+                : [];
+
             // Historial: altas, bajas, reingresos y cambios del registro (sin el detalle de los datos)
             $movimientos = Auditoria::query()
                 ->leftJoin('users', 'users.id', '=', 'auditoria.user_id')
@@ -156,6 +170,8 @@ class ExpedienteController extends Controller
                 'pases' => $pases,
                 'responsivas' => $responsivas,
                 'procedimientos' => $procedimientos,
+                'accidentes' => $accidentes,
+                'accidentesVisibles' => $novedadesVisibles,
             ]);
         });
     }

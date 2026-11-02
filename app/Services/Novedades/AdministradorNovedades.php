@@ -13,7 +13,8 @@ use App\Models\Sede;
 use App\Models\SiniestroDetalle;
 use App\Models\User;
 use App\Services\Espacios\Lugares;
-use App\Services\Novedades\Formatos\Accidente;
+use App\Services\Novedades\Accidentes\TurnoDelAccidente;
+use App\Services\Novedades\Formatos\AccidenteConSugerencias;
 use App\Services\Novedades\Formatos\Formato;
 use App\Services\Novedades\Formatos\LostFound;
 use App\Services\Novedades\Formatos\MantenimientoPc;
@@ -26,6 +27,7 @@ use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
 use App\Support\Tenancy\Tenant;
+use App\Support\Terminos;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -50,7 +52,8 @@ class AdministradorNovedades
     /** categoría => formato que la atiende */
     public const FORMATOS = [
         'incidente_general' => ReporteGeneral::class,
-        'accidente' => Accidente::class,
+        // C-33: el mismo formato de Accidente (no cambia) con fecha, hora y lugar sugeridos para un caso nuevo
+        'accidente' => AccidenteConSugerencias::class,
         'habitacion' => ValoresVista::class,
         'proteccion_civil' => Siniestro::class,
         'recorrido_pc' => RecorridoPc::class,
@@ -209,6 +212,10 @@ class AdministradorNovedades
         // Recorrido PC y Mantenimiento de equipo PC solo se conservan en los tickets que ya la traían
         if ($novedad !== null && isset(Novedad::CATEGORIAS_AUTOMATICAS[$novedad->categoria]) && $general) {
             $lista[] = $novedad->categoria;
+        }
+        // C-32 (D-17): «Valores a la Vista» es de hotel; en otros giros solo la conserva un ticket que ya la traía
+        if (! Terminos::actual()->esHotel() && $novedad?->categoria !== 'habitacion') {
+            $lista = array_values(array_diff($lista, ['habitacion']));
         }
 
         return $lista;
@@ -470,6 +477,7 @@ class AdministradorNovedades
             throw ValidationException::withMessages(['resolucion' => 'Para marcar el caso como Resuelto, primero escribe cómo se concluyó en «Estatus Final / Resolución».']);
         }
 
+        $this->revisarReclasificacion($novedad, $v['categoria']);
         $novedad->categoria = $v['categoria'];
         $this->aplicarComunes($novedad, $v);
         $novedad->resolucion = $this->texto($v['resolucion'] ?? null);
@@ -497,6 +505,7 @@ class AdministradorNovedades
             }
             $novedad->save();
             $formato?->guardar($novedad, $datosFormato, $actor);
+            app(TurnoDelAccidente::class)->completar($novedad); // C-33: el turno sale de la ficha del colaborador (el formato no cambia)
             if ((int) $departamentoAntes !== (int) $novedad->departamento_id && $novedad->departamento_id !== null) {
                 $novedad->loadMissing('departamento:id,nombre');
                 $this->anotar($novedad, $actor, 'Canalizado a '.$novedad->departamento?->nombre.'.', 'sistema');
@@ -531,6 +540,32 @@ class AdministradorNovedades
         }
 
         return $novedad;
+    }
+
+    /**
+     * C-32 (D-16): un ticket de Lost & Found con objetos en resguardo, o un
+     * robo con su detalle capturado, no cambia de categoría: los objetos (o
+     * el detalle) se quedarían colgando de un ticket que ya no los muestra.
+     */
+    private function revisarReclasificacion(Novedad $novedad, string $nueva): void
+    {
+        if ($novedad->categoria === $nueva) {
+            return;
+        }
+        if ($novedad->categoria === 'lost_found') {
+            $folios = LostFoundArticulo::where('novedad_id', $novedad->id)->where('estatus', LostFoundArticulo::EN_RESGUARDO)->orderBy('id')->pluck('folio');
+            if ($folios->isNotEmpty()) {
+                throw ValidationException::withMessages(['categoria' => 'Este ticket tiene objetos en resguardo ('.$folios->join(', ').'). Primero entrégalos o regístralos en otro ticket de Lost & Found; después cambia la categoría.']);
+            }
+        }
+        if ($novedad->categoria === 'robo') {
+            $detalle = RoboDetalle::where('novedad_id', $novedad->id)->first();
+            $capturado = $detalle !== null && collect($detalle->only(['hora_aproximada', 'lugar_exacto', 'objetos_descripcion', 'valor_estimado', 'descripcion_sospechoso',
+                'folio_policial', 'observaciones', 'articulo_vinculado_id']))->filter(fn ($v) => $v !== null && $v !== '' && $v !== 0)->isNotEmpty();
+            if ($capturado || (bool) ($detalle?->parte_policia)) {
+                throw ValidationException::withMessages(['categoria' => 'Este robo ya tiene su detalle capturado (lugar, objetos, parte a la policía…). No se puede cambiar de categoría sin perderlo: si fue un error, ciérralo con su resolución y abre un ticket nuevo.']);
+            }
+        }
     }
 
     /**
@@ -639,6 +674,40 @@ class AdministradorNovedades
         return NovedadNota::create([
             'novedad_id' => $novedad->id, 'tipo' => $tipo, 'autor_nombre' => mb_substr($actor->name, 0, 150), 'texto' => mb_substr($texto, 0, 5000),
         ]);
+    }
+
+    /**
+     * C-29 (D-06): ticket que abre la plataforma por su cuenta cuando quien
+     * hizo el trabajo no puede crear tickets en esa sede (por ejemplo, el
+     * hallazgo de un recorrido de Protección Civil). El trabajo no se pierde:
+     * el ticket nace con quien lo encontró como «reportado por» y una nota que
+     * explica por qué lo abrió la plataforma. Solo para categorías que abre la
+     * plataforma (las automáticas) o las que se eligen al despachar.
+     *
+     * @param  array{sede_id: int, categoria: string, reportado_por: string, ubicacion: string, descripcion: string, area_id?: ?int, ocurrio_en?: mixed}  $datos
+     */
+    public function abrirPorLaPlataforma(User $actor, array $datos, string $motivo): Novedad
+    {
+        $categoria = $datos['categoria'];
+        if (! isset(Novedad::CATEGORIAS_AUTOMATICAS[$categoria]) && ! in_array($categoria, Novedad::CATEGORIAS_ELEGIBLES, true)) {
+            throw ValidationException::withMessages(['categoria' => 'Categoría no válida para un ticket automático.']);
+        }
+        $novedad = new Novedad([
+            'sede_id' => (int) $datos['sede_id'], 'categoria' => $categoria,
+            'reportado_por' => mb_strtoupper(mb_substr($datos['reportado_por'], 0, 150)),
+            'ubicacion' => mb_strtoupper(mb_substr($datos['ubicacion'], 0, 255)),
+            'descripcion' => $datos['descripcion'],
+            'area_id' => $datos['area_id'] ?? null,
+            'ocurrio_en' => $datos['ocurrio_en'] ?? now(),
+        ]);
+        DB::transaction(function () use ($novedad) {
+            $novedad->numero = $this->siguienteNumero();
+            $novedad->save();
+        });
+        $this->anotar($novedad, $actor, $motivo, 'sistema');
+        $this->auditoria->auditar($actor, 'novedades.creado', $novedad, null, $this->foto($novedad) + ['abierto_por' => 'plataforma']);
+
+        return $novedad;
     }
 
     /**

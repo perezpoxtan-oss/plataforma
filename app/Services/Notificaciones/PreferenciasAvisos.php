@@ -57,6 +57,7 @@ class PreferenciasAvisos
         'reserva_cambio' => 'reservas', 'reserva_orden' => 'reservas',
         'reloj_recordatorio' => 'el renglón del asunto',
         'novedad_departamento' => 'novedades_departamento', // C-28
+        'acceso_articulos' => 'articulos_caseta', // Etapa 6 (C-19)
     ];
 
     /** Alertas que solo informan (no esperan una respuesta): se pueden silenciar. */
@@ -87,6 +88,8 @@ class PreferenciasAvisos
         // Etapa 4 (C-22, C-25)
         'excepcion_pedida' => ['Bitácora de accesos', 'La caseta te pide autorizar a alguien que espera', ['accesos.aprobar']],
         'excepcion_agente' => ['Bitácora de accesos', 'El agente aprobó por excepción porque nadie respondió (siempre llega)', ['accesos.aprobar']],
+        // Etapa 6 (C-19)
+        'acceso_articulos' => ['Bitácora de accesos', 'Un proveedor o contratista salió con algo distinto de lo que trajo', ['accesos.aprobar']],
         'reloj_recordatorio' => ['Reloj y suplente', 'Recordatorio de algo que lleva tiempo esperando tu respuesta', []],
         'reloj_escalado' => ['Reloj y suplente', 'Algo tardó y pasó a ti como suplente (siempre llega)', []],
         'autorizacion_respuesta' => ['Bitácora de accesos', 'Respondieron una autorización que pidió la caseta', ['accesos.ver']],

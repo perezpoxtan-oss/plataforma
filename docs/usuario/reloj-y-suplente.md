@@ -32,6 +32,7 @@ Algunas cosas tienen su propio reloj:
 | Visita que espera a la persona citada | Los minutos de la caseta | Al responsable de su departamento y al jefe de seguridad |
 | Persona en sitio | Visita 4 h · proveedor 8 h · daypass hasta el cierre | Al doble (al jefe de seguridad) |
 | Salida temporal | 2 h | 4 h |
+| Proveedor que salió con algo distinto de lo que trajo | 24 h (al supervisor de la sede) | 72 h (a quien autoriza accesos en toda la empresa) |
 | Candidatos | El plazo de cada etapa | Al doble del plazo |
 | Llaves fuera | 12 h | 24 h |
 | Lost & Found vencido | Cada semana | 72 h después de vencer |

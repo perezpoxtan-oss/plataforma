@@ -4,6 +4,7 @@ namespace App\Services\Accesos;
 
 use App\Models\Acceso;
 use App\Models\AcompananteAcceso;
+use App\Models\ArticuloAcceso;
 use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Gafete;
@@ -319,8 +320,20 @@ class RegistroAccesos
             }
         }
 
+        // C-19 (DD-18): lista corta de lo que trae (solo proveedor y contratista; sin artículo, el renglón se ignora)
+        $articulos = [];
+        if (in_array($tipo, Acceso::CON_AUTORIZACION, true)) {
+            foreach ((array) ($d['articulos'] ?? []) as $fila) {
+                $articulo = $this->mayusculas($fila['articulo'] ?? null);
+                if ($articulo === null) {
+                    continue;
+                }
+                $articulos[] = ['articulo' => mb_substr($articulo, 0, 120), 'cantidad' => max(1, (int) ($fila['cantidad'] ?? 1)), 'serie' => $this->mayusculas($fila['serie'] ?? null)];
+            }
+        }
+
         $acceso = DB::transaction(function () use ($actor, $d, $tipo, $sedeId, $nombre, $colaborador, $host, $visita, $personaVisita, $motivo, $departamentoId,
-            $placas, $modo, $tipoVehiculo, $zonaId, $conductor, $gafete, $acompanantes, $personaId, $personaRepetida, $estado, $avisoPadron, $habitacion, $espacioId, $areaTrabajo) {
+            $placas, $modo, $tipoVehiculo, $zonaId, $conductor, $gafete, $acompanantes, $personaId, $personaRepetida, $estado, $avisoPadron, $habitacion, $espacioId, $areaTrabajo, $articulos) {
             // Gafetes: se revisan otra vez con el registro bloqueado (dos casetas a la vez)
             foreach (array_filter([$gafete, ...array_column($acompanantes, 'gafete')]) as $g) {
                 Gafete::whereKey($g->id)->lockForUpdate()->first();
@@ -396,6 +409,11 @@ class RegistroAccesos
                 'entrada_at' => now(),
             ]);
 
+            // C-19 (DD-18): lo que trae (solo proveedor y contratista; renglones vacíos se ignoran)
+            foreach ($articulos as $art) {
+                ArticuloAcceso::create(['acceso_id' => $acceso->id] + $art);
+            }
+
             foreach ($acompanantes as $ac) {
                 AcompananteAcceso::create([
                     'acceso_id' => $acceso->id, 'nombre' => $ac['nombre'], 'identificacion' => $ac['identificacion'],
@@ -412,7 +430,8 @@ class RegistroAccesos
                 ? ['autorizacion' => Acceso::POR_LLAMADA, 'autorizado_at' => now(), 'autorizado_por' => $actor->id]
                 : ['autorizacion' => Acceso::LLAMADA_NO, 'salida_at' => now(), 'salida_por' => $actor->id])->saveQuietly();
         }
-        $this->auditoria->auditar($actor, 'accesos.creado', $acceso, null, self::foto($acceso));
+        $this->auditoria->auditar($actor, 'accesos.creado', $acceso, null, self::foto($acceso)
+            + ($articulos === [] ? [] : ['trae' => array_map(fn ($a) => ($a['cantidad'] > 1 ? $a['cantidad'].' × ' : '').$a['articulo'].($a['serie'] ? ' ('.$a['serie'].')' : ''), $articulos)]));
         if ($conLlamada) {
             $this->auditoria->auditar($actor, $llamada === 'autorizo' ? 'accesos.llamada_autorizo' : 'accesos.llamada_no_autorizo', $acceso, null,
                 ['a_quien' => $acceso->persona_visita ?? $acceso->habitacion]);
@@ -433,8 +452,10 @@ class RegistroAccesos
     private function validar(array $entrada): array
     {
         $entrada = array_map(fn ($v) => is_string($v) && trim($v) === '' ? null : $v, $entrada);
-        if (isset($entrada['acompanantes']) && is_array($entrada['acompanantes'])) {
-            $entrada['acompanantes'] = array_map(fn ($f) => is_array($f) ? array_map(fn ($v) => is_string($v) && trim($v) === '' ? null : $v, $f) : $f, $entrada['acompanantes']);
+        foreach (['acompanantes', 'articulos'] as $lista) {
+            if (isset($entrada[$lista]) && is_array($entrada[$lista])) {
+                $entrada[$lista] = array_map(fn ($f) => is_array($f) ? array_map(fn ($v) => is_string($v) && trim($v) === '' ? null : $v, $f) : $f, $entrada[$lista]);
+            }
         }
 
         return Validator::make($entrada, [
@@ -486,6 +507,11 @@ class RegistroAccesos
             'acompanantes.*.nombre' => ['nullable', 'string', 'max:150'],
             'acompanantes.*.identificacion' => ['nullable', Rule::in(array_keys(Acceso::IDENTIFICACIONES))],
             'acompanantes.*.gafete_id' => ['nullable', 'integer'],
+            // C-19 (DD-18): lo que trae el proveedor o contratista (opcional)
+            'articulos' => ['nullable', 'array', 'max:'.ArticuloAcceso::MAXIMO],
+            'articulos.*.articulo' => ['nullable', 'string', 'max:120'],
+            'articulos.*.cantidad' => ['nullable', 'integer', 'min:1', 'max:999'],
+            'articulos.*.serie' => ['nullable', 'string', 'max:80'],
         ], [
             'sede_id.required' => 'Elige la sede.',
             'tipo.required' => 'Elige el tipo de persona que ingresa.',
@@ -498,6 +524,12 @@ class RegistroAccesos
             'acompanantes.max' => 'Máximo '.self::MAX_ACOMPANANTES.' acompañantes por registro.',
             'actividad.max' => 'Describe la actividad en máximo 500 caracteres.',
             'observaciones.max' => 'Las observaciones admiten máximo 1000 caracteres.',
+            'articulos.max' => 'La lista de lo que trae admite máximo '.ArticuloAcceso::MAXIMO.' renglones.',
+            'articulos.*.articulo.max' => 'Escribe el artículo en máximo 120 caracteres.',
+            'articulos.*.serie.max' => 'Escribe el número de serie en máximo 80 caracteres.',
+            'articulos.*.cantidad.min' => 'La cantidad debe ser de 1 a 999.',
+            'articulos.*.cantidad.max' => 'La cantidad debe ser de 1 a 999.',
+            'articulos.*.cantidad.integer' => 'La cantidad debe ser un número entero.',
             '*.in' => 'Elige una opción de la lista.',
             '*.integer' => 'Elige una opción de la lista.',
         ], [

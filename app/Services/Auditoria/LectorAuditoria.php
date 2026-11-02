@@ -125,6 +125,9 @@ class LectorAuditoria
         'suplente' => 'Paso al suplente por tardanza', 'relojes' => 'Cambio de «Reloj y suplente»',
         'supervisor_pedido' => 'Pedido al supervisor desde la caseta', 'autorizado_excepcion_agente' => 'Aprobación por excepción del agente',
         'excepcion_revisada' => 'Revisión de la excepción del agente',
+        // Etapa 6 (C-19, C-29, C-31)
+        'articulos_salida' => 'Lo que llevaba el proveedor al salir', 'articulos_revisados' => 'Revisión de la salida con algo distinto',
+        'hallazgos_reclasificados' => 'Hallazgos pasados a Mantenimiento de equipo PC', 'vinculados' => 'Procedimientos de «¿Qué hacer?»',
         'equipos_pc' => 'Cambio de la frecuencia de revisión de equipos',
         // Movimientos (accesos, pases de salida, préstamos y resguardos)
         'salida' => 'Salida', 'salida_acompanante' => 'Salida de acompañante', 'salida_temporal' => 'Salida temporal',

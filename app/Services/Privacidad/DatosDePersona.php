@@ -10,6 +10,7 @@ use App\Models\AccidenteGuardavidas;
 use App\Models\AccidenteHuesped;
 use App\Models\AccidenteIncapacidad;
 use App\Models\AcompananteAcceso;
+use App\Models\ArticuloAcceso;
 use App\Models\Candidato;
 use App\Models\CandidatoDocumento;
 use App\Models\Colaborador;
@@ -461,6 +462,8 @@ class DatosDePersona
             $accesos = Acceso::whereIn('id', $ids)->whereIn('tipo', self::ACCESOS_EXTERNOS)->get();
             $r['bitacora_accesos'] = $accesos->map(fn ($m) => $quitar($m->getAttributes()))->all();
             $r['acompanantes'] = AcompananteAcceso::whereIn('acceso_id', $accesos->pluck('id'))->get()->map(fn ($m) => $quitar($m->getAttributes()))->all();
+            // Revisión Etapa 6 (C-19): lo que trajo (artículo, cantidad y serie) también es de su registro
+            $r['accesos_lo_que_trajo'] = ArticuloAcceso::whereIn('acceso_id', $accesos->pluck('id'))->get()->map(fn ($m) => $quitar($m->getAttributes()))->all();
         }
         if ($ids = $seleccion['candidato'] ?? []) {
             $r['candidatos'] = Candidato::whereIn('id', $ids)->get()->map(fn ($m) => $quitar($m->getAttributes()))->all();
@@ -759,6 +762,7 @@ class DatosDePersona
             'nombre' => mb_substr($texto, 0, 150), 'persona_id' => null, 'persona_visita' => null, 'identificacion' => null,
             'placas' => null, 'vehiculo_id' => null, 'conductor' => null, 'numero_reserva' => null, 'habitacion' => null,
             'observaciones' => null, 'foto_persona' => null, 'foto_identificacion' => null,
+            'articulos_nota' => null, // Revisión Etapa 6 (C-19): «¿Qué notaste?» es texto libre del guardia, como las observaciones
             'datos_eliminados_en' => now(), 'updated_at' => $a->updated_at, // no es un movimiento de la bitácora
         ]);
         AcompananteAcceso::where('acceso_id', $a->id)->update(['nombre' => mb_substr($texto, 0, 150), 'identificacion' => null]);

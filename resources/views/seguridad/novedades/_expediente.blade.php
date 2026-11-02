@@ -56,6 +56,12 @@
             @endif
         </div>
 
+        {{-- C-31 (D-20): «¿Qué hacer?» con el procedimiento que la empresa asoció a la categoría (Accidente no se ofrece: su formato no se toca) --}}
+        @php $procQueHacer = $n->categoria === 'accidente' ? null : app(\App\Services\Procedimientos\ProcedimientosVinculados::class)->para(auth()->user(), \App\Models\Empresa::find($n->empresa_id), 'novedad:'.$n->categoria); @endphp
+        @if ($procQueHacer)
+            <p class="que-hacer small mb-2"><i class="bi bi-journal-check me-1" aria-hidden="true"></i>¿Qué hacer? <a href="{{ route('procedimientos.leer', $procQueHacer->id) }}" target="_blank" rel="noopener">Ver procedimiento «{{ $procQueHacer->titulo }}»</a></p>
+        @endif
+
         @if ($volverRobo ?? false)
             <p class="small mb-2"><a href="{{ route('robo.index') }}#robo-{{ $n->id }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver a Seguimiento de robos</a></p>
         @endif

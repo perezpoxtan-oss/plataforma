@@ -68,6 +68,8 @@ final class DependenciasModulos
      */
     public const ACCIONES_CON_MODULO = [
         'colaboradores.datos_personales' => 'candidatos',
+        // C-33: los accidentes del colaborador viven en Novedades (Incidentes)
+        'colaboradores.accidentes' => 'novedades',
     ];
 
     /**

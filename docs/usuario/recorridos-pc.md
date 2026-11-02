@@ -52,9 +52,13 @@ Está pensado para hacerse **caminando con el celular**: botones grandes, un equ
 - Si el equipo no tiene etiqueta o no está en el catálogo, toca **¿No tiene etiqueta o no está en el catálogo? Captúralo a mano**, escribe su ID y elige la **Categoría del Equipo**.
 - Si escaneas un equipo que ya revisaste en este recorrido, sale un aviso amarillo.
 
+Si tu empresa asoció un procedimiento a ese tipo de equipo, debajo de su clave aparece **¿Qué hacer? Ver procedimiento «…»** (por ejemplo, cómo revisar un extintor).
+
 ## Qué pasa cuando algo falla
 
-El **primer** equipo con falla abre un ticket en la Bitácora de novedades con lo que falló: de **Siniestro Protección Civil** o, si tu empresa lo eligió en **Estructura → Configuración → Bitácora de novedades**, de **Mantenimiento de equipo PC** (así un extintor despresurizado no parece una emergencia). Los siguientes equipos con falla del mismo recorrido se anotan en ese mismo ticket. Verás un aviso con el número del ticket.
+El **primer** equipo con falla abre un ticket en la Bitácora de novedades con lo que falló, de **Mantenimiento de equipo PC**: así un extintor despresurizado no parece una emergencia ni cuenta como siniestro en los informes. Si tu empresa prefiere tratar cada falla como emergencia, puede elegir **Siniestro Protección Civil** en **Estructura → Configuración → Bitácora de novedades**. Los siguientes equipos con falla del mismo recorrido se anotan en ese mismo ticket. Verás un aviso con el número del ticket.
+
+Si tu rol no puede crear tickets, **el punto se guarda igual**: la plataforma abre el ticket por ti (dice «Ticket abierto por la plataforma…») y el jefe de seguridad recibe el aviso.
 
 Además, el **jefe de seguridad** de la sede y quien **administra los equipos de Protección Civil** reciben el aviso en su campana («Recorrido #… encontró una falla») y, al finalizar, el resumen («terminó con N hallazgos»). No tienes que avisarles tú.
 
@@ -85,7 +89,6 @@ Además, el **jefe de seguridad** de la sede y quien **administra los equipos de
 | «Ese equipo no es de la sede de este recorrido…» | El equipo es de otra sede. | Revisa la etiqueta o la sede del recorrido. |
 | «Agrega al menos un equipo al recorrido antes de finalizarlo.» | El recorrido está vacío. | Revisa al menos un equipo. |
 | «Elige la Categoría del Equipo.» | En la captura a mano falta la categoría. | Elígela de la lista. |
-| «Este punto tiene un hallazgo y debe abrir un ticket…, pero tu rol no puede crear tickets en esta sede.» | No puedes abrir tickets de novedades. | Avisa a tu supervisor. |
 | La cámara no abre | El navegador no tiene permiso de cámara. | Acepta el permiso de cámara o escribe el ID. |
 
 ## Preguntas frecuentes
