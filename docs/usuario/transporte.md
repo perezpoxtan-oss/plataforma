@@ -37,6 +37,10 @@ resumen: Anotar las llegadas y salidas del transporte de personal y los taxis cu
 
 Mientras escribes las placas o el chofer, la ventana te muestra los parecidos del padrón: si es uno de ellos, **tócalo**; si no, sigue escribiendo y se registrará como nuevo (pendiente de verificar).
 
+### Si una ruta no se registra a tiempo
+
+Si pasan **15 minutos** de la hora de una ruta (la de llegada a la sede o la de salida) y nadie la registró, a la caseta y a quien da el Vo.Bo. en la sede le llega «… sin registro» a la campana y a **Mis pendientes** («Rutas sin registro»). Una hora después pasa a quien da el Vo.Bo. en toda la empresa. Se apaga en cuanto registras la ruta (a tiempo, con retraso o «no llegó» con taxis). Solo cuenta las rutas que operan ese día.
+
 ## Cómo registrar taxis cuando la unidad no llegó
 
 1. En **Estatus del Servicio** elige **LA UNIDAD NO LLEGÓ (Se usan taxis)**. Aparece el **Taxi 1**.

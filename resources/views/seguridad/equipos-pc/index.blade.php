@@ -117,6 +117,11 @@
                         @if ($e->referencia)
                             <div class="small"><i class="bi bi-signpost me-1" aria-hidden="true"></i>{{ $e->referencia }}</div>
                         @endif
+                        {{-- DD-17: próxima recarga (opcional), con color si está cerca o vencida --}}
+                        @if ($e->proxima_recarga)
+                            @php $diasRecarga = (int) now()->startOfDay()->diffInDays($e->proxima_recarga, false); @endphp
+                            <div class="small"><span class="pastilla-reloj {{ $diasRecarga < 0 ? 'nivel-roja' : ($diasRecarga <= \App\Services\RecorridosPc\AjustesEquiposPc::RECARGA_AVISO_DIAS ? 'nivel-ambar' : '') }}"><i class="bi bi-arrow-repeat" aria-hidden="true"></i>Próxima recarga: {{ $e->proxima_recarga->format('d/m/Y') }}{{ $diasRecarga < 0 ? ' (vencida)' : '' }}</span></div>
+                        @endif
                         @if ($e->etiqueta_nfc)
                             <div class="small rpc-nfc"><i class="bi bi-broadcast-pin me-1" aria-hidden="true"></i>Etiqueta NFC / RFID asignada</div>
                         @endif
@@ -261,6 +266,10 @@
 
                         <label class="campo-etiqueta" for="{{ $modo }}_epc_ref">Referencia <span class="text-lowercase fw-normal">(opcional, para encontrarlo rápido)</span></label>
                         <input type="text" id="{{ $modo }}_epc_ref" name="referencia" class="campo" maxlength="150" placeholder="Ej: Junto al elevador de servicio" value="{{ $trasError ? old('referencia') : '' }}">
+
+                        <label class="campo-etiqueta" for="{{ $modo }}_epc_recarga">Próxima recarga <span class="text-lowercase fw-normal">(opcional: te avisamos 15 días antes)</span></label>
+                        <input type="date" id="{{ $modo }}_epc_recarga" name="proxima_recarga" class="campo" value="{{ $trasError ? old('proxima_recarga') : '' }}">
+                        @error('proxima_recarga')<p class="text-danger small mb-1">{{ $message }}</p>@enderror
 
                         @include('componentes.lector', ['id' => $modo.'_epc_nfc', 'etiqueta' => 'Etiqueta NFC / RFID (opcional)', 'modo' => 'capturar',
                             'nombre' => 'etiqueta_nfc', 'valor' => $trasError ? old('etiqueta_nfc') : '', 'duplicado' => route('identificacion.etiqueta-duplicado', ['equipo_pc', 0]),
