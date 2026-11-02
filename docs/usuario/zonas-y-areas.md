@@ -80,7 +80,7 @@ Arriba de cada pantalla está la ruta completa, con el nombre de cada nivel: **Z
    - **Lista de nombres:** un nombre por renglón (o separados por coma), por ejemplo «Suite A, Suite B».
    - Toca **Crear Habitaciones**. Las que ya existen se saltan y te dice cuántas fueron. Máximo 500 por lote.
 
-**En condominio y fraccionamiento: vivienda o área común.** En **Nueva Vivienda** (o Casa) y al editarla aparece la casilla **Es un área común** (alberca, salón, asador). Márcala en lo que no es una vivienda: así no se le llama «Vivienda» en la caseta ni en los informes y no se le pueden asignar [residentes](residentes.md). Lo que marcas como reservable en [Reservas](reservas-configuracion.md) queda como área común solo. La tarjeta muestra la etiqueta **Área común**.
+**En condominio y fraccionamiento: vivienda o área común.** En **Nueva Vivienda** (o Casa) y al editarla aparece la casilla **Es un área común** (alberca, salón, asador). Márcala en lo que no es una vivienda: así no se le llama «Vivienda» en la caseta ni en los informes y no se le pueden asignar [residentes](residentes.md). Lo que marcas como reservable en [Reservas](reservas-configuracion.md) queda como área común solo. La tarjeta muestra la etiqueta **Área común**, y al entrar el título dice «Área común Alberca», no «Vivienda». En la caseta, la tarjeta de la visita dice «Área común Alberca» y, al elegirla en **¿A quién viene?**, la caja te pide confirmar con la administración en lugar de llamar a una vivienda.
 
 ![Habitaciones](img/espacios/2-habitaciones.png)
 

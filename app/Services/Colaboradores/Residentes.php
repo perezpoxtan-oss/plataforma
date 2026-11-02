@@ -56,6 +56,33 @@ class Residentes
     }
 
     /**
+     * Revisión Etapa 5 (A-2): la conversión dejó a esta persona como Personal
+     * «por confirmar» (sin cuenta y sin vínculo claro con una vivienda). El
+     * administrador decide: «personal» la deja en el directorio; el id de una
+     * vivienda la vuelve residente de esa vivienda. En los dos casos se quita
+     * la marca y queda en la auditoría.
+     *
+     * @param  array<string, mixed>  $entrada  como = «personal» o el id de la vivienda
+     */
+    public function confirmarTipo(User $actor, Colaborador $persona, array $entrada): Colaborador
+    {
+        $como = trim(Entrada::texto($entrada['como'] ?? null));
+        $antes = $this->foto($persona) + ['tipo_por_confirmar' => (bool) $persona->tipo_por_confirmar];
+        if ($como === Colaborador::PERSONAL) {
+            $persona->forceFill(['tipo_por_confirmar' => false])->save();
+        } else {
+            $vivienda = $this->lugares->valido($como, $this->colaboradores->sedesPermitidas($actor, 'colaboradores.editar'), Lugares::ESPECIFICOS, soloViviendas: true);
+            if ($vivienda === null) {
+                throw ValidationException::withMessages(['como' => 'Elige «Es personal» o su vivienda de la lista.']);
+            }
+            $persona->forceFill(['tipo' => Colaborador::RESIDENTE, 'espacio_id' => $vivienda->id, 'sede_id' => $vivienda->sede_id, 'tipo_por_confirmar' => false])->save();
+        }
+        $this->auditoria->auditar($actor, 'colaboradores.actualizado', $persona, $antes, $this->foto($persona) + ['tipo_por_confirmar' => false]);
+
+        return $persona;
+    }
+
+    /**
      * @param  array<string, mixed>  $entrada
      * @return array<string, mixed>
      */

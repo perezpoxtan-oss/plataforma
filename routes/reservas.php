@@ -17,8 +17,8 @@ Route::prefix('reservas')->name('reservas.')->group(function () {
         Route::get('/calendario', 'calendario')->name('calendario');
         Route::get('/mis-reservas', 'mias')->name('mias');
         Route::get('/nueva', 'create')->name('create');
-        Route::post('/', 'store')->middleware('throttle:60,1')->name('store');
-        Route::get('/disponibilidad', 'disponibilidad')->middleware('throttle:240,1')->name('disponibilidad');
+        Route::post('/', 'store')->middleware('throttle:reservas.store')->name('store');
+        Route::get('/disponibilidad', 'disponibilidad')->middleware('throttle:reservas.disponibilidad')->name('disponibilidad');
         Route::get('/{reserva}', 'show')->whereNumber('reserva')->name('show');
         Route::get('/{reserva}/editar', 'edit')->whereNumber('reserva')->name('edit');
         Route::put('/{reserva}', 'update')->whereNumber('reserva')->name('update');

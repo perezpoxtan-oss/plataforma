@@ -122,7 +122,7 @@ Cuando se registra el Accidente de alguien del personal, el ticket le llega a es
 2. Elige el departamento (por ejemplo **Recursos Humanos** o **Gente y Cultura**) o **Ninguno (no avisar a un departamento)**. Valor original: **el departamento que se llama Recursos Humanos**.
 3. Toca **Guardar ajustes de la bitácora**.
 
-**Qué debes ver:** «Ajustes de la Bitácora de novedades guardados.» Si después le cambias el nombre al departamento, los accidentes le siguen llegando. El accidente de un residente (condominio o fraccionamiento) no se manda a este departamento.
+**Qué debes ver:** «Ajustes de la Bitácora de novedades guardados.» Si después le cambias el nombre al departamento, los accidentes le siguen llegando. El accidente de un residente (condominio o fraccionamiento) no se manda a este departamento. **Restablecer valor original** de esta tarjeta también regresa este departamento al de fábrica (el que se llama Recursos Humanos).
 
 ### Cómo elegir los tipos de Reporte General
 

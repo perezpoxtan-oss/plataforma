@@ -65,7 +65,7 @@ class Colaborador extends Model implements Identificable
 
     protected function casts(): array
     {
-        return ['activo' => 'boolean', 'provisional' => 'boolean', 'fecha_nacimiento' => 'date:Y-m-d', 'validado_en' => 'datetime'];
+        return ['activo' => 'boolean', 'provisional' => 'boolean', 'tipo_por_confirmar' => 'boolean', 'fecha_nacimiento' => 'date:Y-m-d', 'validado_en' => 'datetime'];
     }
 
     /** Registro que lo sustituyó cuando se unió como duplicado. */

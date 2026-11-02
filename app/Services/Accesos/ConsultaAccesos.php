@@ -113,6 +113,7 @@ class ConsultaAccesos
             'sede:id,nombre', 'colaborador:'.$colaborador, 'host:'.$colaborador, 'visitaColaborador:'.$colaborador,
             'proveedor:id,nombre', 'departamento:id,nombre', 'zona:id,nombre,tipo',
             'articulos:id,acceso_id,articulo,cantidad,serie', // C-19: lo que trae el proveedor
+            'espacio:id,uso', // revisión Etapa 5 (A-4): el área común no se nombra «Vivienda» en la tarjeta
             'registradoPor:id,name', 'autorizadoPor:id,name', 'salidaPor:id,name',
             ...($abiertos ? [
                 'acompanantes' => fn ($q) => $q->whereNull('salida_at'),
@@ -393,8 +394,8 @@ class ConsultaAccesos
             'sede' => $a->sede?->nombre,
             'habitacion' => $a->habitacion,
             // Giros: «Hab. 204» en hoteles; «Depto. 101» o «Casa 12» en condominios y fraccionamientos
-            'etiqueta_espacio' => $a->terminos()->abreviaturaEspacio($a->tipo),
-            'nombre_espacio' => $a->tipo === 'huesped' ? 'Habitación' : $a->terminos()->espacio(),
+            'etiqueta_espacio' => $a->terminos()->abreviaturaEspacio($a->tipo, $a->espacio_id ? $a->espacio : null),
+            'nombre_espacio' => $a->tipo === 'huesped' ? 'Habitación' : $a->terminos()->nombreLugar($a->espacio_id ? $a->espacio : null),
             'placas' => $a->placas,
             'zona' => $a->zona?->nombre,
             'zona_descarga' => $a->zona?->esDescarga() ?? false,

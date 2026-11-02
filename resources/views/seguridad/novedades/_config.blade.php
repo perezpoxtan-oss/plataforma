@@ -138,6 +138,6 @@
     @endif
     {{-- Configuración por secciones: «Restablecer valor original» (Novedades y Mantenimiento de equipo PC) --}}
     @if ($puedeEditar && ($ajustesNov->nombrePropio($empresa->id) || $categoriaActual !== \App\Services\Novedades\AjustesNovedades::CATEGORIA_HALLAZGO_OMISION || $horasReloj !== \App\Services\Novedades\AjustesNovedades::RELOJ_HORAS || $subtiposPropios))
-        @include('administracion.configuracion._restablecer', ['ajuste' => 'novedades', 'que' => 'el nombre del módulo, la categoría del hallazgo, el reloj de los tickets y los tipos de Reporte General'])
+        @include('administracion.configuracion._restablecer', ['ajuste' => 'novedades', 'que' => 'el nombre del módulo, la categoría del hallazgo, el reloj de los tickets, los tipos de Reporte General y el departamento que recibe los accidentes de personal'])
     @endif
 </section>

@@ -25,8 +25,10 @@
     $clavePrevia = (string) $previo('a_quien');
     $llamarPrevio = str_starts_with($clavePrevia, 'e:') || str_starts_with($clavePrevia, 'h:')
         || (str_starts_with($clavePrevia, 'c:') && (bool) \App\Models\Colaborador::find((int) substr($clavePrevia, 2))?->esResidente());
+    // Revisión Etapa 5 (A-4): un área común elegida no se presenta como vivienda en la caja de llamada
+    $areaComunPrevia = $residencial && str_starts_with($clavePrevia, 'e:') && (bool) \App\Models\Espacio::find((int) substr($clavePrevia, 2))?->esAreaComun();
 @endphp
-<div class="a-quien" data-a-quien="{{ $contexto }}" data-llamar-texto="{{ $llamarConTexto ? 1 : 0 }}" data-llamar="{{ $llamarPrevio ? 1 : 0 }}">
+<div class="a-quien" data-a-quien="{{ $contexto }}" data-llamar-texto="{{ $llamarConTexto ? 1 : 0 }}" data-llamar="{{ $llamarPrevio ? 1 : 0 }}" data-area-comun="{{ $areaComunPrevia ? 1 : 0 }}">
     <label class="campo-etiqueta" for="{{ $id }}">¿A quién viene? *</label>
     <div class="buscador-acceso">
         <input type="text" id="{{ $id }}" name="a_quien_texto" class="campo text-uppercase" maxlength="150" autocomplete="off"

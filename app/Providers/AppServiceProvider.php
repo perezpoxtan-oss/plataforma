@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\Permisos\Autorizador;
 use App\Support\HoraLocal;
 use App\Support\Identidad;
+use App\Support\Limitadores;
 use App\Support\Menu\ConstructorMenu;
 use App\Support\NoVieneEnTuPlan;
 use App\Support\RegistroTerminos;
@@ -47,6 +48,7 @@ class AppServiceProvider extends ServiceProvider
         DB::prohibitDestructiveCommands($this->app->isProduction());
 
         $this->limitadoresPublicos();
+        Limitadores::registrar(); // revisión Etapa 5 (A-8): un limitador con nombre por ruta
 
         // Giros: los correos y avisos dicen las palabras del giro de la empresa activa (en hotel no cambia nada)
         Event::listen(MessageSending::class, function (MessageSending $evento): void {
@@ -133,7 +135,7 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Límites de las pantallas públicas (sin sesión). Para un invitado,
-     * «throttle:10,1» cuenta por IP y comparte el contador entre todas las
+     * un límite sin nombre («throttle:10,1») cuenta por IP y comparte el contador entre todas las
      * rutas; en recepción todas las tabletas salen por la misma IP, así que
      * cada acción lleva su propio contador y guardar se cuenta además por enlace.
      */

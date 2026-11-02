@@ -105,7 +105,8 @@ class AQuienViene
             foreach ($this->lugares->buscar($texto, $sedes, Lugares::ESPECIFICOS, 5) as $l) {
                 $quienes = $this->lugares->residentesDe($l['id']);
                 $resultado[] = ['clave' => 'e:'.$l['id'], 'tipo' => 'lugar', 'titulo' => $t->nombreLugar($l).' '.$l['nombre'],
-                    'detalle' => $quienes->isEmpty() ? $l['ruta'] : $quienes->map(fn ($r) => $r->nombreCompleto())->join(', '), 'llamar' => true];
+                    'detalle' => $quienes->isEmpty() ? $l['ruta'] : $quienes->map(fn ($r) => $r->nombreCompleto())->join(', '), 'llamar' => true,
+                    'area_comun' => (bool) ($l['area_comun'] ?? false)]; // revisión Etapa 5 (A-4): la caja de llamada no dice «Vivienda»
             }
         }
 

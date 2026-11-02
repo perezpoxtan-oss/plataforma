@@ -31,6 +31,16 @@ resumen: Quién vive en cada vivienda o casa del condominio o fraccionamiento, c
 
 **Qué debes ver:** el mensaje verde «Residente «…» registrado. Ya aparece en «¿A quién viene?» de la caseta.» y su tarjeta con la vivienda y el teléfono.
 
+## Cómo confirmar si alguien es residente o personal
+
+Cuando tu empresa empezó a usar **Residentes**, la plataforma pasó aquí a quien tenía una vivienda que coincidía con su número o un puesto de residente (Propietario, Inquilino, Condómino, Colono). A quien no se pudo saber (por ejemplo, sin cuenta y sin vivienda que coincida) lo dejó en **Personal** y te lo pregunta.
+
+1. Entra a **Padrones → Residentes**. Arriba ves el recuadro **Por confirmar: ¿residente o personal?** con cada persona, su número, puesto o sede.
+2. En la lista de cada persona elige su **vivienda** (si vive ahí) o **Es personal (no vive aquí)**.
+3. Toca **Guardar**.
+
+**Qué debes ver:** el mensaje verde «… quedó como residente de su vivienda» (y ya aparece en «¿A quién viene?» de la caseta) o «… se queda en Personal». La persona sale del recuadro; cuando no queda nadie, el recuadro desaparece. En **Estructura → Personal** también verás un aviso con el enlace **Confirmar en Residentes** mientras falte alguien.
+
 ## Cómo cambiar a un residente de vivienda o corregir su teléfono
 
 1. En su tarjeta, toca el lápiz (**Editar**).
@@ -54,6 +64,8 @@ resumen: Quién vive en cada vivienda o casa del condominio o fraccionamiento, c
 | «… ya está registrado en esa vivienda.» | Esa persona ya existe en la misma vivienda. | Búscala en la lista; si está de baja, toca **Reactivar**. |
 | La alberca o el salón no aparecen en la lista de viviendas. | Están marcados como **área común** en Zonas y edificios. | Es correcto: a un área común no se le asignan residentes. Si es una vivienda, quita la marca en [Zonas y edificios](zonas-y-areas.md). |
 | La tarjeta dice «Sin vivienda: complétala». | El residente se registró antes sin vivienda. | Toca **Editar** y elige su vivienda. |
+| Alguien que vive aquí aparece en **Por confirmar**. | Al empezar a usar Residentes no tenía una vivienda que coincidiera con su número. | Elige su vivienda y toca **Guardar**. |
+| «Elige «Es personal» o su vivienda de la lista.» | No elegiste nada o elegiste un área común. | Elige una vivienda o **Es personal**. |
 | No veo **Residentes** en el menú. | Tu empresa no es condominio ni fraccionamiento, o tu rol no consulta el directorio. | Pide a tu administrador que revise el giro o tu rol. |
 
 ## Preguntas frecuentes

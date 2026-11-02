@@ -15,14 +15,25 @@ Usa lo que ya existía, sin duplicar reglas:
 | Scopes `Colaborador::personal()` y `residentes()`; `esResidente()`; relación `vivienda()` | `app/Models/Colaborador.php` |
 | **Padrones → Residentes**: lista, alta corta (vivienda, nombre, apellidos y teléfono; la sede sale de la vivienda), editar, Dar de baja / Reactivar | `Padrones\ResidenteController`, `Services\Colaboradores\Residentes`, `padrones/residentes/index.blade.php`, rutas `residentes.*` |
 | Menú: «Residentes» en Padrones solo en condominio y fraccionamiento (pantalla personal de `ConstructorMenu`, permisos del directorio `colaboradores.*`) | `ConstructorMenu::conPantallasPersonales()` |
-| El directorio (Estructura → «Personal» en residenciales), Usuarios y Pases buscan solo al personal (`AdministradorColaboradores::buscar(..., soloPersonal: true)`); una cuenta no se vincula a un residente | `ColaboradorController`, `UsuarioController::validarColaborador` |
+| El directorio (Estructura → «Personal» en residenciales) y Usuarios buscan solo al personal (`AdministradorColaboradores::buscar(..., soloPersonal: true)`); una cuenta no se vincula a un residente. Pases de salida pide `colaboradores.buscar?residentes=1` y encuentra también a los residentes (revisión, A-3) | `ColaboradorController`, `UsuarioController::validarColaborador` |
 | Informes (Tablero, Ejecutivo, Tendencias) cuentan solo al personal; en residenciales Tendencias muestra «Viviendas más visitadas» | `Services\Informes\*` |
 | Configura tu empresa: «Personal de la administración» y «Residentes y viviendas» | `AsistenteArranque` |
 | ARCO: el residente sale como «Residente … se rectifica en Residentes»; su vivienda (`espacio_id`) está en el inventario | `DatosDePersona`, `InventarioDatosPersonales` |
 
 **Terminología** (`Terminos`, `rubros.terminologia`): en condominio el nivel del árbol se llama **Vivienda** (antes «Departamento», que chocaba con el módulo Departamentos); en condominio y fraccionamiento «Colaborador» se dice **Personal** (antes «Residente»), con plural sin cambio («el personal»; `Terminos::plural()`), artículo en singular («los colaboradores» → «el personal») y frases fijas («Un colaborador» → «Alguien del personal», «Colaborador que Ingresa» → «Persona que ingresa»). El tipo de acceso `colaborador` se ofrece como «Residente o personal» y la tarjeta dice «Residente» o «Personal» según la persona. Abreviatura de la pastilla: «Viv.». Si una empresa tenía «Residente» guardado como palabra del colaborador, se lee como «Personal».
 
-**Datos:** en las empresas residenciales, quien no tiene cuenta vinculada pasa a residente; la vivienda se deduce del número (`R-101` → `101`, `R-B101` → `B-101`) solo si hay **una** vivienda con ese número en su sede. La terminología solo cambia si conserva el valor de fábrica. `down()` regresa la terminología y quita las columnas.
+**Datos** (corregido en la revisión, A-2): en las empresas residenciales, entre quienes **no** tienen cuenta vinculada, solo es residente quien tiene vínculo con una vivienda o el puesto lo dice. No tener cuenta no basta.
+
+| Caso (sin cuenta) | Resultado |
+|---|---|
+| Su número coincide con **una** vivienda de su sede (`R-101` → `101`, `R-B101` → `B-101`) | `residente` con esa vivienda |
+| Su puesto es Residente, Condómino, Propietario, Inquilino o Colono | `residente` sin vivienda (la completa el administrador) |
+| Número de residente (`R-…`) sin vivienda que coincida, o sin puesto ni departamento | `personal` con `tipo_por_confirmar = true` |
+| Los demás (personal con puesto o departamento) | `personal` |
+
+`colaboradores.tipo_por_confirmar`: el administrador lo resuelve en **Padrones → Residentes → Por confirmar** (`PUT /residentes/por-confirmar/{colaborador}`, `residentes.confirmar`, permiso `colaboradores.editar` con su alcance; `como` = `personal` o el id de una vivienda, nunca un área común). `Residentes::confirmarTipo()` quita la marca y audita `colaboradores.actualizado`. **Estructura → Personal** muestra un aviso con el enlace mientras quede alguien. La terminología solo cambia si conserva el valor de fábrica.
+
+`down()` guarda antes en la tabla `respaldo_residentes` (`colaborador_id`, `empresa_id`, `tipo`, `espacio_id`, `tipo_por_confirmar`) a todas las personas de las empresas residenciales, regresa la terminología y quita las columnas. Un `up()` posterior clasifica y después **restaura** el respaldo (gana sobre la deducción; la vivienda solo si sigue existiendo) y borra la tabla: un residente dado de alta sin número no pierde su vivienda y lo que el administrador confirmó no se vuelve a preguntar. **Limitación:** si solo se revierte y nunca se vuelve a migrar, la tabla `respaldo_residentes` se queda (nadie la usa) y puede borrarse a mano.
 
 > Las llaves foráneas nuevas se agregan con `Restricciones::agregarForanea()` (y se quitan con `quitarForanea()`): en SQLite (pruebas) no reconstruyen la tabla, así que no se pierden las reglas CHECK ni las llaves que apuntan a ella. Aun así, la migración lee las cuentas vinculadas **antes** de cambiar la tabla.
 
@@ -77,10 +88,21 @@ La persona citada responde su propia visita sin la bandeja de Autorizaciones: `A
 - **Vivienda o área común:** `espacios.uso` (`area_comun` o vacío). `Terminos::nombreLugar()` dice «Área común» en residenciales. Residentes solo ofrece y acepta viviendas (`Lugares::opciones(..., soloViviendas: true)`), Tendencias cuenta solo viviendas y marcar un área como reservable la deja como área común. Zonas y edificios trae la casilla «Es un área común».
 - **Receptor general (C-16):** el residente se elige en la misma opción «colaborador» del componente `componentes.receptor` (`receptor_tipo = colaborador`, `colaborador_id`), que en residenciales se llama «Residente o personal». No hay camino aparte.
 
+### Pendientes de la revisión (A-2 a A-8)
+
+- **A-2 · Conversión de residentes:** ver «Datos» en C-10 (residente solo con vivienda o puesto; lo dudoso, Personal por confirmar; respaldo en `down()`).
+- **A-3 · Pases de salida:** el formulario pide `colaboradores.buscar?residentes=1` (`ColaboradorController::buscar` solo filtra al personal sin ese parámetro, como en Usuarios). El resultado trae `residente` y `vivienda` y la lista dice «Residente · 101». El lector ya encontraba residentes al escanear; `AdministradorPasesSalida::validar()` acepta a cualquier persona activa del directorio. En residenciales las etiquetas dicen «Solicitante: residente o personal» y «Residente o personal que se lo lleva».
+- **A-4 · Área común:** `Terminos::abreviaturaEspacio($tipo, $lugar)` dice «Área común» (tarjeta de caseta en Blade y en `ConsultaAccesos::resumen()`, que carga `espacio:id,uso`); `nombre_espacio` usa `nombreLugar()`; el mensaje de registro con llamada también. Zonas y edificios: el `h1` del detalle y la miga del nivel. «¿A quién viene?» manda `area_comun` y la caja de llamada (`plataforma.js`, `data-area-comun`) dice «Va a Área común …: confirma con la administración».
+- **A-5 · Delegación en la tarjeta:** `Escalamiento::esperasPara()` calcula con `Autorizaciones::destinoDeLaPersonaCitada()` (la misma regla que al avisar) a quién le llegó el aviso: «Espera a: X (delegó en Y) · suplente: Departamento». Una vez por persona y sede.
+- **A-6 · Restablecer valor original:** `AjustesNovedades::guardar(..., departamentoAccidentesDeFabrica: true)` borra `preferencias.novedades.departamento_accidentes`; vuelve la regla de fábrica (el departamento de Recursos Humanos por nombre).
+- **A-8 · Limitadores:** `App\Support\Limitadores::POR_MINUTO` registra un limitador con nombre por ruta (el nombre de la ruta, con el mismo número de antes; por cuenta o, sin sesión, por IP). Ninguna ruta usa `throttle:N,1`, que en Laravel comparte un solo contador por usuario entre todas las rutas. `PendientesEtapaCincoTest` revisa que ninguna ruta use un límite sin nombre y que cada limitador sea de una sola ruta. Ruta nueva con límite: `->middleware('throttle:<nombre de la ruta>')` y su número en `POR_MINUTO`.
+
 ## Demo de fraccionamiento
 
 `plataforma:demo` crea **Fraccionamiento Demo** (sede «Las Lomas», `LOM`) con `frac.admin.demo` (Administrador, responsable de Mantenimiento y Administración), `frac.jefe.demo` (Jefe de seguridad) y `frac.agente.demo` (Agente): calles, manzanas y casas, Club (Casa club reservable, Alberca, Cancha), 4 residentes con casa y teléfono, 2 del personal, 3 accesos (residente, visita con llamada y servicio de gas) y un incidente. El condominio demo ahora crea sus residentes con vivienda y 2 del personal.
 
 ## Pruebas
+
+`tests/Feature/Seguridad/PendientesEtapaCincoTest.php`: A-2 (clasificación, «Por confirmar», respaldo del `down()`), A-3, A-4, A-5, A-6 y A-8 (sin límites sin nombre; agotar uno no bloquea otro).
 
 `tests/Feature/Seguridad/EtapaCincoTest.php`: migraciones con datos (ida, vuelta e ida), residentes y personal (alta corta, menú, directorio, Usuarios, baja, Configura tu empresa), términos, visita al residente con llamada (constancia, no autorizó, sin catálogo, servicio de gas, sugerencias, Tendencias), la persona citada con cuenta (aviso, Mis pendientes, escalamiento al departamento, respuesta, área, proveedor, «Llegó tu visita»), hotel (habitación del catálogo, visita a huésped con llamada, área de trabajo, `lugares.buscar`), canalizar a Mantenimiento (aviso, reloj, Mis pendientes, solo su ticket, nota, Atender, expediente, lugar), accidente de colaborador a RR. HH., reservas por vivienda (residente, departamento de baja, orden sin quien, configuración, ARCO) y el demo de fraccionamiento.
