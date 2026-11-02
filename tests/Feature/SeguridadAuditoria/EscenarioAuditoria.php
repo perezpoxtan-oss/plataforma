@@ -91,6 +91,9 @@ trait EscenarioAuditoria
         if ($parametro === 'id' && (str_starts_with($ruta, 'borrar.') || str_starts_with($ruta, 'identificacion.'))) {
             return 'llaves';
         }
+        if ($parametro === 'id' && $ruta === 'accesos.ingreso-desde-lector') {
+            return 'colaboradores';
+        }
         // Reservas de áreas: catálogos (/reservas/configuracion/catalogo/{catalogo}/{id}) con montajes
         if ($parametro === 'id' && str_starts_with($ruta, 'reservas.configuracion.catalogo.')) {
             return 'reserva_montajes';
@@ -214,7 +217,8 @@ trait EscenarioAuditoria
             case 'parte':
                 return 'seguridad';
             case 'tipo':
-                return 'llave';
+                // C-44: «Nuevo ingreso» desde el lector solo acepta lo que entra por la caseta
+                return $ruta === 'accesos.ingreso-desde-lector' ? 'colaborador' : 'llave';
             case 'pantalla':
                 return 'etiqueta';
             case 'clave':

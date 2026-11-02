@@ -396,6 +396,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/accesos/en-sitio', [AccesoController::class, 'enSitio'])->middleware('throttle:accesos.en-sitio')->name('accesos.en-sitio');
     Route::get('/accesos/buscar', [AccesoController::class, 'buscar'])->middleware('throttle:accesos.buscar')->name('accesos.buscar');
     Route::get('/accesos/gafetes', [AccesoController::class, 'gafetes'])->name('accesos.gafetes');
+    // C-44 (Etapa 8): «Nuevo ingreso» desde el lector universal con la persona o el vehículo ya elegidos
+    Route::get('/accesos/ingreso/{tipo}/{id}', [AccesoController::class, 'ingresoDesdeLector'])->whereIn('tipo', ['colaborador', 'vehiculo', 'persona', 'proveedor'])->whereNumber('id')->name('accesos.ingreso-desde-lector');
     Route::patch('/accesos/{acceso}/autorizar', [AccesoController::class, 'autorizar'])->whereNumber('acceso')->name('accesos.autorizar');
     Route::patch('/accesos/{acceso}/excepcion', [AccesoController::class, 'excepcion'])->whereNumber('acceso')->name('accesos.excepcion');
     // C-25 (DD-13): la caseta de noche

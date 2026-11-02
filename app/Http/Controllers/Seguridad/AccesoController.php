@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Seguridad;
 use App\Http\Controllers\Controller;
 use App\Models\Acceso;
 use App\Models\AcompananteAcceso;
+use App\Models\Colaborador;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Persona;
+use App\Models\Proveedor;
 use App\Models\Sede;
 use App\Services\Accesos\ArticulosDelProveedor;
 use App\Services\Accesos\ConsultaAccesos;
@@ -125,6 +127,67 @@ class AccesoController extends Controller
                 ],
             ]);
         });
+    }
+
+    /**
+     * C-44 (Etapa 8): «Nuevo ingreso» que ofrece el lector universal al
+     * escanear un colaborador, un vehículo, una persona del padrón o una
+     * empresa externa. No guarda nada: abre el Registro Inteligente de Ingreso
+     * con lo leído ya elegido (como cuando vuelve con un aviso), y el agente
+     * revisa y guarda. Todo se vuelve a validar al guardar.
+     */
+    public function ingresoDesdeLector(Request $request, string $tipo, int $id): RedirectResponse
+    {
+        Gate::authorize('accesos.crear');
+        $actor = $request->user();
+        $empresaId = $this->empresa->id($actor);
+        abort_if($empresaId === null, 404);
+
+        $previo = $this->tenant->conEmpresa($empresaId, function () use ($actor, $tipo, $id) {
+            $sedes = $this->consulta->sedesParaElegir($actor, 'accesos.crear');
+            abort_if($sedes->isEmpty(), 403);
+            $clase = config('lector.tipos.'.$tipo);
+            $registro = $clase::query()->find($id);
+            abort_if($registro === null || ! $registro->activo, 404);
+
+            $previo = ['_dialogo' => 'ingreso'];
+            $sedeDe = fn ($sedeId) => $sedeId !== null && $sedes->contains('id', (int) $sedeId) ? (int) $sedeId : null;
+            $proveedor = fn (Proveedor $p) => ['tipo' => $p->categoria === 'contratista' ? 'contratista' : 'proveedor',
+                'proveedor_id' => $p->id, 'empresa_procedencia' => $p->nombre];
+            switch ($tipo) {
+                case 'colaborador':
+                    $previo += ['tipo' => 'colaborador', 'colaborador_id' => $registro->id, 'sede_id' => $sedeDe($registro->sede_id)];
+                    break;
+                case 'persona':
+                    $previo += ['tipo' => $registro->tipo, 'persona_id' => $registro->id, 'nombre' => $registro->nombre_completo];
+                    if ($registro->proveedor !== null) {
+                        $previo = array_merge($previo, $proveedor($registro->proveedor), ['tipo' => $registro->tipo]);
+                    } elseif ($registro->empresa_procedencia) {
+                        $previo['empresa_procedencia'] = $registro->empresa_procedencia;
+                    }
+                    break;
+                case 'proveedor':
+                    $previo += $proveedor($registro);
+                    break;
+                case 'vehiculo':
+                    $previo += ['modo_arribo' => 'auto', 'vehiculo_id' => $registro->id, 'placas' => $registro->placas];
+                    if ($registro->colaborador_id !== null && ($c = Colaborador::find($registro->colaborador_id)) !== null && $c->activo) {
+                        $previo += ['tipo' => 'colaborador', 'colaborador_id' => $c->id, 'sede_id' => $sedeDe($c->sede_id)];
+                    } elseif ($registro->proveedor_id !== null && ($p = Proveedor::find($registro->proveedor_id)) !== null) {
+                        $previo += $proveedor($p);
+                    } else {
+                        $previo += ['tipo' => 'visitante'];
+                    }
+                    break;
+            }
+            if (empty($previo['sede_id']) && $sedes->count() === 1) {
+                $previo['sede_id'] = $sedes->first()->id;
+            }
+
+            return array_filter($previo, fn ($v) => $v !== null);
+        });
+
+        return redirect()->route('accesos.index')->withInput($previo);
     }
 
     /**

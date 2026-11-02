@@ -2,12 +2,18 @@
 
 namespace App\Services\Lector;
 
+use App\Models\Acceso;
+use App\Models\Colaborador;
 use App\Models\Equipo;
 use App\Models\EquipoResponsiva;
 use App\Models\Llave;
+use App\Models\Persona;
 use App\Models\PrestamoLlave;
+use App\Models\Proveedor;
 use App\Models\Responsiva;
 use App\Models\User;
+use App\Models\Vehiculo;
+use App\Services\Accesos\ConsultaAccesos;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
 use App\Services\Responsivas\AdministradorResponsivas;
 use App\Support\HoraLocal;
@@ -21,6 +27,12 @@ use Illuminate\Database\Eloquent\Model;
  *  - una llave en caseta → «Prestar» (abre «Prestar Llave» con la llave ya elegida);
  *  - un equipo en una responsiva → «Recibir» en OK (o abrir la responsiva si viene dañado o falta).
  *
+ * C-44 (Etapa 8): un colaborador, un vehículo, una persona del padrón o una
+ * empresa externa ofrecen lo que hace la caseta: «Dar salida» si está en
+ * sitio (abre la salida a la vista ya buscada, con su revisión de gafete e
+ * identificación) o «Nuevo ingreso» (abre el registro con la persona o el
+ * vehículo ya elegidos). Un registro con el acceso restringido solo lo avisa.
+ *
  * Un gafete en uso ya lleva directo a «Dar salida» (Gafete::urlLector). Sin
  * acción probable (o sin permiso para hacerla), se abre la ficha como siempre.
  * Cada acción la vuelve a revisar su módulo (permiso, sede y alcance).
@@ -30,7 +42,11 @@ class AccionesLector
     public function __construct(
         private readonly AdministradorPrestamosLlaves $prestamos,
         private readonly AdministradorResponsivas $responsivas,
+        private readonly ConsultaAccesos $accesos,
     ) {}
+
+    /** Tipos del lector que se registran en la Bitácora de accesos: tipo => columna de accesos. */
+    public const DE_CASETA = ['colaborador' => 'colaborador_id', 'vehiculo' => 'vehiculo_id', 'persona' => 'persona_id', 'proveedor' => 'proveedor_id'];
 
     /**
      * Debe correr con la empresa de trabajo ya fijada en el Tenant.
@@ -43,15 +59,24 @@ class AccionesLector
         $registro = match ($encontrado['tipo']) {
             'llave' => Llave::find($encontrado['id']),
             'equipo' => Equipo::with('tipo:id,nombre')->find($encontrado['id']),
+            'colaborador' => Colaborador::find($encontrado['id']),
+            'vehiculo' => Vehiculo::find($encontrado['id']),
+            'persona' => Persona::find($encontrado['id']),
+            'proveedor' => Proveedor::find($encontrado['id']),
             default => null,
         };
         if ($registro === null) {
             return null;
         }
         $base = ['titulo' => $encontrado['titulo'], 'detalle' => $encontrado['detalle'] ?? null, 'ficha' => $encontrado['url']];
-        $resultado = $registro instanceof Llave ? $this->deLlave($actor, $registro, $base) : $this->deEquipo($actor, $registro, $base);
+        $resultado = match (true) {
+            $registro instanceof Llave => $this->deLlave($actor, $registro, $base),
+            $registro instanceof Equipo => $this->deEquipo($actor, $registro, $base),
+            default => $this->deCaseta($actor, $encontrado['tipo'], $registro, $base),
+        };
 
-        return $resultado === null || $resultado['acciones'] === [] ? null : $resultado;
+        // Un aviso sin acción (acceso restringido) también se muestra: la caseta debe verlo antes de abrir la ficha
+        return $resultado === null || ($resultado['acciones'] === [] && empty($resultado['aviso'])) ? null : $resultado;
     }
 
     /**
@@ -132,5 +157,59 @@ class AccionesLector
     private function enAlcance(User $actor, string $permiso, Model $prestamo): bool
     {
         return $actor->can($permiso) && $this->prestamos->limitar(PrestamoLlave::query(), $actor, $permiso)->whereKey($prestamo->getKey())->exists();
+    }
+
+    /**
+     * C-44: colaborador, vehículo, persona o empresa externa → «Dar salida» o «Nuevo ingreso».
+     *
+     * @param  array<string, mixed>  $base
+     * @return array<string, mixed>|null
+     */
+    private function deCaseta(User $actor, string $tipo, Model $registro, array $base): ?array
+    {
+        $columna = self::DE_CASETA[$tipo] ?? null;
+        if ($columna === null) {
+            return null;
+        }
+        $iconos = ['colaborador' => 'bi-person-badge', 'vehiculo' => 'bi-car-front-fill', 'persona' => 'bi-person-vcard', 'proveedor' => 'bi-building'];
+        $nombres = ['colaborador' => 'Colaborador', 'vehiculo' => 'Vehículo', 'persona' => 'Persona externa', 'proveedor' => 'Empresa externa'];
+        $base += ['icono' => $iconos[$tipo], 'tipo' => $nombres[$tipo]];
+
+        // ¿Está dentro? Su acceso abierto en las sedes donde da salidas
+        if ($actor->can('accesos.editar')) {
+            $acceso = $this->accesos->limitar(Acceso::query(), $actor, 'accesos.editar')
+                ->where('accesos.estado', 'en_sitio')->where('accesos.movimiento', 'entrada')
+                ->where('accesos.'.$columna, $registro->getKey())->latest('accesos.entrada_at')->first();
+            if ($acceso !== null) {
+                $busqueda = $tipo === 'vehiculo' && $acceso->placas ? $acceso->placas : $acceso->nombre;
+
+                return $base + [
+                    'estado' => 'Está en sitio desde el '.app(HoraLocal::class)->formatear($acceso->entrada_at, 'd/m H:i')
+                        .($tipo === 'proveedor' || $tipo === 'vehiculo' ? ' ('.$acceso->nombre.')' : '').'.',
+                    'acciones' => [[
+                        'etiqueta' => 'Dar salida', 'icono' => 'bi-box-arrow-right', 'metodo' => 'GET', 'principal' => true,
+                        'url' => route('accesos.index', ['salida' => $busqueda]),
+                        'nota' => 'Se abre la Bitácora de accesos con su tarjeta: revisa el gafete y la identificación antes de confirmar.',
+                    ]]];
+            }
+        }
+
+        // El acceso restringido se avisa aquí mismo (la caseta lo ve antes que nada)
+        if (method_exists($registro, 'restringido') && $registro->restringido()) {
+            return $base + ['estado' => rtrim($registro->textoRestriccion(), '.').'.', 'aviso' => true, 'acciones' => []];
+        }
+        if (! (bool) $registro->getAttribute('activo') || ! $actor->can('accesos.crear')
+            || $this->accesos->sedesParaElegir($actor, 'accesos.crear')->isEmpty()) {
+            return null;
+        }
+
+        return $base + ['estado' => 'No está en sitio.',
+            'acciones' => [[
+                'etiqueta' => 'Nuevo ingreso', 'icono' => 'bi-person-plus-fill', 'metodo' => 'GET', 'principal' => true,
+                'url' => route('accesos.ingreso-desde-lector', [$tipo, $registro->getKey()]),
+                'nota' => $tipo === 'vehiculo'
+                    ? 'Se abre el registro de ingreso con el vehículo ya elegido: completa quién viene en él.'
+                    : 'Se abre el registro de ingreso con sus datos ya elegidos: revisa y guarda.',
+            ]]];
     }
 }

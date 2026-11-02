@@ -126,6 +126,18 @@ Lo que pide cada tipo:
 Si escribes a mano un nombre que ya existe en el Padrón de personas, al guardar sale el aviso rojo «Ya existe una persona registrada con este nombre…»: toca **Sí, es la misma** para usar su registro, o **No, es alguien distinto** para crear otra persona.
 
 <!-- solo: hotel, corporativo -->
+## Cómo registrar un ingreso escaneando su QR o su tarjeta
+
+Si la persona, el colaborador, el vehículo o la empresa ya tienen su **código QR** o su **tarjeta NFC / RFID**, escanéalos con la cámara del celular (fuera de la plataforma) o acércalos al lector:
+
+1. Si **no está en sitio**, la plataforma te ofrece **Nuevo ingreso**. Tócalo.
+2. Se abre el **Registro Inteligente de Ingreso** con sus datos ya elegidos (el colaborador, la persona y su empresa, o el vehículo y su dueño).
+3. Revisa lo que falta (gafete, a quién viene…) y toca el botón de guardar como siempre.
+
+Si **ya está en sitio**, te ofrece **Dar salida**: se abre su tarjeta en la salida a la vista y la confirmas revisando gafete e identificación. Si tiene el **acceso restringido**, solo verás el aviso en rojo con el motivo.
+
+**Qué debes ver:** el registro ya lleno con lo leído. Nada se guarda hasta que tú lo guardes.
+
 ## Cómo registrar a quien viene a Recursos Humanos
 
 La caseta solo anota **a qué viene** la persona y avisa. Recursos Humanos decide si pasa y se encarga de lo demás (su solicitud, su puesto y su departamento).

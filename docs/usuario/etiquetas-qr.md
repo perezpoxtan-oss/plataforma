@@ -130,6 +130,9 @@ Si escaneas el QR **con la cámara del celular, fuera de la plataforma** (sin ab
 | Una **llave en caseta** | **Prestar**: abre «Prestar Llave» con esa llave ya elegida; solo escaneas el gafete. |
 | Un **equipo en una responsiva** | **Recibir (OK)**, o **Viene dañado o falta: abrir la responsiva**. |
 | Un **gafete en uso** | Te lleva directo a **Dar salida** en la Bitácora de accesos. |
+| Un **colaborador**, un **vehículo**, una **persona** o una **empresa externa** que **está en sitio** | **Dar salida**: abre la Bitácora de accesos con su tarjeta ya buscada; revisas el gafete y la identificación y confirmas. |
+| Un **colaborador**, un **vehículo**, una **persona** o una **empresa externa** que **no está en sitio** | **Nuevo ingreso**: abre el Registro Inteligente de Ingreso con sus datos ya elegidos; revisas y guardas. |
+| Alguien con el **acceso restringido** | Solo el aviso en rojo (con el motivo) y **Solo ver la ficha**. |
 | Cualquier otra cosa | Abre su ficha, como siempre. |
 
 Siempre puedes tocar **Solo ver la ficha**. Si tu rol no puede hacer esa acción (por ejemplo, no recibe llaves en esa sede), se abre la ficha.
