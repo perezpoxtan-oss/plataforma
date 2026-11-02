@@ -29,7 +29,9 @@ final class GruposAvisos
         'transporte' => ['Bitácora de transporte', 'bi-taxi-front', 'transporte', ['vale_taxi']],
         'vouchers' => ['Vouchers de reposición', 'bi-receipt', 'vouchers', ['voucher_cobro']],
         'procedimientos' => ['Procedimientos', 'bi-book', 'procedimientos', ['procedimiento_publicado', 'procedimiento_recordatorio', 'procedimiento_revision']],
-        'candidatos' => ['Recepción y candidatos', 'bi-people', 'candidatos', ['candidato_llegada', 'autorizacion_departamento', 'entrevista_departamento', 'evaluacion_departamento', 'plazo_candidato']],
+        'candidatos' => ['Recepción y candidatos', 'bi-people', 'candidatos', ['candidato_llegada', 'entrevista_departamento', 'evaluacion_departamento', 'plazo_candidato']],
+        // C-38: el aviso de las visitas que esperan al departamento es de la caseta, no de Candidatos
+        'autorizaciones' => ['Autorizaciones de visitas', 'bi-patch-check', 'autorizaciones', ['autorizacion_departamento']],
         // Reservas de áreas (docs/tecnico/reservas.md)
         'reservas' => ['Reservas de áreas', 'bi-calendar-check', 'reservas', ['reserva_aprobacion', 'reserva_resultado', 'reserva_orden']],
     ];

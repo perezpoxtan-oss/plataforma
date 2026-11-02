@@ -9,9 +9,10 @@ Entra quien tiene `configuracion.ver` **o** quien configura los días de resguar
 | Ancla | Sección | Tarjetas | Quién edita |
 |---|---|---|---|
 | `#sec-general` | General | «Configura tu empresa» (`#configura-tu-empresa`: Mostrar u Ocultar en Inicio, ver [configura-tu-empresa.md](configura-tu-empresa.md)), Datos de la empresa (enlace a Empresas), **Reloj y suplente** (`#cfg-vobo`, `PUT /configuracion/relojes`; ver [relojes.md](relojes.md)), **Nombres en el menú** (`#cfg-menu`, Avanzado) | `configuracion.editar` empresa; Empresas: `empresas.editar` |
-| `#caseta` | Caseta y accesos | Esperas del departamento (`#cfg-esperas`, enlace), Impresión desde padrones (`#cfg-impresion`, enlace), Procedimientos (`#cfg-procedimientos`), avisos de Colaboradores, Altas por verificar y Procedimientos | `configuracion.editar` empresa; enlaces: su permiso `configurar` |
+| `#caseta` | Caseta y accesos | Esperas del departamento (`#cfg-esperas`, enlace), Impresión desde padrones (`#cfg-impresion`, enlace), motivos, permanencia y noche; avisos de **Autorizaciones de visitas** (`#config-autorizaciones`, C-38) y Altas por verificar | `configuracion.editar` empresa; enlaces: su permiso `configurar` |
+| `#sec-estructura` | Estructura (C-38) | Avisos de Colaboradores (`#config-colaboradores`) | `configuracion.editar` empresa |
 | `#sec-rh` | Recepción y RR. HH. | Avisos, aviso de privacidad y kiosco (`#recepcion`), Plazos y documentos (`#cfg-plazos`, enlace), Criterios (`#cfg-criterios`, enlace), Bolsa de trabajo (`#bolsa-trabajo`) | `candidatos.configurar` / `vacantes.configurar` empresa |
-| `#sec-novedades` | (nombre de la bitácora de la empresa) | Avisos, nombre y hallazgo (`#novedades`), Lost & Found (`#lost-found`) | `configuracion.editar` empresa; LF: `lost_found.configurar` empresa |
+| `#sec-novedades` | (nombre de la bitácora de la empresa) | Avisos de la bitácora y de Procedimientos, Procedimientos: acuse y recordatorio (`#cfg-procedimientos`, C-38), nombre y hallazgo (`#novedades`), Lost & Found (`#lost-found`) | `configuracion.editar` empresa; LF: `lost_found.configurar` empresa |
 | `#sec-activos` | Activos | Llaves (`#cfg-llaves`), Responsivas (`#cfg-responsivas`), avisos de Vouchers | `configuracion.editar` empresa |
 | `#sec-transporte` | Transporte | Firmas del vale (`#cfg-transporte`), avisos del vale de taxi | ídem |
 | `#sec-pases` | Pases de salida | Resumen del circuito («Configurar circuito»), avisos | `pases_salida.configurar`; avisos: `configuracion.editar` |

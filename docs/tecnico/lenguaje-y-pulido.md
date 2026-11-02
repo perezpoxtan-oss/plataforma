@@ -9,3 +9,19 @@ Plan de correcciones, Etapa 7 (C-35, C-38, C-39, C-40, C-41, C-43 y C-42). Riesg
 - **Lista de Candidatos corta:** arriba solo **Nuevo candidato** y la búsqueda; sede, departamento, vacante, Recepción, Criterios de entrevista, Documentos y plazos y la exportación van en **Avanzado** (`<details data-avanzado-candidatos>`, abierto si hay un filtro de Avanzado puesto; los filtros usan `form="filtrosCandidatos"`).
 - **Etapas con un solo nombre:** `Candidato::ETAPAS['considerar']` = «Considerar» (antes «Considerar / cartera»), igual que su botón. Pantallas, Excel, Informes y el manual toman el nombre de `Candidato::ETAPAS`.
 - Pruebas: `EtapaSieteRrhhTest`.
+
+## C-38 · Configuración ordenada
+
+Un solo lugar por ajuste (ningún ajuste se pierde; las rutas no cambian, solo la sección donde se ve la tarjeta):
+
+| Tarjeta | Antes | Ahora |
+|---|---|---|
+| **Colaboradores: avisos por correo** (`#config-colaboradores`) | Caseta y accesos | **Estructura** (`#sec-estructura`, sección nueva) |
+| **Procedimientos: acuse «Leí y entendí» y recordatorio** (`#cfg-procedimientos`) y **Procedimientos: avisos por correo** (`#config-procedimientos`) | Caseta y accesos | Sección de la bitácora (`#sec-novedades`), junto a «¿Qué hacer? Ver procedimiento» |
+| Aviso **«Autorizaciones: avisar al responsable del departamento…»** (`autorizacion_departamento`) | Grupo «Recepción y candidatos» (Recepción y RR. HH.) | Grupo propio **Autorizaciones de visitas** (`GruposAvisos::GRUPOS['autorizaciones']`, `#config-autorizaciones`) en **Caseta y accesos**, junto a «Quién espera autorización del departamento» |
+
+- La vista decide la sección con `$seccionDeGrupo` y muestra cada sección con `$verSeccion('<ancla>')` (antes, por índice del arreglo).
+- La sección de la bitácora también aparece si la empresa tiene Procedimientos sin Novedades.
+- Migración `2026_11_17_000100_avisos_de_autorizaciones_en_la_caseta`: el interruptor general del grupo nuevo (`preferencias.avisos_modulos.autorizaciones`) hereda el de `candidatos` cuando estaba apagado, para que ninguna empresa empiece a recibir un correo que no recibía. `down()` quita la llave (el aviso vuelve a obedecer al interruptor de Candidatos).
+- Mi cuenta (`PreferenciasAvisos`) agrupa el aviso con su grupo nuevo.
+- Pruebas: `EtapaSieteConfiguracionTest`.
