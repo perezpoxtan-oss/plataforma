@@ -165,3 +165,7 @@ La pantalla de Vouchers y la impresión triple viven en su propio módulo.
 | Otro caso | Redirige a la ficha, como antes |
 
 `AccesoController::ingresoDesdeLector` no guarda nada: arma la entrada anterior (`withInput`, `_dialogo=ingreso`) y la bitácora reabre el Registro Inteligente de Ingreso como tras un aviso: colaborador (`colaborador_id`, su sede si la atiende), persona (`persona_id`, `nombre`, su tipo y su empresa), empresa externa (`proveedor_id`, `empresa_procedencia`; contratista si su categoría lo es) y vehículo (`modo_arribo=auto`, `vehiculo_id`, `placas` y su dueño: colaborador, empresa o visita). Con una sola sede, se elige sola. Registro de otra empresa o de baja → 404; sin `accesos.crear` → 403. Pruebas: `EtapaOchoAccionesLectorTest`.
+
+### Dar salida con la tarjeta o el QR del padrón (C-44)
+
+`ConsultaAccesos::buscarEnSitio()` (salida a la vista y «Buscar y Dar Salida») también busca, con `padronesLeidos()`, el colaborador, la persona, la empresa externa o el vehículo cuyo `codigo_qr` (dirección `/e/…`) o `etiqueta_nfc` (cualquiera de sus formas) coincide con lo leído, y devuelve sus accesos en sitio. Solo con una sola palabra: un nombre completo se busca como siempre.

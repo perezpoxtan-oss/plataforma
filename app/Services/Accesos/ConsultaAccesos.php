@@ -6,6 +6,8 @@ use App\Models\Acceso;
 use App\Models\AcompananteAcceso;
 use App\Models\Colaborador;
 use App\Models\Gafete;
+use App\Models\Persona;
+use App\Models\Proveedor;
 use App\Models\Sede;
 use App\Models\TipoGafete;
 use App\Models\User;
@@ -334,6 +336,8 @@ class ConsultaAccesos
             ->where('accesos.estado', 'en_sitio')->where('accesos.movimiento', 'entrada');
 
         $gafetes = $gafeteId !== null ? [$gafeteId] : $this->gafetesLeidos($texto);
+        // C-44 (Etapa 8): también la credencial del colaborador, la tarjeta o el QR de la persona, de su empresa o del vehículo
+        $padrones = $gafeteId !== null ? [] : $this->padronesLeidos($texto);
         $porGafete = fn ($q) => $q->whereIn('accesos.gafete_id', $gafetes)
             ->orWhereHas('acompanantes', fn ($ac) => $ac->whereIn('gafete_id', $gafetes)->whereNull('salida_at'));
 
@@ -347,6 +351,11 @@ class ConsultaAccesos
                 ->orWhereRaw('LOWER(accesos.habitacion) LIKE ?', [$comodin])
                 ->when($normalizadas !== '', fn ($p) => $p->orWhere('accesos.placas', 'like', '%'.addcslashes($normalizadas, '%_\\').'%'))
                 ->when($gafetes !== [], fn ($p) => $p->orWhere($porGafete))
+                ->when($padrones !== [], fn ($p) => $p->orWhere(function ($x) use ($padrones) {
+                    foreach ($padrones as $columna => $ids) {
+                        $x->orWhereIn('accesos.'.$columna, $ids);
+                    }
+                }))
                 ->orWhereHas('acompanantes', fn ($ac) => $ac->whereNull('salida_at')
                     ->where(fn ($x) => $x->whereRaw('LOWER(gafete_texto) LIKE ?', [$comodin])->orWhereRaw('LOWER(nombre) LIKE ?', [$comodin]))));
         }
@@ -375,6 +384,44 @@ class ConsultaAccesos
         }
 
         return Gafete::query()->coincideConLectura($codigo, $candidatos)->limit(5)->pluck('id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    /**
+     * C-44 (Etapa 8): colaborador, persona, empresa externa o vehículo que
+     * corresponden a una lectura (QR con dirección o tarjeta NFC/RFID en
+     * cualquiera de sus formas), para dar salida acercando su credencial o
+     * su tarjeta. Solo con una sola palabra (un nombre completo no se busca así).
+     *
+     * @return array<string, list<int>> columna de accesos => ids
+     */
+    private function padronesLeidos(string $texto): array
+    {
+        if ($texto === '' || mb_strlen($texto) > Etiqueta::MAXIMO) {
+            return [];
+        }
+        $codigo = Etiqueta::codigoDeUrl($texto);
+        $candidatos = $codigo !== null ? [] : Etiqueta::candidatos($texto);
+        if ($codigo === null && ($candidatos === [] || preg_match('/\s/u', $texto))) {
+            return [];
+        }
+        $leidos = [];
+        foreach (['colaborador_id' => Colaborador::class, 'persona_id' => Persona::class, 'proveedor_id' => Proveedor::class, 'vehiculo_id' => Vehiculo::class] as $columna => $clase) {
+            $consulta = $clase::query();
+            $consulta->where(function ($q) use ($codigo, $candidatos, $consulta) {
+                if ($codigo !== null) {
+                    $q->orWhere($consulta->getModel()->qualifyColumn('codigo_qr'), $codigo);
+                }
+                if ($candidatos !== []) {
+                    $q->orWhereIn($consulta->getModel()->qualifyColumn('etiqueta_nfc'), $candidatos);
+                }
+            });
+            $ids = $consulta->limit(5)->pluck('id')->map(fn ($id) => (int) $id)->all();
+            if ($ids !== []) {
+                $leidos[$columna] = $ids;
+            }
+        }
+
+        return $leidos;
     }
 
     /**

@@ -275,7 +275,7 @@ Si en tu empresa la casilla **Proveedor** o **Contratista** no está marcada (ve
 
 La forma más rápida es con el campo que está **siempre a la vista**, arriba de las tarjetas:
 
-1. Cuando te devuelvan el gafete, **escanéalo** con la pistola, con la cámara (botón del código QR) o acércalo si es etiqueta NFC; o escribe el **nombre, las placas, el gafete o la habitación**.
+1. Cuando te devuelvan el gafete, **escanéalo** con la pistola, con la cámara (botón del código QR) o acércalo si es etiqueta NFC; o escribe el **nombre, las placas, el gafete o la habitación**. También sirve la **credencial** del colaborador o la **tarjeta o el QR** de la persona, de su empresa o del vehículo.
 2. Aparece la tarjeta de la persona con el botón **Dar salida**. Tócalo y confirma. Si la persona está fuera un rato (tour o salida temporal), el botón dice **Registrar regreso**.
 3. El botón **Dar salida** de arriba (junto a **Nuevo Ingreso**) solo pone el cursor en ese campo; en el celular funciona igual.
 

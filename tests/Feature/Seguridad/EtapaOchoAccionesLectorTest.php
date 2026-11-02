@@ -142,4 +142,23 @@ class EtapaOchoAccionesLectorTest extends TestCase
         $this->actingAs($director)->get(route('lector.ir', $activo->codigo_qr))->assertRedirect($activo->urlLector());
         $this->actingAs($director)->get(route('accesos.ingreso-desde-lector', ['colaborador', $activo->id]))->assertForbidden();
     }
+
+    public function test_dar_salida_a_la_vista_acepta_la_tarjeta_o_el_qr_de_la_persona_y_de_la_credencial(): void
+    {
+        $p = $this->enEmpresa(fn () => Persona::create(['tipo' => 'visitante', 'nombre_completo' => 'Rita Lee']));
+        $this->enEmpresa(fn () => $p->forceFill(['etiqueta_nfc' => '04:aa:bb:cc'])->save());
+        $acceso = $this->enSitio(['tipo' => 'visitante', 'motivo_visita' => 'general', 'persona_visita' => 'X', 'nombre' => 'RITA LEE', 'persona_id' => $p->id]);
+
+        // La tarjeta de la persona (en otro formato) y el QR de su pase encuentran su acceso en sitio
+        $this->actingAs($this->agente)->getJson(route('accesos.en-sitio', ['q' => '04AABBCC']))->assertOk()->assertJsonPath('resultados.0.id', $acceso->id);
+        $this->actingAs($this->agente)->getJson(route('accesos.en-sitio', ['q' => route('lector.ir', $p->codigo_qr)]))->assertJsonPath('resultados.0.id', $acceso->id);
+
+        // La credencial del colaborador (su QR)
+        $c = $this->colaborador();
+        $dentro = $this->enSitio(['tipo' => 'colaborador', 'colaborador_id' => $c->id, 'nombre' => 'LUIS MORA']);
+        $this->actingAs($this->agente)->getJson(route('accesos.en-sitio', ['q' => route('lector.ir', $c->codigo_qr)]))->assertJsonPath('resultados.0.id', $dentro->id);
+
+        // Un nombre completo se sigue buscando como siempre (sin consultar tarjetas)
+        $this->actingAs($this->agente)->getJson(route('accesos.en-sitio', ['q' => 'rita lee']))->assertJsonPath('resultados.0.id', $acceso->id);
+    }
 }
