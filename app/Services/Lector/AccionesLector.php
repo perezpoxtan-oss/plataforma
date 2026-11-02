@@ -6,6 +6,7 @@ use App\Models\Acceso;
 use App\Models\Colaborador;
 use App\Models\Equipo;
 use App\Models\EquipoResponsiva;
+use App\Models\Gafete;
 use App\Models\Llave;
 use App\Models\Persona;
 use App\Models\PrestamoLlave;
@@ -14,6 +15,7 @@ use App\Models\Responsiva;
 use App\Models\User;
 use App\Models\Vehiculo;
 use App\Services\Accesos\ConsultaAccesos;
+use App\Services\Gafetes\AdministradorGafetes;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
 use App\Services\Responsivas\AdministradorResponsivas;
 use App\Support\HoraLocal;
@@ -59,6 +61,7 @@ class AccionesLector
         $registro = match ($encontrado['tipo']) {
             'llave' => Llave::find($encontrado['id']),
             'equipo' => Equipo::with('tipo:id,nombre')->find($encontrado['id']),
+            'gafete' => Gafete::find($encontrado['id']),
             'colaborador' => Colaborador::find($encontrado['id']),
             'vehiculo' => Vehiculo::find($encontrado['id']),
             'persona' => Persona::find($encontrado['id']),
@@ -72,6 +75,7 @@ class AccionesLector
         $resultado = match (true) {
             $registro instanceof Llave => $this->deLlave($actor, $registro, $base),
             $registro instanceof Equipo => $this->deEquipo($actor, $registro, $base),
+            $registro instanceof Gafete => $this->deGafete($actor, $registro, $base),
             default => $this->deCaseta($actor, $encontrado['tipo'], $registro, $base),
         };
 
@@ -97,6 +101,8 @@ class AccionesLector
                 'acciones' => [[
                     'etiqueta' => 'Recibir', 'icono' => 'bi-box-arrow-in-down', 'metodo' => 'PATCH', 'principal' => true,
                     'url' => route('prestamo_llaves.recibir', $prestamo->id),
+                    // C-45 (DD-19): recepción común OK / Dañado / No regresó (OK marcado)
+                    'recepcion' => ['noRegreso' => true],
                     'nota' => $prestamo->tipo_garantia === 'ninguna' ? null : 'Después, devuelve su garantía: '.$prestamo->textoGarantia().'.',
                 ]]];
         }
@@ -113,6 +119,7 @@ class AccionesLector
                 'acciones' => [[
                     'etiqueta' => 'Recibir', 'icono' => 'bi-box-arrow-in-down', 'metodo' => 'PATCH', 'principal' => true,
                     'url' => route('prestamo_llaves.recibir', $ultimo->id),
+                    'recepcion' => ['noRegreso' => false],
                     'nota' => $ultimo->tipo_garantia === 'ninguna' ? null : 'Después, devuelve su garantía: '.$ultimo->textoGarantia().'.',
                 ]]];
         }
@@ -157,6 +164,29 @@ class AccionesLector
     private function enAlcance(User $actor, string $permiso, Model $prestamo): bool
     {
         return $actor->can($permiso) && $this->prestamos->limitar(PrestamoLlave::query(), $actor, $permiso)->whereKey($prestamo->getKey())->exists();
+    }
+
+    /**
+     * C-45 (DD-19): un gafete «No regresó» que apareció se recibe aquí (OK o
+     * dañado). El gafete en uso sigue yendo a «Dar salida» (Gafete::urlLector).
+     *
+     * @param  array<string, mixed>  $base
+     * @return array<string, mixed>|null
+     */
+    private function deGafete(User $actor, Gafete $gafete, array $base): ?array
+    {
+        if (! $gafete->activo || ! $gafete->noRegreso() || ! ($actor->can('gafetes.editar') || $actor->can('accesos.editar'))
+            || ! app(AdministradorGafetes::class)->limitar(Gafete::query(), $actor, 'gafetes.ver')->whereKey($gafete->id)->exists()) {
+            return null;
+        }
+
+        return $base + ['icono' => 'bi-exclamation-octagon', 'tipo' => 'Gafete que no regresó',
+            'estado' => 'Está marcado «No regresó». Si ya lo devolvieron, recíbelo.',
+            'acciones' => [[
+                'etiqueta' => 'Recibir', 'icono' => 'bi-box-arrow-in-down', 'metodo' => 'PATCH', 'principal' => true,
+                'url' => route('gafetes.recibir', $gafete->id), 'recepcion' => ['noRegreso' => false],
+                'nota' => 'Vuelve a DISPONIBLE para prestarse en caseta.',
+            ]]];
     }
 
     /**

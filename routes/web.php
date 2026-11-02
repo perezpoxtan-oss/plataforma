@@ -24,6 +24,7 @@ use App\Http\Controllers\BajasController;
 use App\Http\Controllers\Cuenta\DosPasosController as CuentaDosPasosController;
 use App\Http\Controllers\Cuenta\MiCuentaController;
 use App\Http\Controllers\Cuenta\MiSuscripcionController;
+use App\Http\Controllers\HistorialActivosController;
 use App\Http\Controllers\IdentificacionController;
 use App\Http\Controllers\Informes\BitacoraDelDiaController;
 use App\Http\Controllers\Informes\InformeEjecutivoController;
@@ -612,6 +613,9 @@ Route::middleware('auth')->group(function () {
     // Padrones: Ajustes Ronda 5 (código e identificación de las fichas; firmas de vouchers)
     Route::get('/identificacion/{tipo}/{id}/qr', [IdentificacionController::class, 'qr'])
         ->where('tipo', '[a-z_]+')->whereNumber('id')->name('identificacion.qr');
+    // C-45 (Etapa 8): «Entregas y recepciones» (historial único de llaves, gafetes, equipos y credenciales)
+    Route::get('/activos/{tipo}/{id}/entregas', [HistorialActivosController::class, 'show'])
+        ->whereIn('tipo', HistorialActivosController::TIPOS)->whereNumber('id')->name('activos.historial');
     Route::put('/identificacion/{tipo}/{id}/etiqueta', [IdentificacionController::class, 'etiqueta'])
         ->where('tipo', '[a-z_]+')->whereNumber('id')->middleware('throttle:identificacion.etiqueta')->name('identificacion.etiqueta');
     Route::get('/vouchers/{voucher}/firma/{parte}', [VoucherController::class, 'firma'])

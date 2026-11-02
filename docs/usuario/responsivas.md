@@ -39,7 +39,7 @@ Si tu empresa configuró la **hora de regreso de los equipos de Turno**, la fich
    - **Empresa externa:** cuando el equipo se le entrega a la empresa (por ejemplo, para una obra).
 4. En **Equipos que se entregan** escanea el QR o la etiqueta de cada equipo: se agrega solo. También puedes tocar **Añadir Equipo** y elegirlo (solo salen los **DISPONIBLES** de la sede).
 5. En cada equipo elige **Turno** o **Fijo**. Con el bote de basura quitas una fila.
-6. Pide al colaborador que **firme en el recuadro**. Si se equivoca, toca **Limpiar firma**.
+6. Pide al colaborador que **firme en el recuadro**. Si se equivoca, toca **Limpiar firma**. (Si tu empresa eligió **firma a mano en la hoja impresa** en Configuración → Activos, no aparece el recuadro: guarda, imprime la **Hoja** y que la firme ahí.)
 7. Toca **Guardar responsiva**.
 
 ![Nueva responsiva](img/responsivas/nuevo-resguardo.png)
@@ -110,7 +110,7 @@ Si tu rol no puede dar de baja con voucher y eliges **Faltante**, la pantalla te
 ## Preguntas frecuentes
 
 - **¿Qué diferencia hay entre Turno y Fijo?** **Turno** se devuelve al terminar el turno; **Fijo** es una asignación que se queda con la persona y no tiene hora de regreso.
-- **¿Quién decide a qué hora deben regresar los equipos de Turno?** El administrador, en **Estructura → Configuración → Caseta y activos** (ver [Configuración](configuracion.md)). Si no lo configura, no hay hora de regreso.
+- **¿Quién decide a qué hora deben regresar los equipos de Turno?** El administrador, en **Estructura → Configuración → Activos** (ver [Configuración](configuracion.md)). Si no lo configura, no hay hora de regreso.
 - **¿Qué hago si un equipo se perdió?** Recíbelo como **Faltante** con **Dañado o falta**: se genera el voucher de reposición.
 - **¿Puedo entregar equipo de otra sede?** No; solo de la sede elegida.
 - **¿Dónde veo quién tiene un radio?** En [Equipos de seguridad](equipos.md) la ficha del equipo dice **A cargo de**.

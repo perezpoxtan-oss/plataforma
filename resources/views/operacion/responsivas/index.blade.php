@@ -139,9 +139,11 @@
 
                         <div class="acciones-resguardo">
                             <div class="d-flex gap-2">
+                                @if ($r->firma_ruta !== '')
                                 <button type="button" class="btn-resguardo-firma" data-ver-firma="{{ route('responsivas.firma', $r->id) }}" data-folio="{{ $r->folio }}" data-nombre="{{ $nombre }}">
                                     <i class="bi bi-vector-pen me-1" aria-hidden="true"></i>Firma
                                 </button>
+                                @endif
                                 @if ($imprimible)
                                     <a href="{{ route('responsivas.hoja', $r->id) }}" target="_blank" rel="noopener" class="btn-resguardo-hoja">
                                         <i class="bi bi-printer me-1" aria-hidden="true"></i>{{ $activa ? 'Hoja' : 'Archivo' }}
@@ -325,8 +327,13 @@
                             </div>
                         @endif
 
+                        @if ($firmaEnPapel ?? false)
+                            {{-- C-45 (DD-19): Configuración → Activos → firma a mano en la hoja impresa --}}
+                            <p class="campo-ayuda"><i class="bi bi-printer me-1" aria-hidden="true"></i>Tu empresa firma la responsiva a mano: al guardar, imprime la hoja y que el colaborador la firme ahí.</p>
+                        @else
                         @include('componentes.firma', ['id' => 'firma_resguardo', 'nombre' => 'firma', 'etiqueta' => 'Firma Digital del Colaborador', 'requerido' => true,
                             'ayuda' => 'El colaborador firma con el dedo, un lápiz o el mouse. Con su firma acepta la responsabilidad de los equipos.'])
+                        @endif
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>

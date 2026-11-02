@@ -183,6 +183,8 @@ Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cu�
 |---|---|---|
 | **Préstamo de llaves: llaves fuera mucho tiempo** | A cuántas horas fuera la ficha se pone **ámbar** y avisa a la caseta, y a cuántas se pone **roja** y avisa al jefe de seguridad (ejemplo: 8 y 12). **0 = apagado.** | 12 y 24 horas (encendido). |
 | **Responsivas: equipos de «Turno»** | Cuántas horas después de la entrega deben regresar y cuántas horas más esperar antes de avisar al supervisor (ejemplo: 8 y 2). | Apagado: sin hora de regreso. |
+| **Avanzado: garantía de la llave** (en la tarjeta de llaves) | Si la caseta elige la identificación (y puede ser «Ninguna») o si es **obligatoria**. | La caseta elige; «Ninguna» se permite. |
+| **Avanzado: firma de la responsiva** (en la tarjeta de responsivas) | Si el colaborador firma **en la pantalla** o **a mano en la hoja impresa**. | En la pantalla. |
 | Avisos de **Vouchers de reposición** con cobro | Correos de **Copia Seguridad**, **Copia Recepción** y **Copia Administración**. Si dejas las tres vacías, se envía a quien puede imprimir vouchers en esa sede. | Encendido. |
 
 ![Llaves fuera mucho tiempo](img/configuracion/caseta-y-activos.png)

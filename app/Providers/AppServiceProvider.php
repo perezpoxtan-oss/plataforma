@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Empresa;
 use App\Models\Rubro;
 use App\Models\User;
+use App\Services\Activos\HistorialActivos;
 use App\Services\Permisos\Autorizador;
 use App\Support\HoraLocal;
 use App\Support\Identidad;
@@ -49,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->limitadoresPublicos();
         Limitadores::registrar(); // revisión Etapa 5 (A-8): un limitador con nombre por ruta
+        HistorialActivos::registrarEventos(); // C-45 (Etapa 8): historial único «Entregar / Recibir»
 
         // Giros: los correos y avisos dicen las palabras del giro de la empresa activa (en hotel no cambia nada)
         Event::listen(MessageSending::class, function (MessageSending $evento): void {

@@ -41,6 +41,12 @@ use Illuminate\Validation\ValidationException;
  *    hasta las 22:00 del día) y de la salida temporal (2 h). 0 = apagado.
  *  - agente_excepcion (C-25, DD-13): el agente puede aprobar por excepción
  *    si nadie responde, con motivo y foto (no, de fábrica).
+ *  - llaves_garantia / responsivas_firma (C-45, DD-19: garantía y firma
+ *    como ajuste por tipo de objeto): la garantía de la llave la elige la
+ *    caseta y puede ser «Ninguna» (elegir, de fábrica) u «obligatoria»; la
+ *    firma de la responsiva es en la pantalla (de fábrica) o a mano en la
+ *    hoja impresa (papel). Los gafetes conservan la identificación que se
+ *    revisa en la Bitácora de accesos (C-15).
  */
 class AjustesCaseta
 {
@@ -86,8 +92,22 @@ class AjustesCaseta
         'si' => 'Sí: si nadie responde a tiempo, el agente puede aprobar con motivo y foto (se avisa de inmediato)',
     ];
 
+    /** C-45 (DD-19): garantía de la llave. */
+    public const GARANTIA_LLAVES = [
+        'elegir' => 'La caseta elige la identificación; «Ninguna (Riesgo)» se permite (original)',
+        'obligatoria' => 'Obligatoria: no se presta una llave sin identificación en garantía',
+    ];
+
+    /** C-45 (DD-19): firma de la responsiva de equipo. */
+    public const FIRMA_RESPONSIVAS = [
+        'pantalla' => 'El colaborador firma en la pantalla (original)',
+        'papel' => 'Firma a mano en la hoja impresa (no se pide firma en la pantalla)',
+    ];
+
     /** Opciones de los ajustes de texto. */
     private const OPCIONES = [
+        'llaves_garantia' => self::GARANTIA_LLAVES,
+        'responsivas_firma' => self::FIRMA_RESPONSIVAS,
         'agente_excepcion' => self::AGENTE_EXCEPCION,
         'transporte_firmas' => self::FIRMAS_TRANSPORTE,
         'procedimientos_acuse' => self::ACUSES,
@@ -114,6 +134,8 @@ class AjustesCaseta
         'daypass_cierre_hora' => 22,
         'salida_temporal_horas' => 2,
         'agente_excepcion' => 'no',
+        'llaves_garantia' => 'elegir',
+        'responsivas_firma' => 'pantalla',
     ];
 
     /** Límites de los números (para validar y para el formulario). */
@@ -144,8 +166,8 @@ class AjustesCaseta
      */
     public const GRUPOS = [
         'transporte' => ['transporte_firmas'],
-        'llaves' => ['llaves_horas_aviso', 'llaves_horas_escalar'],
-        'responsivas' => ['responsivas_horas_turno', 'responsivas_horas_escalar'],
+        'llaves' => ['llaves_horas_aviso', 'llaves_horas_escalar', 'llaves_garantia'],
+        'responsivas' => ['responsivas_horas_turno', 'responsivas_horas_escalar', 'responsivas_firma'],
         'procedimientos' => ['procedimientos_acuse', 'procedimientos_recordatorio_dias'],
         'vobo' => ['vobo_horas_amarillo', 'vobo_horas_rojo'],
         'motivos' => ['motivo_visita_omision', 'visita_a_huesped'],
@@ -156,7 +178,7 @@ class AjustesCaseta
     /**
      * Ajustes vigentes de una empresa (sin empresa: los originales).
      *
-     * @return array{transporte_firmas: string, llaves_horas_aviso: int, llaves_horas_escalar: int, responsivas_horas_turno: int, responsivas_horas_escalar: int, procedimientos_acuse: string, procedimientos_recordatorio_dias: int, vobo_horas_amarillo: int, vobo_horas_rojo: int, motivo_visita_omision: string, visita_a_huesped: string, permanencia_visita_horas: int, permanencia_proveedor_horas: int, daypass_cierre_hora: int, salida_temporal_horas: int, agente_excepcion: string}
+     * @return array{transporte_firmas: string, llaves_horas_aviso: int, llaves_horas_escalar: int, responsivas_horas_turno: int, responsivas_horas_escalar: int, procedimientos_acuse: string, procedimientos_recordatorio_dias: int, vobo_horas_amarillo: int, vobo_horas_rojo: int, motivo_visita_omision: string, visita_a_huesped: string, permanencia_visita_horas: int, permanencia_proveedor_horas: int, daypass_cierre_hora: int, salida_temporal_horas: int, agente_excepcion: string, llaves_garantia: string, responsivas_firma: string}
      */
     public static function de(Empresa|int|null $empresa): array
     {

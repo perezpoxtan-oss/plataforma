@@ -9,6 +9,7 @@ use App\Models\Llave;
 use App\Models\PrestamoLlave;
 use App\Models\Sede;
 use App\Models\User;
+use App\Services\Activos\HistorialActivos;
 use App\Services\Lector\Lector;
 use App\Services\PrestamoLlaves\AdministradorPrestamosLlaves;
 use App\Support\AjustesCaseta;
@@ -98,6 +99,8 @@ class PrestamoLlaveController extends Controller
                 'anulables' => $this->prestamos->idsEnAlcance($actor, 'prestamo_llaves.eliminar', $todos),
                 'hoy' => Carbon::now(app(HoraLocal::class)->zona())->format('Y-m-d'),
                 'semaforo' => $semaforo,
+                // C-45 (DD-19): con garantía obligatoria no se ofrece «Ninguna (Riesgo)»
+                'garantiaObligatoria' => $ajustes['llaves_garantia'] === 'obligatoria',
                 // ADR-0014: «Prestar» desde el lector (QR de una llave en caseta): el diálogo abre con la llave elegida
                 'llavePrestar' => $prestar !== null && $puedePrestar
                     ? Llave::enCaseta()->whereIn('sede_id', $sedesPrestar->pluck('id'))->whereNotIn('id', $enUso->pluck('llave_id'))->find($prestar)
@@ -151,8 +154,24 @@ class PrestamoLlaveController extends Controller
     public function recibir(Request $request, int $prestamo): RedirectResponse
     {
         Gate::authorize('prestamo_llaves.editar');
+        // C-45 (DD-19): recepción común OK / Dañado / No regresó (sin el campo, OK: como siempre)
+        $resultado = in_array($request->input('resultado'), ['ok', 'danado', 'no_regreso'], true) ? $request->input('resultado') : 'ok';
+        if ($resultado === 'no_regreso') {
+            return $this->noRegreso($request, $prestamo);
+        }
 
-        $modelo = $this->accion($request, $prestamo, 'prestamo_llaves.editar', fn (PrestamoLlave $p) => $this->prestamos->recibir($request->user(), $p));
+        $modelo = $this->accion($request, $prestamo, 'prestamo_llaves.editar', fn (PrestamoLlave $p) => $resultado === 'danado'
+            ? HistorialActivos::conResultado('danado', fn () => $this->prestamos->recibir($request->user(), $p))
+            : $this->prestamos->recibir($request->user(), $p));
+
+        if ($resultado === 'danado') {
+            $puedeBaja = $request->user()->can('llaves.eliminar');
+
+            return redirect()->route('prestamo_llaves.index')
+                ->with('ok', "Llave «{$modelo->llave?->nomenclatura}» recibida dañada. Devuelve la identificación en garantía."
+                    .($puedeBaja ? ' Si ya no sirve, dala de baja con su voucher.' : ' Avísale a tu supervisor si ya no sirve.'))
+                ->with('siguientes', $puedeBaja ? [['Dar de baja la llave', route('llaves.index', ['baja' => $modelo->llave_id]).'#llave-'.$modelo->llave_id, 'bi-slash-circle']] : []);
+        }
 
         return redirect()->route('prestamo_llaves.index')->with('ok', "Llave «{$modelo->llave?->nomenclatura}» recibida de vuelta correctamente. Devuelve la identificación en garantía.");
     }
