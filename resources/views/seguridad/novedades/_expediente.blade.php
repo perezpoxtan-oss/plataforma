@@ -176,7 +176,12 @@
                 </select>
                 {{-- Mejoras Incidentes: «Pendiente de turno» tiene dueño y aviso --}}
                 <p class="aviso-turno-nov" data-nov-mostrar-si='{"estatus":["pendiente_turno"]}' @if ($v['estatus'] !== \App\Models\Novedad::PENDIENTE_TURNO) hidden @endif>
-                    <i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Al iniciar el siguiente turno de la sede avisaremos a quien elegiste en «¿A quién se canaliza?»; si no elegiste a nadie, a todo el personal de Seguridad de la sede. Si ese turno termina sin atenderlo, avisaremos al jefe de seguridad.
+                    {{-- C-24 (D-05): sin turnos en la sede, el texto dice lo que de verdad pasa (plazo fijo) --}}
+                    @if (\App\Models\Turno::where('activo', true)->aplicanEn([(int) $n->sede_id])->exists())
+                        <i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Al iniciar el siguiente turno de la sede avisaremos a quien elegiste en «¿A quién se canaliza?»; si no elegiste a nadie, a todo el personal de Seguridad de la sede. Si ese turno termina sin atenderlo, avisaremos al jefe de seguridad.
+                    @else
+                        <i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Esta sede no tiene turnos: avisaremos de inmediato a quien elegiste en «¿A quién se canaliza?» (o a todo el personal de Seguridad de la sede) y, si en {{ \App\Services\Novedades\TurnosNovedades::HORAS_SIN_TURNOS }} horas sigue pendiente, al jefe de seguridad.
+                    @endif
                 </p>
                 <label class="campo-etiqueta" for="exp_resolucion">Estatus Final / Resolución <span class="text-lowercase fw-normal">(cómo se concluyó el caso — obligatorio para marcar Resuelto)</span></label>
                 <textarea id="exp_resolucion" name="resolucion" class="campo" rows="2" maxlength="5000" data-requerido-si='{"estatus":["resuelto"]}'

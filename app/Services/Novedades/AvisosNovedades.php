@@ -134,7 +134,7 @@ class AvisosNovedades
     {
         $jefes = $this->destinatarios->conPermiso((int) $novedad->empresa_id, 'novedades.reabrir', (int) $novedad->sede_id);
         $titulo = "Nadie atendió el ticket {$novedad->folio()}".$this->modulo($novedad);
-        $texto = ($turno !== null ? "Terminó el turno {$turno}" : 'Terminó el turno').' y el ticket sigue «Pendiente de turno»'
+        $texto = ($turno !== null ? "Terminó el turno {$turno}" : 'Pasaron '.TurnosNovedades::HORAS_SIN_TURNOS.' horas').' y el ticket sigue «Pendiente de turno»'
             .($novedad->asignado ? ' (dueño: '.$novedad->asignado->name.')' : ' sin dueño').'. '.$novedad->etiquetaCategoria().' · '.$novedad->ubicacion;
         $avisados = $this->centro->avisar((int) $novedad->empresa_id, $jefes->pluck('id'), 'novedad_turno_escalada', [
             'titulo' => $titulo, 'texto' => $texto,

@@ -140,9 +140,9 @@ class MejorasIncidentesTest extends PruebaNovedades
         $pendientes = collect(app(MisPendientes::class)->para($this->agente)['items'])->keyBy('clave');
         $this->assertSame(1, $pendientes['novedades_turno']['total']);
 
-        // Sin turnos no hay hora límite: la tarea no escala
+        // Etapa 4 (C-24, D-05): sin turnos, a las 8 h se avisa al jefe de seguridad
         $this->travel(2)->days();
-        $this->artisan('plataforma:novedades-pendientes')->expectsOutputToContain('Avisos al turno: 0. Escalamientos al jefe: 0.')->assertSuccessful();
+        $this->artisan('plataforma:novedades-pendientes')->expectsOutputToContain('Avisos al turno: 0. Escalamientos al jefe: 1.')->assertSuccessful();
     }
 
     public function test_pendiente_de_turno_avisa_al_iniciar_el_siguiente_turno_y_escala_si_termina_sin_atenderse(): void
@@ -416,18 +416,22 @@ class MejorasIncidentesTest extends PruebaNovedades
         return $this->enEmpresa(fn () => PaseSalida::orderByDesc('id')->firstOrFail());
     }
 
-    public function test_el_pase_que_espera_firma_muestra_su_reloj_y_por_omision_no_avisa_ni_cambia_de_color(): void
+    public function test_el_pase_que_espera_firma_muestra_su_reloj_y_por_omision_usa_reloj_y_suplente(): void
     {
         $director = $this->crearUsuario($this->empresa, 'Director');
         $gerente = $this->crearUsuario($this->empresa, 'Director');
         $pase = $this->pase($director, $gerente);
         $this->travel(5)->hours();
 
-        $this->entrar($this->admin)->get('/pases-salida')->assertOk()->assertSee('Esperando firma desde hace 5 h')->assertDontSee('reloj-pase espera-', false);
+        $this->entrar($this->admin)->get('/pases-salida')->assertOk()->assertSee('Esperando firma desde hace 5 h')->assertSee('reloj-pase espera-normal', false); // Etapa 4: con 24 h / 72 h de fábrica, a las 5 h va «a tiempo»
         $this->entrar($this->admin)->get("/pases-salida/{$pase->id}")->assertOk()->assertSee('Esperando firma desde hace 5 h');
+        // Etapa 4 (C-22, DD-10): sin horas propias en el circuito, las de «Reloj y suplente» (24 h y 72 h)
         $this->travel(10)->days();
-        $this->artisan('plataforma:escalar-pases')->expectsOutputToContain('Recordatorios enviados: 0. Escalamientos: 0.')->assertSuccessful();
-        $this->assertCount(0, $this->avisos($director, 'pase_firma_recordatorio'));
+        $this->artisan('plataforma:escalar-pases')->expectsOutputToContain('Recordatorios enviados: 1. Escalamientos: 1.')->assertSuccessful();
+        $this->assertCount(1, $this->avisos($director, 'pase_firma_recordatorio'));
+        // Con los avisos apagados en «Reloj y suplente» vuelve a no avisar
+        $this->empresa->refresh()->forceFill(['preferencias' => array_merge($this->empresa->preferencias ?? [], ['relojes' => ['encendido' => false]])])->save();
+        $this->enEmpresa(fn () => $this->assertSame(['recordar' => null, 'escalar' => null], app(CircuitoPasesSalida::class)->espera()));
     }
 
     public function test_con_horas_configuradas_recuerda_al_firmante_y_avisa_al_siguiente_nivel_una_sola_vez(): void

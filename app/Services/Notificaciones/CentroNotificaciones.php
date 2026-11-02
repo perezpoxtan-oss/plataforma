@@ -27,12 +27,27 @@ class CentroNotificaciones
      * Tipos que esperan una respuesta inmediata (autorizaciones de visita,
      * recepción y escalamiento): el aviso del navegador no se cierra solo.
      */
-    public const URGENTES = ['autorizacion_visita', 'autorizacion_candidato', 'autorizacion_recepcion', 'autorizacion_escalada', 'acceso_sin_cobertura'];
+    public const URGENTES = ['autorizacion_visita', 'autorizacion_candidato', 'autorizacion_recepcion', 'autorizacion_escalada', 'acceso_sin_cobertura',
+        'excepcion_pedida', 'excepcion_agente'];
 
     /** Tipos de notificación => [icono, nivel]. */
     public const TIPOS = [
         'candidato_llegada' => ['bi-person-plus-fill', 'info'],
         'candidato_autocaptura' => ['bi-phone', 'info'],
+        // C-22 (E-17): avisos que esperan una respuesta se ven como alerta
+        'candidato_postulacion' => ['bi-person-lines-fill', 'alerta'],
+        'vacante_propuesta' => ['bi-megaphone-fill', 'alerta'],
+        'vacante_cubierta' => ['bi-check2-square', 'alerta'],
+        'vacante_resultado' => ['bi-megaphone', 'info'],
+        // C-22: el motor «Reloj y suplente»
+        'reloj_recordatorio' => ['bi-alarm', 'alerta'],
+        'reloj_escalado' => ['bi-alarm-fill', 'alerta'],
+        // C-25: la caseta de noche
+        'excepcion_pedida' => ['bi-megaphone-fill', 'alerta'],
+        'excepcion_agente' => ['bi-shield-exclamation', 'alerta'],
+        // C-24: resultado del vale al guardia y equipo faltante al supervisor
+        'vale_resultado' => ['bi-taxi-front', 'info'],
+        'faltante_por_recibir' => ['bi-question-octagon-fill', 'alerta'],
         'autorizacion_visita' => ['bi-door-open-fill', 'alerta'],
         'autorizacion_candidato' => ['bi-person-workspace', 'alerta'],
         'autorizacion_recepcion' => ['bi-person-check-fill', 'alerta'],
@@ -196,6 +211,9 @@ class CentroNotificaciones
     {
         Notificacion::where('referencia_tipo', $referenciaTipo)->where('referencia_id', $referenciaId)
             ->update(['acciones' => null, 'leida_en' => now(), 'updated_at' => now()]);
+        // C-26 (E-05): los avisos de la plataforma (sin empresa) también se resuelven aunque haya una empresa de trabajo elegida
+        Notificacion::query()->withoutGlobalScopes()->whereNull('empresa_id')->where('referencia_tipo', $referenciaTipo)->where('referencia_id', $referenciaId)
+            ->whereNull('leida_en')->update(['acciones' => null, 'leida_en' => now(), 'updated_at' => now()]);
     }
 
     /** Prefijo del aviso «te delegó sus aprobaciones» cuando la delegación ya terminó. */

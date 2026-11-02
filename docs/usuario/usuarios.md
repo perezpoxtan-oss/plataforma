@@ -132,7 +132,7 @@ Quien no tiene correo (o no le llega) toca **Olvidé mi contraseña → Pedir a 
 
 **Qué debes ver:** al restablecer, la petición desaparece sola del recuadro y de **Mis pendientes**. Todo queda en la [Bitácora de auditoría](auditoria.md).
 
-- El número de **Mis pendientes → Cuentas por revisar** es exactamente lo que tú puedes atender en esta pantalla.
+- El número de **Mis pendientes → Cuentas por revisar** es exactamente lo que tú puedes atender en esta pantalla. Una petición sin atender se recuerda a las 24 horas y a las 72 pasa a quien administra usuarios en toda la empresa (ver [Reloj y suplente](reloj-y-suplente.md)).
 - Solo ves las peticiones de las cuentas que puedes administrar (tu alcance y de nivel inferior al tuyo). Las contraseñas las atiende quien puede editar usuarios; los dos pasos, quien puede restablecer la verificación (ver abajo).
 
 ## Cómo dar de baja o reactivar una cuenta

@@ -90,7 +90,7 @@ También puedes escanear el QR del llavero **con la cámara del celular, fuera d
 
 ## Llaves que llevan mucho tiempo fuera
 
-Si tu empresa lo configuró (**Estructura → Configuración → Caseta y activos**), cada ficha de **Llaves en Uso** dice **Fuera hace …** y cambia de color:
+Cada ficha de **Llaves en Uso** dice **Fuera hace …** y cambia de color. Viene encendido: ámbar a las **12 horas** y rojo a las **24** (tu empresa lo cambia o lo apaga en **Estructura → Configuración → Activos**):
 
 | Color | Qué significa | Quién recibe el aviso |
 |---|---|---|
@@ -100,7 +100,7 @@ Si tu empresa lo configuró (**Estructura → Configuración → Caseta y activo
 
 ![Llave fuera de tiempo](img/prestamo-llaves/semaforo.png)
 
-Al recibir la llave, los avisos se quitan solos. Si tu empresa no lo configuró, las fichas se ven como siempre.
+Al recibir la llave, los avisos se quitan solos. Si tu empresa lo apagó (0 horas), las fichas se ven sin color.
 
 ![Historial de entregas](img/prestamo-llaves/historial-entregas.png)
 

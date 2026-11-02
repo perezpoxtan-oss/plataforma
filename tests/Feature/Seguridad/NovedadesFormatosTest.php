@@ -229,6 +229,9 @@ class NovedadesFormatosTest extends PruebaNovedades
 
         $accidente = $this->enEmpresa(fn () => Novedad::where('origen_novedad_id', $n->id)->firstOrFail());
         $this->assertSame(['accidente', $accidente->id, $this->piso->id], [$accidente->categoria, $s->accidente_novedad_id, $accidente->area_id]);
+        // Etapa 4 (C-24, D-04): el accidente no nace sin dueño; hereda el canalizado del siniestro (o quien lo documenta) y su reloj corre
+        $this->assertNotNull($accidente->asignado_a);
+        $this->assertNotNull($accidente->canalizado_en);
         $this->assertStringContainsString('Se abrió el ticket de Accidente '.$accidente->folio(), $this->buscar($n->id)->notas->last()->texto);
 
         // Guardar otra vez no abre otro

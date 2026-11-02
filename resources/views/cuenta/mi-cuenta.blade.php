@@ -199,7 +199,7 @@
     @if ($opcionesAvisos['campana'] !== [] || $opcionesAvisos['correo'] !== [])
         <section class="tarjeta p-4 mt-4" id="mis-avisos" aria-labelledby="t-mis-avisos">
             <h2 id="t-mis-avisos" class="h5 fw-bold mb-1"><i class="bi bi-bell me-2 text-primary" aria-hidden="true"></i>Mis avisos</h2>
-            <p class="small text-muted mb-3">Quita la marca de lo que no quieres recibir. Lo que espera tu respuesta sigue apareciendo en «Mis pendientes» aunque lo silencies aquí.</p>
+            <p class="small text-muted mb-3">Quita la marca de lo que no quieres recibir. Lo que espera tu respuesta sigue apareciendo en «Mis pendientes» aunque lo silencies aquí; lo que dice «siempre llega» no se puede silenciar.</p>
             <form action="{{ route('mi-cuenta.avisos') }}" method="POST">
                 @csrf
                 @method('PUT')
@@ -212,9 +212,11 @@
                                 <fieldset class="mis-avisos-grupo">
                                     <legend class="small fw-bold text-muted mb-1">{{ $grupo }}</legend>
                                     @foreach ($avisosGrupo as $clave => $etiqueta)
+                                        {{-- C-22: lo que espera una acción y no tiene renglón en Mis pendientes no se puede silenciar --}}
+                                        @php $fijo = $canal === 'campana' && \App\Services\Notificaciones\PreferenciasAvisos::noSilenciable($clave); @endphp
                                         <label class="fila-check mb-1">
-                                            <input type="checkbox" name="{{ $canal }}[{{ $clave }}]" value="1" @checked(! in_array($clave, $silenciados[$canal], true))>
-                                            <span class="small">{{ $etiqueta }}</span>
+                                            <input type="checkbox" name="{{ $canal }}[{{ $clave }}]" value="1" @checked($fijo || ! in_array($clave, $silenciados[$canal], true)) @disabled($fijo)>
+                                            <span class="small">{{ $etiqueta }}@if ($fijo) <span class="text-muted">(siempre llega)</span>@endif</span>
                                         </label>
                                     @endforeach
                                 </fieldset>

@@ -62,6 +62,7 @@ class MovimientoTransporte extends Model
             'anulado_en' => 'datetime',
             'editado_en' => 'datetime',
             'autorizado_en' => 'datetime',
+            'rechazado_en' => 'datetime', // C-24: Vo.Bo. rechazado
             'monto' => 'decimal:2',
             'cantidad_pax' => 'integer',
         ];

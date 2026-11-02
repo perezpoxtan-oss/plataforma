@@ -22,7 +22,10 @@ Convenciones:
 | «Configura tu empresa» visible en Inicio | pref. `configura_tu_empresa` (`visible` / `oculto`) | Configuración → General (botón **Mostrar en Inicio** / **Ocultar de Inicio**, `PUT /configura-tu-empresa`) y **Ya terminé** en Inicio | `configuracion.editar` | `visible` en empresas nuevas; sin dato: se muestra solo si la empresa está casi vacía (2 pasos o menos) |
 | Módulos contratados | `empresa_modulos.activo` | Estructura → Empresas → cuadrícula (enlace en Plataforma) | SA | los del plan |
 | 🆕 Nombres en el menú (cada módulo salvo la bitácora) | `empresa_modulos.nombre_visible` | Configuración → General → Avanzado (antes **solo en la base de datos**) | `configuracion.editar` empresa | vacío = nombre de siempre |
-| 🆕 Reloj del visto bueno (vales de taxi y procedimientos en revisión) | pref. `caseta.vobo_horas_amarillo` / `vobo_horas_rojo` | Configuración → General (antes **constantes** de `RelojVoBo`) | `configuracion.editar` empresa | 24 h / 72 h |
+| 🆕 Reloj y suplente (antes «Reloj del visto bueno»): horas generales de recordatorio y suplente de todo lo que espera | pref. `caseta.vobo_horas_amarillo` / `vobo_horas_rojo`, `relojes.encendido`, `relojes.modulos.<clave>` (horas, rol, encendido) | Configuración → General (Avanzado por módulo; ver `relojes.md`) | `configuracion.editar` empresa | 24 h / 72 h, encendido |
+| 🆕 Tiempo de permanencia en sitio y salida temporal (C-25) | pref. `caseta.permanencia_visita_horas` / `permanencia_proveedor_horas` / `daypass_cierre_hora` / `salida_temporal_horas` | Configuración → Caseta y accesos | `configuracion.editar` empresa | 4 h / 8 h / 22:00 / 2 h |
+| 🆕 Noche sin supervisor: el agente aprueba por excepción (C-25, DD-13) | pref. `caseta.agente_excepcion` | Configuración → Caseta y accesos | `configuracion.editar` empresa | no |
+| 🆕 Reloj de los tickets canalizados por categoría (C-24) | pref. `novedades.reloj_horas.{accidente,robo,otras}` | Configuración → (bitácora) | `configuracion.editar` empresa | 2 h / 4 h / 24 h |
 | Idioma y moneda de la empresa | `empresas.idioma`, `empresas.moneda` | — (columnas sin uso; no se agregó pantalla) | — | `es`, `MXN` |
 
 ### Caseta y accesos
@@ -64,7 +67,7 @@ Convenciones:
 
 | Ajuste | Dónde se guarda | Pantalla | Quién | Por omisión |
 |---|---|---|---|---|
-| Semáforo de llaves fuera (ámbar / rojo, horas) | pref. `caseta.llaves_horas_*` | Configuración → Activos | `configuracion.editar` empresa | 0 / 0 (apagado) |
+| Semáforo de llaves fuera (ámbar / rojo, horas) | pref. `caseta.llaves_horas_*` | Configuración → Activos | `configuracion.editar` empresa | 12 / 24 (encendido, DD-10) |
 | Equipos de «Turno»: regreso y escalamiento (horas) | pref. `caseta.responsivas_horas_*` | Configuración → Activos | ídem | 0 / 0 (apagado) |
 | Vouchers con cobro: correos de las tres copias | pref. `avisos_destinatarios.voucher_*` | Configuración → Activos | ídem | vacíos (quien imprime vouchers) |
 | Firmas del vale de taxi en pantalla | pref. `caseta.transporte_firmas` | Configuración → Transporte | ídem | `ambas` |

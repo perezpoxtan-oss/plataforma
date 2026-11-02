@@ -449,6 +449,12 @@ if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/
     || estado "ADVERTENCIA: no se pudieron escalar las autorizaciones que tardan (revisa despliegue.log)"
 fi
 # --- Fin Autorizaciones ---
+# --- Reloj y suplente (C-22): recordatorio y paso al suplente de todo lo que espera (en proceso; la campana también lo corre) ---
+if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:relojes'); then
+  (cd "$APP/actual" && "${P[@]}" artisan plataforma:relojes --si-toca >> "$LOG" 2>&1) \
+    || estado "ADVERTENCIA: no se pudo correr «Reloj y suplente» (revisa despliegue.log)"
+fi
+# --- Fin Reloj y suplente ---
 # --- Candidatos: plazos con recordatorio único, «no se presentó» propuesto y caducidad (archivar y borrar; plazos por empresa en Candidatos → Documentos y plazos) ---
 if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/dev/null | grep -q '^plataforma:candidatos-pendientes'); then
   (cd "$APP/actual" && "${P[@]}" artisan plataforma:candidatos-pendientes --si-toca >> "$LOG" 2>&1) \

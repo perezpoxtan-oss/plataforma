@@ -79,7 +79,7 @@ class Entrevistas
     /** C-12: delegaciones directas o en cadena (una lectura por instancia). */
     private function cadena(): CadenaDelegaciones
     {
-        return $this->cadena ??= new CadenaDelegaciones;
+        return $this->cadena ??= app(CadenaDelegaciones::class); // una sola cadena por petición (revisión Etapa 4, D-04)
     }
 
     private ?CadenaDelegaciones $cadena = null;
@@ -484,6 +484,7 @@ class Entrevistas
         // Aviso «Vacante cubierta» a RR. HH. con el botón «Cerrar como cubierta» (ADR-0010); se resuelve al cerrar o publicar la vacante
         $rh = $this->destinatarios->conPermiso((int) $elegida->empresa_id, 'candidatos.editar', (int) $elegida->sede_id)->reject(fn (User $u) => $u->id === $actor->id);
         $this->notificaciones->resolver(AdministradorVacantes::REFERENCIA, $vacante->id);
+        Vacante::whereKey($vacante->id)->whereNull('cubierta_en')->update(['cubierta_en' => now()]); // C-23: reloj de «Vacante cubierta por cerrar»
         $this->notificaciones->avisar((int) $elegida->empresa_id, $rh->pluck('id'), 'vacante_cubierta', [
             'titulo' => 'Vacante cubierta: «'.$vacante->titulo.'»',
             'texto' => 'Se eligió a '.$elegida->candidato?->nombre_completo.'.'.($movidas !== [] ? ' Pasaron a «Considerar»: '.implode(', ', $movidas).'.' : '')

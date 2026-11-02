@@ -206,6 +206,10 @@ Nada se queda esperando sin que alguien se entere. Cada paso tiene un plazo (tu 
 
 Cuando algo pasa de su plazo, el renglón de **Mis pendientes** se pone en **ámbar** (y en **rojo** si pasa del doble), la ficha lo muestra en su reloj y llega **un recordatorio al día** por campana y correo a quien lo tiene pendiente, hasta que lo atienda (en la campana solo queda el de hoy). Nadie queda marcado solo como «No se presentó»: tú decides con el botón de la campana o desde la ficha.
 
+**Al doble del plazo pasa al suplente:** a quien edita candidatos en toda la empresa (o al administrador); una entrevista sin evaluar, a quien la canalizó en Recursos Humanos (puede volver a canalizarla o marcar «No se presentó»); si no puede, a quien atiende candidatos. El aviso aparece en su Mis pendientes como «Te lo pasaron: Entrevistas por evaluar». Ese aviso llega una sola vez y no se puede silenciar (ver [Reloj y suplente](reloj-y-suplente.md)).
+
+**Candidatos sin atender:** **Mis pendientes → Candidatos** separa **Esperando en Recepción** (quien llegó hoy) de **Candidatos sin atender** (los de días anteriores que siguen «Por atender» o «Con RR. HH.»), para que nadie desaparezca de la lista al día siguiente. Cada tarjeta de **Recursos Humanos → Candidatos** dice **Lleva N días** con el color de su plazo.
+
 ## Caducidad: archivadas y fichas por caducar
 
 Por privacidad, los datos de quien no fue contratado no se guardan para siempre:

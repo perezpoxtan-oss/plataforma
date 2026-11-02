@@ -127,6 +127,11 @@
                     <div>
                         <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                             <span class="pastilla-etapa etapa-{{ Candidato::COLORES[$c->etapa] ?? 'gris' }}">{{ $c->etiquetaEtapa() }}</span>
+                            {{-- C-23 (E-07): cuánto lleva esperando en su etapa, con el color de su plazo --}}
+                            @php $relojC = $c->postulacionActiva && $empresaPlazos && $c->postulacionActiva->archivada_en === null ? app(\App\Services\Candidatos\PlazosCandidatos::class)->relojDe($empresaPlazos, $c->postulacionActiva, $c) : null; @endphp
+                            @if ($relojC && $relojC['plazo'] !== null)
+                                <span class="pastilla-reloj {{ $relojC['nivel'] ? 'nivel-'.$relojC['nivel'] : '' }}" title="Plazo de {{ $relojC['plazo'] }}"><i class="bi bi-clock" aria-hidden="true"></i>{{ $relojC['texto'] }}</span>
+                            @endif
                             @if ($c->autocaptura_pendiente)
                                 <span class="pastilla-revisar"><i class="bi bi-phone me-1" aria-hidden="true"></i>Por revisar</span>
                             @elseif ($c->solicitud_corta)

@@ -3,7 +3,7 @@
     en su sección (Configuración por secciones). Sin configurar, todo funciona
     como el diseño original. Cada tarjeta manda solo sus campos (_tarjeta) y el
     resto se conserva. Variables: $empresa, $puedeEditar, $tarjeta
-    (transporte | llaves | responsivas | procedimientos | vobo | motivos).
+    (transporte | llaves | responsivas | procedimientos | vobo | motivos | permanencia | noche).
 --}}
 @php
     $ajustes = \App\Support\AjustesCaseta::de($empresa);
@@ -18,6 +18,8 @@
         'procedimientos' => ['bi-book', 'Procedimientos: acuse «Leí y entendí» y recordatorio', 'los ajustes de Procedimientos'],
         'vobo' => ['bi-clock-history', 'Reloj del visto bueno', 'el reloj del visto bueno'],
         'motivos' => ['bi-signpost-2', 'Motivo de la visita', 'los motivos de la visita'],
+        'permanencia' => ['bi-clock-history', 'Tiempo de permanencia en sitio', 'el tiempo de permanencia'],
+        'noche' => ['bi-moon-stars', 'Noche sin supervisor', 'la aprobación por excepción del agente'],
     ];
     [$icono, $titulo, $que] = $titulos[$tarjeta];
     $distinto = collect(\App\Support\AjustesCaseta::GRUPOS[$tarjeta])->contains(fn ($c) => $ajustes[$c] !== $omision[$c]);
@@ -51,7 +53,7 @@
                     <div class="d-flex align-items-center gap-2"><input type="number" id="cfg_llaves_horas_escalar" name="llaves_horas_escalar" class="campo campo-horas-caseta" min="0" max="{{ $max['llaves_horas_escalar'] }}" inputmode="numeric" value="{{ $valor('llaves_horas_escalar') }}" @disabled(! $puedeEditar)><span class="small text-muted">horas fuera</span></div>
                 </div>
             </div>
-            <p class="campo-ayuda mt-0">En las horas, <strong>0 = apagado</strong>. Ejemplo: 8 y 12. La ficha de la llave muestra cuánto lleva fuera y cambia de color; el aviso llega a la campana. <span class="valor-original">Valor original: 0 y 0 (sin semáforo).</span></p>
+            <p class="campo-ayuda mt-0">En las horas, <strong>0 = apagado</strong>. Ejemplo: 8 y 12. La ficha de la llave muestra cuánto lleva fuera y cambia de color; el aviso llega a la campana. <span class="valor-original">Valor original: 12 y 24 horas (encendido).</span></p>
         @elseif ($tarjeta === 'responsivas')
             <div class="campo-grupo">
                 <div class="flex-fill">
@@ -112,6 +114,31 @@
             @else
                 <input type="hidden" name="visita_a_huesped" value="{{ $valor('visita_a_huesped') }}">
             @endif
+        @elseif ($tarjeta === 'permanencia')
+            <p class="small text-muted">Si alguien rebasa su tiempo, su tarjeta en «Gente en sitio» lo dice y cambia de color, se avisa al supervisor de la sede y, al doble, al jefe de seguridad. En «Gente en sitio» está el filtro «Rebasaron su tiempo» para el cambio de turno.</p>
+            <div class="campo-grupo">
+                @foreach (['permanencia_visita_horas' => ['Visita', 'horas'], 'permanencia_proveedor_horas' => ['Proveedor y contratista', 'horas'], 'salida_temporal_horas' => ['Salida temporal (fue por material)', 'horas fuera']] as $campoP => [$textoP, $unidadP])
+                    <div class="flex-fill">
+                        <label class="campo-etiqueta" for="cfg_{{ $campoP }}">{{ $textoP }}</label>
+                        <div class="d-flex align-items-center gap-2"><input type="number" id="cfg_{{ $campoP }}" name="{{ $campoP }}" class="campo campo-horas-caseta" min="0" max="{{ $max[$campoP] }}" inputmode="numeric" value="{{ $valor($campoP) }}" @disabled(! $puedeEditar)><span class="small text-muted">{{ $unidadP }}</span></div>
+                    </div>
+                @endforeach
+            </div>
+            @if (\App\Support\Terminos::deEmpresaId((int) $empresa->id)->esHotel())
+                <label class="campo-etiqueta" for="cfg_daypass_cierre_hora">Daypass: hasta la hora de cierre</label>
+                <div class="d-flex align-items-center gap-2"><input type="number" id="cfg_daypass_cierre_hora" name="daypass_cierre_hora" class="campo campo-horas-caseta" min="0" max="{{ $max['daypass_cierre_hora'] }}" inputmode="numeric" value="{{ $valor('daypass_cierre_hora') }}" @disabled(! $puedeEditar)><span class="small text-muted">horas (formato de 24 h)</span></div>
+            @else
+                <input type="hidden" name="daypass_cierre_hora" value="{{ $valor('daypass_cierre_hora') }}">
+            @endif
+            <p class="campo-ayuda mt-0"><strong>0 = apagado.</strong> Colaboradores, huéspedes con estancia y emergencias no tienen límite. <span class="valor-original">Valor original: visita 4 h, proveedor 8 h, salida temporal 2 h, daypass hasta las 22:00.</span></p>
+        @elseif ($tarjeta === 'noche')
+            <label class="campo-etiqueta" for="cfg_agente_excepcion">Si nadie responde a tiempo</label>
+            <select id="cfg_agente_excepcion" name="agente_excepcion" class="campo" @disabled(! $puedeEditar)>
+                @foreach (\App\Support\AjustesCaseta::AGENTE_EXCEPCION as $clave => $texto)
+                    <option value="{{ $clave }}" @selected($valor('agente_excepcion') === $clave)>{{ $texto }}</option>
+                @endforeach
+            </select>
+            <p class="campo-ayuda mt-0">El agente siempre puede tocar «Canalizar al supervisor» en una tarjeta pendiente. Si lo enciendes y nadie responde en los minutos de espera de la caseta, el agente puede aprobar por excepción: motivo y foto obligatorios, aviso inmediato al supervisor y al jefe de seguridad, y el caso queda para revisarlo. <span class="valor-original">Valor original: no.</span></p>
         @endif
         @foreach (\App\Support\AjustesCaseta::GRUPOS[$tarjeta] as $campo)
             @error($campo)<p class="text-danger small mb-1">{{ $message }}</p>@enderror

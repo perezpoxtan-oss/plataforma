@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\PerteneceAEmpresa;
 use App\Models\Concerns\RegistraAutor;
+use App\Services\Autorizaciones\CadenaDelegaciones;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,6 +27,18 @@ class Delegacion extends Model
     protected function casts(): array
     {
         return ['desde' => 'datetime', 'hasta' => 'datetime', 'cancelada_en' => 'datetime'];
+    }
+
+    /** La cadena de delegaciones es una por petición: al cambiar una delegación se vuelve a leer. */
+    protected static function booted(): void
+    {
+        $olvidar = function (): void {
+            if (app()->resolved(CadenaDelegaciones::class)) {
+                app(CadenaDelegaciones::class)->olvidar();
+            }
+        };
+        static::saved($olvidar);
+        static::deleted($olvidar);
     }
 
     public function usuario(): BelongsTo

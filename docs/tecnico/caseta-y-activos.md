@@ -23,7 +23,7 @@ Solo se guarda lo distinto de la omisión; con todo en la omisión se borra la c
 | Clave | Valores | Omisión (original) |
 |---|---|---|
 | `transporte_firmas` | `ambas`, `guardia`, `taxista`, `ninguna` | `ambas` |
-| `llaves_horas_aviso` / `llaves_horas_escalar` | 0–72 / 0–168 h (escalar > aviso si ambos > 0) | 0 / 0 (sin semáforo) |
+| `llaves_horas_aviso` / `llaves_horas_escalar` | 0–72 / 0–168 h (escalar > aviso si ambos > 0) | 12 / 24 (encendido de fábrica, C-24 y DD-10; 0 = apagado) |
 | `responsivas_horas_turno` / `responsivas_horas_escalar` | 0–24 / 0–48 h | 0 / 0 (sin hora de regreso) |
 | `procedimientos_acuse` | `firma`, `casilla`, `casilla_criticos` | `firma` |
 

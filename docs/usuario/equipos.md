@@ -71,6 +71,8 @@ resumen: Inventario del equipo de guardia (radios, lámparas, chalecos…), con 
 
 **Qué debes ver:** «Equipo … actualizado correctamente.»
 
+Un equipo que lleva más de 24 horas **EN MANTENIMIENTO** aparece en **Mis pendientes → Equipos en mantenimiento** de quien edita equipos en su sede, para que no se quede ahí para siempre. Cuando regrese de reparación, márcalo **DISPONIBLE**; si ya no sirve, dalo de baja.
+
 ## Cómo ver el QR, imprimir la etiqueta y asignar NFC
 
 1. Toca el botón del **código QR** de la ficha. Se abre **Código e identificación** con el QR y la dirección (botón **Copiar**).

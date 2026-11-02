@@ -100,12 +100,23 @@ class Novedad extends Model
         'area_especifica_id', 'ubicacion', 'involucrados', 'ocurrio_en', 'descripcion', 'como_sucedio', 'resolucion', 'origen_novedad_id',
     ];
 
+    /** C-24 (D-04): el reloj del ticket canalizado empieza cuando cambia la persona. */
+    protected static function booted(): void
+    {
+        static::saving(function (Novedad $n): void {
+            if ($n->isDirty('asignado_a')) {
+                $n->canalizado_en = $n->asignado_a !== null ? now() : null;
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [
             'ocurrio_en' => 'datetime', 'cerrado_en' => 'datetime', 'numero' => 'integer', 'sede_id' => 'integer', 'area_id' => 'integer',
             'area_especifica_id' => 'integer', 'asignado_a' => 'integer', 'creado_por' => 'integer',
             'pendiente_turno_en' => 'datetime', 'turno_avisado_en' => 'datetime', 'turno_escalado_en' => 'datetime',
+            'canalizado_en' => 'datetime',
         ];
     }
 

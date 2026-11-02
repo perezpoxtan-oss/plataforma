@@ -23,6 +23,7 @@ use App\Services\Plataforma\SuperAdministradores;
 use App\Services\Plataforma\VersionPhp;
 use App\Services\Privacidad\ConservacionDatos;
 use App\Services\Recepcion\AjustesRecepcion;
+use App\Services\Relojes\AjustesRelojes;
 use App\Services\Respaldos\Respaldos;
 use App\Support\AjustesCaseta;
 use App\Support\CorreoPlataforma;
@@ -200,9 +201,12 @@ class ConfiguracionController extends Controller
         'llaves' => ['el semáforo de llaves volvió', 'cfg-llaves'],
         'responsivas' => ['las horas de los equipos de «Turno» volvieron', 'cfg-responsivas'],
         'procedimientos' => ['los ajustes de Procedimientos volvieron', 'cfg-procedimientos'],
-        'vobo' => ['el reloj del visto bueno volvió', 'cfg-vobo'],
+        'vobo' => ['«Reloj y suplente» volvió', 'cfg-vobo'],
+        // C-25: permanencia en sitio y la noche sin supervisor
+        'permanencia' => ['el tiempo de permanencia volvió', 'cfg-permanencia'],
+        'noche' => ['la aprobación por excepción del agente volvió', 'cfg-noche'],
         'menu' => ['los nombres del menú volvieron', 'cfg-menu'],
-        'novedades' => ['el nombre de la bitácora y la categoría del hallazgo volvieron', 'novedades'],
+        'novedades' => ['el nombre de la bitácora, la categoría del hallazgo y el reloj de los tickets volvieron', 'novedades'],
         'lost_found' => ['los días de resguardo de Lost & Found volvieron', 'lost-found'],
         'auditoria' => ['lo que ve «Su sede» en la Bitácora de auditoría volvió', 'config-auditoria'],
         'dos_pasos' => ['a quién se exige la verificación en dos pasos volvió', 'cfg-dos-pasos'],
@@ -231,9 +235,11 @@ class ConfiguracionController extends Controller
         $empresa = Empresa::findOrFail($empresaId);
 
         match ($ajuste) {
-            'transporte', 'llaves', 'responsivas', 'procedimientos', 'vobo' => $this->restablecerCaseta($actor, $empresa, AjustesCaseta::GRUPOS[$ajuste]),
+            'transporte', 'llaves', 'responsivas', 'procedimientos', 'permanencia', 'noche' => $this->restablecerCaseta($actor, $empresa, AjustesCaseta::GRUPOS[$ajuste]),
+            // C-22: «Reloj y suplente» regresa sus horas generales y lo de cada módulo
+            'vobo' => [$this->restablecerCaseta($actor, $empresa, AjustesCaseta::GRUPOS['vobo']), $this->restablecerPreferencias($actor, $empresa->refresh(), [AjustesRelojes::CLAVE])],
             'menu' => $this->restablecerMenu($actor, $empresa),
-            'novedades' => app(AjustesNovedades::class)->guardar($actor, $empresa, ['nombre_opcion' => AjustesNovedades::NOMBRE_OMISION, 'categoria_hallazgo_pc' => AjustesNovedades::CATEGORIA_HALLAZGO_OMISION]),
+            'novedades' => app(AjustesNovedades::class)->guardar($actor, $empresa, ['nombre_opcion' => AjustesNovedades::NOMBRE_OMISION, 'categoria_hallazgo_pc' => AjustesNovedades::CATEGORIA_HALLAZGO_OMISION, 'reloj_horas' => []]),
             'lost_found' => $this->tenant->conEmpresa($empresaId, fn () => $this->lostFound->guardarUmbrales($actor, ['dias' => LostFoundUmbral::POR_OMISION])),
             'auditoria', 'avisos' => $this->restablecerPreferencias($actor, $empresa, $ajuste === 'auditoria' ? ['auditoria_sede'] : ['avisos', 'avisos_modulos']),
             'dos_pasos' => $this->restablecerPreferencias($actor, $empresa, ['dos_pasos']),
@@ -400,7 +406,7 @@ class ConfiguracionController extends Controller
         $empresaId = $this->empresa->id($request->user());
         abort_if($empresaId === null, 404);
 
-        app(AjustesNovedades::class)->guardar($request->user(), Empresa::findOrFail($empresaId), $request->only(['nombre_opcion', 'nombre_menu', 'categoria_hallazgo_pc']));
+        app(AjustesNovedades::class)->guardar($request->user(), Empresa::findOrFail($empresaId), $request->only(['nombre_opcion', 'nombre_menu', 'categoria_hallazgo_pc', 'reloj_horas']));
 
         return redirect()->to(route('configuracion.index').'#novedades')->with('ok', 'Ajustes de '.app(AjustesNovedades::class)->bitacoraConArticulo($empresaId).' guardados.');
     }

@@ -54,6 +54,17 @@ Si eres **jefe de departamento** y pides una vacante, queda en borrador («… e
 
 **Qué debes ver:** por ejemplo ««Camarista» está en pausa: ya no aparece en la bolsa de trabajo.» Si pasa la **fecha de cierre**, la vacante deja de verse sola y la tarjeta dice «Venció».
 
+## Cuando un jefe pide una vacante
+
+Si un jefe de departamento crea una vacante, queda en **Borrador** como propuesta:
+
+1. Recursos Humanos la ve en la campana y en **Mis pendientes → Vacantes propuestas por publicar**, con cuánto lleva esperando.
+2. Revísala y toca **Publicar** (o **Cerrar** con su motivo, o elimínala si no procede).
+
+**Qué debes ver:** al jefe que la pidió le llega «Tu vacante «…» se publicó» (o «se canceló», «se cerró como cubierta», «se eliminó»). Si nadie la atiende, a las 24 horas se recuerda y a las 72 pasa a quien publica vacantes en toda la empresa (ver [Reloj y suplente](reloj-y-suplente.md)).
+
+Cuando se elige a quien cubre todas las plazas, la vacante aparece en **Mis pendientes → Vacantes cubiertas por cerrar** hasta que la cierres como cubierta.
+
 ## Cómo compartir una vacante
 
 - **Cartel:** abre una hoja carta con «¡Estamos contratando!», sueldo, requisitos y un **QR**. Toca **Imprimir cartel** y pégalo en la entrada o en la caseta: quien escanea el QR se postula desde su celular. **Volver a Vacantes** te regresa.

@@ -45,15 +45,17 @@ resumen: Todos los ajustes de tu empresa ordenados por secciones (General, Caset
 ### Datos de la empresa
 Muestra la **zona horaria** de tu empresa. El nombre, la razón social, el RFC, el logo y la zona horaria se cambian con **Configurar en Empresas**. Cada sede puede tener su propia zona horaria en **Sedes**.
 
-### Cómo cambiar el reloj del visto bueno
-Lo que espera un visto bueno (vales de taxi sin Vo.Bo. en la Bitácora de transporte y procedimientos en revisión) muestra cuánto lleva esperando y cambia de color.
+### Cómo cambiar «Reloj y suplente»
+Todo lo que espera una respuesta (altas por verificar, vales de taxi, procedimientos, tickets, cuentas, vacantes, pases vencidos…) muestra cuánto lleva, cambia de color, se le recuerda a quien debe responder y, si nadie responde, pasa a un suplente.
 
-1. En **General → Reloj del visto bueno**, escribe en **Amarillo desde las** cuántas horas de espera lo ponen amarillo y en **Rojo después de las** cuántas lo ponen rojo.
-2. Toca **Guardar**.
+1. En **General → Reloj y suplente**, escribe en **Recordatorio y ámbar a las** y en **Suplente y rojo a las** las horas de espera.
+2. Deja marcada **Recordar y pasar al suplente** (si la quitas, el reloj y el color siguen, pero no salen avisos).
+3. Si quieres algo distinto para un módulo, abre **Avanzado: horas y suplente de cada módulo**: escribe sus horas (vacío = las generales), elige **A quién pasa** (de fábrica, o un rol) o quita **Encendido**. Lo que tiene su propio reloj dice dónde se configura.
+4. Toca **Guardar**.
 
-![Reloj del visto bueno](img/configuracion/general-vobo.png)
+![Reloj y suplente](img/configuracion/reloj-y-suplente.png)
 
-**Qué debes ver:** «Ajustes de caseta y activos guardados.» Valor original: **24** y **72** horas. El color siempre va con su texto, por ejemplo «más de 1 día» o «más de 36 h».
+**Qué debes ver:** «Reloj y suplente guardado.» Valor original: **24** y **72** horas, encendido. Las firmas de pases de salida sin horas propias usan estas mismas. Ver [Reloj y suplente](reloj-y-suplente.md).
 
 ### Cómo cambiar el nombre de un módulo en el menú
 Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en el menú.
@@ -80,10 +82,13 @@ Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en e
 | **Quién espera autorización del departamento** | Si visitas, proveedores y contratistas esperan la autorización; qué pasa si el departamento no tiene quien autorice en la sede (y cuántos departamentos están así hoy); si la caseta espera el «Que pase» de RR. HH.; a los cuántos minutos se recuerda y se avisa al suplente y al jefe. | Todos esperan; sin quien autorice, esperan al supervisor; 10 y 20 minutos. | **Configurar en Responsables por departamento** |
 | **Imprimir etiquetas desde los padrones** | Hoja propia de cada padrón o plantillas de Etiquetas QR. | Hoja propia de cada padrón. | **Configurar en Etiquetas QR → Plantillas** |
 | **Motivo de la visita** | Qué motivo viene marcado al registrar una visita (ninguno, o el que elijas) y, en hoteles, si se ofrece **Visita a huésped**. | Ninguno marcado; «Visita a huésped» sí. | Aquí, con **Guardar** |
+| **Tiempo de permanencia en sitio** | Cuántas horas puede estar una visita, un proveedor o contratista, a qué hora cierra el daypass y cuántas horas puede durar una salida temporal antes de avisar al supervisor (0 = apagado). | Visita 4 h, proveedor 8 h, daypass hasta las 22:00, salida temporal 2 h. | Aquí, con **Guardar** |
+| **Noche sin supervisor** | Si el agente puede **Aprobar por excepción** cuando nadie responde a tiempo (con motivo y foto, aviso inmediato al supervisor y al jefe, y revisión). | No. | Aquí, con **Guardar** |
 | **Procedimientos: acuse «Leí y entendí» y recordatorio** | Cómo se firma el acuse y **cada cuántos días** se recuerda a quien no ha firmado. | Casilla y firma dibujada; cada 3 días. | Aquí, con **Guardar** |
 | Avisos de **Colaboradores**, **Altas por verificar** y **Procedimientos** | Ver «Avisos por correo». | Encendidos. | Aquí |
 
 ![Procedimientos en Caseta y accesos](img/configuracion/caseta-procedimientos.png)
+![Tiempo de permanencia en sitio](img/configuracion/permanencia.png)
 
 ## Recepción y RR. HH.
 
@@ -125,7 +130,7 @@ Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cu�
 
 | Tarjeta | Qué decides | Valor original |
 |---|---|---|
-| **Préstamo de llaves: llaves fuera mucho tiempo** | A cuántas horas fuera la ficha se pone **ámbar** y avisa a la caseta, y a cuántas se pone **roja** y avisa al jefe de seguridad (ejemplo: 8 y 12). **0 = apagado.** | Apagado. |
+| **Préstamo de llaves: llaves fuera mucho tiempo** | A cuántas horas fuera la ficha se pone **ámbar** y avisa a la caseta, y a cuántas se pone **roja** y avisa al jefe de seguridad (ejemplo: 8 y 12). **0 = apagado.** | 12 y 24 horas (encendido). |
 | **Responsivas: equipos de «Turno»** | Cuántas horas después de la entrega deben regresar y cuántas horas más esperar antes de avisar al supervisor (ejemplo: 8 y 2). | Apagado: sin hora de regreso. |
 | Avisos de **Vouchers de reposición** con cobro | Correos de **Copia Seguridad**, **Copia Recepción** y **Copia Administración**. Si dejas las tres vacías, se envía a quien puede imprimir vouchers en esa sede. | Encendido. |
 

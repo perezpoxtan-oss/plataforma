@@ -66,6 +66,8 @@ class AdministradorVacantes
             $rh = $rh->merge($this->destinatarios->conPermiso((int) $vacante->empresa_id, 'vacantes.editar', $sedeId));
         }
         $rh = $rh->unique('id')->reject(fn (User $u) => $u->id === $actor->id);
+        // C-23 (E-06): desde aquí corre su reloj (Mis pendientes «Vacantes propuestas por publicar») y quien la pidió sabrá el resultado
+        Vacante::whereKey($vacante->id)->whereNull('propuesta_en')->update(['propuesta_en' => now(), 'propuesta_por' => $actor->id]);
         $this->notificaciones->avisar((int) $vacante->empresa_id, $rh->pluck('id'), 'vacante_propuesta', [
             'titulo' => 'Vacante propuesta por '.$actor->name.': «'.$vacante->titulo.'»',
             'texto' => ($vacante->departamento?->nombre ? $vacante->departamento->nombre.' · ' : '').$vacante->plazas.' plaza(s). Está en borrador: revísala y publícala.',
@@ -204,8 +206,14 @@ class AdministradorVacantes
             $cambios += ['publicada_en' => $vacante->publicada_en ?? now()]
                 + ($vacante->fecha_publicacion === null ? ['fecha_publicacion' => $hoy] : []);
         }
+        if (in_array($estado, ['publicada', 'cerrada'], true)) {
+            $cambios += ['propuesta_en' => null]; // C-23: ya no espera
+        }
+        if ($estado === 'cerrada') {
+            $cambios += ['cubierta_en' => null];
+        }
         if ($estado === 'borrador') {
-            $cambios += ['cierre_motivo' => null, 'cerrada_en' => null];
+            $cambios += ['cierre_motivo' => null, 'cerrada_en' => null, 'cubierta_en' => null];
             $this->tituloLibre($vacante->titulo, $vacante->id);
         }
 
@@ -224,9 +232,28 @@ class AdministradorVacantes
         if (in_array($estado, ['publicada', 'cerrada'], true)) {
             // «Vacante propuesta» y «Vacante cubierta» (con su botón «Cerrar como cubierta») ya se atendieron
             $this->notificaciones->resolver(self::REFERENCIA, $vacante->id);
+            $this->avisarResultado($actor, $vacante, $estado === 'publicada' ? 'se publicó' : ($motivo === 'cubierta' ? 'se cerró como cubierta' : 'se canceló'));
         }
 
         return $vacante;
+    }
+
+    /**
+     * C-23 (E-06, regla 1): el jefe que pidió la vacante se entera de qué pasó
+     * con ella (publicada, cerrada, cancelada o eliminada).
+     */
+    private function avisarResultado(User $actor, Vacante $vacante, string $resultado): void
+    {
+        $jefe = (int) ($vacante->propuesta_por ?? 0);
+        if ($jefe === 0 || $jefe === (int) $actor->id || ! User::where('activo', true)->whereKey($jefe)->exists()) {
+            return;
+        }
+        $this->notificaciones->avisar((int) $vacante->empresa_id, [$jefe], 'vacante_resultado', [
+            'titulo' => 'Tu vacante «'.$vacante->titulo.'» '.$resultado,
+            'texto' => 'La revisó '.$actor->name.'.'.($vacante->estado === 'publicada' ? ' Ya pueden postularse.' : ''),
+            'url' => $vacante->exists ? route('vacantes.index') : null,
+            'referencia_tipo' => 'vacante_resultado', 'referencia_id' => (int) $vacante->id,
+        ]);
     }
 
     public function eliminar(User $actor, Vacante $vacante): void
@@ -241,6 +268,9 @@ class AdministradorVacantes
         $antes = $this->foto($vacante);
         $vacante->delete();
         $this->auditoria->auditar($actor, 'vacantes.eliminado', $vacante, $antes, null);
+        // C-23: lo que esperaba se apaga y quien la pidió se entera
+        $this->notificaciones->resolver(self::REFERENCIA, $vacante->id);
+        $this->avisarResultado($actor, $vacante, 'se eliminó');
     }
 
     // ------------------------------------------------------------------ Validación

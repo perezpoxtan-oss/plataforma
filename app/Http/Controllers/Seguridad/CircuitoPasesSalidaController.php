@@ -52,7 +52,7 @@ class CircuitoPasesSalidaController extends Controller
             'resumen' => $this->circuito->resumen(),
             'firmasCaseta' => $this->circuito->firmasCaseta(),
             'rechazo' => $this->circuito->rechazo(),
-            'espera' => $this->circuito->espera(), // Mejoras Incidentes: firmas que tardan
+            'espera' => $this->circuito->esperaGuardada(), // Mejoras Incidentes: firmas que tardan (vacío = «Reloj y suplente», C-22)
             'puedeEditar' => $this->editaEmpresa($request->user()),
             'roles' => Rol::where('empresa_id', $empresaId)->where('activo', true)->orderBy('nivel_jerarquia')->get(['id', 'nombre']),
             'departamentos' => Departamento::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']),

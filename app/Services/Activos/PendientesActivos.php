@@ -41,7 +41,7 @@ class PendientesActivos
         if ($actor->can('transporte.aprobar') && $actor->can('transporte.ver')) {
             $fila = app(BitacoraTransporte::class)->limitar(MovimientoTransporte::query(), $actor, 'transporte.aprobar')
                 ->where('movimientos_transporte.estatus', 'no_llego')->where('movimientos_transporte.anulado', false)
-                ->whereNull('movimientos_transporte.autorizado_en')->toBase()
+                ->whereNull('movimientos_transporte.autorizado_en')->whereNull('movimientos_transporte.rechazado_en')->toBase()
                 ->selectRaw('COUNT(*) as total, MIN(movimientos_transporte.fecha) as desde, MIN(movimientos_transporte.created_at) as esperando_desde')->first();
             $total = (int) ($fila->total ?? 0);
             $desde = $total > 0 && $fila->desde ? substr((string) $fila->desde, 0, 10) : null;
@@ -102,14 +102,28 @@ class PendientesActivos
      */
     public function procedimientosPorAprobar(User $actor): int
     {
+        return count($this->versionesPorAprobar($actor));
+    }
+
+    /**
+     * Las versiones en revisión que esta persona puede aprobar (D-02: el mismo
+     * conjunto para el renglón, el color y el recordatorio del motor).
+     *
+     * @return list<int>
+     */
+    public function versionesPorAprobar(User $actor): array
+    {
+        if (! $actor->can('procedimientos.aprobar')) {
+            return [];
+        }
         $servicio = app(AdministradorProcedimientos::class);
         $deEmpresa = $actor->es_superadmin || app(Autorizador::class)->sedesPermitidas($actor, 'procedimientos.aprobar') === null;
 
         return $servicio->limitar(Procedimiento::query(), $actor, 'procedimientos.aprobar')
             ->where('procedimientos.estado_trabajo', Procedimiento::EN_REVISION)
             ->with($deEmpresa ? ['trabajo'] : ['trabajo.aplicaciones'])->get()
-            ->filter(fn (Procedimiento $p) => $servicio->motivoNoAprueba($actor, $p, $p->trabajo) === null)
-            ->count();
+            ->filter(fn (Procedimiento $p) => $p->trabajo !== null && $servicio->motivoNoAprueba($actor, $p, $p->trabajo) === null)
+            ->map(fn (Procedimiento $p) => (int) $p->trabajo->id)->values()->all();
     }
 
     /**

@@ -20,6 +20,7 @@ use App\Services\Permisos\Autorizador;
 use App\Services\Personas\AdministradorPersonas;
 use App\Services\Rutas\AdministradorRutas;
 use App\Services\Vehiculos\AdministradorVehiculos;
+use App\Support\Entrada;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -762,9 +763,36 @@ class BitacoraTransporte
         if ($m->autorizado()) {
             throw ValidationException::withMessages(['estado' => 'Este vale ya estaba autorizado.']);
         }
+        if ($m->rechazado_en !== null) {
+            throw ValidationException::withMessages(['estado' => 'Este vale se rechazó: ya no se puede aprobar.']);
+        }
         $m->forceFill(['autorizado_por' => $actor->id, 'autorizado_en' => now()])->save();
         $this->auditoria->auditar($actor, 'transporte.autorizado', $m, ['autorizado' => false], ['autorizado' => true, 'monto' => $m->monto]);
         app(CampanaActivos::class)->resolverVale($m);
+        app(CampanaActivos::class)->resultadoVale($m, $actor, true, null); // C-24: el guardia que lo registró se entera
+    }
+
+    /**
+     * C-24 (D-08): «Rechazar» el Vo.Bo. del vale con motivo (antes solo se
+     * podía anular). El guardia que lo registró se entera; el vale queda en la
+     * bitácora como rechazado.
+     */
+    public function rechazar(User $actor, MovimientoTransporte $m, mixed $motivo): void
+    {
+        if (! $m->esTaxi()) {
+            throw ValidationException::withMessages(['estado' => 'Solo los vales de taxi llevan Vo.Bo.']);
+        }
+        if ($m->anulado || $m->autorizado() || $m->rechazado_en !== null) {
+            throw ValidationException::withMessages(['estado' => 'Este vale ya no espera el Vo.Bo.']);
+        }
+        $motivo = mb_substr(trim((string) preg_replace('/\s+/u', ' ', Entrada::texto($motivo))), 0, 255);
+        if ($motivo === '') {
+            throw ValidationException::withMessages(['motivo_rechazo' => 'Escribe por qué rechazas el vale.']);
+        }
+        $m->forceFill(['rechazado_por' => $actor->id, 'rechazado_en' => now(), 'motivo_rechazo' => $motivo])->save();
+        $this->auditoria->auditar($actor, 'transporte.rechazado', $m, ['autorizado' => false], ['rechazado' => true, 'motivo' => $motivo]);
+        app(CampanaActivos::class)->resolverVale($m);
+        app(CampanaActivos::class)->resultadoVale($m, $actor, false, $motivo);
     }
 
     // ---------------------------------------------------------------- Lectura

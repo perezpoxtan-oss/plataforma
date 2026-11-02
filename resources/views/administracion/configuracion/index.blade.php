@@ -93,7 +93,8 @@
                         <a href="{{ $enOtras['empresa']['url'] }}" class="btn-enlace-config"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Configurar en Empresas</a>
                     </div>
                 @endisset
-                @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'vobo'])
+                {{-- C-22: «Reloj y suplente» (antes «Reloj del visto bueno») --}}
+                @include('administracion.configuracion._relojes', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar])
                 @include('administracion.configuracion._menu', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar])
             </section>
         @endif
@@ -130,6 +131,9 @@
                 @if ($mostrarAvisos && $tiene('accesos'))
                     {{-- C-04: motivo de visita marcado (de fábrica, ninguno) y «Visita a huésped» --}}
                     @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'motivos'])
+                    {{-- C-25: tiempo de permanencia y la noche sin supervisor --}}
+                    @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'permanencia'])
+                    @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'noche'])
                 @endif
                 @if ($mostrarAvisos && $tiene('procedimientos'))
                     @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'procedimientos'])

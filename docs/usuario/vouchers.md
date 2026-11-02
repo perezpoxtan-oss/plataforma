@@ -72,6 +72,10 @@ resumen: Consultar, reimprimir y dar seguimiento a los comprobantes de llaves, g
 - Si el voucher **no tiene cobro**, al reactivar desde la ficha el voucher queda **Cancelado por recuperación** solo.
 - Si **tiene cobro**, la ficha te trae aquí con la ventana **Recuperado** ya abierta, para que indiques si ya se le cobró al responsable. Al confirmar se reactiva el artículo.
 
+## Lo que espera en Mis pendientes
+
+Un voucher con **firma física** que aún no tiene registrada la hoja firmada, o con un **reembolso pendiente**, aparece en **Mis pendientes → Vouchers por firmar o reembolsar** de quien administra vouchers en su sede, con cuánto lleva esperando. Registra la firma en papel o el reembolso para cerrarlo.
+
 ## En el celular
 
 ![Vouchers en el celular](img/vouchers/celular.png)

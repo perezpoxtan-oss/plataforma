@@ -9,6 +9,7 @@ use App\Http\Controllers\Administracion\EmpresaController;
 use App\Http\Controllers\Administracion\IdentidadController;
 use App\Http\Controllers\Administracion\PermisoController;
 use App\Http\Controllers\Administracion\PrivacidadController;
+use App\Http\Controllers\Administracion\RelojesController;
 use App\Http\Controllers\Administracion\RolController;
 use App\Http\Controllers\Administracion\SedeController;
 use App\Http\Controllers\Administracion\SolicitudesArcoController;
@@ -385,6 +386,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/accesos/gafetes', [AccesoController::class, 'gafetes'])->name('accesos.gafetes');
     Route::patch('/accesos/{acceso}/autorizar', [AccesoController::class, 'autorizar'])->whereNumber('acceso')->name('accesos.autorizar');
     Route::patch('/accesos/{acceso}/excepcion', [AccesoController::class, 'excepcion'])->whereNumber('acceso')->name('accesos.excepcion');
+    // C-25 (DD-13): la caseta de noche
+    Route::post('/accesos/{acceso}/pedir-supervisor', [AccesoController::class, 'pedirSupervisor'])->whereNumber('acceso')->name('accesos.pedir-supervisor');
+    Route::patch('/accesos/{acceso}/excepcion-agente', [AccesoController::class, 'excepcionAgente'])->whereNumber('acceso')->name('accesos.excepcion-agente');
+    Route::patch('/accesos/{acceso}/revisar-excepcion', [AccesoController::class, 'revisarExcepcion'])->whereNumber('acceso')->name('accesos.revisar-excepcion');
     Route::patch('/accesos/{acceso}/salida', [AccesoController::class, 'salida'])->whereNumber('acceso')->name('accesos.salida');
     Route::patch('/accesos/{acceso}/zona', [AccesoController::class, 'zona'])->whereNumber('acceso')->name('accesos.zona');
     Route::post('/accesos/{acceso}/salida-temporal', [AccesoController::class, 'salidaTemporal'])->whereNumber('acceso')->name('accesos.salida-temporal');
@@ -464,6 +469,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/transporte/{movimiento}/anular', [TransporteController::class, 'anular'])->whereNumber('movimiento')->name('transporte.anular');
     Route::patch('/transporte/{movimiento}/reactivar', [TransporteController::class, 'reactivar'])->whereNumber('movimiento')->name('transporte.reactivar');
     Route::patch('/transporte/{movimiento}/autorizar', [TransporteController::class, 'autorizar'])->whereNumber('movimiento')->name('transporte.autorizar');
+    Route::patch('/transporte/{movimiento}/rechazar', [TransporteController::class, 'rechazar'])->whereNumber('movimiento')->name('transporte.rechazar'); // C-24
     Route::get('/transporte/{movimiento}/vale', [TransporteController::class, 'vale'])->whereNumber('movimiento')->name('transporte.vale');
     Route::get('/transporte/{movimiento}/firma/{cual}', [TransporteController::class, 'firma'])->whereNumber('movimiento')->whereIn('cual', ['guardia', 'taxista'])->name('transporte.firma');
     // Fin Padrones: Bitácora de transporte
@@ -747,6 +753,8 @@ Route::middleware('auth')->group(function () {
 
     // Mejoras activos (ADR-0014): ajustes de caseta y recibir una llave escaneándola desde la pantalla principal
     Route::put('/configuracion/caseta', [AjustesCasetaController::class, 'update'])->name('configuracion.caseta');
+    // C-22: «Reloj y suplente» (horas generales, avisos y lo de cada módulo en Avanzado)
+    Route::put('/configuracion/relojes', [RelojesController::class, 'update'])->name('configuracion.relojes');
     Route::post('/prestamo-llaves/recibir', [PrestamoLlaveController::class, 'recibirEscaneada'])->middleware('throttle:60,1')->name('prestamo_llaves.recibir-escaneada');
     // Fin Mejoras activos
 

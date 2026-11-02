@@ -433,7 +433,7 @@ class TransporteTest extends TestCase
         // Registra con taxis y firma en su sede
         $vale = $this->registrar($this->taxis([], [$this->taxis()['taxis'][0]]), $agente);
         $this->assertSame($agente->id, $vale->creado_por);
-        $this->actingAs($agente)->get("/transporte/{$vale->id}")->assertOk()->assertSee('Editar registro')->assertDontSee('Autorizar (Vo.Bo.)');
+        $this->actingAs($agente)->get("/transporte/{$vale->id}")->assertOk()->assertSee('Editar registro')->assertDontSee('Aprobar (Vo.Bo.)');
         $this->actingAs($agente)->get("/transporte/{$vale->id}/firma/taxista")->assertOk();
 
         // Sin eliminar, aprobar ni exportar

@@ -55,8 +55,10 @@ class NotificacionController extends Controller
         if ($empresaId === null) {
             // Catálogo comercial: el Super Administrador sin empresa de trabajo recibe sus avisos de la plataforma
             $avisos = $actor->es_superadmin ? $this->tenant->conEmpresa(null, fn () => $this->centro->resumen($actor)) : ['no_leidas' => 0, 'lista' => []];
+            // C-26 (E-05): el Super Administrador también tiene Mis pendientes de la plataforma
+            $pendientes = $actor->es_superadmin ? app(MisPendientes::class)->para($actor, reciente: false) : ['total' => 0, 'items' => []];
 
-            return response()->json([...$avisos, 'pendientes' => ['total' => 0, 'items' => []]]);
+            return response()->json([...$avisos, 'pendientes' => $pendientes]);
         }
 
         // Mis pendientes: viaja en la misma consulta de la campana (sin un segundo reloj)

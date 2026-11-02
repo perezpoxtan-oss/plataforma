@@ -17,9 +17,12 @@ use App\Services\Padrones\AdministradorProveedores;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
 use App\Services\Personas\AdministradorPersonas;
+use App\Services\Relojes\Relojes\Permanencia;
+use App\Services\Relojes\Relojes\SalidaTemporal;
 use App\Services\Vehiculos\AdministradorVehiculos;
 use App\Support\HoraLocal;
 use App\Support\Lector\Etiqueta;
+use App\Support\Tenancy\Tenant;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -126,6 +129,8 @@ class ConsultaAccesos
     {
         return $this->filtrar($this->limitar(Acceso::query(), $actor, 'accesos.ver'), $filtros)
             ->where('accesos.estado', 'en_sitio')->where('accesos.movimiento', 'entrada')
+            // C-25: «Rebasaron su tiempo» (permanencia o salida temporal), para el cambio de turno
+            ->when(! empty($filtros['rebasaron']), fn ($q) => $q->whereIn('accesos.id', $this->idsRebasaron() ?: [0]))
             ->with($this->relaciones(true))
             ->orderByDesc('accesos.entrada_at')->orderByDesc('accesos.id')
             ->get();
@@ -143,6 +148,21 @@ class ConsultaAccesos
             ->with([...$this->relaciones(true), 'autorizacionDepartamento.departamento:id,nombre'])
             ->orderBy('accesos.entrada_at')->orderBy('accesos.id')
             ->get();
+    }
+
+    /**
+     * C-25: ingresos que rebasaron su tiempo en sitio o cuya salida temporal no regresó.
+     *
+     * @return list<int>
+     */
+    public function idsRebasaron(): array
+    {
+        $empresaId = app(Tenant::class)->empresaId();
+
+        return array_values(array_unique([
+            ...app(Permanencia::class)->idsRebasaron($empresaId),
+            ...app(SalidaTemporal::class)->idsRebasaron($empresaId),
+        ]));
     }
 
     /**
@@ -205,6 +225,10 @@ class ConsultaAccesos
      */
     private function filtrar(Builder $consulta, array $filtros): Builder
     {
+        // C-25: las aprobaciones por excepción del agente que esperan revisión
+        if (! empty($filtros['excepciones'])) {
+            $consulta->where('accesos.excepcion_por_revisar', true)->whereNull('accesos.excepcion_revisada_en');
+        }
         if (! empty($filtros['tipo'])) {
             $consulta->where('accesos.tipo', $filtros['tipo']);
         }

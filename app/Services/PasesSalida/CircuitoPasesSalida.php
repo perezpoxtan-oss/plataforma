@@ -14,6 +14,7 @@ use App\Services\Autorizaciones\CadenaDelegaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
 use App\Services\Permisos\Autorizador;
+use App\Services\Relojes\AjustesRelojes;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -113,7 +114,7 @@ class CircuitoPasesSalida
 
     private function cadena(): CadenaDelegaciones
     {
-        return $this->cadena ??= new CadenaDelegaciones;
+        return $this->cadena ??= app(CadenaDelegaciones::class); // una sola cadena por petición (revisión Etapa 4, D-04)
     }
 
     public function __construct(
@@ -410,12 +411,29 @@ class CircuitoPasesSalida
      *
      * @return array{recordar: ?int, escalar: ?int}
      */
-    public function espera(): array
+    /** Las horas que la empresa escribió en el circuito (sin las de «Reloj y suplente»), para el formulario. */
+    public function esperaGuardada(): array
     {
         $g = $this->ajustesGuardados()['espera'] ?? [];
         $horas = fn ($v) => is_numeric($v) && (int) $v >= 1 && (int) $v <= self::MAX_HORAS_ESPERA ? (int) $v : null;
 
         return ['recordar' => $horas($g['recordar_horas'] ?? null), 'escalar' => $horas($g['escalar_horas'] ?? null)];
+    }
+
+    public function espera(): array
+    {
+        $g = $this->ajustesGuardados()['espera'] ?? [];
+        $horas = fn ($v) => is_numeric($v) && (int) $v >= 1 && (int) $v <= self::MAX_HORAS_ESPERA ? (int) $v : null;
+        $espera = ['recordar' => $horas($g['recordar_horas'] ?? null), 'escalar' => $horas($g['escalar_horas'] ?? null)];
+        // C-22 (DD-10): sin horas propias, las de «Reloj y suplente» (24 h y 72 h de fábrica), salvo que la empresa apague los avisos
+        if ($espera['recordar'] === null && $espera['escalar'] === null) {
+            $general = app(AjustesRelojes::class)->generales($this->empresa());
+            if ($general['encendido']) {
+                return ['recordar' => $general['ambar'], 'escalar' => $general['suplente']];
+            }
+        }
+
+        return $espera;
     }
 
     /** «3 días» o «8 horas» (para pantalla y bitácora). */

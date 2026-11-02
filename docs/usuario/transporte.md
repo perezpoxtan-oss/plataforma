@@ -64,7 +64,10 @@ Mientras escribes las placas o el chofer, la ventana te muestra los parecidos de
 
 1. **Corregir:** toca el **lápiz**. En un servicio normal solo se cambian pasajeros, a tiempo / retraso y observaciones; en un taxi, monto, destino, justificación, pasajeros y observaciones.
 2. **Anular:** toca el **círculo tachado** y confirma. El registro queda gris como **ANULADO** (se puede **reactivar**).
-3. **Autorizar un vale:** quien tiene permiso recibe el aviso **Vale de taxi por autorizar** en la **campana** (botón **Abrir vale**) y lo ve en **Mis pendientes → Vales de taxi por autorizar**, que abre la lista con solo los vales pendientes. En el vale toca **Autorizar (Vo.Bo.)**. Un vale autorizado ya no se edita y el aviso se quita solo (también si el vale se anula).
+3. **Aprobar un vale:** quien tiene permiso recibe el aviso **Vale de taxi por autorizar** en la **campana** (botón **Abrir vale**) y lo ve en **Mis pendientes → Vales de taxi por autorizar**, que abre la lista con solo los vales pendientes. En el vale toca **Aprobar (Vo.Bo.)**. Un vale aprobado ya no se edita y el aviso se quita solo (también si el vale se anula).
+4. **Rechazar un vale:** si el vale no procede (la unidad sí llegó, el monto no corresponde), toca **Rechazar**, escribe el **Motivo** y vuelve a tocar **Rechazar**. El vale queda como «Vo.Bo. rechazado» con su motivo.
+
+Quien registró el vale recibe en su campana **Vale de taxi … aprobado** o **… rechazado** (con el motivo).
 
 ![Vale por autorizar en la campana](img/transporte/vobo-campana.png)
 
@@ -80,7 +83,7 @@ Junto a **Pendiente de Vo.Bo.** cada vale dice desde cuándo espera y cambia de 
 | **Hace 1 día 6 h · más de 1 día** | amarillo | Lleva entre 24 y 72 horas. Conviene darle el Vo.Bo. hoy. |
 | **Hace 4 días · más de 3 días** | rojo | Lleva más de 72 horas. Atiéndelo primero. |
 
-En **Mis pendientes**, el renglón **Vales de taxi por autorizar** también se pone amarillo o rojo según el vale que más lleva esperando.
+En **Mis pendientes**, el renglón **Vales de taxi por autorizar** también se pone amarillo o rojo según el vale que más lleva esperando. A las horas del recordatorio se te recuerda y, si nadie lo atiende, pasa a quien aprueba vales en toda la empresa (ver [Reloj y suplente](reloj-y-suplente.md)).
 
 ## Cómo sacar reportes
 

@@ -70,6 +70,10 @@
     @if ($a->empresa_procedencia)
         <div class="ficha-acceso-empresa"><i class="bi bi-building me-1" aria-hidden="true"></i>{{ $a->empresa_procedencia }}</div>
     @endif
+    @if ($modo === 'en_sitio' && ! $fuera && ($rebaso = \App\Services\Relojes\Relojes\Permanencia::tarjeta($a, $ajustesCaseta ?? \App\Support\AjustesCaseta::de((int) $a->empresa_id))))
+        {{-- C-25: reloj de permanencia (visita 4 h, proveedor 8 h, daypass hasta el cierre) --}}
+        <div class="aviso-padron-acceso espera-{{ $rebaso['nivel'] }}" data-rebaso><i class="bi bi-clock-history me-1" aria-hidden="true"></i>{{ $rebaso['texto'] }}</div>
+    @endif
     @if ($a->aviso_padron && $modo !== 'historial')
         {{-- C-13: empresa nueva, parecida a una restringida o que no opera en esta sede --}}
         <div class="aviso-padron-acceso"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>{{ $a->aviso_padron }}</div>
@@ -255,7 +259,22 @@
         <p class="aviso-sin-permiso"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Su departamento no tiene quien autorice en esta sede: espera a tu supervisor o al jefe de seguridad (ya se les avisó).</p>
     @elseif ($modo === 'pendientes' && ! in_array($a->autorizacion, ['esperando', 'espera'], true)){{-- Recepción: la visita espera al departamento (o a RR. HH.), no al host --}}
         <p class="aviso-sin-permiso"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Espera a que el Host autorice; tu supervisor confirma la autorización en el sistema.</p>
-    @elseif ($modo === 'en_sitio' && $puede['editar'])
+    @endif
+    @if ($modo === 'pendientes' && ! $puede['aprobar'] && ($puede['crear'] ?? false))
+        @include('seguridad.accesos._noche')
+    @endif
+    {{-- C-25: la excepción que aprobó el agente espera la revisión del supervisor --}}
+    @if ($modo !== 'pendientes' && $a->excepcion_por_revisar && ! $a->excepcion_revisada_en)
+        <div class="aviso-padron-acceso"><i class="bi bi-shield-exclamation me-1" aria-hidden="true"></i>Aprobado por el agente sin supervisor: por revisar.</div>
+        @if ($puede['aprobar'])
+            <form action="{{ route('accesos.revisar-excepcion', $a->id) }}" method="POST" class="m-0 mt-1">
+                @csrf
+                @method('PATCH')
+                <button type="submit" class="btn-accion-acceso autorizar"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Atender</button>
+            </form>
+        @endif
+    @endif
+    @if ($modo === 'en_sitio' && $puede['editar'])
         <div class="ficha-acceso-acciones">
             @if ($fuera)
                 <button type="button" class="btn-accion-acceso regreso" data-accion="acceso-dialogo" data-dialogo="dialogoRegresoAcceso" data-id="{{ $a->id }}"

@@ -10,7 +10,6 @@ use App\Models\Empresa;
 use App\Models\Novedad;
 use App\Models\Postulacion;
 use App\Models\SolicitudArco;
-use App\Models\SolicitudCuenta;
 use App\Models\User;
 use App\Services\Accesos\ConsultaAccesos;
 use App\Services\Activos\PendientesActivos;
@@ -21,8 +20,6 @@ use App\Services\Autorizaciones\Escalamiento;
 use App\Services\Candidatos\AdministradorCandidatos;
 use App\Services\Candidatos\Entrevistas;
 use App\Services\Candidatos\PlazosCandidatos;
-use App\Services\Colaboradores\AdministradorColaboradores;
-use App\Services\Cuenta\SolicitudesCuenta;
 use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Padrones\AltasPorVerificar;
 use App\Services\PasesSalida\AdministradorPasesSalida;
@@ -31,14 +28,18 @@ use App\Services\Privacidad\ConservacionDatos;
 use App\Services\Privacidad\SolicitudesArco;
 use App\Services\Procedimientos\AdministradorProcedimientos;
 use App\Services\Recepcion\PanelRecepcion;
+use App\Services\Relojes\MotorRelojes;
+use App\Services\Relojes\PendientesPorPersona;
 use App\Services\Reservas\PendientesReservas;
-use App\Services\Usuarios\AdministradorUsuarios;
+use App\Support\HoraLocal;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\EmpresaScope;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Container\Attributes\Scoped;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+
+use function Illuminate\Support\defer;
 
 /**
  * «Mis pendientes» del encabezado (junto a la campana): lo que el usuario
@@ -71,6 +72,8 @@ class MisPendientes
     /** @var array<string, array{total: int, items: list<array{clave: string, titulo: string, icono: string, total: int, url: string, nivel: ?string}>}> */
     private array $memoria = [];
 
+    private ?int $peticion = null;
+
     public function __construct(
         private readonly EmpresaDeTrabajo $empresa,
         private readonly Tenant $tenant,
@@ -82,13 +85,26 @@ class MisPendientes
     public function para(User $actor, bool $reciente = true): array
     {
         $empresaId = $this->empresa->id($actor);
-        if ($empresaId === null) {
+        if ($empresaId === null && ! $actor->es_superadmin) {
             return ['total' => 0, 'items' => []];
         }
-        $llave = "mis-pendientes:{$actor->id}:{$empresaId}";
+        $llave = "mis-pendientes:{$actor->id}:".($empresaId ?? 'plataforma');
 
-        if (! $reciente && $actor->can('candidatos.editar')) {
-            app(PlazosCandidatos::class)->correrSiToca($empresaId);
+        // C-22: el motor «Reloj y suplente» corre en proceso con la consulta de la campana (candado de un minuto por empresa)
+        // Revisión Etapa 4: corre DESPUÉS de mandar la respuesta (defer), así la campana no espera al motor;
+        // el candado de un minuto por empresa sigue evitando que corra en cada consulta
+        if (! $reciente) {
+            foreach (array_unique(array_filter([$empresaId ?? false, $actor->es_superadmin ? 'plataforma' : false], fn ($v) => $v !== false)) as $quien) {
+                $id = $quien === 'plataforma' ? null : (int) $quien;
+                if (MotorRelojes::yaCorrio($id)) {
+                    continue; // corrió hace menos de un minuto: ni siquiera se agenda
+                }
+                defer(fn () => $this->tenant->conEmpresa($id, fn () => app(MotorRelojes::class)->correrSiToca($id)), 'relojes:'.($id ?? 'plataforma'));
+            }
+        }
+        // Lo memorizado vale para una petición (Inicio y el encabezado comparten el cálculo; D-04)
+        if ($this->peticion !== ($peticion = spl_object_id(app('request')))) {
+            [$this->peticion, $this->memoria] = [$peticion, []];
         }
         if (isset($this->memoria[$llave])) {
             return $this->memoria[$llave];
@@ -97,7 +113,9 @@ class MisPendientes
             return $this->memoria[$llave] = $guardado;
         }
 
-        $resultado = $this->tenant->conEmpresa($empresaId, fn () => $this->calcular($actor, $empresaId));
+        $resultado = $empresaId === null
+            ? $this->tenant->conEmpresa(null, fn () => $this->plataforma($actor, []))
+            : $this->tenant->conEmpresa($empresaId, fn () => $this->calcular($actor, $empresaId));
         Cache::put($llave, $resultado, self::SEGUNDOS_CACHE);
 
         return $this->memoria[$llave] = $resultado;
@@ -109,6 +127,10 @@ class MisPendientes
     private function calcular(User $actor, int $empresaId): array
     {
         $items = [];
+        // La empresa ya viene cargada con el usuario (EstablecerEmpresa): los relojes no la vuelven a leer
+        if ((int) $actor->empresa_id === $empresaId && $actor->relationLoaded('empresa') && $actor->empresa !== null) {
+            app(MotorRelojes::class)->recordarEmpresa($actor->empresa);
+        }
 
         // Autorizaciones: solo responsables o delegados de algún departamento
         $autorizaciones = app(Autorizaciones::class);
@@ -128,10 +150,18 @@ class MisPendientes
         // C-08 / DD-11: visitas que esperan al supervisor porque su departamento no tiene quien autorice en la sede
         if ($actor->can('accesos.aprobar')) {
             $esperan = app(ConsultaAccesos::class)->limitar(Acceso::query(), $actor, 'accesos.aprobar')
-                ->where('accesos.estado', 'pendiente')->where('accesos.autorizacion', Acceso::SIN_RESPONSABLE)
+                ->where('accesos.estado', 'pendiente')
+                ->where(fn ($q) => $q->where('accesos.autorizacion', Acceso::SIN_RESPONSABLE)->orWhereNotNull('accesos.supervisor_pedido_en'))
                 ->toBase()->selectRaw('COUNT(*) AS total, MIN(accesos.entrada_at) AS desde')->first();
+            // Revisión Etapa 4: con delegaciones de por medio, la misma regla que el aviso del motor (CadenaDelegaciones::destino())
+            $cadena = $autorizaciones->cadena();
+            if ((int) ($esperan->total ?? 0) > 0 && $cadena->mapa() !== [] && (isset($cadena->mapa()[(int) $actor->id]) || $cadena->titularesDe((int) $actor->id) !== [])) {
+                $mias = app(MotorRelojes::class)->reloj('caseta_supervisor')->esperasDe($actor, $empresaId);
+                $esperan = (object) ['total' => $mias->count(), 'desde' => $mias->min(fn ($e) => $e->desde->getTimestamp())];
+                $esperan->desde = $esperan->desde === null ? null : Carbon::createFromTimestamp($esperan->desde, 'UTC')->format('Y-m-d H:i:s');
+            }
             if (($total = (int) ($esperan->total ?? 0)) > 0) {
-                $empresa = Empresa::find($empresaId);
+                $empresa = app(MotorRelojes::class)->empresa($empresaId); // una lectura por petición
                 [$ambar, $roja] = app(Escalamiento::class)->umbrales($empresa);
                 $minutos = $esperan->desde ? (int) max(0, now()->diffInMinutes(Carbon::parse($esperan->desde, 'UTC'))) : 0;
                 $items[] = ['nivel' => $minutos >= $roja ? 'roja' : ($minutos >= $ambar ? 'ambar' : null)]
@@ -166,10 +196,14 @@ class MisPendientes
         }
 
         // Mejoras estructura (ADR-0016): versiones de procedimientos que esperan la aprobación de quien entra
+        // D-02 (revisión Etapa 4): el mismo conjunto que el recordatorio del motor y la delegación en cadena de la Etapa 3
+        $porPersona = app(PendientesPorPersona::class);
+        $motor = app(MotorRelojes::class);
+        $llavesDeRenglon = [];
         if ($actor->can('procedimientos.aprobar')) {
-            // Mejoras activos (ADR-0014): el mismo conteo con menos consultas
+            $llavesDeRenglon['procedimientos_aprobar'] = $motor->conCadenaLlaves($actor, fn (User $u) => $porPersona->procedimientosPorAprobar($u));
             $items[] = $this->item('procedimientos_aprobar', 'Procedimientos por aprobar', 'bi-journal-check',
-                app(PendientesActivos::class)->procedimientosPorAprobar($actor), route('procedimientos.index', ['filtro' => 'por_aprobar']));
+                count($llavesDeRenglon['procedimientos_aprobar']), route('procedimientos.index', ['filtro' => 'por_aprobar']));
         }
         // Fin Mejoras estructura
 
@@ -183,13 +217,19 @@ class MisPendientes
         $altas = app(AltasPorVerificar::class);
         $verifica = collect(array_keys(AltasPorVerificar::PADRONES))->contains(fn (string $p) => $altas->puedeVerificar($actor, $p));
         if ($verifica || $actor->can('colaboradores.aprobar')) {
-            $grupos = array_map(fn ($g) => ['ruta' => route('altas_por_verificar.index', ['pestana' => $g['padron']])] + $g, $verifica ? $altas->pendientesPorPadron($actor) : []);
-            if ($actor->can('colaboradores.aprobar')) {
-                $colaboradores = app(AdministradorColaboradores::class)->limitar(Colaborador::query(), $actor, 'colaboradores.aprobar')
-                    ->where('colaboradores.provisional', true)->where('colaboradores.activo', true)->whereNull('colaboradores.fusionado_en_id')->count();
-                if ($colaboradores > 0) {
-                    $grupos[] = ['padron' => 'colaboradores', 'nombre' => 'Colaboradores', 'icono' => 'bi-person-exclamation', 'total' => $colaboradores,
-                        'ruta' => route('altas_por_verificar.index', ['pestana' => 'colaboradores'])];
+            // D-02: lo que puede verificar con su alcance, con la delegación en cadena (mismo conjunto que el motor)
+            $llavesDeRenglon['altas'] = $motor->conCadenaLlaves($actor, fn (User $u) => $porPersona->altas($u)['llaves']);
+            $porPadron = [];
+            foreach ($llavesDeRenglon['altas'] as $llave) {
+                $padron = substr(strstr($llave, ':', true), 5); // «alta_personas:12» → personas
+                $porPadron[$padron] = ($porPadron[$padron] ?? 0) + 1;
+            }
+            $definiciones = AltasPorVerificar::PADRONES + ['colaboradores' => ['nombre' => 'Colaboradores', 'icono' => 'bi-person-exclamation']];
+            $grupos = [];
+            foreach ($definiciones as $padron => $d) {
+                if (($porPadron[$padron] ?? 0) > 0) {
+                    $grupos[] = ['padron' => $padron, 'nombre' => $d['nombre'], 'icono' => $d['icono'], 'total' => $porPadron[$padron],
+                        'ruta' => route('altas_por_verificar.index', ['pestana' => $padron])];
                 }
             }
             $items[] = $this->item('altas', count($grupos) === 1 ? 'Altas por verificar · '.$grupos[0]['nombre'] : 'Altas por verificar', 'bi-patch-question',
@@ -203,6 +243,13 @@ class MisPendientes
             $suyos = fn () => app(AdministradorCandidatos::class)->limitar(Candidato::query(), $actor, 'candidatos.editar');
             $items[] = $this->item('recepcion', 'Esperando en Recepción', 'bi-person-check',
                 app(PanelRecepcion::class)->porAtender($actor), $actor->can('recepcion_rh.ver') ? route('recepcion.index') : route('candidatos.index'));
+            // C-23 (E-07): «Por atender» y «Con RR. HH.» de días anteriores (los de hoy van en «Esperando en Recepción»)
+            $inicioHoy = now()->setTimezone(app(HoraLocal::class)->zona())->startOfDay()->utc();
+            $items[] = $this->item('sin_atender', 'Candidatos sin atender', 'bi-person-exclamation',
+                Postulacion::whereIn('etapa', PlazosCandidatos::ETAPAS_RH)->whereNull('archivada_en')->whereIn('candidato_id', $suyos()->select('candidatos.id'))
+                    ->where(fn ($q) => $q->where('etapa', 'con_rh')->orWhereHas('candidato', fn ($c) => $c->where(fn ($x) => $x->where('llegada_en', '<', $inicioHoy)
+                        ->orWhere(fn ($y) => $y->whereNull('llegada_en')->where('created_at', '<', $inicioHoy)))))->count(),
+                route('candidatos.index', ['etapa' => 'registrado']));
             $items[] = $this->item('solicitudes', 'Solicitudes por revisar', 'bi-phone',
                 $suyos()->where('autocaptura_pendiente', true)->count(), route('candidatos.index', ['revisar' => 1]));
             $items[] = $this->item('por_entrevistar', 'Por entrevistar (RR. HH.)', 'bi-chat-square-text',
@@ -237,22 +284,12 @@ class MisPendientes
         // las cuentas por revisar (usuarios.editar) más las peticiones de «Pedir a mi administrador» que le tocan
         // (contraseña con usuarios.editar, dos pasos con usuarios.desbloquear; alcance y jerarquía). Si no hay ninguna
         // petición abierta en la empresa, no se calcula nada más (una consulta).
-        $editar = $actor->can('usuarios.editar');
-        if ($editar || $actor->can('usuarios.desbloquear')) {
-            $abiertas = SolicitudCuenta::query()->withoutGlobalScope(EmpresaScope::class)->where('empresa_id', $empresaId)
-                ->where('estado', SolicitudCuenta::PENDIENTE)->selectRaw('count(*)');
-            if ($editar) {
-                // Una sola consulta: las cuentas por revisar y si hay peticiones abiertas en la empresa
-                $fila = app(AdministradorUsuarios::class)->consultaPorRevisar($actor, $empresaId)->toBase()
-                    ->selectRaw('count(*) as total')->selectSub($abiertas->toBase(), 'abiertas')->first();
-                [$cuentas, $hay] = [(int) ($fila->total ?? 0), (int) ($fila->abiertas ?? 0) > 0];
-            } else {
-                [$cuentas, $hay] = [0, $abiertas->toBase()->exists()];
-            }
-            $peticiones = $hay ? app(SolicitudesCuenta::class)->porAtender($actor, $empresaId)->count() : 0;
-            if ($editar || $peticiones > 0) {
-                $items[] = $this->item('cuentas', 'Cuentas por revisar', 'bi-person-lock', $cuentas + $peticiones, route('usuarios.index', ['revisar' => 1]));
-            }
+        // D-02: el mismo conjunto que el recordatorio del motor (PendientesPorPersona), con la delegación en cadena
+        $propias = $porPersona->cuentas($actor, $empresaId);
+        if ($propias['mostrar']) {
+            $llavesDeRenglon['cuentas'] = $motor->conCadenaLlaves($actor, fn (User $u) => $porPersona->cuentas($u, $empresaId)['llaves']);
+            $total = $llavesDeRenglon['cuentas'] === $propias['llaves'] ? $propias['total'] : count($llavesDeRenglon['cuentas']);
+            $items[] = $this->item('cuentas', 'Cuentas por revisar', 'bi-person-lock', $total, route('usuarios.index', ['revisar' => 1]));
         }
 
         // Privacidad (criterios 1 y 3): solicitudes ARCO abiertas, con el color de su plazo legal
@@ -260,7 +297,7 @@ class MisPendientes
             $abiertas = SolicitudArco::query()->withoutGlobalScope(EmpresaScope::class)->where('empresa_id', $empresaId)
                 ->whereIn('estado', [SolicitudArco::POR_VERIFICAR, SolicitudArco::PENDIENTE])->get(['id', 'estado', 'vence_en']);
             if ($abiertas->isNotEmpty()) {
-                $empresa = Empresa::find($empresaId);
+                $empresa = app(MotorRelojes::class)->empresa($empresaId); // una lectura por petición
                 $recordar = $empresa ? app(ConservacionDatos::class)->ajustes($empresa)['arco_recordar_dias'] : ConservacionDatos::RECORDAR_ARCO;
                 $niveles = $abiertas->map(fn ($x) => SolicitudesArco::nivel($x, $recordar))->filter();
                 $nivel = $niveles->contains('roja') ? 'roja' : ($niveles->contains('ambar') ? 'ambar' : null);
@@ -304,6 +341,32 @@ class MisPendientes
         }
         // Fin Reservas de áreas
 
+        // C-22 a C-26: renglones nuevos de lo que espera (vacantes, pases vencidos, Lost & Found, caseta, vouchers…)
+        // y el color del motor en los renglones que ya existían
+        $activos = $motor->relojesDe($empresaId);
+        foreach ($activos as $reloj) {
+            if (($renglon = $reloj->renglon($actor, $empresaId)) !== null) {
+                $items[] = $renglon;
+            }
+            // D-01: lo que le pasaron como suplente y su renglón de siempre no le cuenta
+            if (($renglon = $reloj->renglonSuplente($actor, $empresaId)) !== null) {
+                $items[] = $renglon;
+            }
+        }
+        $colores = ['altas' => 'altas', 'cuentas' => 'cuentas', 'novedades_mias' => 'novedades_canalizadas', 'procedimientos_aprobar' => 'procedimientos_aprobar'];
+        foreach ($items as &$item) {
+            if (isset($colores[$item['clave']]) && $item['total'] > 0 && ($item['nivel'] ?? null) === null && isset($activos[$colores[$item['clave']]])) {
+                $reloj = $motor->reloj($colores[$item['clave']]);
+                // D-02: el color sale de las mismas llaves que el número
+                $item['nivel'] = isset($llavesDeRenglon[$item['clave']]) ? $reloj->nivelDeLlaves($llavesDeRenglon[$item['clave']], $empresaId) : $reloj->nivelPara($actor, $empresaId);
+            }
+        }
+        unset($item);
+        // C-08 / C-25: «Esperan tu autorización en caseta» también cuenta lo que la caseta le pidió al supervisor
+        if ($actor->es_superadmin) {
+            $items = $this->plataforma($actor, $items)['items'];
+        }
+
         // Fase 3: color por plazo, solo si algún renglón de candidatos tiene pendientes
         $conPendientes = array_filter($items, fn ($i) => $i['total'] > 0 && in_array($i['clave'], PlazosCandidatos::RENGLONES, true));
         if ($conPendientes !== []) {
@@ -313,6 +376,29 @@ class MisPendientes
             }
             unset($item);
         }
+
+        return ['total' => array_sum(array_column($items, 'total')), 'items' => $items] + ($items === [] ? [] : ['vista' => self::vista($items)]);
+    }
+
+    /**
+     * C-26 (E-05): lo que espera al Super Administrador (con o sin empresa de
+     * trabajo): solicitudes, pruebas por aprobar, clientes por revisar y en gracia.
+     *
+     * @param  list<array<string, mixed>>  $items
+     * @return array{total: int, items: list<array<string, mixed>>, vista?: list<array<string, mixed>>}
+     */
+    private function plataforma(User $actor, array $items): array
+    {
+        $this->tenant->conEmpresa(null, function () use ($actor, &$items) {
+            foreach (app(MotorRelojes::class)->relojesDe(null) as $reloj) {
+                if (($renglon = $reloj->renglon($actor, null)) !== null) {
+                    $items[] = $renglon;
+                }
+                if (($renglon = $reloj->renglonSuplente($actor, null)) !== null) {
+                    $items[] = $renglon;
+                }
+            }
+        });
 
         return ['total' => array_sum(array_column($items, 'total')), 'items' => $items] + ($items === [] ? [] : ['vista' => self::vista($items)]);
     }
@@ -334,7 +420,7 @@ class MisPendientes
     // Mejoras estructura (ADR-0016): lo que se pinta, sin renglones en cero y con candidatos en un solo renglón
 
     /** Renglones de Recursos Humanos que se agrupan en «Candidatos». */
-    public const GRUPO_CANDIDATOS = ['recepcion', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos'];
+    public const GRUPO_CANDIDATOS = ['recepcion', 'sin_atender', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos'];
 
     /**
      * @param  list<array<string, mixed>>  $items

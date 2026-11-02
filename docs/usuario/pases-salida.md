@@ -239,7 +239,9 @@ Si tu empresa ya tenía su propio circuito, no cambia solo. Arriba de los pasos 
 
 ![Firmas que tardan](img/pases-salida/circuito-firmas-que-tardan.png)
 
-**Qué debes ver:** cuando un paso lleva ese tiempo sin firma, a quien debe firmarlo le llega otra vez el aviso en la **campana** («Recordatorio: el pase PS-… espera tu firma») y por correo si está encendido. Si sigue sin firma, se avisa a quien firma el **siguiente paso** del circuito o, si era el último, a quien configura los pases en esa sede («Firma atrasada: pase PS-…»). Cada aviso se manda una sola vez por paso y queda en la bitácora del pase. Si dejas los dos campos vacíos (así viene), nadie recibe avisos nuevos; solo se ve el reloj.
+**Qué debes ver:** cuando un paso lleva ese tiempo sin firma, a quien debe firmarlo le llega otra vez el aviso en la **campana** («Recordatorio: el pase PS-… espera tu firma») y por correo si está encendido. Si sigue sin firma, se avisa a quien firma el **siguiente paso** del circuito o, si era el último, a quien configura los pases en esa sede («Firma atrasada: pase PS-…»). Cada aviso se manda una sola vez por paso y queda en la bitácora del pase. Si dejas los dos campos vacíos (así viene), se usan las horas de **Configuración → General → Reloj y suplente** (de fábrica, recordatorio a las 24 horas y siguiente nivel a las 72).
+
+**Pases vencidos:** un pase que debía regresar y no regresó aparece en **Mis pendientes → Pases vencidos sin regresar** de quien aprueba pases en la sede y de quien lo pidió. Sigue llegando su recordatorio diario y, si pasan 3 días, se avisa al jefe de seguridad de la sede.
 
 ## En el celular
 

@@ -67,6 +67,7 @@ class Vacante extends Model
             'todas_las_sedes' => 'boolean', 'sueldo_a_tratar' => 'boolean', 'jefe_ve_cv' => 'boolean', 'requisitos' => 'array', 'prestaciones' => 'array',
             'sueldo_min' => 'decimal:2', 'sueldo_max' => 'decimal:2', 'plazas' => 'integer',
             'fecha_publicacion' => 'date', 'fecha_cierre' => 'date', 'publicada_en' => 'datetime', 'cerrada_en' => 'datetime',
+            'propuesta_en' => 'datetime', 'cubierta_en' => 'datetime', // C-23: reloj de lo que espera
         ];
     }
 

@@ -155,7 +155,7 @@
                 @endphp
                 <section class="tarjeta p-3 mt-3 ajustes-circuito" aria-labelledby="t-espera-circuito">
                     <h2 id="t-espera-circuito" class="h6 fw-bold"><i class="bi bi-alarm me-2 text-primary" aria-hidden="true"></i>Firmas que tardan</h2>
-                    <p class="small text-muted">Cada pase muestra cuánto lleva esperando la firma del paso actual. Déjalo vacío para no recordar ni avisar a nadie (así funciona hoy). Cada aviso se manda una sola vez por paso.</p>
+                    <p class="small text-muted">Cada pase muestra cuánto lleva esperando la firma del paso actual. Déjalo vacío para usar las horas de «Reloj y suplente» de Configuración (24 h y 72 h de fábrica). Cada aviso se manda una sola vez por paso.</p>
                     @foreach ($tiemposEspera as $campo => [$etiquetaEspera, $ayudaEspera])
                         @php [$valorEspera, $unidadEspera] = $enUnidad($espera[$campo] ?? null, $campo); @endphp
                         <div class="fila-espera-circuito">

@@ -132,6 +132,37 @@ class AjustesNovedades
         return in_array($nombre, self::NOMBRES_SUGERIDOS, true) ? $nombre : self::OPCION_OTRO;
     }
 
+    /**
+     * C-24 (D-04): reloj de los tickets canalizados por categoría, en horas
+     * hasta el recordatorio (ámbar). Al suplente (el jefe de seguridad de la
+     * sede) pasan al triple. Accidente 2 h, Robo 4 h y lo demás 24 h.
+     */
+    public const RELOJ_HORAS = ['accidente' => 2, 'robo' => 4, 'otras' => 24];
+
+    public const RELOJ_MAX_HORAS = 240;
+
+    /** @return array{accidente: int, robo: int, otras: int} */
+    public function relojHoras(Empresa|int|null $empresa): array
+    {
+        $empresa = is_int($empresa) ? Empresa::find($empresa) : $empresa;
+        $guardado = (array) ($empresa?->preferencias['novedades']['reloj_horas'] ?? []);
+        $horas = self::RELOJ_HORAS;
+        foreach ($horas as $clave => $omision) {
+            $valor = $guardado[$clave] ?? null;
+            $horas[$clave] = is_numeric($valor) ? max(1, min(self::RELOJ_MAX_HORAS, (int) $valor)) : $omision;
+        }
+
+        return $horas;
+    }
+
+    /** Horas de recordatorio de una categoría. */
+    public function relojHorasDe(Empresa|int|null $empresa, ?string $categoria): int
+    {
+        $horas = $this->relojHoras($empresa);
+
+        return $horas[$categoria] ?? $horas['otras'];
+    }
+
     public function categoriaHallazgoPc(?Empresa $empresa): string
     {
         $valor = $empresa?->preferencias['novedades']['categoria_hallazgo_pc'] ?? null;
@@ -154,7 +185,12 @@ class AjustesNovedades
             'nombre_opcion' => ['nullable', 'in:'.implode(',', [...self::NOMBRES_SUGERIDOS, self::OPCION_OTRO])],
             'nombre_menu' => [$opcion === self::OPCION_OTRO ? 'required' : 'nullable', 'string', 'max:40', 'regex:/^[\pL\pN .&\-]+$/u'],
             'categoria_hallazgo_pc' => ['required', 'in:'.implode(',', array_keys(self::CATEGORIAS_HALLAZGO))],
+            'reloj_horas' => ['nullable', 'array'],
+            'reloj_horas.*' => ['nullable', 'integer', 'min:1', 'max:'.self::RELOJ_MAX_HORAS],
         ], [
+            'reloj_horas.*.integer' => 'Escribe las horas del reloj con un número entero, de 1 a '.self::RELOJ_MAX_HORAS.'.',
+            'reloj_horas.*.min' => 'Escribe las horas del reloj con un número entero, de 1 a '.self::RELOJ_MAX_HORAS.'.',
+            'reloj_horas.*.max' => 'Escribe las horas del reloj con un número entero, de 1 a '.self::RELOJ_MAX_HORAS.'.',
             'nombre_opcion.in' => 'Elige «Novedades», «Incidentes» u «Otro nombre».',
             'nombre_menu.required' => 'Escribe el nombre que quieres para el módulo o elige «Novedades» o «Incidentes».',
             'nombre_menu.max' => 'El nombre del menú admite máximo 40 letras.',
@@ -163,12 +199,17 @@ class AjustesNovedades
             'categoria_hallazgo_pc.in' => 'Elige la categoría del ticket que abre un hallazgo de recorrido.',
         ])->validate();
 
-        $antes = ['nombre_menu' => $this->nombreMenu($empresa->id), 'categoria_hallazgo_pc' => $this->categoriaHallazgoPc($empresa)];
+        $antes = ['nombre_menu' => $this->nombreMenu($empresa->id), 'categoria_hallazgo_pc' => $this->categoriaHallazgoPc($empresa), 'reloj_horas' => $this->relojHoras($empresa)];
+        // C-24: solo se guardan las horas distintas de fábrica (sin el campo, se conservan)
+        $reloj = array_key_exists('reloj_horas', $datos)
+            ? array_filter(array_map(fn ($v) => $v === null || $v === '' ? null : (int) $v, array_intersect_key((array) $datos['reloj_horas'], self::RELOJ_HORAS)),
+                fn ($v, $k) => $v !== null && $v !== self::RELOJ_HORAS[$k], ARRAY_FILTER_USE_BOTH)
+            : ($empresa->preferencias['novedades']['reloj_horas'] ?? []);
         $nombre = trim((string) preg_replace('/\s+/u', ' ', (string) ($datos['nombre_menu'] ?? '')));
         $nombre = $nombre === '' || $nombre === self::NOMBRE_OMISION ? null : $nombre;
         $categoria = $datos['categoria_hallazgo_pc'];
 
-        DB::transaction(function () use ($empresa, $nombre, $categoria) {
+        DB::transaction(function () use ($empresa, $nombre, $categoria, $reloj) {
             $modulo = Modulo::where('clave', 'novedades')->value('id');
             if ($modulo !== null) {
                 // Solo en la empresa que tiene el módulo contratado (sin contrato no hay menú que nombrar)
@@ -185,12 +226,20 @@ class AjustesNovedades
             } else {
                 $preferencias['novedades']['categoria_hallazgo_pc'] = $categoria;
             }
+            if ($reloj === []) {
+                unset($preferencias['novedades']['reloj_horas']);
+                if (($preferencias['novedades'] ?? null) === []) {
+                    unset($preferencias['novedades']);
+                }
+            } else {
+                $preferencias['novedades']['reloj_horas'] = $reloj;
+            }
             $fresca?->forceFill(['preferencias' => $preferencias === [] ? null : $preferencias])->save();
         });
         $empresa->refresh();
         request()->attributes->remove(self::MEMORIA.$empresa->id);
 
-        $despues = ['nombre_menu' => $this->nombreMenu($empresa->id), 'categoria_hallazgo_pc' => $this->categoriaHallazgoPc($empresa)];
+        $despues = ['nombre_menu' => $this->nombreMenu($empresa->id), 'categoria_hallazgo_pc' => $this->categoriaHallazgoPc($empresa), 'reloj_horas' => $this->relojHoras($empresa)];
         if ($antes !== $despues) {
             $this->auditoria->auditar($actor, 'novedades.configurado', $empresa, $antes, $despues);
         }
