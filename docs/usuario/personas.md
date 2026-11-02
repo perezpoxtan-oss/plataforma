@@ -116,7 +116,7 @@ A veces la misma persona quedó registrada dos veces (por ejemplo «Ana López U
 1. Necesitas poder editar **y** dar de baja en el padrón (por ejemplo el Jefe de seguridad o el Administrador).
 2. En la ficha **repetida** (la que va a quedar fuera de uso) toca el botón azul **Unir con otra ficha** (dos círculos).
 3. En la ventana **Unir con otra ficha** elige, de los parecidos, la ficha que se queda. Si no aparece, búscala en **¿No está en la lista? Búscala en el padrón**.
-4. Toca **Guardar unión**.
+4. Toca **Aprobar · es el mismo**.
 
 ![Unir con otra ficha](img/personas/17-unir-duplicado.png)
 
@@ -157,7 +157,7 @@ Los mensajes aparecen dentro de la misma ventana, arriba, en rojo. Lo que ya esc
 | «…» está registrada como Contratista: elige el tipo Contratista. | Elegiste *Proveedor* con una empresa contratista. | Cambia el tipo a *Contratista*. |
 | El proveedor no existe en esta empresa o está desactivado (dado de baja). | La empresa se dio de baja mientras capturabas. | Elige otra o pide que la reactiven en Empresas externas. |
 | No veo **Registrar Persona** ni **Editar Perfil**. | Tu rol solo consulta. | Pide el permiso a tu administrador. |
-| Elige con cuál ficha se une (de los parecidos o de la búsqueda). | Tocaste **Guardar unión** sin elegir. | Marca la ficha que se queda. |
+| Elige con cuál ficha se une (de los parecidos o de la búsqueda). | Tocaste **Aprobar · es el mismo** sin elegir. | Marca la ficha que se queda. |
 | Elige un registro activo y ya verificado del padrón (no puede ser el mismo). | Elegiste la misma ficha, una de baja o una pendiente. | Elige otra ficha activa y verificada. |
 | El folio se ve con puntos (••••). | Tu rol solo consulta y el folio está protegido. | Es normal; quien puede editar lo ve completo. |
 

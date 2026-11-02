@@ -160,7 +160,7 @@ class LostFoundController extends Controller
     }
 
     /**
-     * Registrar Cierre (SEGCAT: lf_articulo_proceso.php?accion=cerrar).
+     * Guardar cierre (SEGCAT: lf_articulo_proceso.php?accion=cerrar).
      */
     public function cerrar(Request $request, int $articulo): RedirectResponse
     {

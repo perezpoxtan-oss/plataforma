@@ -26,6 +26,7 @@ resumen: Imprimir de una sola vez las etiquetas QR de llaves, gafetes, equipos, 
 1. Entra a **Padrones → Etiquetas QR**. Se abre la pestaña **Imprimir**.
 2. Arriba toca el **tipo** (por ejemplo **Llaves**; también hay **Personas externas** y **Empresas externas**). El número junto a cada tipo dice cuántos hay.
 3. Si quieres, escribe en **Nombre, placas, serie, número...**, elige la sede, el estatus (**Solo activos**, **Solo de baja** o **Activos y de baja**) y las fechas **Alta desde** / **hasta**. Los filtros se aplican solos al elegir o al dejar de escribir, igual que en los padrones (el botón **Buscar** queda por si lo prefieres). **Quitar filtros** los limpia.
+   La búsqueda revisa todo el padrón: aunque tengas miles de registros, encuentra el que buscas (se muestran hasta 500 por tipo; si son más, acota con la búsqueda o la sede).
 4. Marca las casillas de las etiquetas que quieras, o **Marcar todas**.
 5. Elige la **Plantilla** (el tamaño). Debajo se ve su medida, por ejemplo «40 × 25 mm · rollo térmico, una por página». La plataforma recuerda la última que usaste.
 6. Toca **Imprimir** (muestra cuántas llevas). Se abre otra pestaña: **Etiquetas QR listas**.
@@ -55,10 +56,10 @@ Con **rollo térmico** (Zebra, Brother…) cada etiqueta sale en su propia pági
 1. Toca la pestaña **Historial**. Ves cada impresión: número, fecha, quién la hizo, plantilla y qué etiquetas llevaba.
 2. Para encontrar una, escribe en **Buscar una etiqueta (nombre, placas...)** o usa **Todos los usuarios**, **Todas las plantillas**, **Desde** y **Hasta**. Toca **Buscar**.
 3. **Ver hoja** vuelve a abrir esa misma hoja.
-4. **Reimprimir** abre **Reimprimir impresión núm. …** con sus etiquetas marcadas:
+4. **Imprimir otra vez** abre **Imprimir otra vez la impresión núm. …** con sus etiquetas marcadas:
    - Quita la marca de las que no necesitas (por ejemplo, deja solo la que se dañó).
    - En **Plantilla** deja **La misma de la impresión original** o elige otra.
-   - Toca **Reimprimir**.
+   - Toca **Imprimir otra vez**.
 
 ![Historial](img/etiquetas-qr/04-historial.png)
 

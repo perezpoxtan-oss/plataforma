@@ -269,7 +269,7 @@ class AdministradorNovedades
     // ---------------------------------------------------------------- Escritura
 
     /**
-     * Despachar Ticket (SEGCAT: accion=crear).
+     * Guardar ticket (SEGCAT: accion=crear).
      *
      * @param  array<string, mixed>  $entrada
      */

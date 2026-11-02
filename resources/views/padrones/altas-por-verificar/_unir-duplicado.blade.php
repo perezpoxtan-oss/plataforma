@@ -29,7 +29,7 @@
             <p class="campo-ayuda mt-2"><i class="bi bi-info-circle" aria-hidden="true"></i> Todo lo registrado con esta ficha (accesos, entregas, movimientos de transporte…) pasa a la elegida, que además se queda con la identificación o el teléfono que le falten. Esta ficha queda como «Unida»: no se borra, pero ya no se usa en la caseta. No se puede deshacer desde la pantalla.</p>
             <div class="dialogo-acciones">
                 <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                <button type="submit" class="btn-verificar-unir"><i class="bi bi-union me-1" aria-hidden="true"></i>Guardar unión</button>
+                <button type="submit" class="btn-verificar-unir"><i class="bi bi-union me-1" aria-hidden="true"></i>Aprobar · es el mismo</button>
             </div>
         </form>
     </div>

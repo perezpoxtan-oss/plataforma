@@ -136,7 +136,7 @@
 
             <div class="dialogo-acciones">
                 <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                <button type="submit" class="btn-despachar"><i class="bi bi-send-fill me-1" aria-hidden="true"></i>Despachar Ticket</button>
+                <button type="submit" class="btn-despachar"><i class="bi bi-send-fill me-1" aria-hidden="true"></i>Guardar ticket</button>
             </div>
         </form>
     </div>

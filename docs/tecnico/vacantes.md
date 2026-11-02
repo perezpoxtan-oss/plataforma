@@ -94,7 +94,7 @@ SEGCAT no tenía vacantes: se pegaban hojas impresas a mano en la entrada, la ca
 ## ADR-0010
 
 - **Vacante propuesta**: si quien guarda no tiene `vacantes.editar` (Jefe de departamento), `AdministradorVacantes::avisarPropuesta` manda la campana `vacante_propuesta` «Vacante propuesta por …» a quien tiene `vacantes.editar` en sus sedes (referencia `vacante`); se resuelve al publicarla o cerrarla.
-- **Vacante cubierta**: el aviso a RR. HH. lleva el botón «Cerrar como cubierta» (ver [candidatos.md](candidatos.md)).
+- **Vacante cubierta**: el aviso a RR. HH. lleva el botón «Dar de baja · cerrar como cubierta» (ver [candidatos.md](candidatos.md)).
 - **Alta corta**: «La vacante» muestra solo título, puesto, departamento, plazas y sedes; «Condiciones y quién ve el CV» (con `jefe_ve_cv`), «Descripción y requisitos» y «Fechas y contacto» van plegadas. El título se sugiere desde el puesto (`data-sugiere-titulo`, `public/js/plataforma.js`) mientras no se escriba uno propio.
 - **Postulación corta** en `/empleos/{empresa}/{vacante}/postular`: ver [candidatos.md](candidatos.md).
 

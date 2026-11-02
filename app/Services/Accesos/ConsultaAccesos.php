@@ -452,7 +452,7 @@ class ConsultaAccesos
             'fuera_temporal' => $fuera,
             'salida_temporal' => $a->admiteSalidaTemporal() && ! $fuera,
             'texto_salida_temporal' => $a->textoSalidaTemporal(),
-            'texto_salida' => $a->tipo === 'huesped' ? 'Salida Final' : 'Salida',
+            'texto_salida' => $a->tipo === 'huesped' ? 'Dar salida final' : 'Dar salida',
             'acompanantes' => $a->acompanantes->map(fn ($ac) => [
                 'id' => $ac->id,
                 'nombre' => $ac->nombreVisible(),

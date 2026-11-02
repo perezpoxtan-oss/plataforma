@@ -74,13 +74,13 @@
         @include('organizacion.espacios.partes.formulario', [
             'id' => 'dialogoNuevaHabitacion', 'titulo' => 'Nueva '.$sing, 'icono' => 'bi-door-closed',
             'nivel' => 'area_especifica', 'padreId' => $nodo->id, 'tipos' => $tiposHabitacion, 'secciones' => $secciones,
-            'editar' => false, 'boton' => 'Agregar', 'claseBoton' => 'btn-ambar', 'etiquetaNombre' => 'Nombre o número (ej. 101)',
+            'editar' => false, 'boton' => 'Guardar', 'claseBoton' => 'btn-ambar', 'etiquetaNombre' => 'Nombre o número (ej. 101)',
         ])
 
         @php $loteReabrir = old('_dialogo') === 'lote'; $modo = $loteReabrir ? old('modo', 'rango') : 'rango'; @endphp
         <dialog id="dialogoLote" class="dialogo" aria-labelledby="tituloLote" @if ($loteReabrir) data-abrir-al-cargar @endif>
             <div class="dialogo-cabecera">
-                <h2 id="tituloLote"><i class="bi bi-stack me-2" aria-hidden="true"></i>Crear {{ $plur }} por Lote</h2>
+                <h2 id="tituloLote"><i class="bi bi-stack me-2" aria-hidden="true"></i>Guardar {{ $plur }} por Lote</h2>
                 <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
             </div>
             <div class="dialogo-cuerpo">
@@ -129,7 +129,7 @@
                     <p class="campo-ayuda mb-3">Los nombres que ya existen en este piso se omiten; no detienen el lote.</p>
                     <div class="dialogo-acciones">
                         <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                        <button type="submit" class="btn-ambar">Crear {{ $plur }}</button>
+                        <button type="submit" class="btn-ambar">Guardar {{ $plur }}</button>
                     </div>
                 </form>
             </div>

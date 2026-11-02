@@ -33,9 +33,9 @@ use Illuminate\Support\Facades\URL;
  *    canaliza la entrevista al departamento con App\Services\Candidatos\Entrevistas;
  *    las que existían quedan como historial;
  *  - recepcion: alguien llegó a caseta con Recursos Humanos y la empresa pide
- *    que RR. HH. diga «Que pase» (Que pase / Que espere / No puede pasar). La
+ *    que RR. HH. diga «Aprobar · que pase» (Que pase / Rechazar · que espere o no puede pasar). La
  *    responde quien atiende candidatos o Recepción en esa sede
- *    (candidatos.editar: Recursos Humanos), no un departamento. «Que pase»
+ *    (candidatos.editar: Recursos Humanos), no un departamento. «Aprobar · que pase»
  *    también atiende al candidato (pasa a «Con RR. HH.») en el mismo clic.
  *
  * Avisos: campana (con botones) y correo (botones con dirección firmada que
@@ -218,7 +218,7 @@ class Autorizaciones
 
     /**
      * Sedes donde el usuario atiende Recepción de RR. HH. (candidatos.editar:
-     * Recursos Humanos; Dirección solo consulta el panel y no dice «Que pase»):
+     * Recursos Humanos; Dirección solo consulta el panel y no dice «Aprobar · que pase»):
      * null = todas; [] = ninguna.
      *
      * @return list<int>|null
@@ -240,7 +240,7 @@ class Autorizaciones
         return array_values(array_unique(array_map('intval', $todas)));
     }
 
-    /** ¿Atiende Recepción de RR. HH. en esa sede? (puede decir «Que pase») */
+    /** ¿Atiende Recepción de RR. HH. en esa sede? (puede decir «Aprobar · que pase») */
     public function atiendeRecepcion(User $usuario, int $sedeId): bool
     {
         $sedes = $this->sedesRecepcion($usuario);
@@ -260,7 +260,7 @@ class Autorizaciones
     }
 
     /**
-     * Accesos que esperan el «Que pase» de RR. HH. en las sedes del usuario
+     * Accesos que esperan el «Aprobar · que pase» de RR. HH. en las sedes del usuario
      * (Recepción y Mis pendientes).
      *
      * @return Builder<Acceso>
@@ -502,9 +502,9 @@ class Autorizaciones
     }
 
     /**
-     * Alguien llegó a caseta con Recursos Humanos y espera su «Que pase» (el
+     * Alguien llegó a caseta con Recursos Humanos y espera su «Aprobar · que pase» (el
      * acceso ya nació pendiente). El aviso es el de su llegada, con los
-     * botones Que pase / Que espere / No puede pasar.
+     * botones Que pase / Rechazar · que espere o no puede pasar.
      */
     public function solicitarRecepcion(User $actor, Acceso $acceso, ?Candidato $candidato): ?Autorizacion
     {
@@ -564,8 +564,8 @@ class Autorizaciones
 
     /**
      * Responde (el primero gana). $medio: plataforma | correo. $atender: en
-     * Recepción, «Que pase y lo atiendo» (el candidato queda «Con RR. HH.» en
-     * el mismo clic); desde la campana y el correo es solo «Que pase».
+     * Recepción, «Aprobar y atender» (el candidato queda «Con RR. HH.» en
+     * el mismo clic); desde la campana y el correo es solo «Aprobar · que pase».
      */
     public function responder(User $actor, Autorizacion $a, string $respuesta, ?string $comentario, string $medio = 'plataforma', bool $atender = false): Autorizacion
     {
@@ -625,7 +625,7 @@ class Autorizaciones
     }
 
     /**
-     * «Que pase y lo atiendo»: si el candidato seguía «Por atender», su
+     * «Aprobar y atender»: si el candidato seguía «Por atender», su
      * postulación pasa a «Con RR. HH.» con el mismo clic (quien da el paso es
      * quien lo atiende). Si otra persona lo cambió antes, no pasa nada.
      */
@@ -642,7 +642,7 @@ class Autorizaciones
     }
 
     /**
-     * Recepción: «Que espere». La solicitud sigue pendiente (y su aviso con
+     * Recepción: «Rechazar · que espere». La solicitud sigue pendiente (y su aviso con
      * botones también); la caseta ve «RR. HH. pide que espere».
      */
     private function pedirQueEspere(User $actor, Autorizacion $a, ?string $comentario, string $medio): Autorizacion

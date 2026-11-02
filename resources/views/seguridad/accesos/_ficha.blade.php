@@ -187,7 +187,7 @@
                                         <form action="{{ route('accesos.acompanantes.regreso', $ac->id) }}" method="POST" class="m-0">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" class="btn-acomp regreso" title="Registrar regreso de {{ $ac->nombreVisible() }}"><i class="bi bi-arrow-return-left" aria-hidden="true"></i> Regresó</button>
+                                            <button type="submit" class="btn-acomp regreso" title="Registrar regreso de {{ $ac->nombreVisible() }}"><i class="bi bi-arrow-return-left" aria-hidden="true"></i> Recibir</button>
                                         </form>
                                     @else
                                         @if (in_array($a->tipo, \App\Models\Acceso::CON_AUTORIZACION, true))
@@ -195,14 +195,14 @@
                                                   data-confirmar="¿{{ $ac->nombreVisible() }} sale un rato y regresa? Su gafete sigue reservado.">
                                                 @csrf
                                                 @method('PATCH')
-                                                <button type="submit" class="btn-acomp temporal" title="Salida temporal de {{ $ac->nombreVisible() }}"><i class="bi bi-signpost-split" aria-hidden="true"></i> Temporal</button>
+                                                <button type="submit" class="btn-acomp temporal" title="Salida temporal de {{ $ac->nombreVisible() }}"><i class="bi bi-signpost-split" aria-hidden="true"></i> Dar salida temporal</button>
                                             </form>
                                         @endif
                                         <form action="{{ route('accesos.acompanantes.salida', $ac->id) }}" method="POST" class="m-0"
                                               data-confirmar="¿Confirmar salida de {{ $ac->nombreVisible() }}{{ $ac->gafete_texto ? ' y devolver su gafete '.$ac->gafete_texto : '' }}?">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" class="btn-acomp salida" title="Dar salida solo a {{ $ac->nombreVisible() }}"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Salida</button>
+                                            <button type="submit" class="btn-acomp salida" title="Dar salida solo a {{ $ac->nombreVisible() }}"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Dar salida</button>
                                         </form>
                                     @endif
                                 </span>
@@ -230,11 +230,11 @@
     @include('rh.recepcion._ficha-acceso'){{-- Recepción: autorización del departamento y fotos (ADR-0007) --}}
 
     @if ($modo === 'pendientes' && $puede['aprobar'] && $a->esperaAlDepartamento())
-        {{-- Proveedor/contratista que espera al departamento: sin «Confirmar Autorización»; si no puede esperar, por excepción y con motivo --}}
+        {{-- Proveedor/contratista que espera al departamento: sin «Aprobar ingreso»; si no puede esperar, por excepción y con motivo --}}
         @php $motivosExcepcion = app(\App\Services\Autorizaciones\Excepciones::class)->motivosPara($a); @endphp
         <div class="ficha-acceso-acciones">
         <details class="excepcion-acceso w-100">
-            <summary class="btn-accion-acceso excepcion"><i class="bi bi-shield-exclamation me-1" aria-hidden="true"></i>Autorizar por excepción</summary>
+            <summary class="btn-accion-acceso excepcion"><i class="bi bi-shield-exclamation me-1" aria-hidden="true"></i>Aprobar por excepción</summary>
             <form action="{{ route('accesos.excepcion', $a->id) }}" method="POST" class="m-0 mt-2"
                   data-confirmar="¿Dejar pasar a {{ $a->nombre }} sin la autorización del departamento? Quedará anotado con tu nombre y se avisará al responsable.">
                 @csrf
@@ -248,7 +248,7 @@
                 </select>
                 <label class="campo-etiqueta" for="detalle_excepcion_{{ $a->id }}">Detalle <span class="text-lowercase fw-normal">(obligatorio con «Otro»)</span></label>
                 <input type="text" id="detalle_excepcion_{{ $a->id }}" name="detalle_excepcion" class="campo" maxlength="250" placeholder="Ej: lo autorizó Juan Pérez a las 10:15">
-                <button type="submit" class="btn-accion-acceso excepcion mt-2"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Autorizar por excepción</button>
+                <button type="submit" class="btn-accion-acceso excepcion mt-2"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Aprobar por excepción</button>
             </form>
         </details>
         </div>
@@ -260,13 +260,13 @@
                   data-confirmar="{{ $a->autorizacion === \App\Models\Acceso::SIN_RESPONSABLE ? 'Su departamento no tiene quien autorice en esta sede. ¿Ya lo confirmaste con quien lo recibe? Al confirmar, la persona podrá ingresar.' : (in_array($a->autorizacion, ['esperando', 'espera'], true) ? ($a->motivo_visita === 'rh' ? '¿Recursos Humanos ya autorizó (por teléfono o en persona)? Al confirmar, la persona podrá ingresar.' : '¿El responsable del departamento ya autorizó (por teléfono o en persona)? Al confirmar, la persona podrá ingresar.') : '¿El Host confirmó la autorización de este acceso? Al confirmar, la persona podrá ingresar.') }}">
                 @csrf
                 @method('PATCH')
-                <button type="submit" class="btn-accion-acceso autorizar"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Confirmar Autorización</button>
+                <button type="submit" class="btn-accion-acceso autorizar"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Aprobar ingreso</button>
             </form>
         </div>
     @elseif ($modo === 'pendientes' && $a->autorizacion === \App\Models\Acceso::SIN_RESPONSABLE){{-- C-08 / DD-11 --}}
         <p class="aviso-sin-permiso"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Su departamento no tiene quien autorice en esta sede: espera a tu supervisor o al jefe de seguridad (ya se les avisó).</p>
     @elseif ($modo === 'pendientes' && ! in_array($a->autorizacion, ['esperando', 'espera'], true)){{-- Recepción: la visita espera al departamento (o a RR. HH.), no al host --}}
-        <p class="aviso-sin-permiso"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Espera a que el Host autorice; tu supervisor confirma la autorización en el sistema.</p>
+        <p class="aviso-sin-permiso"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Espera a que quien lo citó autorice; tu supervisor confirma la autorización en el sistema.</p>
     @endif
     @if ($modo === 'pendientes' && ! $puede['aprobar'] && ($puede['crear'] ?? false))
         @include('seguridad.accesos._noche')
@@ -303,7 +303,7 @@
             @if ($fuera)
                 <button type="button" class="btn-accion-acceso regreso" data-accion="acceso-dialogo" data-dialogo="dialogoRegresoAcceso" data-id="{{ $a->id }}"
                         data-url="{{ route('accesos.regreso', $a->id) }}" data-nombre="{{ $a->nombre }}"
-                        data-titulo="{{ $a->tipo === 'huesped' ? 'Regreso de Tour' : 'Regreso' }}"><i class="bi bi-arrow-return-left me-1" aria-hidden="true"></i>Registrar Regreso</button>
+                        data-titulo="{{ $a->tipo === 'huesped' ? 'Regreso de Tour' : 'Regreso' }}"><i class="bi bi-arrow-return-left me-1" aria-hidden="true"></i>Recibir de regreso</button>
             @else
                 @if ($a->placas)
                     <button type="button" class="btn-accion-acceso zona" data-accion="acceso-dialogo" data-dialogo="dialogoZonaAcceso" data-id="{{ $a->id }}"
@@ -318,12 +318,12 @@
                 @if ($pedir !== '' || $conComparacion)
                     {{-- C-15: con gafete o identificación en custodia, el mismo diálogo de «Dar salida» con sus casillas ya marcadas --}}
                     <button type="button" class="btn-accion-acceso salida {{ $a->admiteSalidaTemporal() ? 'mitad' : 'w-100' }}" title="{{ $confirmarSalida }}"
-                            data-dar-salida="{{ json_encode(app(\App\Services\Accesos\ConsultaAccesos::class)->resumen($a)) }}"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>{{ $a->tipo === 'huesped' ? 'Salida Final' : 'Registrar Salida' }}</button>
+                            data-dar-salida="{{ json_encode(app(\App\Services\Accesos\ConsultaAccesos::class)->resumen($a)) }}"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>{{ $a->tipo === 'huesped' ? 'Dar salida final' : 'Dar salida' }}</button>
                 @else
                     <form action="{{ route('accesos.salida', $a->id) }}" method="POST" class="m-0 {{ $a->admiteSalidaTemporal() ? 'mitad' : 'w-100' }}" data-confirmar="{{ $confirmarSalida }}">
                         @csrf
                         @method('PATCH')
-                        <button type="submit" class="btn-accion-acceso salida"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>{{ $a->tipo === 'huesped' ? 'Salida Final' : 'Registrar Salida' }}</button>
+                        <button type="submit" class="btn-accion-acceso salida"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>{{ $a->tipo === 'huesped' ? 'Dar salida final' : 'Dar salida' }}</button>
                     </form>
                 @endif
             @endif

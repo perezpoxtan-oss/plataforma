@@ -1,17 +1,18 @@
 @extends('layouts.app')
 
-@section('titulo', 'Usuarios del Sistema')
+@section('titulo', 'Usuarios')
 
 @section('contenido')
 <div class="tema-rojo">
     @include('administracion.partes.avisos')
+    @include('componentes.siguiente-paso')
 
     @include('administracion.partes.selector-empresa')
 
     @if ($sinEmpresa)
         <div class="encabezado-pantalla mb-4">
             <div class="icono"><i class="bi bi-people-fill text-danger" aria-hidden="true"></i></div>
-            <div><h1>Usuarios Operativos</h1><p>Control de credenciales y visibilidad del sistema.</p></div>
+            <div><h1>Usuarios</h1><p>Control de credenciales y visibilidad del sistema.</p></div>
         </div>
         <div class="tarjeta estado-vacio">
             <div class="icono"><i class="bi bi-buildings" aria-hidden="true"></i></div>
@@ -27,7 +28,7 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
             <div class="encabezado-pantalla m-0">
                 <div class="icono"><i class="bi bi-people-fill text-danger" aria-hidden="true"></i></div>
-                <div><h1>Usuarios Operativos</h1><p>Usuarios de «{{ $empresaNombre }}»: control de credenciales y visibilidad del sistema.</p></div>
+                <div><h1>Usuarios</h1><p>Usuarios de «{{ $empresaNombre }}»: control de credenciales y visibilidad del sistema.</p></div>
             </div>
             <div class="barra-filtros justify-content-md-end">
                 @if ($sedes->count() > 1)
@@ -226,8 +227,11 @@
             @continue (! $permitido || $roles->isEmpty())
             @php
                 $esNuevo = $modo === 'nuevo';
-                $reabrir = $esNuevo ? $dialogo === 'crear' : $editandoId !== null;
-                $valor = fn (string $campo) => $reabrir ? old($campo) : '';
+                // C-41: desde «Crear su cuenta» (Colaboradores) el alta abre con el colaborador ya vinculado
+                $pre = $esNuevo && $dialogo === null && isset($precolaborador) && $precolaborador !== null
+                    ? ['colaborador_id' => $precolaborador->id, 'numero_colaborador' => $precolaborador->num_empleado, 'name' => $precolaborador->nombreCompleto()] : [];
+                $reabrir = $esNuevo ? ($dialogo === 'crear' || $pre !== []) : $editandoId !== null;
+                $valor = fn (string $campo) => $pre !== [] ? (string) ($pre[$campo] ?? '') : ($reabrir ? old($campo) : '');
             @endphp
             <dialog id="{{ $esNuevo ? 'dialogoNuevoUsuario' : 'dialogoEditarUsuario' }}" class="dialogo ancho" aria-labelledby="titulo-{{ $modo }}" @if ($reabrir) data-abrir-al-cargar @endif>
                 <div class="dialogo-cabecera">
@@ -380,7 +384,7 @@
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-rojo">{{ $esNuevo ? 'Registrar Usuario' : 'Guardar Cambios' }}</button>
+                            <button type="submit" class="btn-rojo">{{ $esNuevo ? 'Guardar usuario' : 'Guardar Cambios' }}</button>
                         </div>
                     </form>
                 </div>

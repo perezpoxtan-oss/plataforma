@@ -64,13 +64,13 @@
                 <button type="button" class="btn-accion-pase caseta" data-abrir-dialogo="dialogoEditarProcedimiento"><i class="bi bi-pencil-square" aria-hidden="true"></i> Editar borrador</button>
             @endif
             @if ($puede['enviar'])
-                <button type="button" class="btn-accion-pase aprobar" data-abrir-dialogo="dialogoEnviarProcedimiento"><i class="bi bi-send" aria-hidden="true"></i> Enviar a revisión</button>
+                <button type="button" class="btn-accion-pase aprobar" data-abrir-dialogo="dialogoEnviarProcedimiento"><i class="bi bi-send" aria-hidden="true"></i> Canalizar a revisión</button>
             @endif
             @if ($puede['nuevaVersion'])
                 <form action="{{ route('procedimientos.nueva-version', $p->id) }}" method="POST" class="form-en-linea"
                       data-confirmar="¿Crear la versión {{ $vigente->numero + 1 }} como borrador? La versión {{ $vigente->numero }} sigue vigente hasta que se apruebe la nueva.">
                     @csrf
-                    <button type="submit" class="btn-accion-pase caseta"><i class="bi bi-files" aria-hidden="true"></i> Nueva versión</button>
+                    <button type="submit" class="btn-accion-pase caseta"><i class="bi bi-files" aria-hidden="true"></i> Guardar como nueva versión</button>
                 </form>
             @endif
             <a href="{{ route('procedimientos.imprimir', array_filter(['procedimiento' => $p->id, 'version' => $esActual ? null : $version->numero])) }}" target="_blank" rel="noopener" class="btn-accion-pase neutro"><i class="bi bi-printer" aria-hidden="true"></i> Imprimir</a>
@@ -78,7 +78,7 @@
                 <form action="{{ route('procedimientos.descartar', $p->id) }}" method="POST" class="form-en-linea"
                       data-confirmar="¿Descartar el borrador de la versión {{ $trabajo->numero }}? Sigue vigente la versión {{ $vigente?->numero }}.">
                     @csrf
-                    <button type="submit" class="btn-accion-pase tenue"><i class="bi bi-trash3" aria-hidden="true"></i> Descartar borrador</button>
+                    <button type="submit" class="btn-accion-pase tenue"><i class="bi bi-trash3" aria-hidden="true"></i> Dar de baja el borrador</button>
                 </form>
             @endif
             @if ($puede['retirar'])

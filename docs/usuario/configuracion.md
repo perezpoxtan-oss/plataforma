@@ -3,12 +3,12 @@ titulo: Configuración
 modulos: [configuracion]
 seccion: Estructura
 orden: 50
-resumen: Todos los ajustes de tu empresa ordenados por secciones (General, Caseta y accesos, Recepción y RR. HH., Novedades, Activos, Transporte, Pases de salida, Avisos por correo, Cuentas y seguridad, Privacidad) y, para el Super Administrador, la Plataforma.
+resumen: Todos los ajustes de tu empresa ordenados por secciones (General, Caseta y accesos, Estructura, Recepción y RR. HH., Novedades, Activos, Transporte, Pases de salida, Avisos por correo, Cuentas y seguridad, Privacidad) y, para el Super Administrador, la Plataforma.
 ---
 
 # Configuración
 
-**¿Para qué sirve?** Aquí está **todo lo que tu empresa puede ajustar**, ordenado por **secciones**: General, Caseta y accesos, Recepción y RR. HH., Novedades (o como se llame tu bitácora), Activos, Transporte, Pases de salida, Avisos por correo, Cuentas y seguridad y Privacidad. Cada sección junta sus ajustes y sus avisos por correo. Cada ajuste dice su **valor original** y, si lo cambiaste, tiene un botón **Restablecer valor original**. Lo que se configura en otra pantalla aparece con su valor y un botón **Configurar en …** que te lleva directo. El Super Administrador ve además la sección **Plataforma**.
+**¿Para qué sirve?** Aquí está **todo lo que tu empresa puede ajustar**, ordenado por **secciones**: General, Caseta y accesos, Estructura, Recepción y RR. HH., Novedades (o como se llame tu bitácora), Activos, Transporte, Pases de salida, Avisos por correo, Cuentas y seguridad y Privacidad. Cada sección junta sus ajustes y sus avisos por correo, y **cada ajuste está en un solo lugar**. Cada ajuste dice su **valor original** y, si lo cambiaste, tiene un botón **Restablecer valor original**. Lo que se configura en otra pantalla aparece con su valor y un botón **Configurar en …** que te lleva directo. El Super Administrador ve además la sección **Plataforma**.
 
 ![Configuración por secciones](img/configuracion/secciones-indice.png)
 
@@ -79,20 +79,25 @@ Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en e
 
 | Tarjeta | Qué decides | Valor original | Dónde se cambia |
 |---|---|---|---|
-| **Quién espera autorización del departamento** | Si visitas, proveedores y contratistas esperan la autorización; qué pasa si el departamento no tiene quien autorice en la sede (y cuántos departamentos están así hoy); si la caseta espera el «Que pase» de RR. HH.; a los cuántos minutos se recuerda y se avisa al suplente y al jefe. | Todos esperan; sin quien autorice, esperan al supervisor; 10 y 20 minutos. | **Configurar en Responsables por departamento** |
+| **Quién espera autorización del departamento** | Si visitas, proveedores y contratistas esperan la autorización; qué pasa si el departamento no tiene quien autorice en la sede (y cuántos departamentos están así hoy); si la caseta espera el «Aprobar · que pase» de RR. HH.; a los cuántos minutos se recuerda y se avisa al suplente y al jefe. | Todos esperan; sin quien autorice, esperan al supervisor; 10 y 20 minutos. | **Configurar en Responsables por departamento** |
 | **Imprimir etiquetas desde los padrones** | Hoja propia de cada padrón o plantillas de Etiquetas QR. | Hoja propia de cada padrón. | **Configurar en Etiquetas QR → Plantillas** |
 | **Motivo de la visita** | Qué motivo viene marcado al registrar una visita (ninguno, o el que elijas) y, en hoteles, si se ofrece **Visita a huésped**. | Ninguno marcado; «Visita a huésped» sí. | Aquí, con **Guardar** |
 | **Tiempo de permanencia en sitio** | Cuántas horas puede estar una visita, un proveedor o contratista, a qué hora cierra el daypass y cuántas horas puede durar una salida temporal antes de avisar al supervisor (0 = apagado). | Visita 4 h, proveedor 8 h, daypass hasta las 22:00, salida temporal 2 h. | Aquí, con **Guardar** |
 | **Noche sin supervisor** | Si el agente puede **Aprobar por excepción** cuando nadie responde a tiempo (con motivo y foto, aviso inmediato al supervisor y al jefe, y revisión). | No. | Aquí, con **Guardar** |
-| **Procedimientos: acuse «Leí y entendí» y recordatorio** | Cómo se firma el acuse y **cada cuántos días** se recuerda a quien no ha firmado. | Casilla y firma dibujada; cada 3 días. | Aquí, con **Guardar** |
-| Avisos de **Colaboradores**, **Altas por verificar** y **Procedimientos** | Ver «Avisos por correo». | Encendidos. | Aquí |
+| **Autorizaciones de visitas: avisos por correo** | Si al responsable del departamento (o a su delegado) le llega el correo cuando una visita espera su respuesta. | Encendido. | Aquí, con **Guardar avisos** |
+| Avisos de **Altas por verificar** | Ver «Avisos por correo». | Encendidos. | Aquí |
 
-![Procedimientos en Caseta y accesos](img/configuracion/caseta-procedimientos.png)
 ![Tiempo de permanencia en sitio](img/configuracion/permanencia.png)
+
+## Estructura
+
+| Tarjeta | Qué decides | Valor original | Dónde se cambia |
+|---|---|---|---|
+| **Colaboradores: avisos por correo** | Si se avisa por correo del alta provisional de un colaborador que hizo la caseta. | Encendido. | Aquí, con **Guardar avisos** |
 
 ## Recepción y RR. HH.
 
-- **Avisos** de Recepción y candidatos.
+- **Avisos** de Recepción y candidatos (llegada del candidato, entrevistas, evaluaciones y plazos). El aviso de las visitas que esperan al departamento está en **Caseta y accesos → Autorizaciones de visitas**.
 - **Aviso de privacidad y kiosco**: el texto que acepta el candidato y cuánto dura el enlace del kiosco (valor original: 2 horas y 3 veces; el aviso original es un borrador para que lo revise tu abogado). Es el mismo formulario de **Recepción → Ajustes**. Ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md).
 - **Candidatos: plazos y documentos para contratar**: muestra cada plazo con su valor original. Se cambia con **Configurar en Candidatos → Documentos y plazos**.
 - **Criterios para calificar las entrevistas**: se cambian con **Configurar en Candidatos → Criterios de entrevista**.
@@ -133,6 +138,16 @@ Quien atiende un **Reporte General** puede elegir su tipo (es opcional). De fáb
 3. Toca **Guardar ajustes de la bitácora**.
 
 **Qué debes ver:** el mensaje de ajustes guardados. Los reportes que ya tienen un tipo lo conservan aunque lo quites de la lista. **Restablecer valor original** regresa los tipos de fábrica de tu giro.
+
+### Procedimientos: acuse «Leí y entendí» y recordatorio
+
+Está en esta sección, junto a «¿Qué hacer? Ver procedimiento» y a los **Procedimientos: avisos por correo**.
+
+| Qué decides | Valor original | Dónde se cambia |
+|---|---|---|
+| Cómo se firma el acuse y **cada cuántos días** se recuerda a quien no ha firmado. | Casilla y firma dibujada; cada 3 días. | Aquí, con **Guardar** |
+
+![Procedimientos: acuse y recordatorio](img/configuracion/caseta-procedimientos.png)
 
 ### Cómo mostrar «¿Qué hacer?» con un procedimiento
 
@@ -303,7 +318,7 @@ Su petición te llega a la **campana**, a **Inicio** («Super Administradores qu
 1. Confirma con la persona que fue ella quien lo pidió.
 2. Si no fue esa persona, toca **Rechazar** junto a su nombre en el recuadro **Piden ayuda**; le avisamos y ahí termina.
 3. Si sí fue, en su renglón toca **Restablecer o dar de baja**.
-4. Para el teléfono: escribe **Tu contraseña** y toca **Quitar sus dos pasos**. Para la contraseña: escribe una **Contraseña temporal** (o déjala vacía si la plataforma tiene correo) y **Tu contraseña**, y toca **Guardar**.
+4. Para el teléfono: escribe **Tu contraseña** y toca **Dar de baja sus dos pasos**. Para la contraseña: escribe una **Contraseña temporal** (o déjala vacía si la plataforma tiene correo) y **Tu contraseña**, y toca **Guardar**.
 
 **Qué debes ver:** «Quitamos la verificación en dos pasos de «…»…» o «Contraseña de «…» restablecida…». Los demás Super Administradores reciben un aviso y todo queda en la [Bitácora de auditoría](auditoria.md).
 

@@ -93,7 +93,7 @@
             @if ($puede['crear'])
                 <button type="button" class="ficha-card ficha-create" data-abrir-dialogo="dialogoNuevoProveedor">
                     <i class="bi bi-plus-circle-fill" aria-hidden="true"></i>
-                    <span class="h6 fw-bold m-0 mt-2 titulo-crear">Registrar Empresa Externa</span>
+                    <span class="h6 fw-bold m-0 mt-2 titulo-crear">Guardar empresa Externa</span>
                 </button>
             @endif
 

@@ -43,7 +43,7 @@ Siempre **en proceso** (sin `exec` ni `proc_open`; el hospedaje no tiene termina
 | # | Qué espera | Reloj | Renglón de Mis pendientes |
 |---|---|---|---|
 | 1 | Visita / proveedor espera al departamento | `Escalamiento` (minutos) | Autorizaciones por responder |
-| 2 | Candidato espera el «Que pase» | `Escalamiento` | Esperando en Recepción |
+| 2 | Candidato espera el «Aprobar · que pase» | `Escalamiento` | Esperando en Recepción |
 | 3 | Solicitud del kiosco sin revisar | `SolicitudesSinRevisar` (suplente al doble del plazo) | Solicitudes por revisar |
 | 4 | Candidato «Por atender» / «Con RR. HH.» | `CandidatosSinAtender` | **Candidatos sin atender** (nuevo; los de hoy siguen en Esperando en Recepción) y «Lleva N días» en la tarjeta |
 | 5 | Entrevista por evaluar | `EntrevistasPorEvaluar` | Entrevistas por evaluar |

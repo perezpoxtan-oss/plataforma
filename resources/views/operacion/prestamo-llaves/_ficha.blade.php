@@ -1,6 +1,6 @@
 {{--
     Ficha "LLAVE FUERA" de la pestaña Llaves en Uso (SEGCAT: bitacora_llaves.php).
-    También la devuelve el servidor tras "Registrar y Capturar Siguiente" para
+    También la devuelve el servidor tras "Guardar y capturar siguiente" para
     pintarla sin recargar. Variables: $p (PrestamoLlave con llave, colaborador,
     entrego y sede), $hoy (Y-m-d local), $puedeRecibir, $puedeAnular, $variasSedes (opcional).
 --}}

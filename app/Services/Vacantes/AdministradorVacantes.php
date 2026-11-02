@@ -230,7 +230,7 @@ class AdministradorVacantes
         };
         $this->auditoria->auditar($actor, $evento, $vacante, ['estado' => $anterior], ['estado' => $estado] + ($estado === 'cerrada' ? ['cierre_motivo' => $motivo] : []));
         if (in_array($estado, ['publicada', 'cerrada'], true)) {
-            // «Vacante propuesta» y «Vacante cubierta» (con su botón «Cerrar como cubierta») ya se atendieron
+            // «Vacante propuesta» y «Vacante cubierta» (con su botón «Dar de baja · cerrar como cubierta») ya se atendieron
             $this->notificaciones->resolver(self::REFERENCIA, $vacante->id);
             $this->avisarResultado($actor, $vacante, $estado === 'publicada' ? 'se publicó' : ($motivo === 'cubierta' ? 'se cerró como cubierta' : 'se canceló'));
         }

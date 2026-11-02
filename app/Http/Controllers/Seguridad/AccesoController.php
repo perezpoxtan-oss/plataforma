@@ -221,7 +221,7 @@ class AccesoController extends Controller
     }
 
     /**
-     * «Autorizar por excepción»: proveedor o contratista que espera al
+     * «Aprobar por excepción»: proveedor o contratista que espera al
      * departamento y no puede esperar (siempre con motivo; ver Excepciones).
      */
     public function excepcion(Request $request, int $acceso): RedirectResponse
@@ -455,7 +455,7 @@ class AccesoController extends Controller
             fwrite($salida, "\xEF\xBB\xBF");
             // Giros: «Habitación» se llama como el área específica del giro (Departamento, Casa, Oficina)
             Csv::fila($salida, array_map(fn (string $t) => $terminos->texto($t), ['Folio', 'Sede', 'Tipo', 'Movimiento', 'Nombre', 'Empresa / Procedencia', 'Gafete', 'Placas', 'Vehículo', 'Zona',
-                'Conductor', 'Visita a / Host', 'Departamento', 'Habitación', 'Pase', 'ID custodiada', 'Acompañantes',
+                'Conductor', 'A quién viene', 'Departamento', 'Habitación', 'Pase', 'ID custodiada', 'Acompañantes',
                 'Entrada', 'Autorizado', 'Salida', 'Registró', 'Autorizó', 'Dio salida']));
             foreach ($filas as $a) {
                 Csv::fila($salida, [
@@ -501,12 +501,12 @@ class AccesoController extends Controller
             // C-08 / DD-11: la visita espera al supervisor o al jefe de seguridad de la sede
             if (! in_array($acceso->tipo, Acceso::CON_AUTORIZACION, true)) {
                 return "Registrado: {$acceso->nombre} queda pendiente. {$depto} no tiene quien autorice en esta sede: ".($puedeAprobar
-                    ? 'confírmalo con quien lo recibe y toca Confirmar Autorización.'
+                    ? 'confírmalo con quien lo recibe y toca Aprobar ingreso.'
                     : 'ya se avisó a tu supervisor; aquí verás cuándo puede pasar.');
             }
 
             return "Registrado: {$acceso->nombre} queda pendiente. {$depto} no tiene quien autorice en esta sede: ".($puedeAprobar
-                ? 'confirma con quien lo citó y toca Autorizar por excepción.'
+                ? 'confirma con quien lo citó y toca Aprobar por excepción.'
                 : 'confirma con quien lo citó; tu supervisor lo autoriza por excepción (ya se le avisó).');
         }
         $persona = $autorizacion === 'esperando' ? $acceso->autorizacionDepartamento()->with('colaborador')->first()?->colaborador : null;
@@ -527,7 +527,7 @@ class AccesoController extends Controller
         $conHost = 'Confirma con quien lo citó'.($host ? " ({$host})" : '');
 
         return "Registrado: {$acceso->nombre} queda pendiente de autorización. ".($puedeAprobar
-            ? "{$conHost} y toca Confirmar Autorización."
+            ? "{$conHost} y toca Aprobar ingreso."
             : "{$conHost}; tu supervisor confirma la autorización en el sistema.");
     }
 

@@ -35,7 +35,7 @@ use Illuminate\Validation\ValidationException;
  *    observación; si no, FALLA. El primer hallazgo abre el ticket de
  *    Protección Civil en la Bitácora de Novedades (con su propio servicio,
  *    AdministradorNovedades); los siguientes se anotan en ese ticket.
- *  - Guardar y Continuar Después / Finalizar Recorrido: finalizar exige al
+ *  - Guardar y Continuar Después / Guardar y terminar recorrido: finalizar exige al
  *    menos un equipo y deja COMPLETO o CON HALLAZGOS. Un recorrido
  *    finalizado ya no cambia.
  *
@@ -192,7 +192,7 @@ class AdministradorRecorridosPc
 
     /**
      * «Guardar y Continuar Después» (solo observaciones generales) o
-     * «Finalizar Recorrido» (exige al menos un equipo).
+     * «Guardar y terminar recorrido» (exige al menos un equipo).
      *
      * @param  array<string, mixed>  $entrada
      */

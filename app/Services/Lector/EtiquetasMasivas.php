@@ -146,7 +146,10 @@ class EtiquetasMasivas
                 $columna = $consulta->getModel()->qualifyColumn('created_at');
                 $consulta->when($desde !== null, fn ($q) => $q->where($columna, '>=', $desde))->when($hasta !== null, fn ($q) => $q->where($columna, '<', $hasta));
             }
-            foreach ($consulta->limit(self::POR_TIPO)->get() as $registro) {
+            // C-43 (GC-12): el estatus y la búsqueda se aplican ANTES del límite por tipo (antes se cortaba a 500
+            // y lo que se buscaba podía quedar fuera). Se recorre por lotes hasta juntar POR_TIPO coincidencias.
+            $encontrados = 0;
+            foreach ($consulta->reorder()->orderBy($consulta->getModel()->qualifyColumn($consulta->getModel()->getKeyName()))->lazy(500) as $registro) {
                 $fila = $this->fila($tipo, $info, $registro);
                 if (($filtros['estado'] === 'activos' && ! $fila['activo']) || ($filtros['estado'] === 'baja' && $fila['activo'])) {
                     continue;
@@ -155,6 +158,9 @@ class EtiquetasMasivas
                     continue;
                 }
                 $filas->push($fila);
+                if (++$encontrados >= self::POR_TIPO) {
+                    break;
+                }
             }
         }
 

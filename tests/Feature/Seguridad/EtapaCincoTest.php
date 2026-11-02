@@ -274,7 +274,7 @@ class EtapaCincoTest extends TestCase
         $agente = $this->crearUsuario($condo, 'Agente', $sede);
 
         // El formulario: un solo motivo (marcado) y un solo campo
-        $this->actingAs($agente)->get('/accesos')->assertOk()->assertSee('¿A quién viene?')->assertSee('No autorizó')->assertDontSee('Host — ¿Quién lo citó?');
+        $this->actingAs($agente)->get('/accesos')->assertOk()->assertSee('¿A quién viene?')->assertSee('Rechazar · no autorizó')->assertDontSee('Host — ¿Quién lo citó?');
 
         // Llamé y autorizó: entra con constancia; la vivienda sale sola del residente
         $this->ingreso($agente, $sede, ['tipo' => 'visitante', 'nombre' => 'Daniel Romero', 'a_quien' => 'c:'.$alejandra->id, 'a_quien_texto' => 'ALEJANDRA', 'llamada' => 'autorizo'])
@@ -352,7 +352,7 @@ class EtapaCincoTest extends TestCase
         // Si no contesta, pasa al responsable de Finanzas
         $this->assertContains($jefe->id, $this->en($corp, fn () => app(Escalamiento::class)->aQuienEscalar($aut->fresh()))->pluck('id')->all());
         // Sergio la ve y la autoriza aunque no tenga la bandeja de Autorizaciones
-        $this->actingAs($sergio)->get(route('autorizaciones.show', $aut->id))->assertOk()->assertSee('Autorizar ingreso');
+        $this->actingAs($sergio)->get(route('autorizaciones.show', $aut->id))->assertOk()->assertSee('Aprobar ingreso');
         $this->actingAs($sergio)->post(route('autorizaciones.responder', $aut->id), ['respuesta' => 'autorizar'])->assertRedirect(route('autorizaciones.show', $aut->id));
         $this->assertSame('en_sitio', $acceso->fresh()->estado);
         // Otra persona con cuenta no la puede responder

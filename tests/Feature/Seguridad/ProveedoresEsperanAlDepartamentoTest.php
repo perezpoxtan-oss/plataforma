@@ -135,14 +135,14 @@ class ProveedoresEsperanAlDepartamentoTest extends TestCase
         $aviso = $this->enEmpresa(fn () => Notificacion::where('user_id', $this->jefeDepto->id)->where('tipo', 'autorizacion_visita')->firstOrFail());
         $this->assertSame('Espera tu autorización: LUIS CHI', $aviso->titulo);
         $this->assertStringContainsString('Proveedor para Mantenimiento. Lo citó: Carlos Hernández. Actividad: Recarga de tanque. Viene de: GAS DEL SUR.', $aviso->texto);
-        $this->assertSame(['Autorizar ingreso', 'Rechazar'], array_column($aviso->acciones, 'etiqueta'));
+        $this->assertSame(['Aprobar ingreso', 'Rechazar'], array_column($aviso->acciones, 'etiqueta'));
         Mail::assertSent(AvisoRecepcion::class, fn (AvisoRecepcion $m) => $m->hasTo($this->jefeDepto->email));
 
-        // La caseta ve a quién espera y no tiene «Confirmar Autorización»
+        // La caseta ve a quién espera y no tiene «Aprobar ingreso»
         $this->actingAs($this->supervisor)->get('/accesos?pestana=pendientes')->assertOk()
-            ->assertSee('Espera a: '.$this->jefeDepto->name.' (Mantenimiento)')->assertSee('Autorizar por excepción')->assertDontSee('Confirmar Autorización');
+            ->assertSee('Espera a: '.$this->jefeDepto->name.' (Mantenimiento)')->assertSee('Aprobar por excepción')->assertDontSee('Aprobar ingreso');
         $this->actingAs($this->supervisor)->patch("/accesos/{$acceso->id}/autorizar")
-            ->assertSessionHas('error', 'Este acceso espera la autorización del departamento. Si no puede esperar, toca «Autorizar por excepción» y elige el motivo.');
+            ->assertSessionHas('error', 'Este acceso espera la autorización del departamento. Si no puede esperar, toca «Aprobar por excepción» y elige el motivo.');
         $this->assertSame('pendiente', $this->ultimo()->estado);
 
         // Autoriza el jefe: entra y la caseta lo ve en vivo
@@ -192,7 +192,7 @@ class ProveedoresEsperanAlDepartamentoTest extends TestCase
         $this->actingAs($this->supervisor)->get('/accesos?pestana=pendientes')
             ->assertSee('Sin quien autorice en Mantenimiento: el supervisor lo autoriza por excepción')->assertSee('El departamento no tiene responsable en esta sede');
         $this->actingAs($this->agente)->get('/accesos?pestana=pendientes')
-            ->assertSee('si no puede esperar, tu supervisor lo autoriza por excepción')->assertDontSee('Autorizar por excepción</summary>', false);
+            ->assertSee('si no puede esperar, tu supervisor lo autoriza por excepción')->assertDontSee('Aprobar por excepción</summary>', false);
 
         // El agente no tiene accesos.aprobar
         $this->excepcion($acceso, 'sin_responsable', '', $this->agente)->assertForbidden();
@@ -284,11 +284,11 @@ class ProveedoresEsperanAlDepartamentoTest extends TestCase
 
         // Proveedor: como hoy (departamento opcional, se confirma con el host, sin solicitud)
         $this->registrar(['departamento_id' => ''], $this->supervisor)
-            ->assertSessionHas('ok', 'Registrado: LUIS CHI queda pendiente de autorización. Confirma con quien lo citó (Carlos Hernández) y toca Confirmar Autorización.');
+            ->assertSessionHas('ok', 'Registrado: LUIS CHI queda pendiente de autorización. Confirma con quien lo citó (Carlos Hernández) y toca Aprobar ingreso.');
         $acceso = $this->ultimo();
         $this->assertSame(['pendiente', null], [$acceso->estado, $acceso->autorizacion]);
         $this->assertNull($this->solicitudDe($acceso));
-        $this->actingAs($this->supervisor)->get('/accesos?pestana=pendientes')->assertSee('Confirma con quien lo citó: Carlos Hernández')->assertSee('Confirmar Autorización');
+        $this->actingAs($this->supervisor)->get('/accesos?pestana=pendientes')->assertSee('Confirma con quien lo citó: Carlos Hernández')->assertSee('Aprobar ingreso');
         $this->actingAs($this->supervisor)->patch("/accesos/{$acceso->id}/autorizar")->assertSessionHas('ok');
         $this->assertSame('en_sitio', $this->ultimo()->estado);
         $this->excepcion($this->ultimo(), 'telefono')->assertSessionHas('error', 'Este acceso ya no espera la autorización del departamento. Revisa la lista.');

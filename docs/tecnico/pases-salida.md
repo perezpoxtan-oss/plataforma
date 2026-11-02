@@ -71,7 +71,7 @@ Decisión del dueño (2026-10-23): el circuito predeterminado y el de los datos 
 - **Empresas existentes**: las que no han guardado un circuito usan el predeterminado y ya empiezan con este paso. Las que tienen circuito propio **no cambian** (no hay migración de datos): la pantalla del circuito muestra «Tu circuito no tiene el paso del jefe del departamento.» con **Agregar el paso del jefe del departamento** (`POST /pases-salida/circuito/paso-jefe`, `CircuitoPasesSalida::agregarPasoJefe()`, mismo permiso que guardar: «Configurar» con alcance de empresa). Lo inserta como paso 1 (obligatorio, todos los motivos) y recorre los demás sin tocarlos; error si ya lo tiene, si el circuito es el predeterminado o si ya hay 8 pasos. Auditoría `pases_salida.circuito_actualizado`.
 - **Pases en curso**: conservan su copia (`pases_salida_aprobaciones`); el paso nuevo solo aplica a los pases nuevos y a los reenviados.
 - **Retomar**: «Jefe de Departamento» (nombre anterior) y «Jefe del departamento del solicitante» se reconocen como el mismo paso entre rondas (`claveDePaso()`).
-- **Pasos de caseta** (`pases_salida.firmar`, sede de origen salvo recepción y salida de regreso, que firma la sede **destino**): verifican artículos (siempre) y guardan las firmas que el movimiento pide en ESE pase (`PaseSalida::modoFirma()`): `dos` (omisión) = la de la persona que entrega o se lleva el equipo y la de Seguridad (usuario en sesión); `seguridad` = solo la de Seguridad (nombre de la persona opcional); `ninguna` = sin firmas (quedan usuario, hora, IP y artículos verificados en la bitácora, con `detalle.firmas`). Botones: **Registrar Salida**, **Confirmar llegada a esta sede**, **Autorizar salida de regreso**, **Registrar Regreso** (solo cambió el texto; el flujo es el mismo).
+- **Pasos de caseta** (`pases_salida.firmar`, sede de origen salvo recepción y salida de regreso, que firma la sede **destino**): verifican artículos (siempre) y guardan las firmas que el movimiento pide en ESE pase (`PaseSalida::modoFirma()`): `dos` (omisión) = la de la persona que entrega o se lleva el equipo y la de Seguridad (usuario en sesión); `seguridad` = solo la de Seguridad (nombre de la persona opcional); `ninguna` = sin firmas (quedan usuario, hora, IP y artículos verificados en la bitácora, con `detalle.firmas`). Botones: **Dar salida**, **Recibir en esta sede**, **Dar salida de regreso**, **Recibir de regreso** (solo cambió el texto; el flujo es el mismo).
   - Salida: cada artículo marcado o escaneado (lector universal, tipo `equipo`); `verificado_con_lector` solo para los del padrón.
   - Recepción y salida de regreso: si falta marcar algo, el comentario es obligatorio.
   - Regreso: cantidad por artículo; si faltan, `regreso_parcial` (comentario obligatorio) o "cerrar con faltantes" (`regresado` + `cerrado_con_faltantes`).
@@ -129,7 +129,7 @@ El circuito demo es: 1. **Jefe del departamento del solicitante** → 2. Jefe de
 | `pase_por_firmar` «Te toca firmar el pase PS-…» (botón **Abrir pase**: `acciones: [{etiqueta, abrir: true}]` lleva a `notificaciones.abrir`) | Se abre un paso | `CircuitoPasesSalida::aprobadores()` | Al aprobar, omitir o rechazar ese paso, o cancelar el pase (`referencia: pase_salida_aprobacion`, id de la aprobación) |
 | `pase_aprobado` / `pase_rechazado` (con motivo) | Último paso aprobado / rechazo | Quien lo registró y usuarios del solicitante, menos quien resolvió | — |
 | `pase_vencido` «Pase PS-… vencido — debió regresar el …» | Recordatorio diario (`plataforma:pases-vencidos`) | Dueños + «Aprobar» en la sede de origen | El del día anterior queda leído; todos al quedar `regresado` (`pase_salida_vencido`) |
-| `pase_llega` «Un pase viene a tu sede» | Registrar Salida hacia otra sede (espera regreso) | «Firmar» con alcance en la sede destino, menos quien registró | Al confirmar la llegada (`pase_salida_llegada`) |
+| `pase_llega` «Un pase viene a tu sede» | Dar salida hacia otra sede (espera regreso) | «Firmar» con alcance en la sede destino, menos quien registró | Al confirmar la llegada (`pase_salida_llegada`) |
 
 El recordatorio de vencidos ahora recorre todas las empresas activas: campana siempre, correo solo si `pase_salida_vencido` está encendido; cuenta los pases recordados.
 
@@ -159,7 +159,7 @@ Claves en `Empresa::AVISOS` (se encienden o apagan en Configuración → Avisos 
 |---|---|---|
 | `GET /pases-salida?filtro=&q=&sede=` | `ver` | Fichas (20 por página). Filtros: `todos`, `mi_firma`, `pendientes`, `aprobados`, `fuera`, `espera_regreso`, `vencidos`, `cerrados`, `rechazados`, `llegan` («Llegan a mi sede»: destino sede, `aprobado` o `salio` con regreso, `sede_destino_id` en las sedes con «Firmar»; la píldora solo se muestra a quien tiene «Firmar»). Búsqueda por folio, solicitante, número de empleado, artículo, serie o código/URL del QR. `?pase=ID` redirige a la ficha; `?nuevo=1` abre el Nuevo Pase |
 | `GET /pases-salida/mis-pendientes` | `ver` | Bandeja de firmas (lo que el usuario puede firmar ahora) |
-| `POST /pases-salida` | `crear` | Alta; `siguiente=1` = "Registrar y capturar siguiente" |
+| `POST /pases-salida` | `crear` | Alta; `siguiente=1` = "Guardar y capturar siguiente" |
 | `GET /pases-salida/{id}` | `ver` | Ficha del pase |
 | `PUT /pases-salida/{id}` | `crear` (dueño) | Corregir y reenviar un pase rechazado |
 | `POST /pases-salida/{id}/firmas` | `aprobar` si `paso=aprobacion`; si no, `firmar` | Aprobar el paso que toca o registrar el paso de caseta. Límite 60/min |
@@ -218,7 +218,7 @@ Criterio 3, como las autorizaciones de la caseta (`App\Services\Autorizaciones\E
 
 ## Criterios de experiencia de uso (excepciones anotadas)
 
-- **Regla 4 (verbos):** los botones de caseta de la sede destino se llaman **Confirmar llegada a esta sede** y **Autorizar salida de regreso** por indicación del dueño del proyecto (crítica de uso, octubre de 2026), para que el agente de la sede destino entienda qué hace. Solo cambió el texto.
+- **Regla 4 (verbos):** los botones de caseta de la sede destino se llaman **Recibir en esta sede** y **Dar salida de regreso** por indicación del dueño del proyecto (crítica de uso, octubre de 2026), para que el agente de la sede destino entienda qué hace. Solo cambió el texto.
 - **Regla 3 (reloj, color y suplente):** resuelta en ADR-0013 (ver «Firmas que tardan»). El color y los avisos dependen de las horas que configure la empresa; sin ellas solo se ve el reloj (decisión del dueño: por omisión nada cambia).
 
 > **Etapa 2 (bajas y ciclo de vida de los activos):** estados únicos, receptor general, «Antes de dar de baja», «Restringir acceso» y «Liberar lugar» se describen en [bajas-y-activos.md](bajas-y-activos.md).

@@ -1,7 +1,7 @@
 {{--
     Diálogos de la ficha del pase: Aprobar, Rechazar, Omitir paso, paso de
-    caseta (Registrar Salida / Confirmar llegada a esta sede / Autorizar
-    salida de regreso / Registrar Regreso: pide solo las firmas que ese
+    caseta (Dar salida / Recibir en esta sede / Autorizar
+    salida de regreso / Recibir de regreso: pide solo las firmas que ese
     movimiento lleva en este pase) y Cancelar. Los errores vuelven DENTRO de
     su diálogo (old('_dialogo')).
 --}}
@@ -65,7 +65,7 @@
                 <textarea id="motivo_rechazo" name="motivo_rechazo" class="campo" rows="3" maxlength="1000" placeholder="Ej: Falta la factura de venta autorizada." required>{{ $dialogo === 'rechazar' ? old('motivo_rechazo') : '' }}</textarea>
                 <div class="dialogo-acciones">
                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                    <button type="submit" class="btn-confirmar-rechazo">Confirmar Rechazo</button>
+                    <button type="submit" class="btn-confirmar-rechazo">Rechazar</button>
                 </div>
             </form>
         </div>
@@ -228,7 +228,7 @@
                 <textarea id="motivo_cancelacion" name="motivo_cancelacion" class="campo" rows="2" maxlength="1000">{{ $dialogo === 'cancelar' ? old('motivo_cancelacion') : '' }}</textarea>
                 <div class="dialogo-acciones">
                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>No, volver</button>
-                    <button type="submit" class="btn-confirmar-rechazo">Cancelar pase</button>
+                    <button type="submit" class="btn-confirmar-rechazo">Dar de baja el pase</button>
                 </div>
             </form>
         </div>

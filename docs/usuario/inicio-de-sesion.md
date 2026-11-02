@@ -16,7 +16,7 @@ resumen: Cómo entrar con tu usuario, qué hacer si no puedes y cómo se cierra 
 1. Abre **la dirección de tu plataforma** en el navegador de tu computadora o celular.
 2. En **Usuario o Correo** escribe tu usuario (por ejemplo `juan.perez`) o tu correo.
 3. En **Contraseña** escribe tu contraseña. El **ojo** de la derecha muestra u oculta lo que escribes, para revisar que esté bien.
-4. Toca **Autenticar Ingreso**.
+4. Toca **Entrar**.
 
 ![Pantalla para entrar en la computadora](img/inicio/acceso-pc.png)
 
@@ -60,7 +60,7 @@ Tienes dos caminos. El primero no depende de nadie; el segundo sirve si tu cuent
 
 ### Con el enlace a tu correo
 
-1. En la pantalla para entrar toca **Olvidé mi contraseña** (debajo de **Autenticar Ingreso**).
+1. En la pantalla para entrar toca **Olvidé mi contraseña** (debajo de **Entrar**).
 2. Escribe tu **usuario o tu correo** y toca **Enviarme el enlace**.
 3. Abre el correo **«Crea tu contraseña nueva»** (revisa también la carpeta de spam) y toca **Crear mi contraseña nueva**. El enlace sirve **60 minutos** y una sola vez.
 4. Escribe tu **Contraseña nueva** (mínimo 8 caracteres, con letras y números; sin tu usuario ni tu correo), repítela y toca **Guardar**.

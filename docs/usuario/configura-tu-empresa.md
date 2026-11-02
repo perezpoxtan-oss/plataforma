@@ -56,7 +56,7 @@ En el celular la tarjeta se ve igual, con los botones debajo de cada paso.
 
 | Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
-| No veo la tarjeta en Inicio | Alguien tocó **Ya terminé**, o tu empresa ya tenía datos cuando empezó a usar la plataforma. | Ábrela desde **Estructura → Configuración → Mostrar en Inicio**. |
+| No veo la tarjeta en Inicio | Alguien tocó **Ya terminé**, o tu empresa ya tenía datos cuando empezó a usar la plataforma. | Ábrela desde **Estructura → Configuración → General → Mostrar en Inicio**. |
 | Un paso no se pone en verde | Falta el dato con el que se marca (por ejemplo, el departamento existe pero aún no tiene responsable). | Revisa la columna «Se marca solo cuando…» de la tabla de arriba. |
 | Un paso no tiene botón | Tu rol no puede abrir esa pantalla. | Pide a quien administra la plataforma que haga ese paso o te dé el permiso. |
 | No veo **Configura tu empresa** en Configuración | Tu rol no puede editar la Configuración. | Pide a tu administrador que la muestre u oculte. |

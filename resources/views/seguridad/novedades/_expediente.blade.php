@@ -246,7 +246,7 @@
                 <textarea id="reabrir_motivo" name="motivo" class="campo" rows="3" minlength="5" maxlength="1000" required placeholder="Ej. El huésped reportó que el problema volvió a presentarse...">{{ old('motivo') }}</textarea>
                 <div class="dialogo-acciones">
                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                    <button type="submit" class="btn-reabrir"><i class="bi bi-unlock-fill me-1" aria-hidden="true"></i>Confirmar y Reabrir</button>
+                    <button type="submit" class="btn-reabrir"><i class="bi bi-unlock-fill me-1" aria-hidden="true"></i>Reactivar ticket</button>
                 </div>
             </form>
         </div>

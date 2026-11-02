@@ -157,7 +157,7 @@ class EtapaCuatroFlujosTest extends TestCase
         $a = $this->pendienteEnCaseta('Pipa de gas');
 
         // La tarjeta del agente ofrece «Canalizar al supervisor» (un toque, sin pasos en el flujo normal)
-        $this->actingAs($this->agente)->get('/accesos?pestana=pendientes')->assertOk()->assertSee('Canalizar al supervisor')->assertDontSee('Pedir al supervisor')->assertDontSee('Aprobar por excepción');
+        $this->actingAs($this->agente)->get('/accesos?pestana=pendientes')->assertOk()->assertSee('Canalizar al supervisor')->assertDontSee('Pedir al supervisor')->assertDontSee('<summary class="btn-accion-acceso excepcion">', false);
         $this->actingAs($this->agente)->post(route('accesos.pedir-supervisor', $a->id))->assertSessionHas('ok');
         $this->actingAs($this->agente)->post(route('accesos.pedir-supervisor', $a->id))->assertSessionHas('error'); // una sola vez
         $this->assertSame(1, $this->avisos($this->supervisor, 'excepcion_pedida'));

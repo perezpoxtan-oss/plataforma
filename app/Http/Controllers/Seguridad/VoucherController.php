@@ -13,6 +13,7 @@ use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Services\Vouchers\ConsultaVouchers;
 use App\Services\Vouchers\RecuperacionVouchers;
+use App\Support\Csv;
 use App\Support\Entrada;
 use App\Support\HoraLocal;
 use App\Support\ImagenSegura;
@@ -249,6 +250,36 @@ class VoucherController extends Controller
      *
      * @return array{q: string, sede: ?int, origen: ?string, cobro: ?string, estado: ?string, desde: ?string, hasta: ?string}
      */
+    /** C-43 (E-13): «Exportar a Excel» con su permiso (vouchers.exportar), con los filtros puestos. */
+    public function exportar(Request $request): StreamedResponse
+    {
+        Gate::authorize('vouchers.exportar');
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+        $filtros = $this->filtros($request);
+        $lista = $this->tenant->conEmpresa($empresaId, fn () => $this->filtrar($this->consulta->consulta($request->user(), 'vouchers.exportar'), $filtros)
+            ->with(['sede' => fn ($q) => $q->withTrashed()->select('id', 'nombre'), 'colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno'])
+            ->orderByDesc('vouchers_reposicion.id')->limit(20000)->get());
+
+        return $this->descargarCsv('vouchers', ['Folio', 'Sede', 'Origen', 'Qué fue', 'Motivo', 'Con cobro', 'Monto', 'Responsable', 'Estado', 'Fecha'],
+            $lista->map(fn ($v) => [$v->folio, $v->sede?->nombre, $v->etiquetaOrigen(), $v->origen_descripcion, $v->motivo, $v->aplica_cobro ? 'Sí' : 'No',
+                $v->monto, $v->nombreResponsable(), $v->etiquetaEstado(), $this->hora->formatear($v->created_at, 'd/m/Y H:i')]));
+    }
+
+    /** C-43 (E-13): descarga en Excel (CSV con BOM para que Excel lea los acentos). */
+    private function descargarCsv(string $archivo, array $encabezados, iterable $filas): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($encabezados, $filas) {
+            $salida = fopen('php://output', 'w');
+            fwrite($salida, "\xEF\xBB\xBF");
+            Csv::fila($salida, $encabezados);
+            foreach ($filas as $fila) {
+                Csv::fila($salida, $fila);
+            }
+            fclose($salida);
+        }, $archivo.'-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     private function filtros(Request $request): array
     {
         $fecha = function (mixed $valor): ?string {

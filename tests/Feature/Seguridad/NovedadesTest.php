@@ -33,7 +33,7 @@ class NovedadesTest extends PruebaNovedades
             ->assertSee('Despacho y Novedades')->assertSee('Levantamiento modular y control operativo.')
             ->assertSee('Tickets Abiertos / Asignados')->assertSee('Historial Resueltos')
             ->assertSee('Buscar por #Ticket, ubicación o detalles del reporte...')->assertSee('Todas las Categorías')
-            ->assertSee('Nuevo Ticket')->assertSee('Generar Ticket Rápido')->assertSee('Despachar Ticket')
+            ->assertSee('Nuevo Ticket')->assertSee('Generar Ticket Rápido')->assertSee('Guardar ticket')
             ->assertSee('¿Quién reporta?')->assertSee('¿A quién se canaliza?')->assertSee('Fui yo quien lo observó')
             ->assertSee('id="novedad-'.$abierta->id.'"', false)->assertSee('#00001')->assertSee('Se llevaron una laptop')
             ->assertSee('Abrir Expediente')->assertSee('Caso cerrado de prueba')->assertSee('Ver Expediente')

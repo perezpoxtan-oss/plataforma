@@ -117,7 +117,7 @@ class CampanaPasesSalida
         $this->centro->avisar((int) $pase->empresa_id, $usuarios, 'pase_llega', [
             'titulo' => "Un pase viene a tu sede: {$pase->folio}",
             'texto' => 'Sale de '.($pase->sede?->nombre ?? 'origen').' hacia '.($pase->sedeDestino?->nombre ?? 'tu sede')." con {$articulos} "
-                .($articulos === 1 ? 'artículo' : 'artículos').'. Cuando llegue, toca «Confirmar llegada a esta sede».',
+                .($articulos === 1 ? 'artículo' : 'artículos').'. Cuando llegue, toca «Recibir en esta sede».',
             'url' => route('pases-salida.show', $pase->id),
             'referencia_tipo' => 'pase_salida_llegada',
             'referencia_id' => (int) $pase->id,

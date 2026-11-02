@@ -161,7 +161,7 @@ class DecisionesInformesYAuditoriaTest extends TestCase
     public function test_los_botones_y_las_hojas_de_imprimir_piden_el_permiso(): void
     {
         $hojas = [
-            'dashboard' => ['tablero.index', 'tablero.imprimir', 'Consola de Monitoreo'],
+            'dashboard' => ['tablero.index', 'tablero.imprimir', 'Tablero'],
             'tendencias' => ['tendencias.index', 'tendencias.imprimir', 'Tendencias'],
             'informe_ejecutivo' => ['informe_ejecutivo.index', 'informe_ejecutivo.imprimir', 'Informe ejecutivo'],
             'bitacora_dia' => ['bitacora_dia.index', 'bitacora_dia.imprimir', 'Bitácora general del día'],

@@ -4882,3 +4882,11 @@ html.modo-noche .aviso-padron-acceso { background: rgba(245,158,11,0.12); color:
 .recepcion-plegada { margin-top: 0.35rem; }
 .recepcion-plegada > summary { cursor: pointer; color: var(--texto-suave, #6b7280); }
 .recepcion-plegada .recepcion-comun { margin-top: 0.35rem; }
+/* C-43 (GC-14): ficha de llave en el celular — los íconos se acomodan en renglones y conservan 44 px para el dedo */
+.acciones-ficha-llave { flex-wrap: wrap; justify-content: flex-end; }
+.acciones-ficha-llave .btn-icono { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+@media (max-width: 576px) {
+    .ficha-footer:has(.acciones-ficha-llave) { flex-wrap: wrap; gap: 0.5rem; }
+    .ficha-footer:has(.acciones-ficha-llave) .pastilla-alcance { flex: 1 1 100%; }
+    .acciones-ficha-llave { flex: 1 1 100%; justify-content: space-between; }
+}

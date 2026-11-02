@@ -90,7 +90,7 @@ class AdaptacionPorGiroTest extends TestCase
         [$empresa, $sede, $admin] = $this->empresaDeGiro('hotel', 'Hotel Ébano');
         $this->actingAs($admin)->get('/accesos')->assertOk()
             ->assertSee('HUÉSPED')->assertSee('PERSONAL EXTERNO / VISITA')->assertSee('Número de Habitación')->assertSee('¿Tiene Reserva?')
-            ->assertSee('Salida a Tour')->assertSee('Visita a persona o área')->assertSee('¿A quién viene?')->assertSee('Recursos Humanos')
+            ->assertSee('Dar salida a tour')->assertSee('Visita a persona o área')->assertSee('¿A quién viene?')->assertSee('Recursos Humanos')
             ->assertDontSee('terminos:no', false);
 
         $this->registrar($admin, $sede, ['tipo' => 'huesped', 'nombre' => 'Leticia Vázquez', 'habitacion' => '204', 'tiene_reserva' => '1', 'numero_reserva' => 'R1'])
@@ -110,7 +110,7 @@ class AdaptacionPorGiroTest extends TestCase
         $r = $this->actingAs($admin)->get('/accesos')->assertOk()
             ->assertSee('VISITANTE')->assertSee('COLABORADOR')->assertSee('CONTRATISTA (OBRA)')
             ->assertDontSee('HUÉSPED')->assertDontSee('Huésped')->assertDontSee('Número de Habitación')->assertDontSee('¿Tiene Reserva?')
-            ->assertDontSee('Agencia Vinculada')->assertDontSee('Salida a Tour')->assertDontSee('PERSONAL EXTERNO');
+            ->assertDontSee('Agencia Vinculada')->assertDontSee('Dar salida a tour')->assertDontSee('PERSONAL EXTERNO');
         $this->assertStringNotContainsString('value="huesped"', $r->getContent());
         // El filtro también lista solo los tipos del giro
         $this->assertStringContainsString('<option value="visitante" >Visitante</option>', preg_replace('/\s+/', ' ', $r->getContent()));
@@ -164,7 +164,7 @@ class AdaptacionPorGiroTest extends TestCase
             ->assertSee('RESIDENTE O PERSONAL')->assertSee('VISITA')->assertSee('SERVICIO / PROVEEDOR')
             // C-09: un solo motivo («Visita») que viene marcado y un solo campo «¿A quién viene?» (residente, vivienda o área)
             ->assertSee('¿A quién viene?')->assertSee('Nombre del residente, vivienda o área')->assertDontSee('¿A qué departamento va?')
-            ->assertDontSee('HUÉSPED')->assertDontSee('Número de Reserva')->assertDontSee('Salida a Tour')
+            ->assertDontSee('HUÉSPED')->assertDontSee('Número de Reserva')->assertDontSee('Dar salida a tour')
             ->assertDontSee('value="rh"', false)->assertDontSee('COLABORADOR');
     }
 

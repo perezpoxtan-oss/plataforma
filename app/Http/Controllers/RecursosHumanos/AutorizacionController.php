@@ -131,7 +131,7 @@ class AutorizacionController extends Controller
             'comentario' => ['nullable', 'string', 'max:500'],
             'medio' => ['nullable', Rule::in(['plataforma', 'correo'])],
             'volver' => ['nullable', Rule::in(['recepcion'])],
-            'atender' => ['nullable', 'boolean'], // Recepción: «Que pase y lo atiendo»
+            'atender' => ['nullable', 'boolean'], // Recepción: «Aprobar y atender»
         ], ['respuesta.*' => 'Elige una respuesta.', 'comentario.max' => 'El comentario admite máximo 500 caracteres.']);
         $empresaId = $this->empresaDeTrabajo($request);
 
@@ -299,7 +299,7 @@ class AutorizacionController extends Controller
     {
         $u = $request->user();
 
-        // Ver el panel de Recepción de RR. HH. no da el «Que pase» (lo da quien edita candidatos)
+        // Ver el panel de Recepción de RR. HH. no da el «Aprobar · que pase» (lo da quien edita candidatos)
         return $u->can('autorizaciones.responder') || $u->can('candidatos.editar') || $this->tieneColaborador($u);
     }
 

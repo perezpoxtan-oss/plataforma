@@ -40,7 +40,7 @@ use Illuminate\Http\UploadedFile;
  *    el aviso; la empresa puede elegir «La visita pasa sin esperar».
  *  - Proveedor y contratista: «¿A qué departamento viene?»; si la empresa lo
  *    pide para ese tipo, espera al responsable igual que una visita (sin
- *    responsable en la sede, la caseta lo pasa con «Autorizar por excepción»).
+ *    responsable en la sede, la caseta lo pasa con «Aprobar por excepción»).
  *  - Foto de la persona y de su identificación (opcionales, privadas).
  */
 class RecepcionEnCaseta
@@ -200,7 +200,7 @@ class RecepcionEnCaseta
      * Proveedor y contratista: si la empresa pide que esperen al departamento
      * (por tipo), «¿A qué departamento viene?» es obligatorio. Con responsable
      * en esa sede, la solicitud va al departamento (como una visita); sin
-     * responsable, queda pendiente para «Autorizar por excepción». Si el tipo
+     * responsable, queda pendiente para «Aprobar por excepción». Si el tipo
      * no espera al departamento, sigue como siempre (se confirma con el host).
      *
      * @param  array<string, mixed>  $entrada

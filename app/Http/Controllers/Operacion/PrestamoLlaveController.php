@@ -116,7 +116,7 @@ class PrestamoLlaveController extends Controller
     }
 
     /**
-     * Prestar. Con "Registrar y Capturar Siguiente" llega por fetch y responde
+     * Prestar. Con "Guardar y capturar siguiente" llega por fetch y responde
      * JSON con la ficha nueva ya dibujada; sin JavaScript, redirige.
      */
     public function store(Request $request): JsonResponse|RedirectResponse

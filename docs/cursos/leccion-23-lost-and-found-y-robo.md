@@ -13,7 +13,7 @@
 
 1. **`agente.demo`** (sede Centro): abre Operación → **Lost & Found**. Toca **Solo urgentes / vencidos**: la **Bufanda** está en rojo (40 días de 30) y los **Audífonos** en ámbar.
 2. Toca **Todos** y busca `celular`. El **Teléfono celular** tiene el **Reporte de pérdida RP-000001 — LAURA GÓMEZ**.
-3. Toca **Cerrar / Entregar** → **Devuelto en persona**. El nombre ya viene escrito. Elige **INE**, intenta **Registrar Cierre** sin firma (no deja) y luego firma y regístralo. Revisa que ahora diga **Devuelto al Huésped**.
+3. Toca **Cerrar / Entregar** → **Devuelto en persona**. El nombre ya viene escrito. Elige **INE**, intenta **Guardar cierre** sin firma (no deja) y luego firma y regístralo. Revisa que ahora diga **Devuelto al Huésped**.
 4. Abre la ficha de los **Lentes de sol** (ojo): ya se entregaron a MARK JOHNSON; mira la firma.
 5. En **Escanear etiqueta de la bolsa** escribe `LF-000004` y Enter: se abre la ficha de la Bufanda. Toca **Etiqueta** e imprímela.
 6. Cierra la **Bufanda** como **Donado a colaborador**: escribe el número de empleado de un compañero en el lector y elige.

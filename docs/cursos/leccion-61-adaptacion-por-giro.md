@@ -16,7 +16,7 @@ Usa las tres empresas de prueba: la del **hotel**, la **corporativa** y la del *
 
 ## Lo que hay que saber
 
-- El **giro** (rubro) de la empresa lo elige quien la da de alta. En un **hotel** todo funciona como siempre.
+- El **giro** de la empresa lo elige quien la da de alta. En un **hotel** todo funciona como siempre.
 - En un **corporativo** no hay huéspedes: quien llega de fuera es un **Visitante** y los lugares son **oficinas**.
 - En un **condominio** quien vive ahí es un **Residente**, quien llega es una **Visita** (a un departamento) y los proveedores, la limpieza o el jardinero entran como **Servicio**. En un **fraccionamiento** es igual, con **casas**.
 - Los registros de antes **no se pierden**: si una empresa cambió de giro, lo que ya estaba en la bitácora se sigue viendo con su nombre.
@@ -34,7 +34,7 @@ Comprueba: el hotel ofrece **Huésped**; el corporativo, **Visitante** (y no Hu�
 1. **Nuevo Ingreso** → **Visita**.
 2. Escribe el nombre de la visita y deja la identificación que entrega.
 3. En **Motivo de la Visita** deja **Visita a Residente**, busca al residente en **¿A quién visita?** y escribe o elige el departamento en **¿A qué departamento va?**.
-4. Toca **Registrar y dejar pasar**.
+4. Toca **Guardar y dejar pasar**.
 
 Comprueba: la tarjeta en **Gente en Sitio** dice **VISITA**, la pastilla **Depto. 101** junto al nombre y **Motivo: Visita a Residente**. Escribe «101» en el campo de **Dar salida**: aparece la visita.
 

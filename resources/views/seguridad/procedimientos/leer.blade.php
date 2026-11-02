@@ -108,7 +108,7 @@
                         </label>
                         @if ($pideFirma ?? true)
                             @include('seguridad.procedimientos._firma-propia', ['id' => 'acuse', 'etiqueta' => 'Tu firma ('.auth()->user()->name.')'])
-                            <button type="submit" class="btn-azul btn-firmar-acuse"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Firmar de enterado</button>
+                            <button type="submit" class="btn-azul btn-firmar-acuse"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Guardar · firmar de enterado</button>
                         @else
                             {{-- ADR-0014: la empresa pide solo la casilla; queda tu nombre, la fecha y la hora --}}
                             <p class="small text-muted mb-2">Queda registrado con tu nombre ({{ auth()->user()->name }}), la fecha y la hora.</p>

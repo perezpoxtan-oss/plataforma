@@ -19,7 +19,7 @@
         <p class="chip-llega-sede"><i class="bi bi-truck" aria-hidden="true"></i>
             {{ $p->estado === \App\Models\PaseSalida::APROBADO ? 'Viene a '.($p->sedeDestino?->nombre ?? 'tu sede').': aún no sale de '.($p->sede?->nombre ?? 'origen').'.' : 'En camino a '.($p->sedeDestino?->nombre ?? 'tu sede').'.' }}
             @if ($p->requiere_regreso)
-                Cuando llegue, toca «Confirmar llegada a esta sede».
+                Cuando llegue, toca «Recibir en esta sede».
             @else
                 Es definitivo: llega sin confirmar en caseta.
             @endif

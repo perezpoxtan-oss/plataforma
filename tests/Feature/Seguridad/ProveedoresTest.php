@@ -94,7 +94,7 @@ class ProveedoresTest extends TestCase
         $this->assertDatabaseHas('auditoria', ['evento' => 'proveedores.creado', 'auditable_id' => $p->id]);
 
         $this->actingAs($this->admin)->get('/proveedores')->assertOk()
-            ->assertSee('Empresas Externas')->assertSee('Registrar Empresa Externa')->assertSee('Abarrotes del Caribe')
+            ->assertSee('Empresas Externas')->assertSee('Guardar empresa Externa')->assertSee('Abarrotes del Caribe')
             ->assertSee('Proveedor (Insumos)')->assertSee('Todas las sedes')->assertSee('0 personas · 0 vehículos')
             ->assertSee('ACTIVA')->assertSee('data-tipo="proveedor"', false)
             ->assertSee('data-sede="'.$this->centro->id.' '.$this->playa->id.'"', false);
@@ -322,7 +322,7 @@ class ProveedoresTest extends TestCase
         $this->flushSession();
 
         $this->actingAs($agente)->get('/proveedores')->assertOk()->assertSee('Taxis Aeropuerto')
-            ->assertDontSee('Registrar Empresa Externa')->assertDontSee('data-accion="editar-registro"', false)->assertDontSee('dialogoSedesProveedor');
+            ->assertDontSee('Guardar empresa Externa')->assertDontSee('data-accion="editar-registro"', false)->assertDontSee('dialogoSedesProveedor');
         $this->actingAs($agente)->get("/proveedores/{$p->id}")->assertOk()->assertDontSee('Editar Datos Generales');
         $this->actingAs($agente)->getJson('/proveedores/buscar?q=taxis')->assertJsonCount(1, 'resultados');
         $this->actingAs($agente)->post('/proveedores', ['nombre' => 'Otro', 'categoria' => 'taxi'])->assertForbidden();
@@ -342,7 +342,7 @@ class ProveedoresTest extends TestCase
         $sa = $this->crearSuperadmin();
         $this->actingAs($sa)->get('/proveedores')->assertOk()->assertSee('Elige arriba la');
         $this->actingAs($sa)->get('/proveedores/1')->assertNotFound();
-        $this->actingAs($sa)->withSession([EmpresaDeTrabajo::SESION => $this->empresa->id])->get('/proveedores')->assertSee('Registrar Empresa Externa');
+        $this->actingAs($sa)->withSession([EmpresaDeTrabajo::SESION => $this->empresa->id])->get('/proveedores')->assertSee('Guardar empresa Externa');
         $this->actingAs($sa)->withSession([EmpresaDeTrabajo::SESION => $this->empresa->id])
             ->post('/proveedores', ['nombre' => 'Viajes Turquesa', 'categoria' => 'agencia_viajes'])->assertSessionHasNoErrors();
         $this->assertSame($this->empresa->id, $this->proveedor('Viajes Turquesa')->empresa_id);

@@ -36,7 +36,7 @@ resumen: Guía para el personal de cualquier departamento (rol Solicitante) y pa
 
 1. Entra a **Operación → Caseta → Pases de salida**. Solo ves los pases que tú pediste.
 2. Toca el pase para abrir su ficha. Arriba ves los pasos: quién ya firmó y a quién le toca.
-3. Si te lo **rechazaron**, verás el motivo en rojo: toca **Corregir y reenviar**, corrige lo que pidieron y vuelve a enviarlo. Si ya no lo necesitas, toca **Cancelar pase**.
+3. Si te lo **rechazaron**, verás el motivo en rojo: toca **Corregir y reenviar**, corrige lo que pidieron y vuelve a enviarlo. Si ya no lo necesitas, toca **Dar de baja el pase**.
 
 ![Ficha del pase](img/pases-salida/ficha.png)
 
@@ -62,7 +62,7 @@ resumen: Guía para el personal de cualquier departamento (rol Solicitante) y pa
 
 1. Cuando alguien viene a tu departamento, te llega un aviso a la **campana**, a **Mis pendientes → Autorizaciones por responder** y a tu correo.
 2. Abre el aviso. Revisa quién es y a qué viene.
-3. Toca **Autorizar ingreso** o **Rechazar**.
+3. Toca **Aprobar ingreso** o **Rechazar**.
 
 ![Autorizaciones por responder](img/recepcion-y-candidatos/autorizaciones-bandeja-jefe.png)
 
@@ -90,7 +90,7 @@ Todo el detalle, paso a paso, está en [Entrevistar y elegir](entrevistar-y-eleg
 ## Cómo leer los procedimientos que te tocan
 
 1. Entra a **Operación → Consulta → Procedimientos**, o toca **Mis pendientes → Procedimientos por leer**.
-2. Abre el procedimiento, léelo completo, marca **Leí y entendí este procedimiento**, firma y toca **Firmar de enterado**.
+2. Abre el procedimiento, léelo completo, marca **Leí y entendí este procedimiento**, firma y toca **Guardar · firmar de enterado**.
 
 **Qué debes ver:** el procedimiento ya no aparece en **Por leer**. Más detalle en [Procedimientos](procedimientos.md).
 

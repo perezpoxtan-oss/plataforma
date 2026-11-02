@@ -145,7 +145,7 @@
 
             <div class="dialogo-acciones">
                 <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                <button type="submit" class="btn-registrar-cierre"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Registrar Cierre</button>
+                <button type="submit" class="btn-registrar-cierre"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Guardar cierre</button>
             </div>
         </form>
     </div>

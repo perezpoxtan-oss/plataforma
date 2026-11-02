@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('titulo', 'Control de Accesos')
+@section('titulo', 'Bitácora de accesos')
 
 @section('contenido')
 <div class="pantalla-accesos">
@@ -10,7 +10,7 @@
     @if ($sinEmpresa)
         <div class="encabezado-pantalla mb-4">
             <div class="icono"><i class="bi bi-person-badge-fill text-danger" aria-hidden="true"></i></div>
-            <div><h1>Control de Accesos</h1><p>Registro dinámico según el tipo de persona que ingresa.</p></div>
+            <div><h1>Bitácora de accesos</h1><p>Registro dinámico según el tipo de persona que ingresa.</p></div>
         </div>
         <div class="tarjeta estado-vacio">
             <div class="icono"><i class="bi bi-buildings" aria-hidden="true"></i></div>
@@ -32,7 +32,7 @@
             <div class="encabezado-pantalla m-0">
                 <div class="icono"><i class="bi bi-person-badge-fill text-danger" aria-hidden="true"></i></div>
                 <div>
-                    <h1>Control de Accesos</h1>
+                    <h1>Bitácora de accesos</h1>
                     <p>Registro dinámico según el tipo de persona que ingresa.</p>
                     <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Bitácora de: <strong>{{ $empresaNombre }}</strong></p>
                 </div>

@@ -49,7 +49,7 @@
                 <p class="mb-2"><i class="bi bi-person-badge me-1 text-primary" aria-hidden="true"></i><strong>Tu circuito no tiene el paso del jefe del departamento.</strong> El circuito predeterminado ahora empieza con «Jefe del departamento del solicitante». Tu circuito no se cambió: si quieres, agrégalo como primer paso (los pases en curso no cambian).</p>
                 <form action="{{ route('pases-salida.circuito.paso-jefe') }}" method="POST" class="m-0">
                     @csrf
-                    <button type="submit" class="btn-agregar-articulo"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar el paso del jefe del departamento</button>
+                    <button type="submit" class="btn-agregar-articulo"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Guardar con el paso del jefe del departamento</button>
                 </form>
             </div>
         @endif

@@ -19,7 +19,7 @@ El manual vive en `docs/usuario/*.md` (una página por pantalla/módulo) y la pl
 3. «**Antes de empezar**»: qué permiso o dato se necesita (en palabras: «necesitas que tu rol pueda registrar accesos; si no ves el botón, pide a tu administrador…»).
 4. Una sección `## Cómo …` por tarea (registrar, buscar, editar, dar de baja, imprimir…). Cada una:
    - Pasos **numerados**, uno por acción, con el texto EXACTO de botones y menús en negritas: «Toca **Nuevo Ingreso**».
-   - La ruta del menú completa la primera vez: **Operación → Caseta → Accesos**.
+   - La ruta del menú completa la primera vez: **Operación → Caseta → Bitácora de accesos**.
    - Una captura `![Descripción breve](img/<modulo>/<archivo>.png)` donde ayude (al menos una por tarea principal).
    - «**Qué debes ver:**» el resultado esperado.
 5. «**Si algo sale mal**»: tabla Mensaje o síntoma | Qué significa | Qué hacer (los mensajes de error reales de la pantalla).

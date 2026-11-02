@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('titulo', 'Inventario Gafetes')
+@section('titulo', 'Gafetes')
 
 @section('contenido')
 <div class="tema-gafetes">
@@ -11,7 +11,7 @@
     @if ($sinEmpresa)
         <div class="encabezado-pantalla mb-4">
             <div class="icono"><i class="bi bi-vignette text-dark" aria-hidden="true"></i></div>
-            <div><h1>Inventario Gafetes</h1><p>Plásticos físicos para accesos.</p></div>
+            <div><h1>Gafetes</h1><p>Plásticos físicos para accesos.</p></div>
         </div>
         <div class="tarjeta estado-vacio">
             <div class="icono"><i class="bi bi-buildings" aria-hidden="true"></i></div>
@@ -41,7 +41,7 @@
             <div class="encabezado-pantalla m-0">
                 <div class="icono"><i class="bi bi-vignette text-dark" aria-hidden="true"></i></div>
                 <div>
-                    <h1>Inventario Gafetes</h1>
+                    <h1>Gafetes</h1>
                     <p>Plásticos físicos para accesos.</p>
                     <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Inventario de: <strong>{{ $empresaNombre }}</strong></p>
                 </div>
@@ -93,7 +93,7 @@
             @if ($puede['crear'])
                 <button type="button" class="ficha-card ficha-create" data-abrir-dialogo="dialogoLoteGafetes">
                     <i class="bi bi-plus-circle-fill" aria-hidden="true"></i>
-                    <span class="h6 fw-bold m-0 mt-2 titulo-crear">Generar Lote</span>
+                    <span class="h6 fw-bold m-0 mt-2 titulo-crear">Guardar lote</span>
                     <span class="small text-muted mt-1">De 1 a 50 gafetes por sede y tipo</span>
                 </button>
             @endif
@@ -211,7 +211,7 @@
                     <p class="fw-semibold mb-1">Todavía no hay gafetes{{ $sedesFiltro->count() === 1 ? ' en tu sede' : '' }}.</p>
                     <p class="text-muted small m-0">
                         @if ($puede['crear'])
-                            Presiona <strong>«Generar Lote»</strong> para crear los primeros: eliges sede, tipo y cuántos.
+                            Presiona <strong>«Guardar lote»</strong> para crear los primeros: eliges sede, tipo y cuántos.
                         @else
                             Cuando se generen aparecerán aquí.
                         @endif
@@ -281,7 +281,7 @@
 
                             <div class="dialogo-acciones">
                                 <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                                <button type="submit" class="btn-gafetes">Generar Lote</button>
+                                <button type="submit" class="btn-gafetes">Guardar lote</button>
                             </div>
                         </form>
                     @endif

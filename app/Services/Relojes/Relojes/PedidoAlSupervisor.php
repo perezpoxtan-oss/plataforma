@@ -15,7 +15,7 @@ use App\Support\AjustesCaseta;
 use Illuminate\Support\Collection;
 
 /**
- * La caseta pide al supervisor «Autorizar por excepción» (renglón 22; C-25,
+ * La caseta pide al supervisor «Aprobar por excepción» (renglón 22; C-25,
  * B-05, DD-11, DD-13). Espera lo que el agente pidió con «Pedir al
  * supervisor» y la visita a un departamento sin quien autorice en la sede.
  * Con los minutos de la caseta (los de «Quién espera autorización»): se

@@ -45,6 +45,10 @@
                         <a href="{{ route('mi-cuenta.index') }}#delegar" class="btn-secundario-pase"><i class="bi bi-moon-stars me-1" aria-hidden="true"></i>Delegar mis aprobaciones</a>
                     @endcan
                 @else
+                    {{-- C-43 (E-13): «Exportar a Excel» con su permiso (con la búsqueda y la sede puestas) --}}
+                    @can('pases_salida.exportar')
+                        <a href="{{ route('pases-salida.exportar', array_filter(['q' => $texto, 'sede' => $sedeFiltro])) }}" class="btn-secundario-pase"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Exportar a Excel</a>
+                    @endcan
                     <a href="{{ route('pases-salida.pendientes') }}" class="btn-secundario-pase {{ $misFirmas > 0 ? 'con-pendientes' : '' }}">
                         <i class="bi bi-pen me-1" aria-hidden="true"></i>Mi bandeja <span class="conteo-pill">{{ $misFirmas }}</span>
                     </a>
@@ -101,7 +105,7 @@
                     <div class="icono"><i class="bi {{ $filtro === 'mi_firma' ? 'bi-check2-all' : 'bi-box-arrow-up-right' }}" aria-hidden="true"></i></div>
                     @if ($filtro === 'llegan' && $texto === '')
                         <p class="fw-semibold mb-1">No viene ningún pase a tu sede.</p>
-                        <p class="text-muted small m-0">Aquí aparecen los pases aprobados o en camino hacia tu sede. Cuando llegue el equipo, abre el pase y toca «Confirmar llegada a esta sede».</p>
+                        <p class="text-muted small m-0">Aquí aparecen los pases aprobados o en camino hacia tu sede. Cuando llegue el equipo, abre el pase y toca «Recibir en esta sede».</p>
                     @elseif ($filtro === 'mi_firma' && $texto === '')
                         <p class="fw-semibold mb-1">Nada pendiente: no hay pases que esperen tu firma.</p>
                         <p class="text-muted small m-0">Aquí aparecen los pases que debes aprobar y, en caseta, los que debes dejar salir o recibir.</p>

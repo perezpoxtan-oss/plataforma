@@ -599,8 +599,8 @@ class ProcedimientosTest extends TestCase
         $this->post("/procedimientos/{$publicado->id}/nueva-version")->assertForbidden();
         $this->post("/procedimientos/{$publicado->id}/aprobar")->assertForbidden();
         $this->post("/procedimientos/{$publicado->id}/retirar")->assertForbidden();
-        $this->get("/procedimientos/{$publicado->id}")->assertOk()->assertDontSee('Nueva versión')->assertDontSee('Acuses');
-        $this->get("/procedimientos/{$publicado->id}/leer")->assertOk()->assertSee('Firmar de enterado');
+        $this->get("/procedimientos/{$publicado->id}")->assertOk()->assertDontSee('Guardar como nueva versión')->assertDontSee('Acuses');
+        $this->get("/procedimientos/{$publicado->id}/leer")->assertOk()->assertSee('Guardar · firmar de enterado');
         $this->get("/procedimientos/{$publicado->id}/imprimir")->assertOk()->assertSee('PRO-SEG-001')->assertSee('PUNTO CRÍTICO');
         $this->acusar($publicado, $this->agente)->assertSessionHasNoErrors();
 

@@ -206,7 +206,8 @@
 
                     <div class="ficha-footer">
                         <span class="pastilla-alcance">Alcance: {{ $l->etiquetaAlcance() }}</span>
-                        <div class="d-flex gap-2">
+                        {{-- C-43 (GC-14): en el celular los íconos se acomodan en su propio renglón --}}
+                        <div class="d-flex gap-2 acciones-ficha-llave">
                             {{-- Ronda 5 (LL-05): QR y etiqueta NFC/RFID en un diálogo, sin salir de la pantalla --}}
                             @include('componentes.boton-identificacion', ['identTipo' => 'llave', 'identRegistro' => $l, 'identTitulo' => $l->nomenclatura,
                                 'identDetalle' => ($l->sede?->nombre ?? '').' · '.$l->etiquetaTipo(),

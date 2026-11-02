@@ -30,7 +30,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * Recorridos de Protección Civil (réplica de modules/bitacora/recorridos_pc_*
  * de SEGCAT): lista de recorridos, «Nuevo Recorrido», el recorrido en curso
  * (un punto de inspección a la vez, escaneando el equipo), «Guardar y
- * Continuar Después» / «Finalizar Recorrido», el detalle, el «Reporte de
+ * Continuar Después» / «Guardar y terminar recorrido», el detalle, el «Reporte de
  * Auditoría» para imprimir y la exportación a CSV.
  *
  * Las reglas viven en App\Services\RecorridosPc\AdministradorRecorridosPc.
@@ -180,7 +180,7 @@ class RecorridoPcController extends Controller
             .($r->novedad ? " (ticket {$r->novedad->folio()})" : '').'. Escanea el siguiente equipo.');
     }
 
-    /** «Guardar y Continuar Después» o «Finalizar Recorrido» (finalizar=1). */
+    /** «Guardar y Continuar Después» o «Guardar y terminar recorrido» (finalizar=1). */
     public function update(Request $request, int $recorrido): RedirectResponse
     {
         Gate::authorize('recorridos_pc.crear');

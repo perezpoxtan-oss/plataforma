@@ -78,27 +78,27 @@ class RutasSinRegistro extends Reloj
                 continue;
             }
             $ahora = $transporte->ahoraEn($sede);
-            if (! $h->aplicaEn($ahora->dayOfWeekIso)) {
-                continue;
+            // C-43 (D-21): el servicio de ayer cuenta si cruzó la medianoche (sale el lunes 23:20 y llega el martes 00:30)
+            foreach ($transporte->ocurrencias($h, $ahora) as $programada) {
+                $limite = $programada->addMinutes(self::TOLERANCIA_MINUTOS);
+                if ($ahora->lt($limite) || $ahora->gt($programada->addHours(self::VENTANA_HORAS))) {
+                    continue;
+                }
+                $candidatos[] = [$h, $sede, $hora, $limite, $programada->toDateString(), $ahora->toDateString()];
             }
-            [$hh, $mm] = array_map('intval', explode(':', $hora));
-            $programada = $ahora->setTime($hh, $mm);
-            $limite = $programada->addMinutes(self::TOLERANCIA_MINUTOS);
-            if ($ahora->lt($limite) || $ahora->gt($programada->addHours(self::VENTANA_HORAS))) {
-                continue;
-            }
-            $candidatos[] = [$h, $sede, $hora, $limite, $ahora->toDateString()];
         }
         if ($candidatos === []) {
             return collect();
         }
         // Una sola consulta: lo ya registrado (no anulado) de esos horarios en su día local
+        // (lo que pasó de la medianoche puede quedar con la fecha del día siguiente: se acepta cualquiera de las dos)
+        $fechas = array_values(array_unique(array_merge(array_map(fn ($c) => $c[4], $candidatos), array_map(fn ($c) => $c[5], $candidatos))));
         $registrados = MovimientoTransporte::whereIn('ruta_horario_id', array_map(fn ($c) => $c[0]->id, $candidatos))->where('anulado', false)
-            ->whereIn('fecha', array_values(array_unique(array_map(fn ($c) => $c[4], $candidatos))))->get(['ruta_horario_id', 'fecha'])
+            ->whereIn('fecha', $fechas)->get(['ruta_horario_id', 'fecha'])
             ->map(fn ($m) => $m->ruta_horario_id.'|'.$m->fecha->toDateString())->flip();
         $lista = collect();
-        foreach ($candidatos as [$h, $sede, $hora, $limite, $dia]) {
-            if (! isset($registrados[$h->id.'|'.$dia])) {
+        foreach ($candidatos as [$h, $sede, $hora, $limite, $dia, $hoy]) {
+            if (! isset($registrados[$h->id.'|'.$dia]) && ! isset($registrados[$h->id.'|'.$hoy])) {
                 $lista->push(new Espera(self::REFERENCIA, (int) $h->id, $limite->utc(), $h->ruta->nombre.' '.$hora.' sin registro',
                     route('transporte.index'), (int) $sede->id, ['sede' => $sede->nombre]));
             }

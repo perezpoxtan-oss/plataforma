@@ -77,6 +77,6 @@ Ejemplos:
 ## Cómo se aplica en cada entrega
 
 1. Antes de diseñar una pantalla o un flujo, se revisa esta lista y se anota en el PR qué reglas aplican y cómo se cumplen.
-2. Un botón con un verbo fuera de la lista del punto 4 no se integra.
+2. Un botón con un verbo fuera de la lista del punto 4 no se integra. La prueba `DiezVerbosTest` revisa todos los botones de enviar de las pantallas; si hace falta texto de apoyo, va después del verbo con « · » (por ejemplo **Aprobar · que pase**, **Rechazar · que espere**, **Atender · listo**).
 3. Un flujo que deja algo «esperando» sin campana, Mis pendientes, reloj y suplente (puntos 1 y 3) no se integra.
 4. Las excepciones las aprueba el dueño del proyecto y quedan anotadas en el documento técnico del módulo.

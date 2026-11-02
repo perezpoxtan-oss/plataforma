@@ -1,6 +1,6 @@
 # Proveedores / Empresas Externas
 
-Réplica de `modules/proveedores` de SEGCAT (`proveedor_lista.php`, `proveedor_alta_modal.php`, `proveedor_modal_editar.php`, `proveedor_ficha.php`, `proveedor_proceso.php`). Se conservan los textos ("Empresas Externas", "Registrar Empresa Externa", "Nueva Empresa Externa", "ACTIVA" / "BAJA / VETADA", "N de M sedes"), el color esmeralda (`#10b981`), las píldoras de categoría con sus íconos y las insignias verde (proveedor), azul (agencias y transporte) y naranja (contratista).
+Réplica de `modules/proveedores` de SEGCAT (`proveedor_lista.php`, `proveedor_alta_modal.php`, `proveedor_modal_editar.php`, `proveedor_ficha.php`, `proveedor_proceso.php`). Se conservan los textos ("Empresas Externas", "Guardar empresa Externa", "Nueva Empresa Externa", "ACTIVA" / "BAJA / VETADA", "N de M sedes"), el color esmeralda (`#10b981`), las píldoras de categoría con sus íconos y las insignias verde (proveedor), azul (agencias y transporte) y naranja (contratista).
 
 Código: `App\Http\Controllers\Padrones\ProveedorController`, `App\Services\Padrones\AdministradorProveedores`, vistas en `resources/views/padrones/proveedores/` (`index`, `show`, `_campos`, `_sedes`, `_alta-rapida`).
 

@@ -88,7 +88,7 @@ class CandidatosFase2Test extends TestCase
         $this->jefa = $this->crearUsuario($this->empresa, 'Jefe de departamento', $this->centro);
         [$this->recepcion, $this->cocina] = $this->enEmpresa(fn () => [Departamento::create(['nombre' => 'Recepción']), Departamento::create(['nombre' => 'Cocina'])]);
         $this->responsable($this->recepcion, $this->jefa);
-        // La caseta deja pasar directo (el «Que pase» se prueba en la fase 1)
+        // La caseta deja pasar directo (el «Aprobar · que pase» se prueba en la fase 1)
         $this->rhAutorizaPaso(false);
     }
 
@@ -316,10 +316,10 @@ class CandidatosFase2Test extends TestCase
         $this->assertSame(['considerar', 'Se eligió a otra persona para esta vacante'], [$laura->etapa, $laura->motivo_descarte]);
         $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->rh->id)->where('titulo', 'Elegido por el departamento: Juan Pérez Chan')->exists()));
         $cubierta = $this->enEmpresa(fn () => Notificacion::where('user_id', $this->rh->id)->where('titulo', 'Vacante cubierta: «Recepcionista»')->sole());
-        // ADR-0010: el aviso trae el botón «Cerrar como cubierta»; al usarlo la vacante se cierra y el aviso pierde el botón
-        $this->assertSame(['Cerrar como cubierta', route('vacantes.estado', $vacante->id), 'PATCH', 'cubierta'],
+        // ADR-0010: el aviso trae el botón «Dar de baja · cerrar como cubierta»; al usarlo la vacante se cierra y el aviso pierde el botón
+        $this->assertSame(['Dar de baja · cerrar como cubierta', route('vacantes.estado', $vacante->id), 'PATCH', 'cubierta'],
             [$cubierta->acciones[0]['etiqueta'], $cubierta->acciones[0]['url'], $cubierta->acciones[0]['campos']['_method'], $cubierta->acciones[0]['campos']['cierre_motivo']]);
-        $this->actingAs($this->rh)->get('/notificaciones')->assertOk()->assertSee('Cerrar como cubierta');
+        $this->actingAs($this->rh)->get('/notificaciones')->assertOk()->assertSee('Dar de baja · cerrar como cubierta');
         $this->actingAs($this->rh)->post($cubierta->acciones[0]['url'], $cubierta->acciones[0]['campos'])->assertSessionHas('ok', fn ($m) => str_contains($m, 'cubierta'));
         $this->assertSame(['cerrada', 'cubierta'], [$vacante->fresh()->estado, $vacante->fresh()->cierre_motivo]);
         $this->assertNull($cubierta->fresh()->acciones);

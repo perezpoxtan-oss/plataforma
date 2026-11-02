@@ -16,7 +16,7 @@ Usa la empresa de práctica con `admin.demo` (Administrador), `director.demo` (D
 
 ## Práctica 1 · El índice (admin.demo)
 
-1. **Estructura → Configuración**. Lee la **Versión instalada** y los botones de sección: General, Caseta y accesos, Recepción y RR. HH., Novedades, Activos, Transporte, Pases de salida, Avisos por correo y Cuentas y seguridad.
+1. **Estructura → Configuración**. Lee la **Versión instalada** y los botones de sección: General, Caseta y accesos, Estructura, Recepción y RR. HH., Novedades, Activos, Transporte, Pases de salida, Avisos por correo y Cuentas y seguridad.
 2. Toca **Avisos por correo**: ves cada módulo con «encendidos» o «apagados». Toca **Pases de salida** en esa lista y llegas a sus casillas.
 
 3. En **General** está la tarjeta **Configura tu empresa** (lección 49): con **Mostrar en Inicio** / **Ocultar de Inicio** decides si la guía se ve en Inicio.
@@ -37,7 +37,7 @@ Comprueba: cada sección tiene su título subrayado y sus tarjetas; debajo de ca
 
 ## Práctica 4 · Recordatorio de procedimientos y nombres del menú (admin.demo)
 
-1. En **Caseta y accesos → Procedimientos** cambia **Recordar cada** a **7** días y toca **Guardar**. Regrésalo a 3 con **Restablecer valor original**.
+1. En la sección de la bitácora (**Novedades**) → **Procedimientos: acuse «Leí y entendí» y recordatorio** cambia **Recordar cada** a **7** días y toca **Guardar**. Regrésalo a 3 con **Restablecer valor original**.
 2. En **General → Nombres en el menú** abre **Avanzado**, escribe «Rutas del personal» junto a *Rutas de transporte* y toca **Guardar**. Abre el menú **Padrones**: ya dice «Rutas del personal».
 3. Toca **Restablecer valor original** en esa tarjeta.
 

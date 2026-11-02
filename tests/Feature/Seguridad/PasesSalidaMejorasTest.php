@@ -261,7 +261,7 @@ class PasesSalidaMejorasTest extends TestCase
         $this->assertSame(['firmas_caseta' => ['salida' => ['todos' => 'seguridad', 'motivos' => ['reparacion' => 'dos']], 'regreso' => ['todos' => 'ninguna']]], $guardado);
         $this->actingAs($this->admin)->get('/pases-salida/circuito')->assertOk()
             ->assertSee('<option value="seguridad" selected>Solo Seguridad</option>', false);
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Firmas en caseta · Registrar Salida: Solo Seguridad · Reparación: Dos firmas (persona y Seguridad)');
+        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Firmas en caseta · Dar salida: Solo Seguridad · Reparación: Dos firmas (persona y Seguridad)');
 
         // Préstamo hacia otra sede: salida solo Seguridad, llegada y salida de regreso dos firmas, regreso sin firma
         $pase = $this->crearPase();
@@ -269,7 +269,7 @@ class PasesSalidaMejorasTest extends TestCase
         $this->aprobarTodo($pase);
         $this->actingAs($this->admin)->get('/pases-salida/'.$pase->id)->assertOk()
             ->assertSee('En este pase, este movimiento solo pide la firma de Seguridad.')->assertDontSee('firma_persona_pase')
-            ->assertSee('Firmas en caseta')->assertSee('Registrar Salida: Solo Seguridad · Registrar Regreso: Sin firma');
+            ->assertSee('Firmas en caseta')->assertSee('Dar salida: Solo Seguridad · Recibir de regreso: Sin firma');
         // La verificación de artículos sigue siendo obligatoria
         $this->paso($pase, null, ['verificados' => []], ['persona_nombre', 'firma_persona'])->assertSessionHasErrors('verificados');
         $this->paso($pase, null, [], ['firma'])->assertSessionHasErrors('firma');
@@ -301,7 +301,7 @@ class PasesSalidaMejorasTest extends TestCase
 
         // Validación
         $this->configurar(['rechazo' => 'inicio', 'firmas_caseta' => ['salida' => ['todos' => 'tres']]])
-            ->assertSessionHasErrors(['firmas_caseta.salida.todos' => 'Elige las firmas de «Registrar Salida».']);
+            ->assertSessionHasErrors(['firmas_caseta.salida.todos' => 'Elige las firmas de «Dar salida».']);
         $this->configurar(['rechazo' => 'otro'])->assertSessionHasErrors(['rechazo' => 'Elige qué pasa al corregir y reenviar un pase rechazado.']);
     }
 
@@ -511,7 +511,7 @@ class PasesSalidaMejorasTest extends TestCase
         $this->salidaHaceDias($pase, $agente);
         $llega = $this->notificaciones($agentePlaya, 'pase_llega')->sole();
         $this->assertSame('Un pase viene a tu sede: PS-000001', $llega->titulo);
-        $this->assertStringContainsString('«Confirmar llegada a esta sede»', $llega->texto);
+        $this->assertStringContainsString('«Recibir en esta sede»', $llega->texto);
         $this->assertCount(0, $this->notificaciones($agente, 'pase_llega'));
         $this->paso($pase, $agentePlaya)->assertSessionHasNoErrors();
         $this->assertNotNull($this->notificaciones($agentePlaya, 'pase_llega')->sole()->leida_en);
@@ -562,7 +562,7 @@ class PasesSalidaMejorasTest extends TestCase
         $this->actingAs($agentePlaya)->get('/pases-salida?filtro=llegan')->assertOk()
             ->assertSee('id="pase-'.$haciaPlaya->id.'"', false)->assertDontSee('id="pase-'.$alProveedor->id.'"', false)
             ->assertDontSee('id="pase-'.$haciaCentro->id.'"', false)->assertDontSee('id="pase-'.$pendiente->id.'"', false)
-            ->assertSee('Viene a Sede PLA: aún no sale de Sede CEN.')->assertSee('Cuando llegue, toca «Confirmar llegada a esta sede».');
+            ->assertSee('Viene a Sede PLA: aún no sale de Sede CEN.')->assertSee('Cuando llegue, toca «Recibir en esta sede».');
         // Centro solo ve lo que va a Centro
         $this->actingAs($agenteCentro)->get('/pases-salida?filtro=llegan')->assertOk()
             ->assertSee('id="pase-'.$haciaCentro->id.'"', false)->assertDontSee('id="pase-'.$haciaPlaya->id.'"', false);
@@ -573,9 +573,9 @@ class PasesSalidaMejorasTest extends TestCase
         $this->paso($haciaPlaya)->assertSessionHasNoErrors();
         $this->actingAs($agentePlaya)->get('/pases-salida?filtro=llegan')->assertSee('En camino a Sede PLA.')->assertSee('Ver / Confirmar llegada a destino');
         $this->actingAs($agentePlaya)->get('/pases-salida/'.$haciaPlaya->id)->assertOk()
-            ->assertSee('Confirmar llegada a esta sede')->assertSee('Caseta de Sede PLA (destino): «Confirmar llegada a esta sede» cuando llegue.');
+            ->assertSee('Recibir en esta sede')->assertSee('Caseta de Sede PLA (destino): «Recibir en esta sede» cuando llegue.');
         $this->paso($haciaPlaya, $agentePlaya)->assertSessionHasNoErrors();
-        $this->actingAs($agentePlaya)->get('/pases-salida/'.$haciaPlaya->id)->assertSee('Autorizar salida de regreso');
+        $this->actingAs($agentePlaya)->get('/pases-salida/'.$haciaPlaya->id)->assertSee('Dar salida de regreso');
         // Ya llegó: sale de la lista
         $this->actingAs($agentePlaya)->get('/pases-salida?filtro=llegan')->assertDontSee('id="pase-'.$haciaPlaya->id.'"', false)
             ->assertSee('No viene ningún pase a tu sede.');

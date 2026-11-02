@@ -105,7 +105,7 @@
             </div>
 
             <button type="submit" class="acceso-boton">
-                Autenticar Ingreso <i class="bi bi-arrow-right-short fs-5" aria-hidden="true"></i>
+                Entrar <i class="bi bi-arrow-right-short fs-5" aria-hidden="true"></i>
             </button>
 
             <p class="acceso-enlace-ayuda"><a href="{{ route('contrasena.olvide') }}">Olvidé mi contraseña</a></p>

@@ -58,7 +58,7 @@ class UsuariosTest extends TestCase
 
         $this->actingAs($this->admin)->get('/usuarios')
             ->assertOk()
-            ->assertSee('Usuarios Operativos')
+            ->assertSee('<h1>Usuarios</h1>', false)
             ->assertSee($otro->name)
             ->assertDontSee($ajeno->name)
             ->assertSee('Nuevo Usuario');

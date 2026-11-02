@@ -31,8 +31,8 @@ resumen: Prestar una llave a un colaborador, a una persona externa o a una empre
 2. Revisa la **Sede**; si solo tienes una, ya viene elegida.
 3. **Escanea la llave**: el QR del llavero con la cámara, su etiqueta NFC, el lector USB, o escribe su nombre (por ejemplo `HDC-101`) y elígela.
 4. En **Solicitante (¿a quién se le presta?)** deja **Colaborador** y **escanea su gafete**, o escribe su número de nómina o su nombre y elígelo. Si es alguien de fuera, toca **Persona externa** o **Empresa externa** (ver «Cómo prestar a alguien de fuera»). En condominio y fraccionamiento la primera opción se llama **Residente o personal**: ahí se busca igual a un residente o a alguien de la administración.
-5. Elige la **ID Dejada en Garantía**: Gafete interno, INE, Licencia, Pasaporte o **Ninguna (Riesgo)**. Con **Gafete interno**, el **Folio** se llena solo con el número del gafete que escaneaste; con las demás, si quieres, escribe el folio o un detalle.
-6. Toca **Registrar y Capturar Siguiente**.
+5. Elige la **ID Dejada en Garantía**: Credencial de empleado, INE, Licencia, Pasaporte o **Ninguna (Riesgo)**. Con **Credencial de empleado**, el **Folio** se llena solo con el número de la credencial que escaneaste; con las demás, si quieres, escribe el folio o un detalle.
+6. Toca **Guardar y capturar siguiente**.
 
 ![Prestar una llave](img/prestamo-llaves/prestar.png)
 
@@ -46,7 +46,7 @@ Para el técnico del elevador, un contratista o una empresa que se hace responsa
 
 1. En **Solicitante (¿a quién se le presta?)** toca **Persona externa** (alguien del [Padrón de personas](personas.md), por ejemplo el personal de un proveedor) o **Empresa externa** (ver [Empresas externas](proveedores.md)).
 2. Escribe al menos dos letras de su nombre y toca su renglón.
-3. Sigue con la garantía y toca **Registrar y Capturar Siguiente**.
+3. Sigue con la garantía y toca **Guardar y capturar siguiente**.
 
 **Qué debes ver:** la ficha dice su nombre y su empresa, por ejemplo «Juan Pérez (Elevadores del Sur)». Si no aparece en la lista, regístralo primero en la caseta o en el padrón. Quien tiene el **acceso restringido** aparece en gris y no se puede elegir.
 
@@ -55,7 +55,7 @@ Para el técnico del elevador, un contratista o una empresa que se hace responsa
 En el [Catálogo de llaves](llaves.md) una llave puede tener **fecha de caducidad**, **horarios**, un **departamento o puesto** al que va dirigida o un **responsable permanente**. Si al prestarla no se cumple alguna, aparece un aviso amarillo, por ejemplo «La llave HDC-101 no cumple sus reglas: está VENCIDA desde el 10/10/2026».
 
 1. Si de verdad se debe prestar, escribe el motivo en **Prestar de todos modos: motivo** (por ejemplo, quién lo autorizó).
-2. Toca **Registrar y Capturar Siguiente** otra vez.
+2. Toca **Guardar y capturar siguiente** otra vez.
 
 **Qué debes ver:** la ficha dice **Prestada por excepción: …** y el motivo queda en el historial de cambios.
 
@@ -158,7 +158,7 @@ La pantalla se acomoda al celular: una ficha por renglón y la ventana de prést
 
 ## Preguntas frecuentes
 
-- **¿Puedo prestar varias llaves seguidas?** Sí: la ventana se queda abierta con **Registrar y Capturar Siguiente**.
+- **¿Puedo prestar varias llaves seguidas?** Sí: la ventana se queda abierta con **Guardar y capturar siguiente**.
 - **¿Y recibir varias seguidas?** Sí: escanea una tras otra en **Recibir: escanea la llave que te devuelven**.
 - **¿Quién decide cuántas horas puede estar fuera una llave?** El administrador, en **Configuración → Activos** (ver [Configuración](configuracion.md)).
 - **¿Qué pasa si el colaborador no deja identificación?** Elige **Ninguna (Riesgo)**; queda anotado.

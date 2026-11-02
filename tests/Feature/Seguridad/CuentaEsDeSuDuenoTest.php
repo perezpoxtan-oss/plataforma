@@ -307,7 +307,7 @@ class CuentaEsDeSuDuenoTest extends TestCase
         $this->assertFalse(Notificacion::withoutGlobalScopes()->where('user_id', $sa2->id)->where('tipo', 'cuenta_solicitud')->exists());
 
         $this->actingAs($sa1)->get('/')->assertOk()->assertSee('Super Administradores que piden ayuda');
-        $this->actingAs($sa1)->get('/configuracion')->assertOk()->assertSee('Piden ayuda:')->assertSee('Quitar sus dos pasos');
+        $this->actingAs($sa1)->get('/configuracion')->assertOk()->assertSee('Piden ayuda:')->assertSee('Dar de baja sus dos pasos');
 
         // Con contraseña equivocada no; consigo mismo no; un administrador de empresa no
         $this->actingAs($sa1)->post(route('superadmins.dos-pasos', $sa2->id), ['contrasena_actual' => 'mala'])->assertSessionHasErrors('contrasena_actual');

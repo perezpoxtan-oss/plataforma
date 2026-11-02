@@ -72,7 +72,7 @@ class PanelRecepcion
             ->whereIn('estado', Acceso::ESTADOS_ABIERTOS)
             ->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes))
             ->orderBy('entrada_at')->limit(200)->get();
-        // Solicitudes de «Que pase» pendientes de esos accesos
+        // Solicitudes de «Aprobar · que pase» pendientes de esos accesos
         $pendientes = Autorizacion::where('tipo', 'recepcion')->where('estado', 'pendiente')->whereIn('acceso_id', $accesos->pluck('id'))
             ->pluck('id', 'acceso_id');
         // ¿Ya había venido antes? (otra visita ligada a su ficha)
@@ -141,7 +141,7 @@ class PanelRecepcion
             'espera' => $atendido ? 'atendido' : ($minutos >= $this->umbrales[1] ? 'roja' : ($minutos >= $this->umbrales[0] ? 'ambar' : 'normal')),
             'estado' => match (true) {
                 $esperandoRh && $a->autorizacion === 'espera' => 'En caseta: le pidieron que espere',
-                $esperandoRh => 'En caseta: espera que digas «Que pase»',
+                $esperandoRh => 'En caseta: espera que digas «Aprobar · que pase»',
                 $c !== null => $c->etiquetaEtapa(),
                 $a?->estado === 'pendiente' => 'Pendiente en caseta',
                 default => 'En sitio',
@@ -177,7 +177,7 @@ class PanelRecepcion
 
     /**
      * Mis pendientes de RR. HH. («Esperando en Recepción»): accesos de RR. HH.
-     * que esperan su «Que pase» más candidatos de hoy sin atender, en las
+     * que esperan su «Aprobar · que pase» más candidatos de hoy sin atender, en las
      * sedes donde puede editar candidatos.
      */
     public function porAtender(User $actor): int
@@ -193,7 +193,7 @@ class PanelRecepcion
         $sinAtender = Candidato::query()->where('etapa', 'registrado')
             ->where(fn ($q) => $q->where('llegada_en', '>=', $desde)->orWhere(fn ($x) => $x->whereNull('llegada_en')->where('created_at', '>=', $desde)))
             ->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes))
-            // Quien espera el «Que pase» ya se contó por su acceso
+            // Quien espera el «Aprobar · que pase» ya se contó por su acceso
             ->where(fn ($q) => $q->whereNull('acceso_id')->orWhereNotIn('acceso_id', $esperando->all() ?: [0]))
             ->count();
 

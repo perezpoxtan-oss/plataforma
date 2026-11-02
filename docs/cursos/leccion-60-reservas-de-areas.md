@@ -53,7 +53,7 @@ Comprueba: el área conserva su aprobación; solo Cocina vuelve a recibir el avi
 ## Práctica 4 · Orden de servicio (Cocina)
 
 1. **Mis pendientes → Órdenes de servicio por atender**.
-2. Revisa qué, cuánto, cuándo y el montaje. Toca **Listo**.
+2. Revisa qué, cuánto, cuándo y el montaje. Toca **Atender · listo**.
 
 Comprueba: en la ficha de la reserva, «Montaje: 1 de 2 departamentos listos».
 
@@ -62,7 +62,7 @@ Comprueba: en la ficha de la reserva, «Montaje: 1 de 2 departamentos listos».
 1. Reserva para **un cliente de la sede** con tarifa por evento: revisa el **Costo estimado**.
 2. Como Administrador: **Ajustar costo** → descuento 1,000, motivo «Cliente frecuente».
 3. **Imprimir**: revisa la cotización con IVA.
-4. **Cancelar reserva** con motivo.
+4. **Dar de baja la reserva** con motivo.
 
 Comprueba: los departamentos reciben «Se canceló la reserva» y el horario queda libre.
 

@@ -61,11 +61,11 @@ class Acceso extends Model
     /**
      * Proveedor o contratista que espera al departamento pero el departamento
      * no tiene responsable en la sede (accesos.autorizacion): la caseta lo
-     * pasa con «Autorizar por excepción».
+     * pasa con «Aprobar por excepción».
      */
     public const SIN_RESPONSABLE = 'sin_resp';
 
-    /** Pasó con «Autorizar por excepción» (el motivo queda en motivo_excepcion). */
+    /** Pasó con «Aprobar por excepción» (el motivo queda en motivo_excepcion). */
     public const POR_EXCEPCION = 'excepcion';
 
     /**
@@ -338,7 +338,7 @@ class Acceso extends Model
     /**
      * Proveedor o contratista pendiente que espera al departamento (con o sin
      * responsable): la caseta no lo confirma con el host; si no puede
-     * esperar, lo pasa con «Autorizar por excepción».
+     * esperar, lo pasa con «Aprobar por excepción».
      */
     public function esperaAlDepartamento(): bool
     {
@@ -354,7 +354,7 @@ class Acceso extends Model
     /** "Salida a Tour" para huéspedes; "Salida Temporal" para proveedor y contratista (textos de SEGCAT). */
     public function textoSalidaTemporal(): string
     {
-        return $this->tipo === 'huesped' ? 'Salida a Tour' : 'Salida Temporal';
+        return $this->tipo === 'huesped' ? 'Dar salida a tour' : 'Dar salida temporal';
     }
 
     /** Gafete que se muestra: la nomenclatura del momento o "S/G" (sin gafete). */

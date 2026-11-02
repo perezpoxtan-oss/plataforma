@@ -18,7 +18,7 @@ use Illuminate\Validation\ValidationException;
  *    proveedor y contratista (ESPERAN_DEPARTAMENTO). Sin el dato = sí; a las
  *    empresas que ya existían la migración les dejó guardado su valor de
  *    visitas de antes (era «no» sin el dato);
- *  - si la caseta espera a que RR. HH. diga «Que pase» a quien viene con
+ *  - si la caseta espera a que RR. HH. diga «Aprobar · que pase» a quien viene con
  *    Recursos Humanos (rh_autoriza_paso). Sin el dato = encendido: las
  *    empresas nuevas lo tienen encendido; a las que ya existían la migración
  *    de postulaciones lo dejó apagado (su caseta sigue igual hasta que lo enciendan);
@@ -150,7 +150,7 @@ class AjustesRecepcion
         return $this->sinCobertura($empresa) === 'supervisor';
     }
 
-    /** ¿La caseta espera a que RR. HH. diga «Que pase»? (por omisión, sí) */
+    /** ¿La caseta espera a que RR. HH. diga «Aprobar · que pase»? (por omisión, sí) */
     public function rhAutorizaPaso(Empresa $empresa): bool
     {
         return (bool) ($this->datos($empresa)['rh_autoriza_paso'] ?? true);
@@ -240,7 +240,7 @@ class AjustesRecepcion
      * Configuración → Privacidad desde C-37/E-09; por compatibilidad también
      * el paso de RR. HH. y los criterios si vienen), criterios (Candidatos →
      * Criterios de entrevista), esperas (Responsables por departamento:
-     * autorización de visitas y «Que pase» de RR. HH.) y escalamiento (minutos).
+     * autorización de visitas y «Aprobar · que pase» de RR. HH.) y escalamiento (minutos).
      *
      * @param  array<string, mixed>  $entrada
      * @param  list<string>  $partes
