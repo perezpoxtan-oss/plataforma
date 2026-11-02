@@ -143,3 +143,12 @@ La pantalla de Vouchers y la impresión triple viven en su propio módulo.
 ## Acción más probable al escanear fuera de un formulario (ADR-0014)
 
 `GET /e/{codigo}` consulta `App\Services\Lector\AccionesLector`: con una llave prestada ofrece **Recibir**, con una llave en caseta **Prestar** y con un equipo en una responsiva **Recibir (OK)**, en la vista `lector.acciones` (con «Solo ver la ficha»). Sin acción probable o sin permiso, redirige a `urlLector()` como antes; el gafete en uso sigue yendo directo a «Dar salida». Detalle: [caseta-y-activos.md](caseta-y-activos.md).
+
+## Etapa 8 · C-44: personas y empresas externas
+
+- `Persona` (tipo `persona`, permiso `visitantes.ver`) y `Proveedor` (tipo `proveedor`, permiso `proveedores.ver`) implementan `Identificable` con `TieneIdentificador`. Migración `2026_11_18_000100_personas_y_empresas_externas_en_el_lector`: `codigo_qr` (único, se llena a los existentes) y `etiqueta_nfc` (`unique(empresa_id, etiqueta_nfc)`); `down()` quita índices y columnas.
+- Columna legible: la empresa externa se encuentra por `rfc`. La persona **no** por el folio de su identificación (dato personal enmascarado para quien solo consulta).
+- Sin sede: `resumenLector()['sede_id']` es `null` (el padrón es de toda la empresa).
+- Fichas: botón «Código e identificación» en Personas (visible también para quien solo consulta; asignar tarjeta pide `visitantes.editar`) y en Empresas externas; «Imprimir su etiqueta» lleva a Etiquetas QR filtrada (`etiquetas_qr.ver` + permiso de imprimir del padrón). Etiquetas QR los ofrece solos («Personas externas», «Empresas externas»).
+- Regla única de tarjeta: `Identificacion::NOMBRES` agrega «la persona» y «la empresa externa».
+- Pruebas: `tests/Feature/Seguridad/EtapaOchoLectorTest.php`.

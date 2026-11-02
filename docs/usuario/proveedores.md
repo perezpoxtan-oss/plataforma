@@ -136,6 +136,16 @@ Al quitarla de tu sede, la empresa **deja de aparecer en tu lista** (solo ves la
 
 ![Ficha: flotilla](img/proveedores/06-ficha-flotilla.png)
 
+## Cómo darle un código QR o una tarjeta a una empresa
+
+Una empresa externa también puede tener su **código QR** o su **tarjeta NFC / RFID** (por ejemplo, la que trae el chofer de la transportadora).
+
+1. En la ficha de la empresa toca el botón del **código QR**. Se abre **Código e identificación**.
+2. **Imprimir su etiqueta** abre **Padrones → Etiquetas QR** ya filtrada con su nombre.
+3. En **Asignar etiqueta NFC / RFID** acerca la tarjeta al lector o escribe su número.
+
+**Qué debes ver:** la etiqueta asignada. En la caseta la empresa se encuentra escaneando su QR, su tarjeta o **escribiendo su RFC**.
+
 ## En el celular y en modo Noche
 
 ![Celular](img/proveedores/07-movil-lista.png) ![Modo Noche](img/proveedores/10-noche-lista.png)

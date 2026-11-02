@@ -24,7 +24,7 @@ resumen: Imprimir de una sola vez las etiquetas QR de llaves, gafetes, equipos, 
 ## Cómo imprimir varias etiquetas
 
 1. Entra a **Padrones → Etiquetas QR**. Se abre la pestaña **Imprimir**.
-2. Arriba toca el **tipo** (por ejemplo **Llaves**). El número junto a cada tipo dice cuántos hay.
+2. Arriba toca el **tipo** (por ejemplo **Llaves**; también hay **Personas externas** y **Empresas externas**). El número junto a cada tipo dice cuántos hay.
 3. Si quieres, escribe en **Nombre, placas, serie, número...**, elige la sede, el estatus (**Solo activos**, **Solo de baja** o **Activos y de baja**) y las fechas **Alta desde** / **hasta**. Los filtros se aplican solos al elegir o al dejar de escribir, igual que en los padrones (el botón **Buscar** queda por si lo prefieres). **Quitar filtros** los limpia.
 4. Marca las casillas de las etiquetas que quieras, o **Marcar todas**.
 5. Elige la **Plantilla** (el tamaño). Debajo se ve su medida, por ejemplo «40 × 25 mm · rollo térmico, una por página». La plataforma recuerda la última que usaste.

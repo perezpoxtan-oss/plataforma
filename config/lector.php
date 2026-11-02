@@ -6,7 +6,9 @@ use App\Models\EquipoPc;
 use App\Models\Gafete;
 use App\Models\Llave;
 use App\Models\LostFoundArticulo;
+use App\Models\Persona;
 use App\Models\Procedimiento;
+use App\Models\Proveedor;
 use App\Models\Vehiculo;
 
 /*
@@ -28,5 +30,8 @@ return [
         'lost_found' => LostFoundArticulo::class,
         'equipo_pc' => EquipoPc::class,
         'procedimiento' => Procedimiento::class,
+        // C-44: personas del padrón y empresas externas (su QR o tarjeta NFC/RFID)
+        'persona' => Persona::class,
+        'proveedor' => Proveedor::class,
     ],
 ];

@@ -53,12 +53,15 @@ class EtiquetasMasivas
         'colaborador' => 'Colaboradores',
         'lost_found' => 'Lost & Found',
         'procedimiento' => 'Procedimientos',
+        'persona' => 'Personas externas',
+        'proveedor' => 'Empresas externas',
     ];
 
     /** Ícono de cada tipo. */
     public const ICONOS = [
         'llave' => 'bi-key-fill', 'gafete' => 'bi-person-vcard', 'equipo' => 'bi-tools', 'equipo_pc' => 'bi-fire',
         'vehiculo' => 'bi-car-front-fill', 'colaborador' => 'bi-person-badge', 'lost_found' => 'bi-box-seam', 'procedimiento' => 'bi-book',
+        'persona' => 'bi-person-vcard-fill', 'proveedor' => 'bi-building',
     ];
 
     /** Relaciones que usa resumenLector() de cada tipo (sin N+1). */
@@ -68,6 +71,7 @@ class EtiquetasMasivas
         'equipo' => ['tipo:id,nombre', 'sede:id,nombre'],
         'equipo_pc' => ['sede:id,nombre', 'espacio:id,nombre,ruta'],
         'colaborador' => ['puesto:id,nombre'],
+        'persona' => ['proveedor:id,nombre'],
         'lost_found' => ['sede:id,nombre'],
     ];
 
