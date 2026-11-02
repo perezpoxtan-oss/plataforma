@@ -166,7 +166,7 @@
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-rpc-verde"><i class="bi bi-play-circle-fill me-1" aria-hidden="true"></i>Iniciar Recorrido</button>
+                            <button type="submit" class="btn-rpc-verde"><i class="bi bi-play-circle-fill me-1" aria-hidden="true"></i>Guardar e iniciar recorrido</button>
                         </div>
                     </form>
                 </div>

@@ -59,7 +59,7 @@ Motivos (`MotivosVisita`): «Visita a colaborador» y «Visita a departamento» 
 |---|---|---|
 | Persona con cuenta (personal) | **La persona** (`autorizaciones.colaborador_id`, migración `2026_11_14_000300`). Si no contesta, el escalamiento pasa a los responsables de su departamento (suplente) y al jefe de seguridad. Proveedor y contratista siempre; visitas, si la empresa pide autorización (si no, aviso `visita_llego`). | `RecepcionEnCaseta::preparar()`, `Autorizaciones::solicitarVisita()`, `Escalamiento::aQuienEscalar()` |
 | Persona sin cuenta o área | El responsable del departamento, como antes (C-08, DD-11). | sin cambio |
-| Residente, vivienda o «sin catálogo» (residenciales); huésped (hotel) | **La caseta llama**: «Llamé y autorizó · dejar pasar» (`llamada=autorizo` → en sitio, `autorizacion=llamada`, quién y cuándo) o «No autorizó» (`llamada_no` → finalizado, sin gafete). Auditoría `accesos.llamada_*`. Sin `llamada` en la petición (formularios de antes), sigue la regla de siempre. | `RegistroAccesos::registrar()` |
+| Residente, vivienda o «sin catálogo» (residenciales); huésped (hotel) | **La caseta llama**: «Aprobar · llamé y autorizó» (`llamada=autorizo` → en sitio, `autorizacion=llamada`, quién y cuándo) o «No autorizó» (`llamada_no` → finalizado, sin gafete). Auditoría `accesos.llamada_*`. Sin `llamada` en la petición (formularios de antes), sigue la regla de siempre. | `RegistroAccesos::registrar()` |
 
 La persona citada responde su propia visita sin la bandeja de Autorizaciones: `Autorizaciones::esLaPersonaCitada()`, `limitar()` y `pendientesPara()` la incluyen; Mis pendientes la cuenta en «Autorizaciones por responder» y la lleva a la solicitud. Es una regla de **pertenencia** (como Mi cuenta), no de rol.
 

@@ -49,7 +49,7 @@ Los botones usan diez verbos, siempre con el mismo sentido:
 | **Recibir** | Que regrese o se devuelva. |
 | **Aprobar** | Autorizar, dar el visto bueno o dejar pasar. |
 | **Rechazar** | No autorizar (o «que espere»). |
-| **Atender** | Hacerse cargo de algo que espera («Listo», «Ya lo revisé», «Reembolso entregado»). |
+| **Atender** | Hacerse cargo de algo que espera («Listo», «Ya lo revisé», «Reembolso entregado»: el botón dice, por ejemplo, **Atender · listo**). |
 | **Canalizar** | Mandar el asunto a otra persona o departamento. |
 <!-- fin sin cambiar -->
 

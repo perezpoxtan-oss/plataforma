@@ -418,14 +418,14 @@ class CandidatosFase3Test extends TestCase
         $this->actingAs($this->rh)->get("/candidatos/{$vieja->id}")->assertOk()->assertSee('Postulación archivada');
         $this->assertTrue(Auditoria::where('evento', 'candidatos.archivada')->exists());
 
-        // Aviso de borrado: fecha a 15 días, campana con «Conservar 6 meses más», lista «Por caducar»
+        // Aviso de borrado: fecha a 15 días, campana con «Guardar 6 meses más», lista «Por caducar»
         $olvidada->refresh();
         $this->assertSame(now()->addDays(CaducidadCandidatos::DIAS_AVISO)->toDateString(), $olvidada->borrar_en->toDateString());
         $aviso = $this->enEmpresa(fn () => Notificacion::where('user_id', $this->rh->id)->where('tipo', 'caducidad_candidato')->sole());
-        $this->assertSame('Conservar 6 meses más', $aviso->acciones[0]['etiqueta']);
+        $this->assertSame('Guardar 6 meses más', $aviso->acciones[0]['etiqueta']);
         Mail::assertSent(AvisoRecepcion::class, fn ($m) => $m->hasTo($this->rh->email));
         $this->actingAs($this->rh)->get('/candidatos?caducar=1')->assertOk()->assertSee('Hugo Balam Poot')->assertSee('Se borra el '.$olvidada->borrar_en->format('d/m/Y'))->assertDontSee('Pedro Uicab Noh');
-        $this->actingAs($this->rh)->get("/candidatos/{$olvidada->id}")->assertOk()->assertSee('Esta ficha se borrará el')->assertSee('Conservar 6 meses más');
+        $this->actingAs($this->rh)->get("/candidatos/{$olvidada->id}")->assertOk()->assertSee('Esta ficha se borrará el')->assertSee('Guardar 6 meses más');
         $this->assertNull($contratado->fresh()->borrar_en, 'El contratado no caduca');
 
         // Conservar: corre la fecha 6 meses, resuelve el aviso y queda en la bitácora; el agente no puede

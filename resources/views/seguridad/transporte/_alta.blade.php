@@ -197,7 +197,7 @@
 
             <div class="dialogo-acciones transporte-acciones">
                 <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                <button type="submit" name="_siguiente" value="1" class="btn-siguiente"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i><span class="d-none d-sm-inline">Registrar y capturar siguiente</span><span class="d-sm-none">Y capturar otro</span></button>
+                <button type="submit" name="_siguiente" value="1" class="btn-siguiente"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i><span class="d-none d-sm-inline">Guardar y capturar siguiente</span><span class="d-sm-none">Y capturar otro</span></button>
                 <button type="submit" class="btn-transporte">Guardar Registro Operativo</button>
             </div>
         </form>

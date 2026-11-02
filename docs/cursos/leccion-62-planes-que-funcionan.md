@@ -39,7 +39,7 @@ Comprueba: dice **Esto no viene en tu plan (Esencial)** y tiene el botón **Ver 
 ## Práctica 3 · Elegir el motivo de la visita (Operador de caseta)
 
 1. **Operación → Caseta → Bitácora de accesos → Nuevo Ingreso → Personal Externo**.
-2. Escribe el nombre y toca **Registrar y dejar pasar** sin elegir motivo. Lee el mensaje.
+2. Escribe el nombre y toca **Guardar y dejar pasar** sin elegir motivo. Lee el mensaje.
 3. Elige **Visita general**, escribe «Mensajería» en **¿A quién o a qué viene?** y registra.
 
 Comprueba: primero sale «Elige el motivo de la visita.»; después la tarjeta en **Gente en Sitio** dice **Viene a: MENSAJERÍA**. En el plan Esencial no aparece el motivo **Recursos Humanos**.

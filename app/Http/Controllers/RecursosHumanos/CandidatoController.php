@@ -569,7 +569,7 @@ class CandidatoController extends Controller
         });
     }
 
-    /** «Conservar 6 meses más» (caducidad): desde la ficha o el botón de la campana. */
+    /** «Guardar 6 meses más» (caducidad): desde la ficha o el botón de la campana. */
     public function conservar(Request $request, int $candidato): RedirectResponse
     {
         Gate::authorize('candidatos.editar');

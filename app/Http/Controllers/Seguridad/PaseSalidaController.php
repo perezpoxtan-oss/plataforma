@@ -169,7 +169,7 @@ class PaseSalidaController extends Controller
 
         $pase = $this->tenant->conEmpresa($empresaId, fn () => $this->pases->crear($request->user(), $request->all()));
 
-        // "Registrar y capturar siguiente": vuelve a la lista con el diálogo abierto
+        // "Guardar y capturar siguiente": vuelve a la lista con el diálogo abierto
         if ($request->boolean('siguiente')) {
             return redirect()->route('pases-salida.index', ['nuevo' => 1])
                 ->with('ok', "Pase {$pase->folio} registrado y enviado a aprobación. Captura el siguiente.");

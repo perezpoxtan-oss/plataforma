@@ -169,7 +169,7 @@
             @if ($puede['editar'])
                 <form action="{{ route('candidatos.conservar', $c->id) }}" method="POST" class="m-0">
                     @csrf
-                    <button type="submit" class="btn-secundario-rh"><i class="bi bi-shield-check me-1" aria-hidden="true"></i>Conservar {{ $mesesConservar }} meses más</button>
+                    <button type="submit" class="btn-secundario-rh"><i class="bi bi-shield-check me-1" aria-hidden="true"></i>Guardar {{ $mesesConservar }} meses más</button>
                 </form>
             @endif
         </div>
@@ -185,7 +185,7 @@
             <div class="flex-grow-1"><strong>El candidato llenó su CV en el kiosco</strong> (@fecha($c->autocaptura_en)). Revisa sus datos y documentos.</div>
             <form action="{{ route('candidatos.revisado', $c->id) }}" method="POST" class="m-0">
                 @csrf
-                <button type="submit" class="btn-azul btn-accion-rh">Ya lo revisé</button>
+                <button type="submit" class="btn-azul btn-accion-rh">Atender · ya lo revisé</button>
             </form>
         </div>
     @endif
@@ -347,7 +347,7 @@
                     @if ($enlace)
                         <form action="{{ route('candidatos.enlace.revocar', $c->id) }}" method="POST" class="m-0 mt-2 text-end" data-confirmar="¿Anular el enlace? El candidato ya no podrá usarlo.">
                             @csrf
-                            <button type="submit" class="enlace-discreto">Anular enlace</button>
+                            <button type="submit" class="enlace-discreto">Dar de baja el enlace</button>
                         </form>
                     @endif
                 </section>
@@ -493,7 +493,7 @@
                         <input type="file" name="documento" class="campo mb-2" accept="application/pdf,image/jpeg,image/png" required aria-label="Archivo (PDF, JPG o PNG, máximo 5 MB)">
                         @error('documento')<p class="texto-error-rh">{{ $message }}</p>@enderror
                         @error('tipo')<p class="texto-error-rh">{{ $message }}</p>@enderror
-                        <button type="submit" class="btn-secundario-rh w-100"><i class="bi bi-upload me-1" aria-hidden="true"></i>Subir (PDF, JPG o PNG · máx. 5 MB)</button>
+                        <button type="submit" class="btn-secundario-rh w-100"><i class="bi bi-upload me-1" aria-hidden="true"></i>Guardar documento (PDF, JPG o PNG · máx. 5 MB)</button>
                     </form>
                 @endif
             </section>
@@ -862,7 +862,7 @@
                     @endif
                     <div class="dialogo-acciones">
                         <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                        <button type="submit" class="btn-verde">Dar de alta como colaborador</button>
+                        <button type="submit" class="btn-verde">Guardar como colaborador</button>
                     </div>
                 </form>
             </div>

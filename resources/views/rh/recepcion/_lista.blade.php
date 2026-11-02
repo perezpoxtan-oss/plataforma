@@ -1,5 +1,5 @@
 {{-- Lista del panel de Recepción (se vuelve a pintar cada 15 s). $filas, $puede
-     Botones: «Que pase y lo atiendo» / «Que pase» (si su acceso espera a RR. HH.), «Atender» (= Con RR. HH., para
+     Botones: «Aprobar y atender» / «Aprobar · que pase» (si su acceso espera a RR. HH.), «Atender» (= Con RR. HH., para
      quien ya pasó o llegó sin esperar el paso) y «Abrir ficha». El QR del kiosco vive en la ficha y en el Modo kiosco. --}}
 @forelse ($filas as $f)
     <article class="fila-recepcion espera-{{ $f['espera'] }}">
@@ -35,16 +35,16 @@
                     <input type="hidden" name="respuesta" value="pase">
                     <input type="hidden" name="volver" value="recepcion">
                     @if ($f['candidato_id'] && $f['etapa'] === 'registrado' && $puede['editar'])
-                        {{-- Que pase + Atender en un paso (queda «Con RR. HH.»); «Que pase» a secas lo deja «Por atender» --}}
-                        <button type="submit" name="atender" value="1" class="btn-verde btn-accion-rh"><i class="bi bi-door-open-fill me-1" aria-hidden="true"></i>Que pase y lo atiendo</button>
-                        <button type="submit" name="atender" value="0" class="btn-secundario-rh">Que pase</button>
+                        {{-- Que pase + Atender en un paso (queda «Con RR. HH.»); «Aprobar · que pase» a secas lo deja «Por atender» --}}
+                        <button type="submit" name="atender" value="1" class="btn-verde btn-accion-rh"><i class="bi bi-door-open-fill me-1" aria-hidden="true"></i>Aprobar y atender</button>
+                        <button type="submit" name="atender" value="0" class="btn-secundario-rh">Aprobar · que pase</button>
                     @else
-                        <button type="submit" class="btn-verde btn-accion-rh"><i class="bi bi-door-open-fill me-1" aria-hidden="true"></i>Que pase</button>
+                        <button type="submit" class="btn-verde btn-accion-rh"><i class="bi bi-door-open-fill me-1" aria-hidden="true"></i>Aprobar · que pase</button>
                     @endif
                 </form>
-                <a href="{{ route('autorizaciones.show', $f['autorizacion_id']) }}" class="btn-otra-respuesta">Que espere / No puede pasar</a>
+                <a href="{{ route('autorizaciones.show', $f['autorizacion_id']) }}" class="btn-otra-respuesta">Rechazar · que espere o no puede pasar</a>
             @endif
-            {{-- Mientras espera el paso, «Atender» va dentro de «Que pase y lo atiendo» --}}
+            {{-- Mientras espera el paso, «Atender» va dentro de «Aprobar y atender» --}}
             @if ($f['candidato_id'] && $f['etapa'] === 'registrado' && $puede['editar'] && ! $f['autorizacion_id'])
                 <form action="{{ route('candidatos.etapa', $f['candidato_id']) }}" method="POST" class="m-0">
                     @csrf

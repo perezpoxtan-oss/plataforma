@@ -129,7 +129,7 @@
                             @endif
                             @if ($reembolsable)
                                 <button type="button" class="btn-ver-voucher recuperado" data-accion="voucher-reembolso" data-url="{{ route('vouchers.reembolso', $v->id) }}"
-                                        data-id="{{ $v->id }}" data-folio="{{ $v->folio }}" data-cobro="{{ '$'.number_format((float) $v->monto, 2) }}"><i class="bi bi-cash-coin" aria-hidden="true"></i> Reembolso entregado</button>
+                                        data-id="{{ $v->id }}" data-folio="{{ $v->folio }}" data-cobro="{{ '$'.number_format((float) $v->monto, 2) }}"><i class="bi bi-cash-coin" aria-hidden="true"></i> Atender · reembolso entregado</button>
                             @endif
                         </div>
                     @endif
@@ -174,7 +174,7 @@
             <div class="mt-4">{{ $vouchers->onEachSide(1)->links('pagination::bootstrap-5') }}</div>
         @endif
 
-        {{-- Ronda 6 (GV-04): el artículo apareció → «Recuperado»; si ya se había cobrado, después «Reembolso entregado» --}}
+        {{-- Ronda 6 (GV-04): el artículo apareció → «Recuperado»; si ya se había cobrado, después «Atender · reembolso entregado» --}}
         @php
             $dialogoR6 = old('_dialogo');
             $recuperarId = is_string($dialogoR6) && str_starts_with($dialogoR6, 'recuperar-') ? (int) substr($dialogoR6, 10) : null;
@@ -215,7 +215,7 @@
                         <textarea id="recuperado_comentario" name="comentario" class="campo" rows="2" maxlength="500" placeholder="Ej: lo entregó el área de Ama de Llaves">{{ $vRecuperar ? old('comentario') : '' }}</textarea>
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-gafetes"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Confirmar recuperado</button>
+                            <button type="submit" class="btn-gafetes"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Atender · recuperado</button>
                         </div>
                     </form>
                 </div>
@@ -239,7 +239,7 @@
                         <textarea id="reembolso_comentario" name="comentario" class="campo" rows="2" maxlength="500" placeholder="Ej: reembolsado en la nómina del 15">{{ $vReembolso ? old('comentario') : '' }}</textarea>
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-gafetes"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Reembolso entregado</button>
+                            <button type="submit" class="btn-gafetes"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Atender · reembolso entregado</button>
                         </div>
                     </form>
                 </div>
@@ -270,7 +270,7 @@
                         <p class="campo-ayuda">Se guarda en un lugar privado: solo la ve quien puede consultar este voucher.</p>
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-gafetes"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Registrar firmado en papel</button>
+                            <button type="submit" class="btn-gafetes"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i>Guardar firmado en papel</button>
                         </div>
                     </form>
                 </div>

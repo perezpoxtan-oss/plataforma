@@ -93,7 +93,7 @@
             @if ($puede['crear'])
                 <button type="button" class="ficha-card ficha-create" data-abrir-dialogo="dialogoLoteGafetes">
                     <i class="bi bi-plus-circle-fill" aria-hidden="true"></i>
-                    <span class="h6 fw-bold m-0 mt-2 titulo-crear">Generar Lote</span>
+                    <span class="h6 fw-bold m-0 mt-2 titulo-crear">Guardar lote</span>
                     <span class="small text-muted mt-1">De 1 a 50 gafetes por sede y tipo</span>
                 </button>
             @endif
@@ -205,7 +205,7 @@
                     <p class="fw-semibold mb-1">Todavía no hay gafetes{{ $sedesFiltro->count() === 1 ? ' en tu sede' : '' }}.</p>
                     <p class="text-muted small m-0">
                         @if ($puede['crear'])
-                            Presiona <strong>«Generar Lote»</strong> para crear los primeros: eliges sede, tipo y cuántos.
+                            Presiona <strong>«Guardar lote»</strong> para crear los primeros: eliges sede, tipo y cuántos.
                         @else
                             Cuando se generen aparecerán aquí.
                         @endif
@@ -275,7 +275,7 @@
 
                             <div class="dialogo-acciones">
                                 <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                                <button type="submit" class="btn-gafetes">Generar Lote</button>
+                                <button type="submit" class="btn-gafetes">Guardar lote</button>
                             </div>
                         </form>
                     @endif

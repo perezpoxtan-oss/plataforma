@@ -125,7 +125,7 @@ class MejorasPadronesTest extends TestCase
         $this->assertCount(0, $this->avisos($this->agente, 'alta_por_verificar'));
         $aviso = $this->avisos($this->jefe, 'alta_por_verificar')[0];
         $this->assertSame('Alta por verificar: Luis Canché', $aviso->titulo);
-        $this->assertSame([['etiqueta' => 'Verificar', 'abrir' => true]], $aviso->acciones);
+        $this->assertSame([['etiqueta' => 'Atender', 'abrir' => true]], $aviso->acciones);
         $this->assertStringContainsString('verificacion=pendiente', (string) $aviso->url);
 
         $this->actingAs($this->jefe)->put(route('personas.rechazar', $persona->id), ['motivo_rechazo' => 'Datos inventados'])->assertRedirect();

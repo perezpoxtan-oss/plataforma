@@ -256,7 +256,7 @@
 
                     <div class="dialogo-acciones">
                         <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                        <button type="submit" class="btn-azul">{{ $esNueva ? 'Registrar Empresa' : 'Guardar Cambios' }}</button>
+                        <button type="submit" class="btn-azul">{{ $esNueva ? 'Guardar empresa' : 'Guardar Cambios' }}</button>
                     </div>
                 </form>
             </div>

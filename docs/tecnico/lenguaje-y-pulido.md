@@ -48,3 +48,28 @@ El glosario está en el manual: `docs/usuario/glosario.md` (Primeros pasos, visi
 - **Sin tocar:** Accidentes (formato, vistas, textos, «Huésped» y el anexo de **guardavidas**, que es parte del formato de Accidente y de su sección en Tendencias). El nombre del módulo **Proveedores** en la Matriz de permisos se dejó como estaba (decisión de la reorganización de menús); el menú y la pantalla ya dicen **Empresas externas**.
 - **Plural de residente:** se revisaron Residentes, Colaboradores y el manual en condominio; ninguno dice «residente(es)».
 - Prueba `EtapaSieteGlosarioTest`: ninguna palabra retirada vuelve a vistas, mensajes del código, `plataforma.js` ni el manual (fuera de comentarios y de Accidentes); el título de cada pantalla es el nombre de su menú; la migración de la sección.
+
+## C-40 · Diez verbos
+
+**Guardar, Dar de baja, Reactivar, Imprimir, Dar salida, Recibir, Aprobar, Rechazar, Atender, Canalizar** (docs/criterios-ux.md, regla 4). Cuando el verbo solo no basta, el texto de apoyo va después de « · » (patrón de «Aprobar · es el mismo», DD-20). Cambios (pantallas, mensajes, avisos, `plataforma.js`, manual, cursos y pruebas):
+
+| Antes | Ahora |
+|---|---|
+| Registrar, Crear, Registrar Empresa / Usuario / Zona / Vehículo, Crear Rol / Sección / plantilla, Agregar Piso / Área / Elemento / tipo / categoría, Generar Lote, Registrar Cierre, Despachar Ticket, Registrar firmado en papel, Registrar y (C/c)apturar siguiente, Registrar y dejar pasar | **Guardar …** (Guardar empresa, Guardar lote, Guardar ticket, Guardar y capturar siguiente, Guardar y dejar pasar…) |
+| Iniciar Recorrido / Finalizar Recorrido (DD-20: «Terminar recorrido») | Guardar e iniciar recorrido / **Guardar y terminar recorrido** |
+| Nueva versión, Firmar de enterado, Subir (PDF…), Conservar 6 meses más, Dar de alta como colaborador | Guardar como nueva versión, Guardar · firmar de enterado, Guardar documento (PDF…), Guardar 6 meses más, Guardar como colaborador |
+| Registrar Salida, Salida Final, Confirmar Salida, Salida a Tour, Salida Temporal, Autorizar salida de regreso; acompañante «Salida» / «Temporal» | **Dar salida**, Dar salida final, Dar salida a tour, Dar salida temporal, Dar salida de regreso |
+| Registrar Regreso, Confirmar Regreso, Confirmar llegada a esta sede; acompañante «Regresó» | **Recibir de regreso**, **Recibir**, Recibir en esta sede |
+| Confirmar Autorización, Autorizar ingreso, Autorizar por excepción, Que pase, Que pase y lo atiendo, Llamé y autorizó · dejar pasar, Publicar | **Aprobar ingreso**, Aprobar por excepción, **Aprobar · que pase**, **Aprobar y atender**, Aprobar · llamé y autorizó, Aprobar y publicar |
+| Que espere, No puede pasar, No autorizó, Confirmar Rechazo | **Rechazar · que espere**, Rechazar · no puede pasar, Rechazar · no autorizó, Rechazar |
+| Confirmar y Reabrir, Reanudar, Reabrir como borrador, Activar | **Reactivar ticket**, Reactivar, Reactivar como borrador, Reactivar |
+| Cancelar pase, Cancelar reserva, Cerrar vacante, Cerrar / Pausar, Cerrar como cubierta, Descartar borrador, Retirar procedimiento, Anular enlace, Quitar sus dos pasos, Desactivar | **Dar de baja el pase / la reserva / el borrador / el procedimiento / el enlace / sus dos pasos**, Dar de baja · cerrar vacante, Dar de baja · cerrar / · pausar / · cerrar como cubierta, Dar de baja |
+| Listo, Ya lo revisé, Reembolso entregado, Confirmar recuperado, Verificar (aviso de la campana) | **Atender · listo**, Atender · ya lo revisé, Atender · reembolso entregado, Atender · recuperado, Atender |
+| Enviar a revisión | **Canalizar a revisión** |
+| Guardar unión (DD-20: «Unir») | **Aprobar · es el mismo** |
+| Reimprimir | Imprimir otra vez |
+| Autenticar Ingreso | Entrar |
+
+- **Prueba automática** `Tests\Feature\Nucleo\DiezVerbosTest`: lee todos los `<button>` de enviar de las vistas Blade (sin Accidentes) y los textos de `Autorizacion::BOTONES`, `Vacante::BOTONES` y `PaseSalida::PASOS_FISICOS`; falla si un texto no empieza con uno de los diez verbos, con un verbo ya aceptado (No regresó, Restringir acceso, Quitar restricción, Liberar lugar, Canalizar al supervisor, Delegar…, Aprobar por excepción, Aprobar · es el mismo) o con algo de la **lista de exclusión** documentada en la prueba (`EXCLUIDOS`: moverse, buscar y filtrar, exportar, sesión y cuenta, respuestas de un diálogo, formularios de alguien de fuera, herramientas de la plataforma y de configuración, borrado definitivo y «No se presentó»). Agregar algo a la exclusión necesita la aprobación del dueño.
+- **Sin tocar:** Accidentes; las acciones del lector universal (`AccionesLector`, Etapa 8 las unifica con «Dar salida / Recibir»); los botones que abren un diálogo (`type="button"`), que llevan al formulario cuyo botón de enviar sí usa el verbo.
+- Las claves internas (respuestas de autorización, estados, rutas) no cambian.

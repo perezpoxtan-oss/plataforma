@@ -115,21 +115,21 @@
                     <input type="text" id="tipo_nombre" name="nombre" class="campo" maxlength="60" placeholder="Ej. Jacuzzi" required
                            data-duplicado="{{ route('espacios.duplicado') }}" data-duplicado-campo="tipo" data-duplicado-con="nivel" data-duplicado-aviso="tipo_aviso">
                 </div>
-                <div><button type="submit" class="btn-rojo" style="min-height:44px">Agregar tipo</button></div>
+                <div><button type="submit" class="btn-rojo" style="min-height:44px">Guardar tipo</button></div>
             </form>
             <div class="aviso-duplicado" id="tipo_aviso" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
         </details>
 
         @include('organizacion.espacios.partes.formulario', [
-            'id' => 'dialogoNuevaArea', 'titulo' => 'Agregar Área', 'icono' => 'bi-bounding-box text-danger',
+            'id' => 'dialogoNuevaArea', 'titulo' => 'Guardar área', 'icono' => 'bi-bounding-box text-danger',
             'nivel' => 'subarea', 'padreId' => $nodo->id, 'tipos' => $tiposArea, 'tipoObligatorio' => true, 'nombreOpcional' => true,
-            'editar' => false, 'boton' => 'Agregar Área', 'claseBoton' => 'btn-rojo', 'etiquetaNombre' => 'Etiqueta (opcional, ej. Baño principal)',
+            'editar' => false, 'boton' => 'Guardar área', 'claseBoton' => 'btn-rojo', 'etiquetaNombre' => 'Etiqueta (opcional, ej. Baño principal)',
         ])
         @include('organizacion.espacios.partes.formulario', [
-            'id' => 'dialogoNuevoElemento', 'titulo' => 'Agregar Elemento', 'icono' => 'bi-box-seam text-danger',
+            'id' => 'dialogoNuevoElemento', 'titulo' => 'Guardar elemento', 'icono' => 'bi-box-seam text-danger',
             'nivel' => 'elemento', 'padreId' => $padreElemento, 'padreNombre' => $nombrePadreElemento,
             'tipos' => $tiposElemento, 'tipoObligatorio' => true, 'nombreOpcional' => true,
-            'editar' => false, 'boton' => 'Agregar Elemento', 'claseBoton' => 'btn-rojo', 'etiquetaNombre' => 'Etiqueta (opcional, ej. Cama King)',
+            'editar' => false, 'boton' => 'Guardar elemento', 'claseBoton' => 'btn-rojo', 'etiquetaNombre' => 'Etiqueta (opcional, ej. Cama King)',
         ])
     @endif
     @if ($puede['editar'])

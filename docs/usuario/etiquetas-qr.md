@@ -55,10 +55,10 @@ Con **rollo térmico** (Zebra, Brother…) cada etiqueta sale en su propia pági
 1. Toca la pestaña **Historial**. Ves cada impresión: número, fecha, quién la hizo, plantilla y qué etiquetas llevaba.
 2. Para encontrar una, escribe en **Buscar una etiqueta (nombre, placas...)** o usa **Todos los usuarios**, **Todas las plantillas**, **Desde** y **Hasta**. Toca **Buscar**.
 3. **Ver hoja** vuelve a abrir esa misma hoja.
-4. **Reimprimir** abre **Reimprimir impresión núm. …** con sus etiquetas marcadas:
+4. **Imprimir otra vez** abre **Imprimir otra vez la impresión núm. …** con sus etiquetas marcadas:
    - Quita la marca de las que no necesitas (por ejemplo, deja solo la que se dañó).
    - En **Plantilla** deja **La misma de la impresión original** o elige otra.
-   - Toca **Reimprimir**.
+   - Toca **Imprimir otra vez**.
 
 ![Historial](img/etiquetas-qr/04-historial.png)
 

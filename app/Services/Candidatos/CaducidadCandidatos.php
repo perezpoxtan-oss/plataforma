@@ -163,7 +163,7 @@ class CaducidadCandidatos
                 $this->notificaciones->avisar((int) $empresa->id, $usuarios->pluck('id'), 'caducidad_candidato', [
                     'titulo' => $titulo, 'texto' => $texto, 'url' => route('candidatos.show', $c->id),
                     'referencia_tipo' => PlazosCandidatos::REFERENCIA_CADUCIDAD, 'referencia_id' => $c->id,
-                    'acciones' => [['etiqueta' => 'Conservar '.self::MESES_CONSERVAR.' meses más', 'url' => route('candidatos.conservar', $c->id), 'campos' => [], 'estilo' => 'aceptar']],
+                    'acciones' => [['etiqueta' => 'Guardar '.self::MESES_CONSERVAR.' meses más', 'url' => route('candidatos.conservar', $c->id), 'campos' => [], 'estilo' => 'aceptar']],
                 ]);
                 app(AvisosCorreo::class)->recepcion((int) $empresa->id, 'plazo_candidato', $usuarios->pluck('email')->filter()->values()->all(),
                     new AvisoRecepcion($titulo, [$texto], [['Abrir su ficha', route('candidatos.show', $c->id)]]));
@@ -216,7 +216,7 @@ class CaducidadCandidatos
     // ------------------------------------------------------------ Conservar
 
     /**
-     * «Conservar 6 meses más» desde la ficha o la campana: corre la fecha,
+     * «Guardar 6 meses más» desde la ficha o la campana: corre la fecha,
      * quita el aviso (cuando vuelva a tocar, se avisa otra vez) y lo anota.
      */
     public function conservar(User $actor, Candidato $c): Carbon

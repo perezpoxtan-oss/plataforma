@@ -108,7 +108,7 @@ class PrestamoLlavesTest extends TestCase
             ->assertSee('id="prestamo-'.$fuera->id.'"', false)->assertSee('LLAVE FUERA')->assertSee('ID: #'.str_pad((string) $fuera->id, 5, '0', STR_PAD_LEFT))
             ->assertSee('No. Nómina: 1005')->assertSee('Garantía: INE')->assertSee('Recibir Llave a Caseta')
             ->assertSee('id="prestamo-'.$devuelta->id.'"', false)->assertSee('EN CASETA')->assertSee('Usada por: Persona Num1005')->assertSee('Regresó:')
-            ->assertSee('Registrar y Capturar Siguiente')->assertSee('ID Dejada en Garantía')->assertSee('Ninguna (Riesgo)')
+            ->assertSee('Guardar y capturar siguiente')->assertSee('ID Dejada en Garantía')->assertSee('Ninguna (Riesgo)')
             ->assertDontSee('onclick')->assertDontSee('Hotel)');
     }
 

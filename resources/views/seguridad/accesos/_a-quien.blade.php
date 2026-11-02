@@ -41,7 +41,7 @@
         <p class="mb-2"><i class="bi bi-telephone-fill me-1" aria-hidden="true"></i><span data-texto-llamada>Llama antes de dejarlo pasar.</span></p>
         <input type="hidden" name="llamada" value="autorizo" data-llamada disabled>
         <button type="submit" name="llamada" value="no_autorizo" class="btn-decision distinta" data-no-autorizo title="La persona no entra; queda la constancia de la llamada">
-            <i class="bi bi-telephone-x me-1" aria-hidden="true"></i>No autorizó
+            <i class="bi bi-telephone-x me-1" aria-hidden="true"></i>Rechazar · no autorizó
         </button>
     </div>
 </div>

@@ -128,7 +128,7 @@ Si una llave, un gafete o un equipo con voucher aparece y se devuelve, el vouche
 |---|---|---|---|
 | `vigente` | Recuperado | `cancelado_recuperacion` | Sin cobro, o con cobro que **todavía no se pagaba**: el cobro se cancela («COBRO CANCELADO» en la tarjeta y «CANCELADO» junto al CXC impreso). |
 | `vigente` | Recuperado + «Ya se le cobró» | `reembolso_pendiente` | El responsable ya pagó: el comentario es **obligatorio** (cómo se le devolverá). |
-| `reembolso_pendiente` | Reembolso entregado | `reembolsado` | Se le devolvió el dinero (comentario opcional). |
+| `reembolso_pendiente` | Atender · reembolso entregado | `reembolsado` | Se le devolvió el dinero (comentario opcional). |
 
 Prohibidas (error dentro del diálogo, sin cambios): recuperar un voucher que no esté vigente, «reembolsar» uno vigente, cancelado o ya reembolsado, y recuperar un voucher viejo cuando el artículo se volvió a dar de baja después con otro voucher («marca ese como recuperado»).
 
@@ -145,7 +145,7 @@ Otra empresa u otra sede: 404. Sin permiso: 403. El Agente (Padrones solo consul
 
 ### Pantalla e impresión
 
-- Tarjeta: insignia de estado, «Recuperado por … · fecha — comentario» y «Reembolsado por …», botón **Recuperado** (vigente) o **Reembolso entregado** (reembolso pendiente).
+- Tarjeta: insignia de estado, «Recuperado por … · fecha — comentario» y «Reembolsado por …», botón **Recuperado** (vigente) o **Atender · reembolso entregado** (reembolso pendiente).
 - Filtro nuevo **Cualquier estado / Vigente / Cancelado por recuperación / Reembolso pendiente / Reembolsado** (`?estado=`).
 - Hoja impresa: sello con el estado, quién y cuándo lo recuperó, comentario y reembolso.
 

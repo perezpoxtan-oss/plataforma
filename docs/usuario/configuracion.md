@@ -79,7 +79,7 @@ Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en e
 
 | Tarjeta | Qué decides | Valor original | Dónde se cambia |
 |---|---|---|---|
-| **Quién espera autorización del departamento** | Si visitas, proveedores y contratistas esperan la autorización; qué pasa si el departamento no tiene quien autorice en la sede (y cuántos departamentos están así hoy); si la caseta espera el «Que pase» de RR. HH.; a los cuántos minutos se recuerda y se avisa al suplente y al jefe. | Todos esperan; sin quien autorice, esperan al supervisor; 10 y 20 minutos. | **Configurar en Responsables por departamento** |
+| **Quién espera autorización del departamento** | Si visitas, proveedores y contratistas esperan la autorización; qué pasa si el departamento no tiene quien autorice en la sede (y cuántos departamentos están así hoy); si la caseta espera el «Aprobar · que pase» de RR. HH.; a los cuántos minutos se recuerda y se avisa al suplente y al jefe. | Todos esperan; sin quien autorice, esperan al supervisor; 10 y 20 minutos. | **Configurar en Responsables por departamento** |
 | **Imprimir etiquetas desde los padrones** | Hoja propia de cada padrón o plantillas de Etiquetas QR. | Hoja propia de cada padrón. | **Configurar en Etiquetas QR → Plantillas** |
 | **Motivo de la visita** | Qué motivo viene marcado al registrar una visita (ninguno, o el que elijas) y, en hoteles, si se ofrece **Visita a huésped**. | Ninguno marcado; «Visita a huésped» sí. | Aquí, con **Guardar** |
 | **Tiempo de permanencia en sitio** | Cuántas horas puede estar una visita, un proveedor o contratista, a qué hora cierra el daypass y cuántas horas puede durar una salida temporal antes de avisar al supervisor (0 = apagado). | Visita 4 h, proveedor 8 h, daypass hasta las 22:00, salida temporal 2 h. | Aquí, con **Guardar** |
@@ -316,7 +316,7 @@ Su petición te llega a la **campana**, a **Inicio** («Super Administradores qu
 1. Confirma con la persona que fue ella quien lo pidió.
 2. Si no fue esa persona, toca **Rechazar** junto a su nombre en el recuadro **Piden ayuda**; le avisamos y ahí termina.
 3. Si sí fue, en su renglón toca **Restablecer o dar de baja**.
-4. Para el teléfono: escribe **Tu contraseña** y toca **Quitar sus dos pasos**. Para la contraseña: escribe una **Contraseña temporal** (o déjala vacía si la plataforma tiene correo) y **Tu contraseña**, y toca **Guardar**.
+4. Para el teléfono: escribe **Tu contraseña** y toca **Dar de baja sus dos pasos**. Para la contraseña: escribe una **Contraseña temporal** (o déjala vacía si la plataforma tiene correo) y **Tu contraseña**, y toca **Guardar**.
 
 **Qué debes ver:** «Quitamos la verificación en dos pasos de «…»…» o «Contraseña de «…» restablecida…». Los demás Super Administradores reciben un aviso y todo queda en la [Bitácora de auditoría](auditoria.md).
 

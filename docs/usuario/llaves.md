@@ -125,7 +125,7 @@ Reactivar una llave es lo mismo que marcar **Recuperado** en su voucher: siempre
 
 **Qué debes ver:**
 - Si su voucher **no tiene cobro:** «Llave … reactivada correctamente. Su voucher VR-… quedó «Cancelado por recuperación».»
-- Si su voucher **tiene cobro:** pasas a [Vouchers de reposición](vouchers.md) con la ventana **Recuperado** abierta: indica si ya se le cobró al responsable y toca **Confirmar recuperado**; ahí se reactiva la llave.
+- Si su voucher **tiene cobro:** pasas a [Vouchers de reposición](vouchers.md) con la ventana **Recuperado** abierta: indica si ya se le cobró al responsable y toca **Atender · recuperado**; ahí se reactiva la llave.
 - Debajo del mensaje, **Siguiente paso: Ver su código QR** por si quieres reimprimir la etiqueta o cambiar la tarjeta. El voucher nunca se borra.
 
 ## Cómo ver el código QR y asignar una tarjeta NFC / RFID

@@ -303,9 +303,9 @@
                     @foreach (Acceso::CON_AUTORIZACION as $t)
                         <p class="nota-pendiente" data-etiqueta-tipo="{{ $t }}"><i class="bi bi-info-circle" aria-hidden="true"></i>
                             @if ($giro->esResidencial())
-                                Si viene con un residente, llámale y toca <strong>Llamé y autorizó</strong>. Si viene a un área de la administración, el registro queda <strong>Pendiente</strong> y su responsable recibe el aviso (esta tarjeta cambia sola).
+                                Si viene con un residente, llámale y toca <strong>Aprobar · llamé y autorizó</strong>. Si viene a un área de la administración, el registro queda <strong>Pendiente</strong> y su responsable recibe el aviso (esta tarjeta cambia sola).
                             @elseif (in_array($t, $esperanDepto, true))
-                                El registro queda <strong>Pendiente</strong>: la persona a quien viene (si tiene cuenta) o el responsable de su departamento recibe el aviso y autoriza (esta tarjeta cambia sola). Si nadie puede responder o no contesta a tiempo, quien supervisa la caseta lo pasa con <strong>Autorizar por excepción</strong>.
+                                El registro queda <strong>Pendiente</strong>: la persona a quien viene (si tiene cuenta) o el responsable de su departamento recibe el aviso y autoriza (esta tarjeta cambia sola). Si nadie puede responder o no contesta a tiempo, quien supervisa la caseta lo pasa con <strong>Aprobar por excepción</strong>.
                             @else
                                 El registro queda <strong>Pendiente</strong>: si la persona a quien viene tiene cuenta, recibe el aviso y autoriza; si no, la persona pasa cuando confirmes en el sistema que te la autorizó.
                             @endif
@@ -448,7 +448,7 @@
                 <div class="acciones-ingreso">
                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
                     {{-- Botón honesto: dice lo que va a pasar según el tipo y el motivo elegidos (plataforma.js lo actualiza) --}}
-                    <button type="submit" class="btn-guardar-ingreso" name="siguiente" value="0" data-boton-registrar><i class="bi bi-shield-check me-2" aria-hidden="true"></i><span data-texto-registrar>Registrar y dejar pasar</span></button>
+                    <button type="submit" class="btn-guardar-ingreso" name="siguiente" value="0" data-boton-registrar><i class="bi bi-shield-check me-2" aria-hidden="true"></i><span data-texto-registrar>Guardar y dejar pasar</span></button>
                     <button type="submit" class="btn-siguiente-ingreso" name="siguiente" value="1"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Guardar y capturar siguiente</button>
                 </div>
             </form>

@@ -73,7 +73,7 @@ class EspaciosTest extends TestCase
         $this->actingAs($this->admin)->get("/espacios/sede/{$this->sede->id}")->assertOk()->assertSee('Torre A')->assertSee('1 Piso(s) registrado(s)', false);
         $this->actingAs($this->admin)->get("/espacios/{$torre->id}")->assertOk()->assertSee('Piso 1');
         $this->actingAs($this->admin)->get("/espacios/{$piso->id}")->assertOk()->assertSee('Habitaciones')->assertSee('Crear por Lote');
-        $this->actingAs($this->admin)->get("/espacios/{$hab->id}")->assertOk()->assertSee('Áreas de esta Habitación')->assertSee('Agregar Área');
+        $this->actingAs($this->admin)->get("/espacios/{$hab->id}")->assertOk()->assertSee('Áreas de esta Habitación')->assertSee('Guardar área');
     }
 
     public function test_no_permite_niveles_fuera_de_lugar_ni_nombres_repetidos(): void
@@ -125,7 +125,7 @@ class EspaciosTest extends TestCase
         $this->actingAs($this->admin)->post('/espacios', ['nivel' => 'elemento', 'padre_id' => $area->id, 'tipo_espacio_id' => $lavabo, 'nombre' => 'Lavabo doble'])
             ->assertRedirect("/espacios/{$hab->id}");
         $this->actingAs($this->admin)->get("/espacios/{$area->id}")->assertRedirect("/espacios/{$hab->id}");
-        $this->actingAs($this->admin)->get("/espacios/{$hab->id}")->assertSee('Baño 2')->assertSee('Lavabo doble')->assertSee('Agregar Elemento');
+        $this->actingAs($this->admin)->get("/espacios/{$hab->id}")->assertSee('Baño 2')->assertSee('Lavabo doble')->assertSee('Guardar elemento');
 
         // Un tipo de área no sirve como elemento, y sin nombre ni tipo no se guarda
         $this->actingAs($this->admin)->post('/espacios', ['nivel' => 'elemento', 'padre_id' => $area->id, 'tipo_espacio_id' => $bano])->assertSessionHasErrors('tipo_espacio_id');

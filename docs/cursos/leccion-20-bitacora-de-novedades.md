@@ -14,7 +14,7 @@
 
 1. **`agente.demo`:** abre Operación → Bitácora de novedades.
    - Revisa las dos pestañas. Busca «laptop»: queda solo el ticket de Robo.
-   - Toca **Nuevo Ticket**. La sede **Hotel Demo Centro** ya viene elegida. Categoría *Sin clasificar todavía*, toca **Fui yo quien lo observó**, ubicación `Lobby, junto a la recepción`, ¿qué sucedió? `Huésped resbaló con agua en el piso`. **Despachar Ticket**.
+   - Toca **Nuevo Ticket**. La sede **Hotel Demo Centro** ya viene elegida. Categoría *Sin clasificar todavía*, toca **Fui yo quien lo observó**, ubicación `Lobby, junto a la recepción`, ¿qué sucedió? `Huésped resbaló con agua en el piso`. **Guardar ticket**.
    - Intenta despachar otro dejando vacío ¿Qué sucedió?: el aviso sale dentro del cuadro.
 2. Abre tu ticket. Cambia la categoría a **Accidente / Lesión**:
    - Tipo de Afectado **Huésped / Cliente**, nombre `Ana Ruiz`, habitación `101`.

@@ -161,7 +161,7 @@
             @endforelse
         </div>
 
-        {{-- ===== Prestar Llave (Registrar y Capturar Siguiente) ===== --}}
+        {{-- ===== Prestar Llave (Guardar y capturar siguiente) ===== --}}
         @if ($puede['prestar'])
             <dialog id="dialogoPrestarLlave" class="dialogo dialogo-prestar" aria-labelledby="titulo-prestar-llave" @if ($trasError || $llavePrestar) data-abrir-al-cargar @endif>
                 <div class="dialogo-cabecera">
@@ -227,7 +227,7 @@
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar btn-cerrar-prestamo" data-cerrar-dialogo>Cerrar</button>
-                            <button type="submit" class="btn-registrar-prestamo" data-texto-original="Registrar y Capturar Siguiente"><i class="bi bi-key me-2" aria-hidden="true"></i><span>Registrar y Capturar Siguiente</span></button>
+                            <button type="submit" class="btn-registrar-prestamo" data-texto-original="Guardar y capturar siguiente"><i class="bi bi-key me-2" aria-hidden="true"></i><span>Guardar y capturar siguiente</span></button>
                         </div>
                     </form>
                 </div>

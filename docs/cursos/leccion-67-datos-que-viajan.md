@@ -25,7 +25,7 @@ Comprueba: ves el horario, el salón, el nombre del evento, cuántas personas vi
 
 1. **Nuevo Ingreso** → **Proveedor**. Llena la empresa y **¿A quién viene?**.
 2. Abre **¿Trae herramienta o equipo?** y anota «Taladro», cantidad 1 y su serie. Toca **Otro artículo** y anota «Escalera».
-3. Registra y, cuando esté en sitio, toca **Registrar Salida**.
+3. Registra y, cuando esté en sitio, toca **Dar salida**.
 4. Revisa la lista. Esta vez quita la marca de **Sale con lo mismo** y escribe «Lleva una caja más». Toca **Dar salida**.
 
 Comprueba: el mensaje dice que se avisó a tu supervisor. En el historial la tarjeta dice «salió con algo distinto».

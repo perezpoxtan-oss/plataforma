@@ -73,7 +73,7 @@ El lector necesita además `llaves.ver` (tipo `llave`) y `colaboradores.ver` (ti
 - **Anular**: solo un préstamo EN USO no anulado. La llave queda libre de inmediato y el préstamo pasa al Historial marcado ANULADO.
 - **Reactivar**: solo un anulado. Si estaba EN USO y esa llave ya se volvió a prestar, se rechaza ("No se puede reactivar — esa llave ya se volvió a prestar…").
 - **Transiciones prohibidas** (mensaje claro, sin cambios): recibir dos veces, recibir o anular un anulado, anular uno devuelto, reactivar uno que no está anulado.
-- **Registrar y Capturar Siguiente**: el diálogo se envía por `fetch`; al guardar pinta la ficha nueva, limpia llave, colaborador y garantía, deja la sede y vuelve a poner el cursor en la llave (el lector USB escribe ahí). Avisa en pantalla si la llave escaneada ya está fuera o es de otra sede.
+- **Guardar y capturar siguiente**: el diálogo se envía por `fetch`; al guardar pinta la ficha nueva, limpia llave, colaborador y garantía, deja la sede y vuelve a poner el cursor en la llave (el lector USB escribe ahí). Avisa en pantalla si la llave escaneada ya está fuera o es de otra sede.
 - **Sede sugerida**: si el usuario tiene una sola sede, ya viene elegida; si no, la de su colaborador.
 - **Auditoría**: `prestamo_llaves.creado`, `prestamo_llaves.recibido`, `prestamo_llaves.anulado`, `prestamo_llaves.reactivado` (con llave, garantía y estado).
 - **Fechas**: se guardan en UTC y se muestran con `@fecha` (hora local). En "Llaves en Uso" la salida de hoy se ve solo con la hora; la de otro día, con la fecha.

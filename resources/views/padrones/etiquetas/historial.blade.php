@@ -98,7 +98,7 @@
                             <button type="button" class="btn-gafetes" data-accion="reimprimir-etiquetas"
                                     data-url="{{ route('etiquetas.reimprimir', $im->id) }}" data-numero="{{ $im->id }}" data-plantilla="{{ $im->plantilla_id }}"
                                     data-reimprimir="{{ $items->toJson(JSON_UNESCAPED_UNICODE) }}">
-                                <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Reimprimir
+                                <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Imprimir otra vez
                             </button>
                         </div>
                     </li>
@@ -112,7 +112,7 @@
         {{-- Reimprimir: todas o solo algunas, con la misma u otra plantilla --}}
         <dialog id="dialogoReimprimirEtiquetas" class="dialogo" aria-labelledby="titulo-reimprimir">
             <div class="dialogo-cabecera">
-                <h2 id="titulo-reimprimir"><i class="bi bi-arrow-repeat me-2" aria-hidden="true"></i>Reimprimir impresión núm. <span data-reimprimir-numero></span></h2>
+                <h2 id="titulo-reimprimir"><i class="bi bi-arrow-repeat me-2" aria-hidden="true"></i>Imprimir otra vez la impresión núm. <span data-reimprimir-numero></span></h2>
                 <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
             </div>
             <div class="dialogo-cuerpo">
@@ -133,7 +133,7 @@
                     </select>
                     <div class="dialogo-acciones">
                         <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                        <button type="submit" class="btn-gafetes" data-reimprimir-enviar><i class="bi bi-printer me-1" aria-hidden="true"></i>Reimprimir <span data-reimprimir-marcadas></span></button>
+                        <button type="submit" class="btn-gafetes" data-reimprimir-enviar><i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir otra vez <span data-reimprimir-marcadas></span></button>
                     </div>
                 </form>
             </div>

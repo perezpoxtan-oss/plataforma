@@ -28,7 +28,7 @@ Comprueba: entra a Candidatos: verás «Sin permiso». Es correcto: la caseta no
 ## Práctica 2 · Recursos Humanos atiende (rh.demo)
 
 1. Mira la **campana**: «Llegó un candidato: Marco Pech Ucán».
-2. **Recursos Humanos → Recepción de RR. HH.**: aparece con **Viene a: Busca empleo — primera vez** y los minutos que lleva esperando. Toca **Que pase** (la caseta lo ve al momento) y luego **Atender**.
+2. **Recursos Humanos → Recepción de RR. HH.**: aparece con **Viene a: Busca empleo — primera vez** y los minutos que lleva esperando. Toca **Aprobar · que pase** (la caseta lo ve al momento) y luego **Atender**.
 3. Toca **Abrir ficha**: verás su foto de caseta y su CV vacío.
 
 ## Práctica 3 · El kiosco
@@ -36,7 +36,7 @@ Comprueba: entra a Candidatos: verás «Sin permiso». Es correcto: la caseta no
 1. En la ficha toca **QR para que llene su solicitud**.
 2. Con tu celular escanea el QR (o entra a `/k` y escribe el código).
 3. Llena el formulario, marca **Acepto el aviso de privacidad** y envía.
-4. De vuelta en la ficha verás **«Por revisar»**: revisa y toca **Ya lo revisé**.
+4. De vuelta en la ficha verás **«Por revisar»**: revisa y toca **Atender · ya lo revisé**.
 
 Prueba también: intenta enviar sin aceptar el aviso → no te deja.
 
@@ -50,7 +50,7 @@ Prueba también: intenta enviar sin aceptar el aviso → no te deja.
 ## Práctica 5 · Autorizar una visita (jefe.demo)
 
 1. En Inicio verás «1 solicitud espera tu autorización». La caseta tiene a **Ingrid Solís Paredes** «ESPERANDO AUTORIZACIÓN».
-2. Abre la campana y toca **Autorizar ingreso**.
+2. Abre la campana y toca **Aprobar ingreso**.
 3. Como **agente.demo**, abre **Pendientes de Autorización**: la tarjeta desaparece sola y pasa a «Gente en Sitio».
 
 ## Práctica 6 · No molestar

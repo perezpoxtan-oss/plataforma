@@ -26,7 +26,7 @@
    - Toca **Laura Méndez Ríos**: queda elegida.
 4. Toca **Registrarla con su identificación en el Padrón de personas**.
    - Lee el aviso amarillo.
-   - Escribe `Ricardo Ortega` y toca **Registrar**.
+   - Escribe `Ricardo Ortega` y toca **Guardar**.
    - La ventana pregunta si es **Ricardo Ortega Vela**. Toca **Cancelar**: no registres nada.
 5. Cierra el ingreso. Abre Operación → **Pases de salida** → **Nuevo Pase**.
    - En **Destino** elige **Proveedor** y toca **Nuevo Proveedor**.

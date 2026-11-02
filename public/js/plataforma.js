@@ -3005,9 +3005,9 @@ document.addEventListener('click', function (e) {
     }
 
     /* ---------- Botón honesto: dice lo que va a pasar al guardar ----------
-       «Registrar y dejar pasar» cuando entra directo; «Registrar · queda pendiente de autorización»
+       «Guardar y dejar pasar» cuando entra directo; «Registrar · queda pendiente de autorización»
        cuando nace pendiente (proveedor, contratista, visita a un departamento con responsable o a un
-       colaborador de ese departamento, y Recursos Humanos con «Que pase» encendido en esa sede).
+       colaborador de ese departamento, y Recursos Humanos con «Aprobar · que pase» encendido en esa sede).
        El servidor decide al guardar; aquí solo se anticipa el texto. */
     function enSede(lista, sede) {
         if (lista === 'todas') { return true; }
@@ -3079,7 +3079,7 @@ document.addEventListener('click', function (e) {
         if (!texto) { return; }
         var pendiente = naceraPendiente(form);
         var llamada = requiereLlamada(aQuienVisible(form));
-        texto.textContent = llamada ? 'Llamé y autorizó · dejar pasar' : (pendiente ? 'Registrar · queda pendiente de autorización' : 'Registrar y dejar pasar');
+        texto.textContent = llamada ? 'Aprobar · llamé y autorizó' : (pendiente ? 'Registrar · queda pendiente de autorización' : 'Guardar y dejar pasar');
         var boton = texto.closest('button');
         if (boton) { boton.classList.toggle('queda-pendiente', pendiente); }
     }
@@ -3687,7 +3687,7 @@ document.addEventListener('click', function (e) {
                     abrir.addEventListener('click', function () { abrirDarSalida(r); });
                     acciones.appendChild(abrir);
                 } else if (r.fuera_temporal) {
-                    acciones.appendChild(botonDialogo('dialogoRegresoAcceso', r.url_regreso, r.id, r.nombre, r.tipo === 'huesped' ? 'Regreso de Tour' : 'Regreso', 'Registrar Regreso', 'btn-accion-acceso regreso'));
+                    acciones.appendChild(botonDialogo('dialogoRegresoAcceso', r.url_regreso, r.id, r.nombre, r.tipo === 'huesped' ? 'Regreso de Tour' : 'Regreso', 'Recibir de regreso', 'btn-accion-acceso regreso'));
                 } else {
                     if (r.salida_temporal) {
                         acciones.appendChild(botonDialogo('dialogoSalidaTemporalAcceso', r.url_salida_temporal, r.id, r.nombre, r.texto_salida_temporal, r.texto_salida_temporal, 'btn-accion-acceso temporal'));
@@ -3871,7 +3871,7 @@ document.addEventListener('click', function (e) {
         setTimeout(function () { (r.fuera_temporal ? regreso : boton).focus(); }, 60);
     }
 
-    // C-15: «Registrar Salida» de la tarjeta abre el mismo diálogo cuando hay gafete o identificación que confirmar
+    // C-15: «Dar salida» de la tarjeta abre el mismo diálogo cuando hay gafete o identificación que confirmar
     document.addEventListener('click', function (e) {
         var b = e.target.closest && e.target.closest('[data-dar-salida]');
         if (!b) { return; }
@@ -4238,7 +4238,7 @@ document.addEventListener('click', function (e) {
         if (texto) { texto.textContent = 'Guardando...'; }
         function terminar() {
             if (boton) { boton.disabled = false; }
-            if (texto) { texto.textContent = boton.dataset.textoOriginal || 'Registrar y Capturar Siguiente'; }
+            if (texto) { texto.textContent = boton.dataset.textoOriginal || 'Guardar y capturar siguiente'; }
         }
 
         fetch(form.action, {
@@ -5948,7 +5948,7 @@ document.addEventListener('click', function (e) {
      "lector:elegido") se abre el punto de inspección de ese equipo; en PC
      con lector USB el campo queda listo para leer sin tocar la pantalla.
    - Punto de inspección: piezas de la categoría elegida (captura a mano),
-     resultado en vivo (OK / FALLA) y confirmación de «Finalizar Recorrido».
+     resultado en vivo (OK / FALLA) y confirmación de «Guardar y terminar recorrido».
    - Catálogo de equipos: filtros, zona/piso y área específica según la sede
      (y el área según la zona elegida), «Ver QR».
    ========================================================================== */
@@ -6088,7 +6088,7 @@ document.addEventListener('click', function (e) {
         b = e.target.closest('[data-filtro-epc-estado]');
         if (b) { elegirPildora(b, 'data-filtro-epc-estado'); filtrarEquipos(); return; }
 
-        // Confirmación de un botón en particular (p. ej. «Finalizar Recorrido»)
+        // Confirmación de un botón en particular (p. ej. «Guardar y terminar recorrido»)
         b = e.target.closest('[data-confirmar-boton]');
         if (b) {
             if (!window.confirm(b.getAttribute('data-confirmar-boton'))) { e.preventDefault(); }
@@ -8146,7 +8146,7 @@ document.addEventListener('click', function (e) {
       escribir el número de la etiqueta.
    3. data-mensaje-max="…": mensaje propio cuando un número pasa del máximo
       (GV-02: «Máximo 50 gafetes por lote.»).
-   4. GV-04: diálogos «Recuperado» y «Reembolso entregado» de Vouchers.
+   4. GV-04: diálogos «Recuperado» y «Atender · reembolso entregado» de Vouchers.
    5. EQ-04: al editar un equipo, por qué su estado solo admite ciertas opciones.
    6. LL-06: Etiquetas QR — «Marcar todas», conteo y botón Imprimir.
    ========================================================================== */
@@ -8243,7 +8243,7 @@ document.addEventListener('click', function (e) {
         if (e.target.matches && e.target.matches('[data-mensaje-max]')) { revisarMaximo(e.target); }
     }, true);
 
-    /* ---------- 4. Vouchers: Recuperado / Reembolso entregado (GV-04) ---------- */
+    /* ---------- 4. Vouchers: Recuperado / Atender · reembolso entregado (GV-04) ---------- */
     function prepararVoucher(d, b, prefijo) {
         var form = d.querySelector('form');
         form.action = b.dataset.url;
@@ -8686,7 +8686,7 @@ document.addEventListener('click', function (e) {
             if (n.acciones && n.acciones.length) {
                 var acciones = el('div', 'campana-acciones');
                 n.acciones.forEach(function (a) {
-                    // Candidatos fase 1: «Que espere» (esperar) de Recepción de RR. HH.
+                    // Candidatos fase 1: «Rechazar · que espere» (esperar) de Recepción de RR. HH.
                     acciones.appendChild(formulario(a.url, a.campos, 'btn-respuesta ' + (a.estilo === 'rechazar' ? 'rechazar' : (a.estilo === 'esperar' ? 'esperar' : 'aceptar')), a.etiqueta,
                         a.estilo === 'rechazar' ? '¿' + a.etiqueta + '? La caseta y Recursos Humanos verán tu respuesta.' : null));
                 });

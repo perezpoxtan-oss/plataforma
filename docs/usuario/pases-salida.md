@@ -46,7 +46,7 @@ resumen: Pedir, aprobar y registrar en caseta la salida de equipo de la sede, y 
 
    ![Salida programada y Regreso programado](img/pases-salida/fechas-programadas.png)
 4. En **3. Artículos que Salen**: escanea la etiqueta del equipo del padrón (se llena solo; solo salen equipos **DISPONIBLES** de la sede de origen y cada uno una vez) o escribe cantidad, equipo, marca, modelo, serie y descripción. Si tu empresa pide aprobaciones según el valor, verás también **Valor por pieza $ (opcional)**: escríbelo si lo conoces (los equipos del padrón con costo registrado ya traen su valor). Si lo dejas vacío, el pase pedirá todas las aprobaciones.
-5. Toca **Guardar y Enviar a Aprobación** (o **Registrar y capturar siguiente** si harás otro).
+5. Toca **Guardar y Enviar a Aprobación** (o **Guardar y capturar siguiente** si harás otro).
 
 ![Nuevo pase de salida](img/pases-salida/nuevo-pase.png)
 
@@ -86,7 +86,7 @@ Reglas: los pasos van **en orden**; no puedes aprobar tu propio pase ni firmar d
 
 1. En la **campana** te llega **Tu pase PS-… fue rechazado** con el motivo. Ábrelo: el motivo del rechazo sale en rojo.
 2. Toca **Corregir y reenviar**, cambia lo que te pidieron y escribe qué corregiste.
-3. Toca **Guardar y Reenviar a Aprobación**. Si ya no se necesita, toca **Cancelar pase**.
+3. Toca **Guardar y Reenviar a Aprobación**. Si ya no se necesita, toca **Dar de baja el pase**.
 
 **Qué debes ver:** según lo que configuró tu empresa:
 
@@ -132,7 +132,7 @@ En el celular, cada momento se ve como una tarjeta con su **Programado** y su **
 
 ## Cómo registrar en caseta la salida, la llegada y el regreso
 
-1. Abre el pase (aparece en **Mis pendientes**) y toca el botón de la caseta: **Registrar Salida** (sede de origen), **Confirmar llegada a esta sede** (sede destino, cuando llega el equipo), **Autorizar salida de regreso** (sede destino, cuando el equipo vuelve a su sede) o **Registrar Regreso** (sede de origen).
+1. Abre el pase (aparece en **Mis pendientes**) y toca el botón de la caseta: **Dar salida** (sede de origen), **Recibir en esta sede** (sede destino, cuando llega el equipo), **Dar salida de regreso** (sede destino, cuando el equipo vuelve a su sede) o **Recibir de regreso** (sede de origen).
 2. **Verifica los artículos**: escanea cada equipo del padrón o márcalo con el dedo. Para la salida deben estar **todos**. Esto se pide siempre.
 3. Escribe el **nombre** de quien se lleva o entrega el equipo y pídele que **firme** en el recuadro.
 4. Firma tú como Seguridad (con tu firma guardada es un solo toque) y guarda.
@@ -151,11 +151,11 @@ Mientras el pase no sale, sus equipos del padrón quedan **apartados** (su ficha
 
 ### Si el regreso programado ya pasó al dar salida
 
-Un pase no puede salir con un regreso que «ya debió ocurrir». Si al tocar **Registrar Salida** el **regreso programado** ya pasó:
+Un pase no puede salir con un regreso que «ya debió ocurrir». Si al tocar **Dar salida** el **regreso programado** ya pasó:
 
 1. Arriba de la ventana verás «**El regreso programado (19/10/2026) ya pasó.** Pregunta cuándo regresa y escribe la nueva fecha antes de dar salida.»
 2. Pregunta a quien se lleva el equipo cuándo regresa y escríbelo en **Nuevo regreso programado** (hoy o después).
-3. Sigue con la revisión de artículos y las firmas, y toca **Registrar Salida**.
+3. Sigue con la revisión de artículos y las firmas, y toca **Dar salida**.
 
 ![Caseta: nuevo regreso programado](img/pases-salida/caseta-nuevo-regreso.png)
 
@@ -164,9 +164,9 @@ Un pase no puede salir con un regreso que «ya debió ocurrir». Si al tocar **R
 ## Cómo saber qué pases llegan a tu sede (caseta destino)
 
 1. En **Pases de salida** toca la píldora **Llegan a mi sede**.
-2. Verás los pases aprobados o en camino hacia tu sede. Cada uno dice qué harás: «**Viene a Hotel Playa: aún no sale de Hotel Centro.**» o «**En camino a Hotel Playa.**» y «**Cuando llegue, toca «Confirmar llegada a esta sede».**».
+2. Verás los pases aprobados o en camino hacia tu sede. Cada uno dice qué harás: «**Viene a Hotel Playa: aún no sale de Hotel Centro.**» o «**En camino a Hotel Playa.**» y «**Cuando llegue, toca «Recibir en esta sede».**».
 3. Cuando el pase sale hacia tu sede, te llega a la **campana** el aviso **Un pase viene a tu sede: PS-…**.
-4. Cuando llegue el equipo, abre el pase y toca **Confirmar llegada a esta sede**.
+4. Cuando llegue el equipo, abre el pase y toca **Recibir en esta sede**.
 
 ![Llegan a mi sede](img/pases-salida/llegan-a-mi-sede.png)
 
@@ -225,7 +225,7 @@ Si tu empresa ya tenía su propio circuito, no cambia solo. Arriba de los pasos 
 ## Cómo elegir las firmas de la caseta (administrador)
 
 1. En **Circuito**, baja a **Firmas en caseta**.
-2. Para cada movimiento (**Registrar Salida**, **Confirmar llegada a esta sede**, **Autorizar salida de regreso**, **Registrar Regreso**) elige: **Dos firmas (persona y Seguridad)**, **Solo Seguridad** o **Sin firma**.
+2. Para cada movimiento (**Dar salida**, **Recibir en esta sede**, **Dar salida de regreso**, **Recibir de regreso**) elige: **Dos firmas (persona y Seguridad)**, **Solo Seguridad** o **Sin firma**.
 3. Si un motivo debe ser distinto, abre **Excepciones por motivo (avanzado)** y elige las firmas en el renglón de ese motivo. Deja **Igual que todos** en lo demás.
 4. Toca **Guardar circuito**.
 

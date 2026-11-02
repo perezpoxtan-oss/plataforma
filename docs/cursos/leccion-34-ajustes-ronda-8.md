@@ -30,7 +30,7 @@ Entra a QA con **`admin.demo`** (contraseña de la demo). Para los pasos 6 y 8 u
 
 ### 2. Ticket nuevo sin clasificación
 
-1. **Nuevo Ticket** → escribe quién reporta, la ubicación y qué sucedió, pero deja **Categoría** en «-- Elige la clasificación --» → **Despachar Ticket**.
+1. **Nuevo Ticket** → escribe quién reporta, la ubicación y qué sucedió, pero deja **Categoría** en «-- Elige la clasificación --» → **Guardar ticket**.
    - La ventana te pide elegir la clasificación.
 2. Elige la sede **Hotel Demo Centro** y abre **¿A quién se canaliza?**: solo aparecen agentes, supervisores, jefes y mandos (no Recursos Humanos).
 

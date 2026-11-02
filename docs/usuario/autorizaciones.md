@@ -8,7 +8,7 @@ resumen: Quién autoriza las visitas, proveedores y contratistas que vienen a un
 
 # Autorizaciones
 
-**¿Para qué sirve?** Cuando una visita, un proveedor o un contratista viene a un **departamento**, su **responsable** decide si entra. Te llega como aviso en la **campana** (y por correo) con los botones **Autorizar ingreso** / **Rechazar**, y la caseta ve tu respuesta al momento. Aquí también eliges quién es responsable de cada departamento, quién te cubre cuando no estás («No molestar») y qué espera la caseta. Viene en todos los planes. Lo que tiene que ver con candidatos y Recursos Humanos está en [Recepción de RR. HH.](recepcion-y-autorizaciones.md).
+**¿Para qué sirve?** Cuando una visita, un proveedor o un contratista viene a un **departamento**, su **responsable** decide si entra. Te llega como aviso en la **campana** (y por correo) con los botones **Aprobar ingreso** / **Rechazar**, y la caseta ve tu respuesta al momento. Aquí también eliges quién es responsable de cada departamento, quién te cubre cuando no estás («No molestar») y qué espera la caseta. Viene en todos los planes. Lo que tiene que ver con candidatos y Recursos Humanos está en [Recepción de RR. HH.](recepcion-y-autorizaciones.md).
 
 ![Bandeja de autorizaciones](img/recepcion-y-candidatos/autorizaciones-bandeja-jefe.png)
 
@@ -21,7 +21,7 @@ resumen: Quién autoriza las visitas, proveedores y contratistas que vienen a un
 
 1. Arriba a la derecha está la **campana**. El número rojo son tus avisos sin leer; se actualiza solo.
 2. Tócala para ver los últimos avisos; toca uno para abrirlo.
-3. Si el aviso pide tu respuesta, trae los botones ahí mismo (por ejemplo **Que pase** / **Que espere** / **No puede pasar**, o **Autorizar ingreso** / **Rechazar**).
+3. Si el aviso pide tu respuesta, trae los botones ahí mismo (por ejemplo **Aprobar · que pase** / **Rechazar · que espere** / **Rechazar · no puede pasar**, o **Aprobar ingreso** / **Rechazar**).
 4. **Marcar todas como leídas** las limpia. **Ver todas las notificaciones** abre la lista completa.
 
 ![Campana con los botones de respuesta](img/recepcion-y-candidatos/campana-rh.png)
@@ -34,13 +34,13 @@ Si tienes encendidos los avisos por correo en [Configuración](configuracion.md)
 
 1. La caseta registra la visita, el proveedor o el contratista y elige en **¿A quién viene?** la persona o el área. El departamento sale solo de la persona.
 2. Si la empresa lo pide y el departamento tiene **quien autorice en esa sede**, la tarjeta de la caseta queda **PENDIENTE** con «Espera a: (tu nombre) (departamento) · minutos» y a ti te llega el aviso (también a los suplentes del departamento).
-3. Toca **Autorizar ingreso** o **Rechazar** (en la campana, en **Mis pendientes**, en **Autorizaciones** o en el botón del correo).
+3. Toca **Aprobar ingreso** o **Rechazar** (en la campana, en **Mis pendientes**, en **Autorizaciones** o en el botón del correo).
 4. La tarjeta de la caseta **cambia sola**: autorizado, la persona pasa a «Gente en Sitio» con «Autorizado por (departamento)»; rechazado, queda **FINALIZADO** con «No autorizado por (departamento): no ingresó» en el historial (hay que devolverle su identificación).
 5. Si no contestas, la plataforma te lo **recuerda** a los minutos que configuró tu empresa (de fábrica, 10) con otro aviso en la campana y por correo. Si sigue sin respuesta (de fábrica, a los 20), **escala**: avisa a los suplentes del departamento (o a quien los cubre por «No molestar») y al Jefe de seguridad de la sede, y la caseta ve «Se escaló a: …». Cada aviso se manda una sola vez.
 
 ![Caseta esperando la autorización](img/recepcion-y-candidatos/caseta-pendientes-esperando.png)
 
-> Si el responsable avisa por teléfono, el supervisor puede usar **Confirmar Autorización** en la caseta (en un proveedor o contratista, **Autorizar por excepción** con el motivo «El responsable autorizó por teléfono»): queda anotado «respondida por caseta».
+> Si el responsable avisa por teléfono, el supervisor puede usar **Aprobar ingreso** en la caseta (en un proveedor o contratista, **Aprobar por excepción** con el motivo «El responsable autorizó por teléfono»): queda anotado «respondida por caseta».
 
 El aviso de un proveedor o contratista dice de qué empresa viene, quién lo citó y a qué viene (por ejemplo «Proveedor para Mantenimiento. Lo citó: Carlos Pérez. Actividad: Recarga de tanque. Viene de: GAS DEL SUR.»).
 
@@ -48,7 +48,7 @@ El aviso de un proveedor o contratista dice de qué empresa viene, quién lo cit
 
 Si tienes cuenta en la plataforma y la caseta te elige en **¿A quién viene?**, **tú autorizas a tu visita** (aunque no tengas la bandeja de Autorizaciones):
 
-1. Te llega a la campana **Te busca en caseta: (nombre)** con **Autorizar ingreso** y **Rechazar**. También aparece en **Mis pendientes → Autorizaciones por responder**.
+1. Te llega a la campana **Te busca en caseta: (nombre)** con **Aprobar ingreso** y **Rechazar**. También aparece en **Mis pendientes → Autorizaciones por responder**.
 2. Toca la respuesta. La caseta lo ve al momento.
 3. Si no contestas a tiempo, el aviso pasa al responsable de tu departamento (tu **suplente**) y al jefe de seguridad de la sede.
 
@@ -58,7 +58,7 @@ Si tu empresa no pide autorización para las visitas, solo te llega el aviso **L
 
 ### Cuando la caseta lo deja pasar por excepción
 
-Si el departamento no tiene responsable en esa sede, nadie contestó a tiempo o hubo una urgencia, el supervisor de la caseta puede dejar pasar al proveedor o contratista con **Autorizar por excepción**, siempre con un motivo. Entonces:
+Si el departamento no tiene responsable en esa sede, nadie contestó a tiempo o hubo una urgencia, el supervisor de la caseta puede dejar pasar al proveedor o contratista con **Aprobar por excepción**, siempre con un motivo. Entonces:
 
 1. Te llega a la **campana** el aviso «Pasó por excepción: …» con el motivo y quién lo autorizó.
 2. La solicitud se cierra: sus botones desaparecen y en **Autorizaciones** queda como autorizada «por caseta», con el comentario «Por excepción: (motivo)».
@@ -110,9 +110,9 @@ Un departamento **tiene quien autorice** en una sede solo si al menos uno de sus
 Todo lo que tiene que ver con quién responde y qué espera está en una sola pantalla: **Responsables por departamento**. Llegas a ella desde **Estructura → Departamentos** (botón **Responsables**), desde **Recepción → Ajustes** o desde **Autorizaciones**.
 
 1. En **Qué espera en la caseta**:
-   - En **Esperan la autorización del responsable del departamento**, marca quién espera: **Visita**, **Proveedor** y **Contratista** (de fábrica, las tres). Marcada: la caseta elige a qué departamento viene la persona y, si ese departamento tiene quien autorice en la sede, queda «Esperando autorización» hasta que él responda. **Proveedor** o **Contratista** sin marcar: se confirman con quien los citó y **Confirmar Autorización**, como antes.
-   - En **Si el departamento no tiene quien autorice en la sede, la visita…** elige **Espera al supervisor o al jefe de seguridad de la sede** (valor original) o **La visita pasa sin esperar**. Con la primera, la visita queda pendiente, al supervisor y al jefe de seguridad de esa sede les llega el aviso a la campana y a **Mis pendientes**, y la tarjeta muestra cuánto lleva esperando. El proveedor o contratista sin quien autorice siempre espera: lo pasa el supervisor con **Autorizar por excepción**.
-   - Enciende o apaga **La caseta espera a que RR. HH. diga «Que pase»**. Encendido: quien viene a Recursos Humanos espera en caseta tu respuesta. Apagado: pasa directo y solo te llega el aviso.
+   - En **Esperan la autorización del responsable del departamento**, marca quién espera: **Visita**, **Proveedor** y **Contratista** (de fábrica, las tres). Marcada: la caseta elige a qué departamento viene la persona y, si ese departamento tiene quien autorice en la sede, queda «Esperando autorización» hasta que él responda. **Proveedor** o **Contratista** sin marcar: se confirman con quien los citó y **Aprobar ingreso**, como antes.
+   - En **Si el departamento no tiene quien autorice en la sede, la visita…** elige **Espera al supervisor o al jefe de seguridad de la sede** (valor original) o **La visita pasa sin esperar**. Con la primera, la visita queda pendiente, al supervisor y al jefe de seguridad de esa sede les llega el aviso a la campana y a **Mis pendientes**, y la tarjeta muestra cuánto lleva esperando. El proveedor o contratista sin quien autorice siempre espera: lo pasa el supervisor con **Aprobar por excepción**.
+   - Enciende o apaga **La caseta espera a que RR. HH. diga «Aprobar · que pase»**. Encendido: quien viene a Recursos Humanos espera en caseta tu respuesta. Apagado: pasa directo y solo te llega el aviso.
    - En **Recordar a los (minutos)** escribe a los cuántos minutos se vuelve a avisar a quien debe responder (campana y correo). Desde ese minuto la espera se pinta en **ámbar**. De fábrica, 10.
    - En **Avisar al suplente y al jefe a los (minutos)** escribe a los cuántos minutos, si nadie ha contestado, se avisa a los suplentes del departamento (o a quien los cubre) y al Jefe de seguridad de la sede; si la persona espera a Recursos Humanos, al resto del equipo de RR. HH. y al Jefe de seguridad. Desde ese minuto la espera se pinta en **rojo**. De fábrica, 20. Debe ser mayor que el recordatorio; ambos admiten hasta 240 minutos.
    - Toca **Guardar esperas**.
@@ -139,19 +139,19 @@ Cada recordatorio y cada escalamiento quedan en la Bitácora de auditoría y en 
 | El enlace del correo ya venció o fue alterado. Abre la solicitud desde la plataforma. | El botón del correo pasó de 24 horas. | Responde desde la campana o **Autorizaciones**. |
 | No hubo cambios que guardar. | Guardaste sin cambiar nada. | Cambia algo o sal de la pantalla. |
 | La visita no queda «esperando autorización». | La opción está apagada, o el departamento no tiene quien autorice y elegiste «La visita pasa sin esperar». | Revisa **Responsables por departamento**. |
-| La tarjeta dice «Sin quien autorice en …: espera al supervisor o al jefe de seguridad». | Nadie del departamento puede responder en esa sede. | El supervisor lo confirma con **Confirmar Autorización**; nombra a alguien en **Responsables por departamento**. |
-| El proveedor o contratista dice «Sin quien autorice en …: el supervisor lo autoriza por excepción». | Su departamento no tiene quien autorice en esa sede. | Nombra responsable en **Responsables por departamento**; mientras, el supervisor lo pasa con **Autorizar por excepción**. |
+| La tarjeta dice «Sin quien autorice en …: espera al supervisor o al jefe de seguridad». | Nadie del departamento puede responder en esa sede. | El supervisor lo confirma con **Aprobar ingreso**; nombra a alguien en **Responsables por departamento**. |
+| El proveedor o contratista dice «Sin quien autorice en …: el supervisor lo autoriza por excepción». | Su departamento no tiene quien autorice en esa sede. | Nombra responsable en **Responsables por departamento**; mientras, el supervisor lo pasa con **Aprobar por excepción**. |
 | … solo puede responder en …: elige esa sede en lugar de «Todas sus sedes». | La cuenta de esa persona no entra a todas las sedes. | Elige una de sus sedes o a otra persona. |
 | Esta solicitud es de … y tu cuenta no puede responder ahí. | Te llegó un aviso de una sede a la que tu cuenta no entra. | Ya se avisó a quien sí puede; si crees que te toca, pide a tu administrador que revise tus sedes. |
 | El proveedor o contratista no pide departamento y dice «Confirma con el host». | La casilla **Proveedor** o **Contratista** está sin marcar. | Márcala en **Qué espera en la caseta** si quieres que espere al departamento. |
 | «El aviso al suplente y al jefe debe ir después del recordatorio.» | Pusiste el segundo tiempo igual o menor que el primero. | Escribe en el segundo campo un número mayor. |
-| Me llegó «Nadie ha respondido: … lleva … min en caseta» y no soy el responsable. | Eres suplente, cubres a alguien por «No molestar» o eres Jefe de seguridad de esa sede: se te escaló la espera. | Si puedes responder, toca el botón; si no, confirma en la caseta con **Confirmar Autorización** cuando te lo autoricen. |
+| Me llegó «Nadie ha respondido: … lleva … min en caseta» y no soy el responsable. | Eres suplente, cubres a alguien por «No molestar» o eres Jefe de seguridad de esa sede: se te escaló la espera. | Si puedes responder, toca el botón; si no, confirma en la caseta con **Aprobar ingreso** cuando te lo autoricen. |
 
 ## Preguntas frecuentes
 
 **¿Dónde quedaron las Autorizaciones en el menú?** En **Estructura → Autorizaciones** (vienen en todos los planes), si configuras quién autoriza o respondes las de algún departamento. También te llegan por la campana y por **Mis pendientes**.
 
-**¿Qué pasa si nadie responde?** La plataforma recuerda a quien debe responder y después avisa a los suplentes y al Jefe de seguridad de la sede (ver «Cómo elegir los responsables por departamento y qué espera en la caseta»). Mientras tanto la persona sigue esperando en la caseta, y el supervisor puede usar **Confirmar Autorización** si el responsable avisa por teléfono; en un proveedor o contratista, **Autorizar por excepción** con su motivo.
+**¿Qué pasa si nadie responde?** La plataforma recuerda a quien debe responder y después avisa a los suplentes y al Jefe de seguridad de la sede (ver «Cómo elegir los responsables por departamento y qué espera en la caseta»). Mientras tanto la persona sigue esperando en la caseta, y el supervisor puede usar **Aprobar ingreso** si el responsable avisa por teléfono; en un proveedor o contratista, **Aprobar por excepción** con su motivo.
 
 **¿Me entero si la caseta deja pasar a un proveedor sin mi respuesta?** Sí: te llega a la campana «Pasó por excepción: …» con el motivo y quién lo autorizó.
 

@@ -21,13 +21,13 @@ Usa una empresa de prueba de giro condominio o fraccionamiento y otra de hotel o
 3. Fíjate en el botón grande: si la persona tiene cuenta, dice **Registrar · queda pendiente de autorización**.
 4. Toca el botón.
 
-Comprueba: el mensaje dice «espera la autorización de (persona)». Pide a esa persona que abra su campana y toque **Autorizar ingreso**: la tarjeta pasa a **Gente en Sitio**.
+Comprueba: el mensaje dice «espera la autorización de (persona)». Pide a esa persona que abra su campana y toque **Aprobar ingreso**: la tarjeta pasa a **Gente en Sitio**.
 
 ## Práctica 2 · Llamar al residente (condominio o fraccionamiento)
 
 1. **Nuevo Ingreso** → **Visita**. Escribe el número de la vivienda en **¿A quién viene?** y elígela (sale quién vive ahí y su teléfono).
 2. Llama al residente.
-3. Si autorizó, toca **Llamé y autorizó · dejar pasar**. Si no, toca **No autorizó**.
+3. Si autorizó, toca **Aprobar · llamé y autorizó**. Si no, toca **Rechazar · no autorizó**.
 
 Comprueba: en la tarjeta dice «Autorizó por teléfono (llamó tu nombre)» o, en el historial, «Se llamó y no autorizó: no ingresó».
 

@@ -49,7 +49,7 @@ class CampanaPadrones
             'url' => route($d['ruta'], ['verificacion' => 'pendiente']).'#'.$d['ancla'].$registro->getKey(),
             'referencia_tipo' => 'alta_'.$padron,
             'referencia_id' => (int) $registro->getKey(),
-            'acciones' => [['etiqueta' => 'Verificar', 'abrir' => true]],
+            'acciones' => [['etiqueta' => 'Atender', 'abrir' => true]],
         ]);
     }
 
@@ -109,7 +109,7 @@ class CampanaPadrones
             'url' => route('colaboradores.index', ['registro' => 'provisional']).'#colaborador-'.$colaborador->id,
             'referencia_tipo' => 'alta_colaboradores',
             'referencia_id' => (int) $colaborador->id,
-            'acciones' => [['etiqueta' => 'Verificar', 'abrir' => true]],
+            'acciones' => [['etiqueta' => 'Atender', 'abrir' => true]],
         ]);
     }
 

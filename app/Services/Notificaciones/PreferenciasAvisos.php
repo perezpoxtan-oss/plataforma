@@ -93,7 +93,7 @@ class PreferenciasAvisos
         'reloj_recordatorio' => ['Reloj y suplente', 'Recordatorio de algo que lleva tiempo esperando tu respuesta', []],
         'reloj_escalado' => ['Reloj y suplente', 'Algo tardó y pasó a ti como suplente (siempre llega)', []],
         'autorizacion_respuesta' => ['Bitácora de accesos', 'Respondieron una autorización que pidió la caseta', ['accesos.ver']],
-        'autorizacion_recepcion' => ['Bitácora de accesos', 'Recursos Humanos dice «Que pase» a quien espera en caseta', ['accesos.ver']],
+        'autorizacion_recepcion' => ['Bitácora de accesos', 'Recursos Humanos dice «Aprobar · que pase» a quien espera en caseta', ['accesos.ver']],
         'candidato_llegada' => ['Recepción y candidatos', 'Llega un candidato a Recepción', ['candidatos.editar']],
         'candidato_autocaptura' => ['Recepción y candidatos', 'Un candidato llenó su solicitud en el kiosco', ['candidatos.editar']],
         'evaluacion_departamento' => ['Recepción y candidatos', 'El departamento evaluó o eligió a un candidato', ['candidatos.editar']],

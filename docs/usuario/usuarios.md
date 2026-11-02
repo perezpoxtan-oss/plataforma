@@ -41,7 +41,7 @@ La contraseña es de su dueño: por omisión **la persona la crea** con un enlac
 7. En **Contraseña** elige cómo la tendrá:
    - **Enviar enlace de bienvenida por correo** (recomendado, viene marcado): la persona recibe el correo **«Bienvenido a … : crea tu contraseña»** con el botón **Crear mi contraseña**. El enlace vale **24 horas**. Nadie más conoce su contraseña.
    - **Escribir la contraseña ahora**: escribe una **Contraseña inicial** (mínimo 8 caracteres, con letras y números) y dísela. Al entrar, la plataforma le pedirá cambiarla antes de usar cualquier pantalla.
-8. Toca **Registrar Usuario**.
+8. Toca **Guardar usuario**.
 
 ![Alta de usuario en tres pasos](img/usuarios/5-alta-por-pasos.png)
 
@@ -68,7 +68,7 @@ La contraseña es de su dueño: por omisión **la persona la crea** con un enlac
 1. En **Núm. Colaborador** escribe su número (`1008`) o parte de su nombre (`dani`). Basta con 2 letras o números.
 2. En la lista que aparece toca **Daniela Canul May · #1008**. Se llenan solos su número y su **Nombre Completo**, y aparece en verde **Vinculado a Colaboradores**.
 3. Otra forma: escribe primero el **Nombre Completo**. Si hay un colaborador con ese nombre sin cuenta, toca **Vincular** en el aviso.
-4. Completa lo demás y toca **Registrar Usuario**.
+4. Completa lo demás y toca **Guardar usuario**.
 
 ![Buscar colaborador](img/usuarios/4-num-colaborador.png)
 

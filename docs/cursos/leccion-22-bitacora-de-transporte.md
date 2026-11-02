@@ -12,7 +12,7 @@
 ## Práctica (en QA)
 
 1. **`agente.demo`** (sede Centro): abre Operación → Bitácora de transporte. Toca **Últimos 7 días** y busca la tarjeta roja con **Pago: $320.00** (tiene justificación).
-2. Toca **Registrar Movimiento**. Revisa que la sede (Hotel Demo Centro) y la ruta ya vienen elegidas. Elige *A Tiempo*, escribe las placas `TKH-101` (se llenan marca y modelo en *Más detalles*) y 35 pasajeros. Toca **Registrar y capturar siguiente**.
+2. Toca **Registrar Movimiento**. Revisa que la sede (Hotel Demo Centro) y la ruta ya vienen elegidas. Elige *A Tiempo*, escribe las placas `TKH-101` (se llenan marca y modelo en *Más detalles*) y 35 pasajeros. Toca **Guardar y capturar siguiente**.
 3. En la ventana que se abre otra vez elige **SALIDA**, *Con Retraso*, y guarda con **Guardar Registro Operativo**.
 4. Ahora la unidad no llegó: **Registrar Movimiento** → **LA UNIDAD NO LLEGÓ (Se usan taxis)**.
    - Taxi 1: placas `TX-5050`, conductor `Luis May`, monto `300`, destino `CHEDRAUI PORTILLO`. Fíjate en el aviso del tope ($250): escribe una justificación.

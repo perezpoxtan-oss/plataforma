@@ -380,7 +380,7 @@
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-rojo">{{ $esNuevo ? 'Registrar Usuario' : 'Guardar Cambios' }}</button>
+                            <button type="submit" class="btn-rojo">{{ $esNuevo ? 'Guardar usuario' : 'Guardar Cambios' }}</button>
                         </div>
                     </form>
                 </div>

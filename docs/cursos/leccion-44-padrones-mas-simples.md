@@ -43,7 +43,7 @@ Comprueba: el aviso del jefe ya no tiene el botón **Verificar** (se resolvió).
 ## Práctica 4 · Unir dos fichas de la misma persona (admin.demo o jefe.demo)
 
 1. En el **Padrón de personas** registra «Ana López Uc» y luego «Ana Lopez» con un folio de INE.
-2. En la ficha **Ana Lopez** toca el botón azul **Unir con otra ficha**, elige **Ana López Uc** y toca **Guardar unión**.
+2. En la ficha **Ana Lopez** toca el botón azul **Unir con otra ficha**, elige **Ana López Uc** y toca **Aprobar · es el mismo**.
 3. Abre la ficha de **Ana López Uc**: ahora tiene el folio. **Ana Lopez** quedó fuera de uso, sin borrarse.
 
 Comprueba: con `supervisor.demo` no aparece el botón (puede editar, pero no dar de baja).

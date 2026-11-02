@@ -1,4 +1,4 @@
-# Lección 38 · Una ficha por persona, «¿A qué viene?» y el «Que pase» de RR. HH.
+# Lección 38 · Una ficha por persona, «¿A qué viene?» y el «Aprobar · que pase» de RR. HH.
 
 **Duración:** 25 minutos · **Para:** caseta (agentes y supervisores) y Recursos Humanos.
 
@@ -6,7 +6,7 @@ Aprenderás:
 
 1. Qué es una **postulación** y por qué cada persona tiene **una sola ficha**.
 2. A registrar en caseta **a qué viene** quien busca a Recursos Humanos.
-3. A responder **Que pase**, **Que espere** o **No puede pasar** (campana, Mis pendientes, Recepción y correo).
+3. A responder **Aprobar · que pase**, **Rechazar · que espere** o **Rechazar · no puede pasar** (campana, Mis pendientes, Recepción y correo).
 4. A usar **Atender** y el botón **QR para que llene su solicitud**.
 
 ## Antes de empezar
@@ -15,16 +15,16 @@ Usa el demo (`php artisan plataforma:demo`), contraseña `Demo1234!`. Usuarios: 
 
 En el demo ya hay:
 
-- **Martha Ek Chan**, esperando ahora mismo a que Recursos Humanos diga «Que pase».
+- **Martha Ek Chan**, esperando ahora mismo a que Recursos Humanos diga «Aprobar · que pase».
 - **Jorge Tun Pech**, que volvió hoy a su entrevista: su ficha tiene dos visitas.
 - **Silvia Mena Couoh**, que estaba en cartera y volvió a buscar empleo: su ficha tiene dos postulaciones.
 
 ## Práctica 1 · Responder a quien espera (rh.demo)
 
 1. Mira **Mis pendientes**: el renglón **Esperando en Recepción** cuenta a Martha.
-2. Abre la **campana**: «Llegó un candidato: Martha Ek Chan» trae **Que pase**, **Que espere** y **No puede pasar**.
-3. Toca **Que espere**. Entra como **agente.demo** a **Accesos → Pendientes de Autorización**: la tarjeta dice **RR. HH. PIDE QUE ESPERE**.
-4. Regresa como **rh.demo** a **Recepción de RR. HH.** y toca **Que pase** en Martha.
+2. Abre la **campana**: «Llegó un candidato: Martha Ek Chan» trae **Aprobar · que pase**, **Rechazar · que espere** y **Rechazar · no puede pasar**.
+3. Toca **Rechazar · que espere**. Entra como **agente.demo** a **Accesos → Pendientes de Autorización**: la tarjeta dice **RR. HH. PIDE QUE ESPERE**.
+4. Regresa como **rh.demo** a **Recepción de RR. HH.** y toca **Aprobar · que pase** en Martha.
 
 Comprueba: la tarjeta de la caseta pasó sola a **Gente en Sitio** con «RR. HH. dijo que pase».
 
@@ -46,21 +46,21 @@ Comprueba: la tarjeta de la caseta pasó sola a **Gente en Sitio** con «RR. HH.
 
 ## Práctica 4 · Atender y el QR (rh.demo)
 
-1. En **Recepción**, en Martha toca **Atender** (o, si espera en caseta, **Que pase y lo atiendo**): pasa a «Con RR. HH.».
+1. En **Recepción**, en Martha toca **Atender** (o, si espera en caseta, **Aprobar y atender**): pasa a «Con RR. HH.».
 2. Abre su ficha y toca **QR para que llene su solicitud**. Tócalo otra vez: se muestra el mismo código (no se crea otro).
-3. **Anular enlace** aparece abajo, discreto, solo si hay uno vigente.
+3. **Dar de baja el enlace** aparece abajo, discreto, solo si hay uno vigente.
 4. Revisa **Mis pendientes → Solicitudes por revisar**: lleva a la lista de candidatos filtrada.
 
 ## Práctica 5 · Confirmar en caseta y el ajuste (supervisor.demo y admin.demo)
 
 1. Como **agente.demo** registra a otra persona con **Otro trámite de RR. HH.**
-2. Como **supervisor.demo**, en **Pendientes de Autorización**, toca **Confirmar Autorización**: el mensaje pregunta si Recursos Humanos ya autorizó.
-3. Como **admin.demo**, en **Recepción → Ajustes**, desmarca **La caseta espera a que RR. HH. diga «Que pase»** y guarda. Registra a alguien más: pasa directo a **Gente en Sitio**.
+2. Como **supervisor.demo**, en **Pendientes de Autorización**, toca **Aprobar ingreso**: el mensaje pregunta si Recursos Humanos ya autorizó.
+3. Como **admin.demo**, en **Recepción → Ajustes**, desmarca **La caseta espera a que RR. HH. diga «Aprobar · que pase»** y guarda. Registra a alguien más: pasa directo a **Gente en Sitio**.
 4. Vuelve a marcarlo para dejar el demo como estaba.
 
 ## Para recordar
 
 - La caseta solo anota **a qué viene** y avisa; el puesto y el departamento los pone Recursos Humanos o la vacante.
 - **Una ficha por persona**: si vuelve, se usa la suya y, si no tiene proceso abierto, se le abre una postulación nueva.
-- **Que espere** no cierra el aviso: cuando puedas, toca **Que pase**.
+- **Rechazar · que espere** no cierra el aviso: cuando puedas, toca **Aprobar · que pase**.
 - En empresas que ya usaban la plataforma, el ajuste empieza **apagado**; en las nuevas, **encendido**.

@@ -170,7 +170,7 @@
 
         <div class="acciones-plantilla-qr">
             <a href="{{ route('etiquetas.plantillas') }}" class="btn-cancelar">Cancelar</a>
-            <button type="submit" class="btn-gafetes"><i class="bi bi-check-lg me-1" aria-hidden="true"></i>{{ $p->exists ? 'Guardar cambios' : 'Crear plantilla' }}</button>
+            <button type="submit" class="btn-gafetes"><i class="bi bi-check-lg me-1" aria-hidden="true"></i>{{ $p->exists ? 'Guardar cambios' : 'Guardar plantilla' }}</button>
         </div>
     </form>
 </div>

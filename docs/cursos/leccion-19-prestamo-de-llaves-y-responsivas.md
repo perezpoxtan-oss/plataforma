@@ -19,7 +19,7 @@
 3. Toca **Prestar Llave**. La sede ya viene elegida.
    - En la llave escribe `hdc-101` y Enter.
    - En el colaborador escribe `1007` y Enter (Mariana López).
-   - Garantía **INE**, folio `ine-1234`. Toca **Registrar y Capturar Siguiente**.
+   - Garantía **INE**, folio `ine-1234`. Toca **Guardar y capturar siguiente**.
    - Sin cerrar: llave `hdc-vista-mar`, colaborador `1009`, garantía **Ninguna (Riesgo)**. Registra. El contador dice 2.
    - Prueba la llave `hdc-101` otra vez: el sistema avisa que **ya está fuera**.
    - Prueba la llave `hdc-site-ti` con el colaborador `1008` (Daniela, de Playa): el aviso rojo sale dentro del cuadro.
@@ -48,7 +48,7 @@
 ## Para recordar
 
 - **Escanear primero**: la llave (o el equipo) y luego el gafete. Con un lector USB no hace falta tocar nada más que Enter.
-- **Registrar y Capturar Siguiente** deja el cuadro abierto y limpio; la sede se queda.
+- **Guardar y capturar siguiente** deja el cuadro abierto y limpio; la sede se queda.
 - Una llave **no se presta dos veces**: el sistema y la base lo impiden.
 - **Anular** es para errores de captura, no se borra nada. Solo Jefe y Administrador.
 - Una responsiva **no se guarda sin la firma**. La firma solo la ve quien tiene permiso en esa sede.

@@ -101,7 +101,7 @@
                     <div class="icono"><i class="bi {{ $filtro === 'mi_firma' ? 'bi-check2-all' : 'bi-box-arrow-up-right' }}" aria-hidden="true"></i></div>
                     @if ($filtro === 'llegan' && $texto === '')
                         <p class="fw-semibold mb-1">No viene ningún pase a tu sede.</p>
-                        <p class="text-muted small m-0">Aquí aparecen los pases aprobados o en camino hacia tu sede. Cuando llegue el equipo, abre el pase y toca «Confirmar llegada a esta sede».</p>
+                        <p class="text-muted small m-0">Aquí aparecen los pases aprobados o en camino hacia tu sede. Cuando llegue el equipo, abre el pase y toca «Recibir en esta sede».</p>
                     @elseif ($filtro === 'mi_firma' && $texto === '')
                         <p class="fw-semibold mb-1">Nada pendiente: no hay pases que esperen tu firma.</p>
                         <p class="text-muted small m-0">Aquí aparecen los pases que debes aprobar y, en caseta, los que debes dejar salir o recibir.</p>

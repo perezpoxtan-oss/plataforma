@@ -75,7 +75,7 @@ Comprueba: te lleva a activarla antes de cualquier otra pantalla y, ya activa, n
 
 1. Con una cuenta que tenga la verificación activa, escribe usuario y contraseña. En la pantalla del código toca **¿No tienes tu teléfono?** → **Perdí mi teléfono: pedir ayuda**.
 2. Entra como el **Administrador**: la petición está en la campana, en **Mis pendientes → Cuentas por revisar** y arriba de **Usuarios** («Piden ayuda con su cuenta»). Toca el **teléfono** de su ficha.
-3. Como **Super Administrador**: en **Configuración → Plataforma → Super Administradores** da de alta a un segundo Super Administrador (Inicio avisa en rojo mientras haya uno solo). Repite el paso 1 con la cuenta del segundo y, desde la tuya, toca **Restablecer o dar de baja → Quitar sus dos pasos** escribiendo tu contraseña.
+3. Como **Super Administrador**: en **Configuración → Plataforma → Super Administradores** da de alta a un segundo Super Administrador (Inicio avisa en rojo mientras haya uno solo). Repite el paso 1 con la cuenta del segundo y, desde la tuya, toca **Restablecer o dar de baja → Dar de baja sus dos pasos** escribiendo tu contraseña.
 4. Intenta **Dar de baja** al segundo Super Administrador.
 
 Comprueba: la petición desaparece sola al restablecer; la persona entra con su contraseña y activa su teléfono nuevo. En el paso 4 la tarjeta dice «No se puede: quedaría menos de dos Super Administradores activos». Nada de esto necesita entrar al servidor.

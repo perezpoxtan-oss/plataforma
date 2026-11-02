@@ -34,7 +34,7 @@ Ajustes por empresa en `empresas.preferencias.privacidad` (Configuración → Pr
 | `visitantes_dias` | Datos de visitantes externos (visitante, huésped, proveedor, contratista) en registros **finalizados** (desde la salida) | 365 | 30–3650 |
 | `arco_recordar_dias` | Recordar solicitudes ARCO cuando falten N días hábiles (ámbar) | 5 | 1–15 |
 
-**Candidatos no contratados:** no se duplica. Su plazo es el que ya existía (`PlazosCandidatos` `borrar_meses`, 12 meses, con aviso 15 días antes y «Conservar 6 meses más», `CaducidadCandidatos`), que corre siempre. La tarjeta lo muestra con su enlace «Configurar en Candidatos → Documentos y plazos».
+**Candidatos no contratados:** no se duplica. Su plazo es el que ya existía (`PlazosCandidatos` `borrar_meses`, 12 meses, con aviso 15 días antes y «Guardar 6 meses más», `CaducidadCandidatos`), que corre siempre. La tarjeta lo muestra con su enlace «Configurar en Candidatos → Documentos y plazos».
 
 **Tarea:** `php artisan plataforma:privacidad [--si-toca]` (en `despliegue/desplegar.sh`, en proceso, sin exec). Con `--si-toca` corre una vez al día después de las 2:00 (hora de Ciudad de México) y otra vez si quedó trabajo (lotes de 500 por tipo y empresa). Por cada empresa **encendida**:
 

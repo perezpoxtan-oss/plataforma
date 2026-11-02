@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * La caseta de noche (C-25, B-05, DD-13): el agente no tiene «Confirmar
- * Autorización» ni «Autorizar por excepción», y a veces no hay supervisor.
+ * Autorización» ni «Aprobar por excepción», y a veces no hay supervisor.
  *
  *  1. «Canalizar al supervisor» (un toque en la tarjeta pendiente): el aviso
  *     llega a la campana y a Mis pendientes del supervisor de la sede, con

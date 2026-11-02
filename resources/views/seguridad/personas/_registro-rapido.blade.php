@@ -98,7 +98,7 @@
 
                 <div class="dialogo-acciones">
                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                    <button type="submit" class="btn-azul" data-texto-original="Registrar">Registrar</button>
+                    <button type="submit" class="btn-azul" data-texto-original="Guardar">Guardar</button>
                 </div>
             </form>
         </div>

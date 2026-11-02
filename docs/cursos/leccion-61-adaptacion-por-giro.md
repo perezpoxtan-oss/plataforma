@@ -34,7 +34,7 @@ Comprueba: el hotel ofrece **Huésped**; el corporativo, **Visitante** (y no Hu�
 1. **Nuevo Ingreso** → **Visita**.
 2. Escribe el nombre de la visita y deja la identificación que entrega.
 3. En **Motivo de la Visita** deja **Visita a Residente**, busca al residente en **¿A quién visita?** y escribe o elige el departamento en **¿A qué departamento va?**.
-4. Toca **Registrar y dejar pasar**.
+4. Toca **Guardar y dejar pasar**.
 
 Comprueba: la tarjeta en **Gente en Sitio** dice **VISITA**, la pastilla **Depto. 101** junto al nombre y **Motivo: Visita a Residente**. Escribe «101» en el campo de **Dar salida**: aparece la visita.
 

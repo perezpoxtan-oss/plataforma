@@ -15,12 +15,12 @@ Aprenderás:
 
 Usa la empresa de práctica con `admin.demo` (Administrador), `jefedepto.demo` (jefa de Recepción), `jefe.demo` y `director.demo` (aprobadores), `agente.demo` (caseta de Centro), `agente2.demo` (caseta de Playa), `supervisor.demo` y `solicitante.demo`.
 
-La empresa de práctica conserva el circuito de ejemplo con **dos firmas en cada movimiento** de caseta. Solo el motivo **Devolución** (ningún pase de ejemplo lo usa) tiene una excepción para practicar: **Registrar Salida** pide solo la firma de Seguridad y **Registrar Regreso** no pide firmas.
+La empresa de práctica conserva el circuito de ejemplo con **dos firmas en cada movimiento** de caseta. Solo el motivo **Devolución** (ningún pase de ejemplo lo usa) tiene una excepción para practicar: **Dar salida** pide solo la firma de Seguridad y **Recibir de regreso** no pide firmas.
 
 ## Práctica 1 · Lo de siempre (agente.demo y agente2.demo)
 
-1. Con `agente2.demo` abre **Operación → Caseta → Pases de salida** y toca la píldora **Llegan a mi sede**: aparece `PS-000007` «En camino a Playa… Cuando llegue, toca «Confirmar llegada a esta sede»».
-2. Abre el pase y toca **Confirmar llegada a esta sede**: pide el nombre y la firma de quien entrega y tu firma. Guarda.
+1. Con `agente2.demo` abre **Operación → Caseta → Pases de salida** y toca la píldora **Llegan a mi sede**: aparece `PS-000007` «En camino a Playa… Cuando llegue, toca «Recibir en esta sede»».
+2. Abre el pase y toca **Recibir en esta sede**: pide el nombre y la firma de quien entrega y tu firma. Guarda.
 3. Vuelve a **Llegan a mi sede**: el pase ya no está.
 
 Comprueba: en la campana de `agente2.demo` el aviso «Un pase viene a tu sede» quedó leído.
@@ -29,8 +29,8 @@ Comprueba: en la campana de `agente2.demo` el aviso «Un pase viene a tu sede» 
 
 1. Con `admin.demo` abre **Circuito** y baja a **Firmas en caseta**. Abre **Excepciones por motivo (avanzado)** y mira el renglón **Devolución**.
 2. Con `solicitante.demo` crea un **Nuevo Pase** con motivo **Devolución** hacia un proveedor. Apruébalo con `jefedepto.demo` (jefa de su departamento), `jefe.demo` y `director.demo`.
-3. Con `agente.demo` toca **Registrar Salida**: la ventana dice «En este pase, este movimiento solo pide la firma de Seguridad.» Marca los artículos y guarda.
-4. Con `admin.demo` cambia **Registrar Salida** de **Devolución** a **Dos firmas** y guarda. Vuelve al pase de la práctica: **conserva** lo que tenía al enviarse.
+3. Con `agente.demo` toca **Dar salida**: la ventana dice «En este pase, este movimiento solo pide la firma de Seguridad.» Marca los artículos y guarda.
+4. Con `admin.demo` cambia **Dar salida** de **Devolución** a **Dos firmas** y guarda. Vuelve al pase de la práctica: **conserva** lo que tenía al enviarse.
 5. Registra el regreso: «Este movimiento no pide firmas». Imprime el pase: la hoja dice «Sin firma: se registra en la plataforma» y quién lo registró.
 
 ## Práctica 3 · Aprobación por valor (admin.demo y solicitante.demo)

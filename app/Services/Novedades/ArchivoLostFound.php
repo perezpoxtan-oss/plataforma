@@ -197,7 +197,7 @@ class ArchivoLostFound
     // ------------------------------------------------------- Cerrar / Entregar
 
     /**
-     * Registrar Cierre (SEGCAT: lf_articulo_proceso.php?accion=cerrar).
+     * Guardar cierre (SEGCAT: lf_articulo_proceso.php?accion=cerrar).
      *
      * @param  array<string, mixed>  $entrada
      */

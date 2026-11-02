@@ -201,7 +201,7 @@
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-verde">{{ $esNueva ? 'Registrar '.$singular : 'Guardar Cambios' }}</button>
+                            <button type="submit" class="btn-verde">{{ $esNueva ? 'Guardar '.$singular : 'Guardar Cambios' }}</button>
                         </div>
                     </form>
                     @unless ($esNueva)

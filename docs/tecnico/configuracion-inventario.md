@@ -33,7 +33,7 @@ Convenciones:
 | Ajuste | Dónde se guarda | Pantalla | Quién | Por omisión |
 |---|---|---|---|---|
 | Visita / proveedor / contratista esperan autorización del departamento | pref. `recepcion.{visitas,proveedores,contratistas}_requieren_autorizacion` | RR. HH. → Responsables por departamento (enlace en Caseta y accesos) | `autorizaciones.configurar` o `candidatos.configurar`, empresa | sí (empresas antiguas: su valor migrado) |
-| La caseta espera el «Que pase» de RR. HH. | pref. `recepcion.rh_autoriza_paso` | Responsables por departamento (enlace) | ídem | sí (empresas antiguas: no) |
+| La caseta espera el «Aprobar · que pase» de RR. HH. | pref. `recepcion.rh_autoriza_paso` | Responsables por departamento (enlace) | ídem | sí (empresas antiguas: no) |
 | Recordatorio y escalamiento de esperas (minutos) | pref. `recepcion.recordar_minutos` / `escalar_minutos` | Responsables por departamento (enlace) | ídem | 10 / 20 (`PanelRecepcion::ESPERA_*`) |
 | Responsables, suplentes y delegaciones por departamento | tablas de autorizaciones | Responsables por departamento / «No molestar» en Mi cuenta | `autorizaciones.configurar` / cada persona | — |
 | Imprimir etiquetas desde los padrones | pref. `padrones.impresion` | Etiquetas QR → Plantillas (enlace) | `etiquetas_qr.configurar` empresa | `modulo` (hoja propia) |

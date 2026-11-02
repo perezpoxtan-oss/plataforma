@@ -118,7 +118,7 @@
                             @endforeach
                             {{-- C-08 (A-03) y DD-11 --}}
                             <li>Sin quien autorice en la sede: <strong>{{ mb_strtolower($e['sinCobertura']) }}</strong>@if ($e['faltan'] > 0) · <span class="text-danger">hoy {{ $e['faltan'] === 1 ? '1 departamento no tiene' : $e['faltan'].' departamentos no tienen' }}</span>@endif</li>
-                            <li>Quien viene con Recursos Humanos: <strong>{{ $e['rh'] ? 'la caseta espera el «Que pase»' : 'pasa sin esperar' }}</strong></li>
+                            <li>Quien viene con Recursos Humanos: <strong>{{ $e['rh'] ? 'la caseta espera el «Aprobar · que pase»' : 'pasa sin esperar' }}</strong></li>
                             <li>Recordar a los <strong>{{ $e['recordar'] }} min</strong> y avisar al suplente y al jefe a los <strong>{{ $e['escalar'] }} min</strong></li>
                         </ul>
                         <p class="small text-muted mb-2"><span class="valor-original">Valor original: todos esperan la autorización (sin quien autorice, esperan al supervisor); recordar a los {{ \App\Services\Recepcion\PanelRecepcion::ESPERA_AMBAR }} min y avisar a los {{ \App\Services\Recepcion\PanelRecepcion::ESPERA_ROJA }} min.</span> Quién autoriza en cada departamento y sus suplentes también se eligen ahí.</p>

@@ -159,7 +159,7 @@ class TransporteController extends Controller
         if ($primero->esTaxi()) {
             $respuesta->with('vales', $movimientos->map(fn ($m) => ['id' => $m->id, 'folio' => $m->folio()])->all());
         }
-        // "Registrar y capturar siguiente": se vuelve a abrir el alta con la misma sede y tipo
+        // "Guardar y capturar siguiente": se vuelve a abrir el alta con la misma sede y tipo
         if ($request->boolean('_siguiente')) {
             $respuesta->with('capturar_siguiente', ['sede_id' => $primero->sede_id, 'tipo_movimiento' => $primero->tipo_movimiento]);
         }

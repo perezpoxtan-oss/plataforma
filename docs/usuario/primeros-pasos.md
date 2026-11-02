@@ -15,7 +15,7 @@ resumen: Qué es la plataforma, cómo entrar, cómo moverte y cómo pedir ayuda.
 
 1. Abre en tu computadora o celular **la dirección de tu plataforma** (te la da tu administrador; guárdala en favoritos).
 2. Escribe tu **usuario o tu correo** y tu **contraseña**.
-3. Toca **Autenticar Ingreso**.
+3. Toca **Entrar**.
 
 ![Pantalla para entrar](img/primeros-pasos/acceso.png)
 

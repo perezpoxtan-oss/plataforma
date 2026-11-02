@@ -15,7 +15,7 @@ resumen: Registrar los vehículos que entran a la empresa e imprimir su calcoman
 ## Antes de empezar
 
 - Para ver la pantalla tu rol debe poder consultar el *Padrón vehicular*. Si no aparece en el menú, pide el permiso a tu administrador.
-- Para registrar, editar, dar de baja o imprimir calcomanías necesitas esos permisos. Si no ves **Registrar Vehículo** ni el lápiz, tu rol solo consulta (como el agente de caseta).
+- Para registrar, editar, dar de baja o imprimir calcomanías necesitas esos permisos. Si no ves **Guardar vehículo** ni el lápiz, tu rol solo consulta (como el agente de caseta).
 - Si tu rol solo puede editar «lo propio», solo podrás editar o dar de baja los vehículos que tú registraste.
 
 ## Cómo encontrar un vehículo
@@ -31,7 +31,7 @@ resumen: Registrar los vehículos que entran a la empresa e imprimir su calcoman
 
 ## Cómo registrar un vehículo
 
-1. Toca la tarjeta **Registrar Vehículo**. Se abre **Alta de Vehículo**.
+1. Toca la tarjeta **Guardar vehículo**. Se abre **Alta de Vehículo**.
 2. Escribe las **Placas (Únicas)** como vengan. Se guardan en mayúsculas y sin espacios ni guiones; debajo verás cómo quedarán («Se guardarán como UVW482B.»).
 3. En **¿De quién es?** (la categoría) elige una de las dos:
    - **Particular (de un colaborador, huésped, visitante, familiar…)**: no pide empresa. Si es el auto de un colaborador, elígelo en **Colaborador (dueño del vehículo)**; es opcional.
@@ -113,7 +113,7 @@ En **Padrones → Empresas externas → Ficha → Flotilla** toca **Agregar veh�
 
 ## Lo que ve el agente de caseta
 
-El agente consulta y busca vehículos, pero no ve **Registrar Vehículo** ni los botones de editar o dar de baja.
+El agente consulta y busca vehículos, pero no ve **Guardar vehículo** ni los botones de editar o dar de baja.
 
 ![Vista del agente](img/vehiculos/v15-agente.png)
 
@@ -139,7 +139,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | La capacidad debe ser de 1 a 99 personas. | Número fuera de rango. | Corrige la capacidad. |
 | La empresa propietaria no existe en esta empresa o está desactivada. | La empresa se dio de baja. | Elige otra o pide que la reactiven. |
 | El colaborador no existe en esta empresa o está dado de baja. | El colaborador ya no está activo. | Elige otro colaborador. |
-| No veo el botón **Registrar Vehículo**. | Tu rol solo consulta. | Pide el permiso a tu administrador. |
+| No veo el botón **Guardar vehículo**. | Tu rol solo consulta. | Pide el permiso a tu administrador. |
 
 ## Preguntas frecuentes
 

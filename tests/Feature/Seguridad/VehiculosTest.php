@@ -104,7 +104,7 @@ class VehiculosTest extends TestCase
 
         $this->actingAs($this->admin)->get('/vehiculos')->assertOk()
             ->assertSee('Padrón Vehicular')->assertSee('Catálogo de autos, flotillas y unidades registradas.')
-            ->assertSee('Registrar Vehículo')->assertSee('Padrón de:')
+            ->assertSee('Guardar vehículo')->assertSee('Padrón de:')
             ->assertSee('id="vehiculo-'.$taxi->id.'"', false)
             ->assertSee('data-grupo="empresas"', false)->assertSee('data-grupo="particulares"', false)
             ->assertSee('Particulares')->assertDontSee('data-valor="taxis"', false)
@@ -413,7 +413,7 @@ class VehiculosTest extends TestCase
         $agente = $this->crearUsuario($this->empresa, 'Agente');
 
         $this->actingAs($agente)->get('/vehiculos')->assertOk()->assertSee('ABC123A')
-            ->assertDontSee('Registrar Vehículo')->assertDontSee('dialogoEditarVehiculo')->assertDontSee(route('vehiculos.calcomania', $v->id));
+            ->assertDontSee('Guardar vehículo')->assertDontSee('dialogoEditarVehiculo')->assertDontSee(route('vehiculos.calcomania', $v->id));
         $this->actingAs($agente)->post('/vehiculos', $this->datos(['placas' => 'NUEVO1']))->assertForbidden();
         $this->actingAs($agente)->put("/vehiculos/{$v->id}", $this->datos())->assertForbidden();
         $this->actingAs($agente)->patch("/vehiculos/{$v->id}/estado", ['activo' => 0])->assertForbidden();

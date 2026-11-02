@@ -8,7 +8,7 @@ Aprenderás:
 2. A reunir los documentos de un elegido: **subirlos** o marcarlos **Recibido en papel**.
 3. A registrar el **contrato firmado** y a **contratar**, aun con faltantes y con motivo.
 4. Cómo funcionan el **reloj, el color y el recordatorio** de cada plazo.
-5. Qué es la **caducidad**: postulaciones archivadas, fichas por caducar y **Conservar 6 meses más**.
+5. Qué es la **caducidad**: postulaciones archivadas, fichas por caducar y **Guardar 6 meses más**.
 6. A consultar el **expediente del colaborador**.
 
 ## Antes de empezar
@@ -50,7 +50,7 @@ Comprueba: ahora la tarjeta dice **Candidato · Firma de contrato** y en **Recep
 1. En la ficha de Mariela toca **Contrato firmado**, deja la fecha de hoy (el archivo es opcional) y toca **Guardar**.
 2. Toca **Contratar**. Si todo está completo, la ventana no muestra avisos.
 3. Para practicar con faltantes, elimina un documento obligatorio (bote de basura) y vuelve a tocar **Contratar**: la ventana dice qué falta. Marca **Contratar de todos modos**, intenta guardar sin motivo (verás el error) y luego escribe «Entrega el acta la próxima semana».
-4. Escribe el **Número de empleado** y toca **Dar de alta como colaborador**.
+4. Escribe el **Número de empleado** y toca **Guardar como colaborador**.
 
 Comprueba: «¡Contratado! … ya está en Colaboradores con el número …». En el **Historial** de la ficha quedan el motivo y lo que faltaba.
 
@@ -67,7 +67,7 @@ Comprueba: el recordatorio llega **una sola vez al día** mientras siga pendient
 
 1. En **Candidatos** toca el filtro **Archivadas**: aparece **Hugo** (su postulación rechazada se archivó a los 6 meses).
 2. Toca el filtro **Por caducar**: Hugo aparece con la fecha en que se borrará su ficha.
-3. Abre la campana: el aviso «Se borrará la ficha de Hugo Balam Poot el …» trae el botón **Conservar 6 meses más**. Tócalo (o úsalo desde su ficha).
+3. Abre la campana: el aviso «Se borrará la ficha de Hugo Balam Poot el …» trae el botón **Guardar 6 meses más**. Tócalo (o úsalo desde su ficha).
 
 Comprueba: la ficha de Hugo ya no dice «Se borra el …» y sale del filtro **Por caducar**. En la **Bitácora de auditoría** queda «Conservación de la ficha» sin datos personales. Las fichas de los contratados nunca caducan.
 
@@ -86,5 +86,5 @@ Comprueba: el Supervisor solo ve los apartados de los módulos que su rol puede 
 - **Recibido en papel** cuenta igual que un documento escaneado y deja dicho quién lo recibió y cuándo.
 - **Contratar de todos modos** siempre pide motivo y queda en el historial y en la bitácora.
 - Cada plazo tiene **reloj, color y recordatorio diario** hasta que alguien lo atiende.
-- Las postulaciones en Considerar o Rechazado se **archivan**; las fichas sin contratación se **borran** con aviso 15 días antes, salvo que alguien toque **Conservar 6 meses más**.
+- Las postulaciones en Considerar o Rechazado se **archivan**; las fichas sin contratación se **borran** con aviso 15 días antes, salvo que alguien toque **Guardar 6 meses más**.
 - Al contratar, los documentos pasan al **expediente del colaborador**.

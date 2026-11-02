@@ -34,7 +34,7 @@ resumen: Consultar el manual de procedimientos, leer y firmar «Leí y entendí�
 1. Toca el aviso **Procedimiento por leer** de la **campana** (botón **Leer ahora**), **Mis pendientes → Procedimientos por leer**, o el botón **Por leer** de la lista.
 2. Toca **Leer y firmar**. Se abre el **modo lectura**: letra grande, pasos numerados y los **puntos críticos en rojo**. Con **A−** y **A+** cambias el tamaño de la letra.
 3. Lee todo con calma.
-4. Al final, marca **Leí y entendí este procedimiento**, firma en el recuadro (o usa tu firma guardada) y toca **Firmar de enterado**.
+4. Al final, marca **Leí y entendí este procedimiento**, firma en el recuadro (o usa tu firma guardada) y toca **Guardar · firmar de enterado**.
    - Si tu empresa pide **solo la casilla**, no hay recuadro de firma: marca la casilla y toca **Guardar «Leí y entendí»**. Queda tu nombre, la fecha y la hora.
    - Si la pide **solo en procedimientos con puntos críticos**, los que tienen pasos en rojo piden firma y los demás solo la casilla.
 
@@ -67,10 +67,10 @@ resumen: Consultar el manual de procedimientos, leer y firmar «Leí y entendí�
 
 ## Cómo cambiar un procedimiento publicado
 
-1. En su ficha toca **Nueva versión**. Se crea un borrador copiando todo; la versión anterior sigue rigiendo.
+1. En su ficha toca **Guardar como nueva versión**. Se crea un borrador copiando todo; la versión anterior sigue rigiendo.
 2. Toca **Editar borrador**, haz los cambios y escribe **qué cambió**.
-3. Toca **Enviar a revisión**. Cuando se aprueba, la versión nueva rige y todos deben firmar otra vez.
-4. Si ya no se necesita el cambio, toca **Descartar borrador**.
+3. Toca **Canalizar a revisión**. Cuando se aprueba, la versión nueva rige y todos deben firmar otra vez.
+4. Si ya no se necesita el cambio, toca **Dar de baja el borrador**.
 
 **Qué debes ver:** en la pestaña **Versiones**, quién escribió, envió y aprobó cada versión.
 
@@ -96,7 +96,7 @@ resumen: Consultar el manual de procedimientos, leer y firmar «Leí y entendí�
 | «Agrega al menos un paso antes de enviarlo a revisión.» | El procedimiento no tiene pasos. | Escribe al menos un paso. |
 | «La clave solo lleva letras, números y guiones (por ejemplo PRO-SEG-001).» | La clave tiene espacios o símbolos. | Corrige la clave. |
 | «Escribe por qué lo rechazas y qué hay que corregir (es obligatorio).» | Falta el comentario. | Explica qué corregir. |
-| «La versión publicada no se edita: usa «Nueva versión» para proponer cambios.» | Querías editar lo publicado. | Toca **Nueva versión**. |
+| «La versión publicada no se edita: usa «Nueva versión» para proponer cambios.» | Querías editar lo publicado. | Toca **Guardar como nueva versión**. |
 | «Los adjuntos solo pueden ser PDF, JPG, PNG o WEBP.» | El archivo no es válido. | Conviértelo a PDF o imagen. |
 
 ## Preguntas frecuentes

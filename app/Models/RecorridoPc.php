@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * zona).
  *
  * Estatus: nace EN PROCESO; se pueden agregar puntos (uno a la vez) tantas
- * veces como haga falta. «Finalizar Recorrido» (con al menos un equipo) lo
+ * veces como haga falta. «Guardar y terminar recorrido» (con al menos un equipo) lo
  * cierra como COMPLETO, o CON HALLAZGOS si algún punto quedó con falla. Un
  * recorrido finalizado ya no recibe puntos ni se vuelve a abrir.
  *

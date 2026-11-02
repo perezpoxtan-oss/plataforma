@@ -35,7 +35,7 @@ resumen: Los datos de tu empresa (razón social, RFC, zona horaria, logo) y sus 
 1. Entra a **Estructura → Empresas**. Se abre **Empresas** con todas las empresas de la plataforma.
 2. Toca la tarjeta **Nueva Empresa**.
 3. Captura **Nombre Comercial**, **Razón Social**, **RFC**, **Giro** (Hotel, Corporativo / industria, Condominio o Fraccionamiento) y **Zona Horaria**.
-4. Toca **Registrar Empresa**.
+4. Toca **Guardar empresa**.
 
 ![Alta de empresas](img/empresas/5-alta-empresas.png)
 

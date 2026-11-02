@@ -55,7 +55,7 @@ Para abrir un objeto rápido, en **Escanear etiqueta de la bolsa** escanea el QR
    - **Destruido**.
    - **Entregado a beneficencia**: escribe la institución.
 3. Pide la **firma** en el recuadro (quien recibe, o quien autoriza).
-4. Toca **Registrar Cierre**.
+4. Toca **Guardar cierre**.
 
 ![Cerrar o entregar un objeto](img/lost-found-y-robo/cerrar-entregar.png)
 

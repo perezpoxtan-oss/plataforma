@@ -29,7 +29,7 @@ resumen: Anotar las llegadas y salidas del transporte de personal y los taxis cu
 4. En **Estatus del Servicio** elige **SERVICIO NORMAL (A Tiempo)** o **SERVICIO NORMAL (Con Retraso)**.
 5. Revisa la **Ruta**: ya viene la más cercana a la hora actual.
 6. Si quieres, escribe placas, chofer y número de pasajeros. Si ya están registrados, aparecen en la lista y se llenan solos los demás datos.
-7. Toca **Guardar Registro Operativo**, o **Registrar y capturar siguiente** si viene otra unidad.
+7. Toca **Guardar Registro Operativo**, o **Guardar y capturar siguiente** si viene otra unidad.
 
 ![Registrar un movimiento](img/transporte/registrar.png)
 

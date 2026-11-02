@@ -151,7 +151,7 @@ class EquipoPcController extends Controller
         if ($request->user()->can('equipos_pc.imprimir')) {
             $respuesta->with('siguiente_paso', ['texto' => 'Imprimir su etiqueta', 'icono' => 'bi-printer', 'nueva_pestana' => true, 'url' => route('equipos_pc.etiqueta', $equipo->id)]);
         }
-        // «Registrar y capturar siguiente»: se vuelve a abrir el alta con la misma sede, tipo y ubicación
+        // «Guardar y capturar siguiente»: se vuelve a abrir el alta con la misma sede, tipo y ubicación
         if ($request->boolean('_siguiente')) {
             $respuesta->with('capturar_siguiente', [
                 'sede_id' => $equipo->sede_id, 'categoria' => $equipo->categoria,

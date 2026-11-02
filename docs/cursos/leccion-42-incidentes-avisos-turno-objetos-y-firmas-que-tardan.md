@@ -21,7 +21,7 @@ Sin configurar nada todo funciona como siempre; lo único nuevo que se ve es la 
 
 ## Práctica 1 · Canalizar avisa (supervisor.demo y agente.demo)
 
-1. Con `supervisor.demo` abre **Operación → Bitácora → Novedades** y toca **Nuevo Ticket**. Llena lo mínimo y en **¿A quién se canaliza?** elige al agente de `agente.demo`. Toca **Despachar Ticket**: el mensaje dice «Le avisamos a …».
+1. Con `supervisor.demo` abre **Operación → Bitácora → Novedades** y toca **Nuevo Ticket**. Llena lo mínimo y en **¿A quién se canaliza?** elige al agente de `agente.demo`. Toca **Guardar ticket**: el mensaje dice «Le avisamos a …».
 2. Con `agente.demo` abre la **campana**: «Te canalizaron el ticket #…» con el botón **Atender**. Abre **Mis pendientes**: aparece **Tickets canalizados a mí** y te lleva a la lista solo con los tuyos.
 3. Con `agente.demo` cierra el ticket (Resuelto y Cerrado con su resolución). Con `supervisor.demo` mira la campana: «Ticket #… resuelto» con la resolución.
 

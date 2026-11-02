@@ -58,8 +58,8 @@ resumen: Consultar, reimprimir y dar seguimiento a los comprobantes de llaves, g
 3. Si el voucher tenía cobro:
    - Si **todavía no** se le cobraba al responsable, deja la casilla sin marcar: el cobro se cancela.
    - Si **ya** se le cobró, marca **Ya se le cobró al responsable** y escribe cómo se le devolverá el dinero.
-4. Escribe un comentario (dónde apareció, quién lo entregó) y toca **Confirmar recuperado**.
-5. Cuando ya le devolviste el dinero, toca **Reembolso entregado**.
+4. Escribe un comentario (dónde apareció, quién lo entregó) y toca **Atender · recuperado**.
+5. Cuando ya le devolviste el dinero, toca **Atender · reembolso entregado**.
 
 ![Marcar como recuperado](img/vouchers/recuperado.png)
 
@@ -96,7 +96,7 @@ Un voucher con **firma física** que aún no tiene registrada la hoja firmada, o
 - **¿Cómo se crea un voucher?** Al dar de baja una llave, gafete o equipo como perdido, dañado o robado, desde su propia pantalla.
 - **¿Quién recibe las copias por correo?** Si el voucher es con cobro, las listas que el administrador puso en **Estructura → Configuración → Avisos por correo**. El responsable no recibe correo.
 - **¿Puedo borrar un voucher?** No. Si el artículo aparece, márcalo como **Recuperado** (o reactívalo desde su ficha: es lo mismo).
-- **¿Qué pasa con el cobro si el artículo aparece?** Se cancela; si ya se cobró, queda **Reembolso pendiente** hasta que marques **Reembolso entregado**.
+- **¿Qué pasa con el cobro si el artículo aparece?** Se cancela; si ya se cobró, queda **Reembolso pendiente** hasta que marques **Atender · reembolso entregado**.
 
 ## Relacionado
 

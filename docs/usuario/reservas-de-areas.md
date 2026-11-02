@@ -129,8 +129,8 @@ Solo se modifica antes de que empiece.
 
 ## Cómo cancelar una reserva
 
-1. En la ficha toca **Cancelar reserva**.
-2. Escribe **¿Por qué se cancela?** y confirma con **Cancelar reserva**.
+1. En la ficha toca **Dar de baja la reserva**.
+2. Escribe **¿Por qué se cancela?** y confirma con **Dar de baja la reserva**.
 
 **Qué debes ver:** la reserva queda **Cancelada**, el horario libre, y se avisa a quien la iba a aprobar y a los departamentos que ya tenían su orden.
 

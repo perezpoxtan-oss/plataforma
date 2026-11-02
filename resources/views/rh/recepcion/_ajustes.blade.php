@@ -42,11 +42,11 @@
             <button type="submit" class="btn-verde btn-accion-rh">Guardar ajustes de Recepción</button>
         @endif
     </form>
-    {{-- ADR-0010: las esperas (autorización de visitas, «Que pase» de RR. HH., recordatorio y escalamiento) viven en
+    {{-- ADR-0010: las esperas (autorización de visitas, «Aprobar · que pase» de RR. HH., recordatorio y escalamiento) viven en
          Responsables por departamento; los criterios de entrevista, en Candidatos → Criterios de entrevista --}}
     <p class="small text-muted mt-3 mb-0"><i class="bi bi-signpost me-1" aria-hidden="true"></i>Otros ajustes:
         @can('autorizaciones.configurar')
-            <a href="{{ route('autorizaciones.responsables', ['desde' => 'recepcion']) }}">Responsables por departamento y esperas</a> (quién autoriza, si la caseta espera el «Que pase», recordatorio y escalamiento)
+            <a href="{{ route('autorizaciones.responsables', ['desde' => 'recepcion']) }}">Responsables por departamento y esperas</a> (quién autoriza, si la caseta espera el «Aprobar · que pase», recordatorio y escalamiento)
         @endcan
         @can('candidatos.configurar')
             · <a href="{{ route('candidatos.criterios') }}">Criterios de entrevista</a>

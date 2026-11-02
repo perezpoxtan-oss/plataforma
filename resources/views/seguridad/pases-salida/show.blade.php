@@ -73,7 +73,7 @@
                 <a href="{{ route('pases-salida.imprimir', $pase->id) }}" target="_blank" rel="noopener" class="btn-accion-pase neutro"><i class="bi bi-printer" aria-hidden="true"></i> Imprimir Pase</a>
             @endif
             @if ($puede['cancelar'])
-                <button type="button" class="btn-accion-pase tenue" data-abrir-dialogo="dialogoCancelarPase"><i class="bi bi-slash-circle" aria-hidden="true"></i> Cancelar pase</button>
+                <button type="button" class="btn-accion-pase tenue" data-abrir-dialogo="dialogoCancelarPase"><i class="bi bi-slash-circle" aria-hidden="true"></i> Dar de baja el pase</button>
             @endif
         </div>
 

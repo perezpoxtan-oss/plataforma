@@ -167,7 +167,7 @@
                                     @csrf
                                     @method('PATCH')
                                     <input type="hidden" name="estado" value="{{ $destino }}">
-                                    <button type="submit" class="btn-etapa {{ $destino === 'publicada' ? 'principal' : '' }}">{{ $destino === 'publicada' && $v->estado === 'pausada' ? 'Reanudar' : Vacante::BOTONES[$destino] }}</button>
+                                    <button type="submit" class="btn-etapa {{ $destino === 'publicada' ? 'principal' : '' }}">{{ $destino === 'publicada' && $v->estado === 'pausada' ? 'Reactivar' : Vacante::BOTONES[$destino] }}</button>
                                 </form>
                             @endforeach
                             @if ($v->puedePasarA('cerrada'))
@@ -215,7 +215,7 @@
                                 </div>
                                 <div class="dialogo-acciones">
                                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                                    <button type="submit" class="btn-rojo">Cerrar vacante</button>
+                                    <button type="submit" class="btn-rojo">Dar de baja · cerrar vacante</button>
                                 </div>
                             </form>
                         </div>

@@ -40,7 +40,7 @@ resumen: Levantar un ticket por cada incidente, documentarlo en su expediente y 
 6. Si le toca a otra área (Mantenimiento, Ama de llaves, Recursos Humanos…), elige además **O a un departamento**. Quien responde por ese departamento en la sede recibe el aviso y ve **solo ese ticket** (ver abajo «Cuando te canalizan un ticket a tu departamento»).
 7. En **¿Dónde pasó?** escribe y elige el lugar de la lista (zona, piso o habitación de Zonas y edificios). Si quieres, agrega el **Detalle del lugar** (por ejemplo «cerca del elevador»). Si el lugar no está en la lista, deja lo que escribiste.
 8. Revisa **¿Cuándo sucedió?** (ya trae la hora actual) y escribe **¿Qué sucedió?**.
-9. Toca **Despachar Ticket**.
+9. Toca **Guardar ticket**.
 
 ![Generar Ticket Rápido](img/novedades/nuevo-ticket.png)
 

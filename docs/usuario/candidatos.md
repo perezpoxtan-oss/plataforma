@@ -25,7 +25,7 @@ Cada persona tiene **una sola ficha** (sus datos, su solicitud, sus documentos y
 
 | Etapa | Qué significa | Quién sigue | Botones |
 |---|---|---|---|
-| **Por atender** | Llegó (caseta, kiosco, internet o lo capturaste tú). | Recursos Humanos | **Atender** (o **Que pase y lo atiendo** desde Recepción) |
+| **Por atender** | Llegó (caseta, kiosco, internet o lo capturaste tú). | Recursos Humanos | **Atender** (o **Aprobar y atender** desde Recepción) |
 | **Con RR. HH.** | Ya lo recibiste: lo entrevistas y lo calificas cuando quieras, desde la misma etapa. | Recursos Humanos | **Entrevistar** (calificar) y luego **Canalizar al departamento** |
 | **Entrevista con el departamento** | El jefe tiene su cita (o pidió una segunda entrevista y falta ponerle fecha). | El jefe | **Reprogramar** / **Ponle fecha (reprogramar)** · **No se presentó** (si ya pasó la hora) |
 | **Evaluado por el departamento** | El jefe lo calificó y no lo eligió (pidió considerarlo o lo rechazó). | Recursos Humanos | **Segunda entrevista** (si tú quieres darle otra oportunidad) |
@@ -41,7 +41,7 @@ Cada persona tiene **una sola ficha** (sus datos, su solicitud, sus documentos y
 
 Un candidato aparece en la lista por cualquiera de estos caminos:
 
-- **Caseta:** en la [Bitácora de accesos](accesos.md) registra a la persona con motivo **Recursos Humanos** y elige **¿A qué viene?**: **Busca empleo** (con su vacante, si la sabe), **Ya tiene cita** (la plataforma busca su ficha y deduce si viene a su entrevista con el departamento, a entregar documentos —si le falta alguno obligatorio de la lista para contratar— o a firmar su contrato) u **Otro trámite de RR. HH.** (no crea ficha de candidato). Recursos Humanos recibe el aviso en la campana y en [Recepción](recepcion-y-autorizaciones.md), donde le dice **Que pase y lo atiendo** o **Que pase**.
+- **Caseta:** en la [Bitácora de accesos](accesos.md) registra a la persona con motivo **Recursos Humanos** y elige **¿A qué viene?**: **Busca empleo** (con su vacante, si la sabe), **Ya tiene cita** (la plataforma busca su ficha y deduce si viene a su entrevista con el departamento, a entregar documentos —si le falta alguno obligatorio de la lista para contratar— o a firmar su contrato) u **Otro trámite de RR. HH.** (no crea ficha de candidato). Recursos Humanos recibe el aviso en la campana y en [Recepción](recepcion-y-autorizaciones.md), donde le dice **Aprobar y atender** o **Aprobar · que pase**.
 - **Bolsa de trabajo por internet:** se postula desde la página de [Vacantes](vacantes.md) con la **solicitud corta** (nombre, teléfono, correo y CV opcional). Su ficha dice **Solicitud incompleta** hasta que llene la solicitud completa con el enlace que recibe por correo o en el kiosco cuando venga (ver [Solicitud de empleo](solicitud-empleo.md)).
 - **Recursos Humanos:** con el botón **Nuevo candidato** (ver abajo).
 
@@ -86,12 +86,12 @@ Arriba ves la etapa de su **postulación actual**, cuánto lleva en esa etapa (e
 ![Postulaciones de una persona que volvió](img/recepcion-y-candidatos/candidato-postulaciones.png)
 
 - **Editar solicitud:** abre la solicitud de empleo completa (ver [Solicitud de empleo](solicitud-empleo.md)).
-- **Ya lo revisé:** aparece cuando el candidato llenó o cambió su solicitud en el kiosco o por internet (dice **Por revisar**).
+- **Atender · ya lo revisé:** aparece cuando el candidato llenó o cambió su solicitud en el kiosco o por internet (dice **Por revisar**).
 - **Documentos:** la lista de lo que tu empresa pide para contratar, con lo que ya entregó y lo que falta (ver [Cómo reunir los documentos para contratar](#cómo-reunir-los-documentos-para-contratar)).
 
 ## Cómo atender y entrevistar (Recursos Humanos)
 
-1. Con el candidato en **Por atender**, toca **Atender** y confirma con **Aceptar**. Pasa a **Con RR. HH.** (si le diste el paso desde Recepción con **Que pase y lo atiendo**, ya está ahí).
+1. Con el candidato en **Por atender**, toca **Atender** y confirma con **Aceptar**. Pasa a **Con RR. HH.** (si le diste el paso desde Recepción con **Aprobar y atender**, ya está ahí).
 2. Cuando lo entrevistes, toca **Entrevistar**: se abre **Evaluación de RR. HH.** (no cambia de etapa; puedes cerrarla y volver después).
 3. Al terminar la entrevista, califica cada criterio tocando de **1 a 5 estrellas** (también puedes usar el teclado: tabulador para llegar al criterio y flechas para cambiar la calificación).
 4. Revisa la **Fecha y hora de la entrevista** (ya viene la de ahora).
@@ -149,7 +149,7 @@ Te llega el aviso «El departamento evaluó a …» o «Elegido por el departame
 - Si pidió **Considerar** o lo **rechazó**, el candidato queda **Evaluado por el departamento**: tú cierras el contacto y lo pasas a **Rechazar** o a **Considerar** (se guarda para otra vacante). Si crees que vale otra oportunidad, **Segunda entrevista** lo canaliza otra vez (puedes elegir a otra persona).
 - El jefe tiene **15 minutos** para corregir su evaluación después de guardarla (hasta que tú la atiendas); si lo hace, te llega «Corrigió su evaluación de …». Si la cita era **Ahora, está en sala**, el propio jefe puede marcar **No se presentó** y te llega el aviso.
 
-> Si la vacante tiene **plazas** y el jefe elige a tantas personas como plazas, los demás candidatos de esa vacante que seguían con el departamento pasan solos a **Considerar** con el comentario «Se eligió a otra persona para esta vacante», y te llega el aviso «Vacante cubierta» con el botón **Cerrar como cubierta** (ver [Vacantes](vacantes.md)).
+> Si la vacante tiene **plazas** y el jefe elige a tantas personas como plazas, los demás candidatos de esa vacante que seguían con el departamento pasan solos a **Considerar** con el comentario «Se eligió a otra persona para esta vacante», y te llega el aviso «Vacante cubierta» con el botón **Dar de baja · cerrar como cubierta** (ver [Vacantes](vacantes.md)).
 
 ## Cómo considerar o rechazar
 
@@ -167,7 +167,7 @@ La tarjeta **Documentos** de la ficha muestra la lista que pide tu empresa (por 
 
 Para cada documento tienes dos caminos:
 
-- **Subirlo escaneado:** en **Agregar documento** elige qué documento es, elige el archivo y toca **Subir (PDF, JPG o PNG · máx. 5 MB)**. Queda privado y marcado como entregado.
+- **Subirlo escaneado:** en **Agregar documento** elige qué documento es, elige el archivo y toca **Guardar documento (PDF, JPG o PNG · máx. 5 MB)**. Queda privado y marcado como entregado.
 - **Recibirlo en papel:** si la persona te entrega el original y no lo vas a escanear, en **Recibido en papel** elige el documento, la fecha en que lo recibiste y toca **Recibir**. Queda anotado que lo recibiste tú y cuándo.
 
 **Qué debes ver:** el documento con palomita verde en la lista y el contador actualizado. Si te equivocaste, tócale el bote de basura y vuelve a registrarlo.
@@ -187,7 +187,7 @@ Para cada documento tienes dos caminos:
 2. Si falta algún documento obligatorio o el contrato, la ventana te lo dice. Puedes cerrar y completarlo, o marcar **Contratar de todos modos** y escribir por qué (por ejemplo, «Entrega el acta la próxima semana»). El motivo queda en el historial y en la bitácora.
 3. Revisa **Nombre(s)**, **Apellido paterno** y **Apellido materno**, y la **Sede**, el **Departamento**, el **Puesto** y el **Turno**. El turno ya viene con el de la vacante (si ese turno se usa en la sede); cámbialo o elige **Sin turno** si hace falta.
 4. Escribe el **Número de empleado**.
-5. Toca **Dar de alta como colaborador**.
+5. Toca **Guardar como colaborador**.
 
 ![Contratar](img/recepcion-y-candidatos/candidato-contratar.png)
 
@@ -217,7 +217,7 @@ Por privacidad, los datos de quien no fue contratado no se guardan para siempre:
 
 - Las postulaciones en **Considerar** o **Rechazado** se **archivan** a los 6 meses (por omisión): salen de la lista y de los contadores, pero la ficha se conserva. Las ves con el filtro **Archivadas**; **Atender** reabre la postulación.
 - Las fichas sin contratación y sin movimiento se **borran** con sus documentos y su firma a los 12 meses (por omisión). **Quince días antes** llega un aviso a Recursos Humanos de la sede por campana y correo, y la ficha aparece en el filtro **Por caducar** con la fecha en que se borrará.
-- Si aún la necesitas, abre la ficha (o toca el botón de la campana) y elige **Conservar 6 meses más**. Se puede repetir las veces que haga falta.
+- Si aún la necesitas, abre la ficha (o toca el botón de la campana) y elige **Guardar 6 meses más**. Se puede repetir las veces que haga falta.
 - Las fichas de los **contratados nunca se borran**: su expediente ya es del colaborador.
 
 Todo queda en la [Bitácora de auditoría](auditoria.md) sin datos personales.
@@ -245,7 +245,7 @@ Necesitas que tu rol pueda **configurar** Candidatos en toda la empresa (si no v
 
 ![Formulario del candidato en su celular](img/recepcion-y-candidatos/kiosco-formulario.png)
 
-**Qué debes ver:** la ficha marcada **Por revisar** con lo que envió. Si necesitas cancelar el enlace antes de tiempo, toca **Anular enlace**.
+**Qué debes ver:** la ficha marcada **Por revisar** con lo que envió. Si necesitas cancelar el enlace antes de tiempo, toca **Dar de baja el enlace**.
 
 Si el candidato tiene correo, también puedes tocar **Enviar enlace por correo**: le llega un enlace que vale 72 horas para llenar la solicitud desde su casa (anula el QR anterior). Es lo normal para quien se postuló por internet con la **solicitud corta** (su ficha dice **Solicitud incompleta**); cuando la llene, la marca desaparece y la ficha queda **Por revisar**.
 
@@ -324,7 +324,7 @@ Los mensajes salen en rojo dentro de la ventana o arriba de la ficha.
 
 **¿Por qué ya no veo a un candidato rechazado hace tiempo?** Su postulación se archivó. Búscalo con el filtro **Archivadas**.
 
-**Me avisaron que se borrará una ficha. ¿Qué hago?** Si la necesitas, ábrela y toca **Conservar 6 meses más**. Si no, no hagas nada: se borra sola el día indicado.
+**Me avisaron que se borrará una ficha. ¿Qué hago?** Si la necesitas, ábrela y toca **Guardar 6 meses más**. Si no, no hagas nada: se borra sola el día indicado.
 
 ## Relacionado
 

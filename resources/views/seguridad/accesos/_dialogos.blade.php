@@ -20,7 +20,7 @@
         $esSalida = $clase === 'salida';
         // Giros: el «tour» es de los huéspedes; en otros giros la salida es «temporal»
         $conTour = ($terminos ?? \App\Support\Terminos::actual())->ofreceTipo('huesped');
-        $tituloInicial = ['zona' => 'Cambiar Zona', 'salida' => $conTour ? 'Salida a Tour' : 'Salida Temporal', 'regreso' => $conTour ? 'Regreso de Tour' : 'Regreso'][$clase];
+        $tituloInicial = ['zona' => 'Cambiar Zona', 'salida' => $conTour ? 'Dar salida a tour' : 'Dar salida temporal', 'regreso' => $conTour ? 'Regreso de Tour' : 'Regreso'][$clase];
         $icono = ['zona' => 'bi-p-square-fill text-primary', 'salida' => 'bi-signpost-split text-warning', 'regreso' => 'bi-arrow-return-left text-success'][$clase];
     @endphp
     <dialog id="{{ $idDialogo }}" class="dialogo dialogo-acceso" aria-labelledby="titulo-{{ $idDialogo }}" @if ($otraVez) data-abrir-al-cargar @endif>
@@ -82,7 +82,7 @@
 
                 <div class="dialogo-acciones">
                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                    <button type="submit" class="{{ $esZona ? 'btn-azul' : ($esSalida ? 'btn-ambar-acceso' : 'btn-verde') }}">{{ $esZona ? 'Guardar' : ($esSalida ? 'Confirmar Salida' : 'Confirmar Regreso') }}</button>
+                    <button type="submit" class="{{ $esZona ? 'btn-azul' : ($esSalida ? 'btn-ambar-acceso' : 'btn-verde') }}">{{ $esZona ? 'Guardar' : ($esSalida ? 'Dar salida' : 'Recibir') }}</button>
                 </div>
             </form>
         </div>

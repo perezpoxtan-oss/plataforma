@@ -127,7 +127,7 @@
             @endif
         </nav>
         @if ($filtros['caducar'])
-            <p class="small text-muted"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Estas fichas se borrarán con sus documentos el día que muestra cada una (no fueron contratadas y llevan mucho tiempo sin movimiento). Abre la ficha y toca <strong>Conservar 6 meses más</strong> si aún la necesitas.</p>
+            <p class="small text-muted"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Estas fichas se borrarán con sus documentos el día que muestra cada una (no fueron contratadas y llevan mucho tiempo sin movimiento). Abre la ficha y toca <strong>Guardar 6 meses más</strong> si aún la necesitas.</p>
         @endif
 
         <div class="fichas-grid fichas-candidatos">

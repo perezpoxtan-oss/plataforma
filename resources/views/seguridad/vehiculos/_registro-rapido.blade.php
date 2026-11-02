@@ -101,7 +101,7 @@
 
                 <div class="dialogo-acciones">
                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                    <button type="submit" class="btn-pizarra" data-texto-original="Registrar Vehículo">Registrar Vehículo</button>
+                    <button type="submit" class="btn-pizarra" data-texto-original="Guardar vehículo">Guardar vehículo</button>
                 </div>
             </form>
         </div>
