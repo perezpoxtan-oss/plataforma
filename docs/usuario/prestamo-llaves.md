@@ -120,7 +120,7 @@ Al recibir la llave, los avisos se quitan solos. Si tu empresa lo apagó (0 hora
 
 **Qué debes ver:** si la llave sigue fuera, dice **AÚN EN USO**.
 
-> Todo préstamo, recepción y «No regresó» también queda en **Entregas y recepciones** de la ficha de la llave (botón de las dos flechas en **Padrones → Llaves**). Ver [Entregar y recibir](entregar-y-recibir.md).
+> Todo préstamo, recepción y «No regresó» también queda en **Entregas y recepciones** de la ficha de la llave (botón de las dos flechas en **Padrones → Catálogo de llaves**). Ver [Entregar y recibir](entregar-y-recibir.md).
 >
 > Si tu empresa pide **identificación obligatoria** (Configuración → Activos → Avanzado: garantía de la llave), la opción **Ninguna (Riesgo)** no aparece.
 

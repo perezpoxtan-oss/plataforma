@@ -27,7 +27,7 @@ Comprueba: nada se guardó hasta que tocaste guardar, y la segunda vez la plataf
 1. Presta una llave y escanea su QR con la cámara del celular.
 2. Marca **Dañado** y toca **Recibir**.
 
-Comprueba: la llave está en caseta, el aviso te dice qué hacer si ya no sirve y en **Padrones → Llaves → Entregas y recepciones** (dos flechas) aparece «Recibir · Dañado».
+Comprueba: la llave está en caseta, el aviso te dice qué hacer si ya no sirve y en **Padrones → Catálogo de llaves**, en **Entregas y recepciones** (dos flechas) de la llave, aparece «Recibir · Dañado».
 
 ## Práctica 3 · La credencial del colaborador
 

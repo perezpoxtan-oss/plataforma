@@ -17,7 +17,7 @@ resumen: El historial único de lo que se entrega y se recibe en la caseta, y la
 
 ## Cómo ver las entregas y recepciones de un objeto
 
-1. Entra a **Padrones → Llaves**, **Padrones → Gafetes** o **Padrones → Equipos de seguridad**.
+1. Entra a **Padrones → Catálogo de llaves**, **Padrones → Gafetes** o **Padrones → Equipos de seguridad**.
 2. Busca el objeto y toca el botón de las **dos flechas** (**Entregas y recepciones**) en su ficha.
 3. Se abre la lista, del más reciente al más antiguo.
 
