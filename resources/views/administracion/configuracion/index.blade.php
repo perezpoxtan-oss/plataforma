@@ -13,8 +13,10 @@
     $mostrarAvisos = $empresa && $verConfiguracion;
     $nombreBitacora = $empresa ? app(\App\Services\Novedades\AjustesNovedades::class)->nombreMenu($empresa->id) : 'Novedades';
     // Grupo de avisos => sección donde se muestra (los que no estén aquí van en «Avisos por correo»)
-    $seccionDeGrupo = ['cuentas' => 'sec-cuentas', 'colaboradores' => 'caseta', 'padrones' => 'caseta', 'procedimientos' => 'caseta',
-        'novedades' => 'sec-novedades', 'pases_salida' => 'sec-pases', 'transporte' => 'sec-transporte', 'vouchers' => 'sec-activos', 'candidatos' => 'sec-rh', 'reservas' => 'sec-reservas'];
+    // C-38: un solo lugar por ajuste — Colaboradores en Estructura, Procedimientos en la bitácora y las autorizaciones de visitas en la caseta
+    $seccionDeGrupo = ['cuentas' => 'sec-cuentas', 'colaboradores' => 'sec-estructura', 'padrones' => 'caseta', 'procedimientos' => 'sec-novedades',
+        'autorizaciones' => 'caseta', 'novedades' => 'sec-novedades', 'pases_salida' => 'sec-pases', 'transporte' => 'sec-transporte', 'vouchers' => 'sec-activos',
+        'candidatos' => 'sec-rh', 'reservas' => 'sec-reservas'];
     $gruposEn = fn (string $seccion) => $mostrarAvisos
         ? array_filter($grupos, fn ($def, $g) => ($seccionDeGrupo[$g] ?? 'sec-avisos') === $seccion && ($def['modulo'] === null || $tiene($def['modulo'])), ARRAY_FILTER_USE_BOTH) : [];
     $verPases = $empresa && $u->can('pases_salida.configurar');
@@ -26,8 +28,10 @@
     $secciones = [
         ['sec-general', 'General', 'bi-sliders', $mostrarAvisos],
         ['caseta', 'Caseta y accesos', 'bi-door-open', $mostrarAvisos || isset($enOtras['esperas']) || isset($enOtras['impresion'])],
+        // C-38: Estructura (avisos de Colaboradores)
+        ['sec-estructura', 'Estructura', 'bi-diagram-3', $mostrarAvisos && $tiene('colaboradores')],
         ['sec-rh', 'Recepción y RR. HH.', 'bi-people', ($mostrarAvisos || $verRecepcion || $verBolsa) && $tiene('candidatos', 'recepcion_rh', 'vacantes')],
-        ['sec-novedades', $nombreBitacora, 'bi-headset', ($mostrarAvisos || $lostFound) && $tiene('novedades')],
+        ['sec-novedades', $nombreBitacora, 'bi-headset', ($mostrarAvisos || $lostFound) && $tiene('novedades', 'procedimientos')],
         ['sec-activos', 'Activos', 'bi-key', $mostrarAvisos && $tiene('llaves', 'prestamo_llaves', 'responsivas', 'vouchers')],
         ['sec-transporte', 'Transporte', 'bi-taxi-front', $mostrarAvisos && $tiene('transporte')],
         ['sec-pases', 'Pases de salida', 'bi-box-arrow-up-right', ($mostrarAvisos || $verPases) && $tiene('pases_salida')],
@@ -39,6 +43,7 @@
         ['sec-reservas', 'Reservas de áreas', 'bi-calendar-check', ($mostrarAvisos || ($empresa && $u->can('reservas.configurar'))) && $tiene('reservas')],
     ];
     $visibles = array_values(array_filter($secciones, fn ($s) => $s[3]));
+    $verSeccion = fn (string $ancla) => (bool) (collect($secciones)->firstWhere(0, $ancla)[3] ?? false);
 @endphp
 
 @section('contenido')
@@ -78,7 +83,7 @@
 
     <div class="secciones-config">
         {{-- ============================== General ============================== --}}
-        @if ($secciones[0][3])
+        @if ($verSeccion('sec-general'))
             <section class="seccion-config" id="sec-general" aria-labelledby="t-sec-general">
                 <h2 id="t-sec-general" class="titulo-seccion-config"><i class="bi bi-sliders" aria-hidden="true"></i>General</h2>
                 {{-- «Configura tu empresa»: volver a mostrarla (u ocultarla) en Inicio --}}
@@ -100,7 +105,7 @@
         @endif
 
         {{-- ========================== Caseta y accesos ========================== --}}
-        @if ($secciones[1][3])
+        @if ($verSeccion('caseta'))
             <section class="seccion-config" id="caseta" aria-labelledby="t-sec-caseta">
                 <h2 id="t-sec-caseta" class="titulo-seccion-config"><i class="bi bi-door-open" aria-hidden="true"></i>Caseta y accesos</h2>
                 @isset($enOtras['esperas'])
@@ -113,7 +118,7 @@
                             @endforeach
                             {{-- C-08 (A-03) y DD-11 --}}
                             <li>Sin quien autorice en la sede: <strong>{{ mb_strtolower($e['sinCobertura']) }}</strong>@if ($e['faltan'] > 0) · <span class="text-danger">hoy {{ $e['faltan'] === 1 ? '1 departamento no tiene' : $e['faltan'].' departamentos no tienen' }}</span>@endif</li>
-                            <li>Quien viene con Recursos Humanos: <strong>{{ $e['rh'] ? 'la caseta espera el «Que pase»' : 'pasa sin esperar' }}</strong></li>
+                            <li>Quien viene con Recursos Humanos: <strong>{{ $e['rh'] ? 'la caseta espera el «Aprobar · que pase»' : 'pasa sin esperar' }}</strong></li>
                             <li>Recordar a los <strong>{{ $e['recordar'] }} min</strong> y avisar al suplente y al jefe a los <strong>{{ $e['escalar'] }} min</strong></li>
                         </ul>
                         <p class="small text-muted mb-2"><span class="valor-original">Valor original: todos esperan la autorización (sin quien autorice, esperan al supervisor); recordar a los {{ \App\Services\Recepcion\PanelRecepcion::ESPERA_AMBAR }} min y avisar a los {{ \App\Services\Recepcion\PanelRecepcion::ESPERA_ROJA }} min.</span> Quién autoriza en cada departamento y sus suplentes también se eligen ahí.</p>
@@ -135,17 +140,24 @@
                     @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'permanencia'])
                     @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'noche'])
                 @endif
-                @if ($mostrarAvisos && $tiene('procedimientos'))
-                    @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'procedimientos'])
-                @endif
                 @foreach ($gruposEn('caseta') as $grupo => $def)
                     @include('administracion.configuracion._avisos-grupo')
                 @endforeach
             </section>
         @endif
 
+        {{-- ============================== Estructura (C-38) ============================== --}}
+        @if ($verSeccion('sec-estructura'))
+            <section class="seccion-config" id="sec-estructura" aria-labelledby="t-sec-estructura">
+                <h2 id="t-sec-estructura" class="titulo-seccion-config"><i class="bi bi-diagram-3" aria-hidden="true"></i>Estructura</h2>
+                @foreach ($gruposEn('sec-estructura') as $grupo => $def)
+                    @include('administracion.configuracion._avisos-grupo')
+                @endforeach
+            </section>
+        @endif
+
         {{-- ========================= Recepción y RR. HH. ========================= --}}
-        @if ($secciones[2][3])
+        @if ($verSeccion('sec-rh'))
             <section class="seccion-config" id="sec-rh" aria-labelledby="t-sec-rh">
                 <h2 id="t-sec-rh" class="titulo-seccion-config"><i class="bi bi-people" aria-hidden="true"></i>Recepción y RR. HH.</h2>
                 @foreach ($gruposEn('sec-rh') as $grupo => $def)
@@ -183,12 +195,16 @@
         @endif
 
         {{-- ============================ Novedades / Incidentes ============================ --}}
-        @if ($secciones[3][3])
+        @if ($verSeccion('sec-novedades'))
             <section class="seccion-config" id="sec-novedades" aria-labelledby="t-sec-novedades">
                 <h2 id="t-sec-novedades" class="titulo-seccion-config"><i class="bi bi-headset" aria-hidden="true"></i>{{ $nombreBitacora }}</h2>
                 @foreach ($gruposEn('sec-novedades') as $grupo => $def)
                     @include('administracion.configuracion._avisos-grupo')
                 @endforeach
+                {{-- C-38: Procedimientos (acuse «Leí y entendí» y recordatorio) junto a la bitácora («¿Qué hacer? Ver procedimiento») --}}
+                @if ($mostrarAvisos && $tiene('procedimientos'))
+                    @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'procedimientos'])
+                @endif
                 {{-- Mejoras Incidentes: Bitácora de novedades (nombre del menú y hallazgos de recorrido) --}}
                 @if ($verNovedades)
                     @include('seguridad.novedades._config', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar])
@@ -223,7 +239,7 @@
         @endif
 
         {{-- =============================== Activos =============================== --}}
-        @if ($secciones[4][3])
+        @if ($verSeccion('sec-activos'))
             <section class="seccion-config" id="sec-activos" aria-labelledby="t-sec-activos">
                 <h2 id="t-sec-activos" class="titulo-seccion-config"><i class="bi bi-key" aria-hidden="true"></i>Activos</h2>
                 @if ($tiene('prestamo_llaves'))
@@ -239,7 +255,7 @@
         @endif
 
         {{-- ============================== Transporte ============================== --}}
-        @if ($secciones[5][3])
+        @if ($verSeccion('sec-transporte'))
             <section class="seccion-config" id="sec-transporte" aria-labelledby="t-sec-transporte">
                 <h2 id="t-sec-transporte" class="titulo-seccion-config"><i class="bi bi-taxi-front" aria-hidden="true"></i>Transporte</h2>
                 @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'transporte'])
@@ -250,7 +266,7 @@
         @endif
 
         {{-- =========================== Pases de salida =========================== --}}
-        @if ($secciones[6][3])
+        @if ($verSeccion('sec-pases'))
             <section class="seccion-config" id="sec-pases" aria-labelledby="t-sec-pases">
                 <h2 id="t-sec-pases" class="titulo-seccion-config"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>Pases de salida</h2>
                 {{-- Pases de salida: circuito de aprobación (ver docs/tecnico/pases-salida.md) --}}
@@ -284,7 +300,7 @@
         @endif
 
         {{-- =========================== Avisos por correo =========================== --}}
-        @if ($secciones[7][3])
+        @if ($verSeccion('sec-avisos'))
             <section class="seccion-config" id="sec-avisos" aria-labelledby="t-sec-avisos">
                 <h2 id="t-sec-avisos" class="titulo-seccion-config"><i class="bi bi-envelope" aria-hidden="true"></i>Avisos por correo</h2>
                 <div class="tarjeta p-4">
@@ -310,7 +326,7 @@
         @endif
 
         {{-- ========================= Cuentas y seguridad ========================= --}}
-        @if ($secciones[8][3])
+        @if ($verSeccion('sec-cuentas'))
             <section class="seccion-config" id="sec-cuentas" aria-labelledby="t-sec-cuentas">
                 <h2 id="t-sec-cuentas" class="titulo-seccion-config"><i class="bi bi-shield-lock" aria-hidden="true"></i>Cuentas y seguridad</h2>
                 @foreach ($gruposEn('sec-cuentas') as $grupo => $def)

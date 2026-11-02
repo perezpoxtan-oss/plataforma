@@ -42,13 +42,13 @@ Si eres **jefe de departamento** y pides una vacante, queda en borrador («… e
 
 | Estado | Qué significa | Botón |
 |---|---|---|
-| **Borrador** | Solo la ve Recursos Humanos. | **Publicar** |
-| **Publicada** | Se ve en internet, en el cartel y en la caseta. | **Pausar** o **Cerrar** |
-| **Pausada** | Deja de verse un tiempo. | **Reanudar** o **Cerrar** |
-| **Cerrada** | Ya no se ve. | **Reabrir como borrador** |
+| **Borrador** | Solo la ve Recursos Humanos. | **Aprobar y publicar** |
+| **Publicada** | Se ve en internet, en el cartel y en la caseta. | **Dar de baja · pausar** o **Dar de baja · cerrar** |
+| **Pausada** | Deja de verse un tiempo. | **Reactivar** o **Dar de baja · cerrar** |
+| **Cerrada** | Ya no se ve. | **Reactivar como borrador** |
 
 1. Toca el botón del estado que quieres en la tarjeta de la vacante.
-2. Para **Cerrar** se abre **Cerrar «…»**: en **¿Por qué se cierra?** elige **Cubierta (ya se contrató)** o **Cancelada** y toca **Cerrar vacante**.
+2. Para **Dar de baja · cerrar** se abre **Cerrar «…»**: en **¿Por qué se cierra?** elige **Cubierta (ya se contrató)** o **Cancelada** y toca **Dar de baja · cerrar vacante**.
 
 ![Cerrar una vacante](img/vacantes/cerrar-vacante.png)
 
@@ -59,7 +59,7 @@ Si eres **jefe de departamento** y pides una vacante, queda en borrador («… e
 Si un jefe de departamento crea una vacante, queda en **Borrador** como propuesta:
 
 1. Recursos Humanos la ve en la campana y en **Mis pendientes → Vacantes propuestas por publicar**, con cuánto lleva esperando.
-2. Revísala y toca **Publicar** (o **Cerrar** con su motivo, o elimínala si no procede).
+2. Revísala y toca **Aprobar y publicar** (o **Dar de baja · cerrar** con su motivo, o elimínala si no procede).
 
 **Qué debes ver:** al jefe que la pidió le llega «Tu vacante «…» se publicó» (o «se canceló», «se cerró como cubierta», «se eliminó»). Si nadie la atiende, a las 24 horas se recuerda y a las 72 pasa a quien publica vacantes en toda la empresa (ver [Reloj y suplente](reloj-y-suplente.md)).
 
@@ -141,9 +141,9 @@ Los mensajes salen en rojo dentro de la ventana o arriba de la lista.
 
 **¿La bolsa aparece en Google?** Solo si marcas **Permitir que Google la muestre**.
 
-**¿Puedo reutilizar una vacante cerrada?** Sí, con **Reabrir como borrador**; edítala y publícala de nuevo.
+**¿Puedo reutilizar una vacante cerrada?** Sí, con **Reactivar como borrador**; edítala y publícala de nuevo.
 
-**¿Qué pasa cuando se cubren las plazas?** Al elegir el jefe a tantas personas como plazas, los demás candidatos que seguían con el departamento pasan a «Considerar» y Recursos Humanos recibe el aviso «Vacante cubierta» con el botón **Cerrar como cubierta**: tócalo en la campana y la vacante se cierra ahí mismo. Si prefieres seguir recibiendo candidatos, ignóralo: la vacante sigue publicada hasta que la cierres.
+**¿Qué pasa cuando se cubren las plazas?** Al elegir el jefe a tantas personas como plazas, los demás candidatos que seguían con el departamento pasan a «Considerar» y Recursos Humanos recibe el aviso «Vacante cubierta» con el botón **Dar de baja · cerrar como cubierta**: tócalo en la campana y la vacante se cierra ahí mismo. Si prefieres seguir recibiendo candidatos, ignóralo: la vacante sigue publicada hasta que la cierres.
 
 ## Relacionado
 

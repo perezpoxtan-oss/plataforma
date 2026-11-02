@@ -43,7 +43,7 @@ use Tests\TestCase;
 
 /**
  * Candidatos, fase 1: postulaciones, una ficha por persona, «¿A qué viene?»
- * en la caseta y el «Que pase» de Recursos Humanos.
+ * en la caseta y el «Aprobar · que pase» de Recursos Humanos.
  */
 class CandidatosFase1Test extends TestCase
 {
@@ -350,15 +350,15 @@ class CandidatosFase1Test extends TestCase
 
         // Campana de RR. HH. con los tres botones
         $this->actingAs($this->rh)->getJson('/notificaciones/resumen')->assertJsonPath('lista.0.titulo', 'Llegó un candidato: Karla Pérez Uc')
-            ->assertJsonPath('lista.0.acciones.0.etiqueta', 'Que pase')->assertJsonPath('lista.0.acciones.1.etiqueta', 'Que espere')
-            ->assertJsonPath('lista.0.acciones.1.estilo', 'esperar')->assertJsonPath('lista.0.acciones.2.etiqueta', 'No puede pasar');
+            ->assertJsonPath('lista.0.acciones.0.etiqueta', 'Aprobar · que pase')->assertJsonPath('lista.0.acciones.1.etiqueta', 'Rechazar · que espere')
+            ->assertJsonPath('lista.0.acciones.1.estilo', 'esperar')->assertJsonPath('lista.0.acciones.2.etiqueta', 'Rechazar · no puede pasar');
         // El agente no responde; la respuesta de una visita no aplica
         $this->actingAs($this->agente)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'pase'])->assertForbidden();
         $this->actingAs($this->rh)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'autorizar'])->assertSessionHas('error');
 
         // El botón del correo: dirección firmada que pide confirmar
         $this->actingAs($this->rh)->get(URL::temporarySignedRoute('autorizaciones.confirmar', now()->addHour(), ['autorizacion' => $a->id, 'respuesta' => 'pase']))
-            ->assertOk()->assertSee('Confirmar: Que pase')->assertSee('Busca empleo');
+            ->assertOk()->assertSee('Aprobar · que pase (confirmar)')->assertSee('Busca empleo');
 
         $this->actingAs($this->rh)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'pase', 'medio' => 'correo'])->assertRedirect('/rh/recepcion')->assertSessionHas('ok');
         $acceso->refresh();
@@ -375,15 +375,15 @@ class CandidatosFase1Test extends TestCase
         $director = $this->crearUsuario($this->empresa, 'Director');
         $this->caseta()->assertSessionHas('ok');
         $a = $this->enEmpresa(fn () => Autorizacion::sole());
-        $this->assertNotContains($director->id, $a->avisados, 'El «Que pase» lo da Recursos Humanos');
-        // Ve el panel con la fila, pero sin «Que pase», «Que espere» ni «Atender»
+        $this->assertNotContains($director->id, $a->avisados, 'El «Aprobar · que pase» lo da Recursos Humanos');
+        // Ve el panel con la fila, pero sin «Aprobar · que pase», «Rechazar · que espere» ni «Atender»
         $this->actingAs($director)->get('/rh/recepcion')->assertOk()->assertSee('Karla Pérez Uc')
-            ->assertDontSee('Que pase</button>', false)->assertDontSee('Que espere / No puede pasar')->assertDontSee('Atender</button>', false);
+            ->assertDontSee('Que pase</button>', false)->assertDontSee('Rechazar · que espere o no puede pasar')->assertDontSee('Atender</button>', false);
         $lista = $this->actingAs($director)->getJson('/rh/recepcion/datos')->assertOk()->json('html');
         $this->assertStringContainsString('Karla Pérez Uc', $lista);
         $this->assertStringNotContainsString('autorizaciones/'.$a->id.'/responder', $lista);
         // RR. HH. sí los ve
-        $this->actingAs($this->rh)->get('/rh/recepcion')->assertSee('Que espere / No puede pasar');
+        $this->actingAs($this->rh)->get('/rh/recepcion')->assertSee('Rechazar · que espere o no puede pasar');
         // Y si lo intenta por la dirección no cambia nada (fuera de su alcance)
         $this->assertContains($this->actingAs($director)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'pase'])->status(), [403, 404]);
         $this->assertSame('pendiente', $a->fresh()->estado);
@@ -402,7 +402,7 @@ class CandidatosFase1Test extends TestCase
         $this->actingAs($this->agente)->getJson('/accesos/autorizaciones-estado?ids='.$acceso->id)->assertJsonPath('estados.'.$acceso->id, 'pendiente|espera');
         $this->assertTrue($this->enEmpresa(fn () => Notificacion::where('user_id', $this->agente->id)->where('titulo', 'like', 'RR. HH. pide que espere%')->exists()));
         // El aviso de RR. HH. sigue pendiente con sus botones
-        $this->actingAs($this->rh)->getJson('/notificaciones/resumen')->assertJsonPath('lista.0.acciones.0.etiqueta', 'Que pase');
+        $this->actingAs($this->rh)->getJson('/notificaciones/resumen')->assertJsonPath('lista.0.acciones.0.etiqueta', 'Aprobar · que pase');
         $this->assertTrue(Auditoria::where('evento', 'autorizaciones.espera')->exists());
         $this->assertSame('Petición de espera', app(LectorAuditoria::class)->accion('autorizaciones.espera'));
 
@@ -429,7 +429,7 @@ class CandidatosFase1Test extends TestCase
     public function test_con_el_ajuste_apagado_o_sin_quien_atienda_pasa_directo(): void
     {
         // El interruptor vive en Responsables por departamento (ADR-0010) y lo guarda quien configura con alcance de empresa
-        $this->actingAs($this->rh)->get('/autorizaciones/responsables')->assertOk()->assertSee('La caseta espera a que RR. HH. diga «Que pase»');
+        $this->actingAs($this->rh)->get('/autorizaciones/responsables')->assertOk()->assertSee('La caseta espera a que RR. HH. diga «Aprobar · que pase»');
         $this->actingAs($this->rh)->get('/rh/recepcion/ajustes')->assertOk()->assertDontSee('name="rh_autoriza_paso"', false);
         $this->actingAs($this->rh)->put('/rh/recepcion/ajustes', ['visitas_requieren_autorizacion' => '0', 'rh_autoriza_paso' => '0', 'recordar_minutos' => 10, 'escalar_minutos' => 20])
             ->assertSessionHas('ok', 'Esperas guardadas: la caseta ya aplica lo que elegiste.');
@@ -465,15 +465,15 @@ class CandidatosFase1Test extends TestCase
         $this->caseta(['nombre' => 'Mario Ek', 'viene_a' => 'tramite'])->assertSessionHas('ok');
         $a = $this->enEmpresa(fn () => Autorizacion::whereHas('acceso', fn ($q) => $q->where('nombre', 'KARLA PÉREZ UC'))->sole());
 
-        // Quien espera el «Que pase» lleva «Que pase y lo atiendo» y «Que pase» a secas, pero no «Atender» suelto
+        // Quien espera el «Aprobar · que pase» lleva «Aprobar y atender» y «Aprobar · que pase» a secas, pero no «Atender» suelto
         $panel = $this->actingAs($this->rh)->get('/rh/recepcion')->assertOk()
-            ->assertSee('Viene a: Busca empleo — primera vez')->assertSee('Viene a: Trámite')->assertSee('Que pase y lo atiendo')->assertSee('name="atender" value="0"', false)
-            ->assertDontSee('>Atender<', false)->assertSee('Abrir ficha')->assertSee('En caseta: espera que digas «Que pase»');
+            ->assertSee('Viene a: Busca empleo — primera vez')->assertSee('Viene a: Trámite')->assertSee('Aprobar y atender')->assertSee('name="atender" value="0"', false)
+            ->assertDontSee('>Atender<', false)->assertSee('Abrir ficha')->assertSee('En caseta: espera que digas «Aprobar · que pase»');
         $this->assertStringNotContainsString(route('recepcion.kiosco.generar', 1), (string) $panel->getContent());
         $this->assertStringNotContainsString('bi-qr-code me-1" aria-hidden="true"></i>QR</button>', (string) $panel->getContent());
         $this->actingAs($this->rh)->getJson('/rh/recepcion/datos')->assertJsonPath('total', 2)->assertJsonPath('contadores.esperando', 2);
 
-        // «Que pase y lo atiendo» desde el panel regresa al panel y atiende al candidato en el mismo clic («Con RR. HH.»)
+        // «Aprobar y atender» desde el panel regresa al panel y atiende al candidato en el mismo clic («Con RR. HH.»)
         $this->actingAs($this->rh)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'pase', 'volver' => 'recepcion', 'atender' => '1'])->assertRedirect('/rh/recepcion')
             ->assertSessionHas('ok', fn ($m) => str_contains($m, 'Con RR. HH.'));
         $c = $this->enEmpresa(fn () => Candidato::sole());
@@ -481,7 +481,7 @@ class CandidatosFase1Test extends TestCase
         $this->assertNotNull($this->enEmpresa(fn () => Postulacion::sole()->revision_en));
         $this->assertTrue($this->enEmpresa(fn () => $c->eventos()->where('etapa_nueva', 'con_rh')->exists()));
         $this->actingAs($this->rh)->getJson('/rh/recepcion/datos')->assertJsonPath('contadores.esperando', 1);
-        // «Que pase» a secas (como desde la campana) lo deja «Por atender» y el panel ofrece «Atender»
+        // «Aprobar · que pase» a secas (como desde la campana) lo deja «Por atender» y el panel ofrece «Atender»
         $this->caseta(['nombre' => 'Ana Pool'])->assertSessionHas('ok');
         $b = $this->enEmpresa(fn () => Autorizacion::whereHas('acceso', fn ($q) => $q->where('nombre', 'ANA POOL'))->sole());
         $this->actingAs($this->rh)->post("/autorizaciones/{$b->id}/responder", ['respuesta' => 'pase', 'volver' => 'recepcion'])->assertRedirect('/rh/recepcion')
@@ -505,7 +505,7 @@ class CandidatosFase1Test extends TestCase
         // Con uno vigente no se crea otro: se muestra el mismo
         $this->actingAs($this->rh)->post("/rh/recepcion/kiosco/{$c->id}", ['reusar' => '1'])->assertRedirect();
         $this->assertSame($enlace->id, $this->enEmpresa(fn () => EnlaceKiosco::sole()->id));
-        $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertSee('Anular enlace')->assertSee($enlace->codigo);
+        $this->actingAs($this->rh)->get("/candidatos/{$c->id}")->assertSee('Dar de baja el enlace')->assertSee($enlace->codigo);
     }
 
     public function test_mis_pendientes_de_rh_esperando_en_recepcion_y_solicitudes_por_revisar(): void
@@ -523,7 +523,7 @@ class CandidatosFase1Test extends TestCase
         Cache::flush();
         $mios = app(MisPendientes::class)->para($this->rh);
         $items = collect($mios['items'])->keyBy('clave');
-        $this->assertSame(2, $items['recepcion']['total'], 'Dos accesos esperan el «Que pase» (el candidato se cuenta una vez)');
+        $this->assertSame(2, $items['recepcion']['total'], 'Dos accesos esperan el «Aprobar · que pase» (el candidato se cuenta una vez)');
         $this->assertSame(route('recepcion.index'), $items['recepcion']['url']);
         $this->assertSame(1, $items['solicitudes']['total']);
         $this->assertSame(route('candidatos.index', ['revisar' => 1]), $items['solicitudes']['url']);
@@ -635,6 +635,6 @@ class CandidatosFase1Test extends TestCase
             }
         });
         $rh = User::where('username', 'rh.demo')->firstOrFail();
-        $this->actingAs($rh)->get('/rh/recepcion')->assertOk()->assertSee('Martha Ek Chan')->assertSee('Que pase');
+        $this->actingAs($rh)->get('/rh/recepcion')->assertOk()->assertSee('Martha Ek Chan')->assertSee('Aprobar · que pase');
     }
 }

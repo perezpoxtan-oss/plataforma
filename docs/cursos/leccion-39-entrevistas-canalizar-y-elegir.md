@@ -71,4 +71,4 @@ Comprueba: Juan está **Elegido**. Como la vacante tiene 1 plaza, **Laura** y **
 - Solo la persona asignada (o quien la cubre con «No molestar») evalúa una entrevista.
 - El jefe ve un **resumen**, nunca los datos oficiales; el CV solo si la vacante lo permite.
 - Al candidato solo le llega su **cita** por correo (si se marca la casilla); nunca resultados.
-- En empresas que ya usaban la plataforma, el ajuste «Que pase» de la fase 1 viene **apagado**.
+- En empresas que ya usaban la plataforma, el ajuste «Aprobar · que pase» de la fase 1 viene **apagado**.

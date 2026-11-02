@@ -57,7 +57,7 @@
                         <option value="{{ $clave }}" @selected($clave === 'azul')>{{ $texto }}</option>
                     @endforeach
                 </select>
-                <button type="submit" class="btn-azul"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Agregar</button>
+                <button type="submit" class="btn-azul"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Guardar categoría</button>
             </form>
         @endif
         <div class="dialogo-acciones">

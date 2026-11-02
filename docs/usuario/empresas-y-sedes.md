@@ -8,7 +8,7 @@ resumen: Los datos de tu empresa (razón social, RFC, zona horaria, logo) y sus 
 
 # Empresas y sedes
 
-**¿Para qué sirve?** Aquí están los datos de tu **empresa** (nombre, razón social, RFC, rubro, zona horaria y logo) y sus **sedes**: los centros de trabajo donde opera (por ejemplo «Hotel Centro» y «Hotel Playa»). Casi todas las pantallas se organizan por sede, y la hora que ves en cada sede depende de su zona horaria.
+**¿Para qué sirve?** Aquí están los datos de tu **empresa** (nombre, razón social, RFC, giro, zona horaria y logo) y sus **sedes**: los centros de trabajo donde opera (por ejemplo «Hotel Centro» y «Hotel Playa»). Casi todas las pantallas se organizan por sede, y la hora que ves en cada sede depende de su zona horaria.
 
 ![Mi empresa](img/empresas/1-empresas.png)
 
@@ -34,19 +34,19 @@ resumen: Los datos de tu empresa (razón social, RFC, zona horaria, logo) y sus 
 
 1. Entra a **Estructura → Empresas**. Se abre **Empresas** con todas las empresas de la plataforma.
 2. Toca la tarjeta **Nueva Empresa**.
-3. Captura **Nombre Comercial**, **Razón Social**, **RFC**, **Rubro** (Hotel, Corporativo / industria, Condominio o Fraccionamiento) y **Zona Horaria**.
-4. Toca **Registrar Empresa**.
+3. Captura **Nombre Comercial**, **Razón Social**, **RFC**, **Giro** (Hotel, Corporativo / industria, Condominio o Fraccionamiento) y **Zona Horaria**.
+4. Toca **Guardar empresa**.
 
 ![Alta de empresas](img/empresas/5-alta-empresas.png)
 
-**Qué debes ver:** «Empresa «…» creada con sus módulos y roles base. Ahora registra sus sedes.» El rubro decide cómo se llaman las cosas en toda la plataforma y en este manual (ver abajo «Cómo cambia la plataforma según el rubro»).
+**Qué debes ver:** «Empresa «…» creada con sus módulos y roles base. Ahora registra sus sedes.» El giro decide cómo se llaman las cosas en toda la plataforma y en este manual (ver abajo «Cómo cambia la plataforma según el giro»).
 
-## Cómo cambia la plataforma según el rubro
+## Cómo cambia la plataforma según el giro
 
-El **Rubro** (giro) de la empresa decide qué tipos de persona se registran en la **Bitácora de accesos** y cómo se llaman las cosas en pantallas, avisos, correos, impresiones y en este manual:
+El **Giro** de la empresa decide qué tipos de persona se registran en la **Bitácora de accesos** y cómo se llaman las cosas en pantallas, avisos, correos, impresiones y en este manual:
 
 <!-- sin cambiar -->
-| Rubro | Quién visita | Quién vive o trabaja ahí | Lugares | Tipos en Nuevo Ingreso |
+| Giro | Quién visita | Quién vive o trabaja ahí | Lugares | Tipos en Nuevo Ingreso |
 |---|---|---|---|---|
 | **Hotel** | Huésped (con número de cuarto, reserva y tour) | Colaborador | Habitaciones | Como siempre |
 | **Corporativo / industria** | Visitante | Colaborador | Oficinas | Colaborador, Visitante, Proveedor, Contratista y Emergencia |
@@ -57,10 +57,11 @@ El **Rubro** (giro) de la empresa decide qué tipos de persona se registran en l
 
 Además, fuera de los hoteles el módulo de objetos perdidos se llama **Objetos olvidados**, y la lista sugerida de servicios de Reservas (la de un hotel) no se ofrece: cada empresa da de alta los suyos.
 
-1. Para cambiar el rubro de una empresa, el Super Administrador entra a **Estructura → Empresas**, toca el lápiz de la empresa, elige otro **Rubro** y toca **Guardar**.
-2. Los registros de antes no se pierden: si la Bitácora de accesos ya tenía un tipo que el rubro nuevo no usa, se sigue viendo con su nombre de siempre.
+1. Para cambiar el giro de una empresa, el Super Administrador entra a **Estructura → Empresas**, toca el lápiz de la empresa, elige otro **Giro** y toca **Guardar**.
+   La ventana te dice qué cambia (las palabras de pantallas, avisos, correos, impresiones y del manual; los tipos de persona de **Nuevo Ingreso**; lo propio de cada giro). Si estás de acuerdo, marca **Sí, cambiar el giro** y toca **Guardar** otra vez.
+2. Los registros de antes no se pierden: si la Bitácora de accesos ya tenía un tipo que el giro nuevo no usa, se sigue viendo con su nombre de siempre.
 
-**Qué debes ver:** al entrar con un usuario de esa empresa, el menú y las pantallas usan las palabras del rubro (por ejemplo **Residentes** en lugar del padrón de personal en un condominio).
+**Qué debes ver:** al entrar con un usuario de esa empresa, el menú y las pantallas usan las palabras del giro (por ejemplo **Residentes** en lugar del padrón de personal en un condominio).
 
 ## Cómo elegir los módulos de una empresa (Super Administrador)
 

@@ -13,7 +13,7 @@ El manual de usuario (`docs/usuario/*.md`) se publica dentro de la plataforma. C
 | JS | bloque «Manual (lección 37)» al final de `public/js/plataforma.js` (coloca el «?», búsqueda en vivo, índice plegado en el celular) |
 | CSS | bloque «Manual» al final de `public/css/plataforma.css` y de `public/css/modos-pantalla.css` |
 | Guía de redacción (obligatoria) | `docs/usuario/GUIA.md` (no es página del manual) |
-| Pruebas | `tests/Feature/Seguridad/ManualTest.php` |
+| Pruebas | `tests/Feature/Seguridad/ManualTest.php` y `tests/Feature/Nucleo/ManualRutasTest.php` (rutas de menú y de Configuración del manual, C-42) |
 
 No hay tablas nuevas ni migración: las páginas son archivos del repositorio.
 

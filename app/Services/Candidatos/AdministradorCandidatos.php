@@ -13,11 +13,13 @@ use App\Models\Persona;
 use App\Models\Postulacion;
 use App\Models\Puesto;
 use App\Models\Sede;
+use App\Models\Turno;
 use App\Models\User;
 use App\Models\Vacante;
 use App\Services\Avisos\AvisosCorreo;
 use App\Services\Colaboradores\AdministradorColaboradores;
 use App\Services\Firmas\Firmas;
+use App\Services\Importacion\Columna;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Alcance;
@@ -262,6 +264,7 @@ class AdministradorCandidatos
      */
     public function crearOLigar(User $actor, array $entrada, string $ip): array
     {
+        $entrada = $this->aQue($entrada);
         $d = $this->validarCv($entrada, true);
         $sedeId = $this->sedeValida($actor, $entrada['sede_id'] ?? null, 'candidatos.crear');
         $existente = $this->buscarFicha(null, $d['telefono'] ?? null, $d['curp'] ?? null);
@@ -331,6 +334,7 @@ class AdministradorCandidatos
      */
     public function actualizar(User $actor, Candidato $candidato, array $entrada, string $ip): Candidato
     {
+        $entrada = $this->aQue($entrada, $candidato);
         $d = $this->validarCv($entrada, $candidato->privacidad_aceptada_en === null);
         $antes = $this->foto($candidato);
         $candidato->fill($this->soloCv($d));
@@ -498,6 +502,10 @@ class AdministradorCandidatos
             'curp' => $candidato->curp, 'rfc' => $candidato->rfc, 'nss' => $candidato->nss, 'lugar_nacimiento' => $candidato->lugar_nacimiento,
             'nacionalidad' => $candidato->nacionalidad, 'direccion_completa' => $candidato->domicilioCompleto(),
         ], array_intersect_key($entrada, array_flip(['num_empleado', 'nombre', 'apellido_paterno', 'apellido_materno', 'sede_id', 'departamento_id', 'puesto_id', 'telefono'])));
+        // C-35: el turno de la vacante pasa al colaborador (si se usa en su sede); RR. HH. puede elegir otro o ninguno
+        $datos['turno_id'] = array_key_exists('turno_id', $entrada)
+            ? $entrada['turno_id']
+            : $this->turnoDeLaVacante($postulacion->vacante_id ?? $candidato->vacante_id, isset($datos['sede_id']) ? (int) $datos['sede_id'] : null);
         $datos = array_filter($datos, fn ($v) => $v !== null && $v !== '');
 
         $colaborador = DB::transaction(function () use ($actor, $candidato, $datos, $postulaciones, $postulacion, $documentosParaContratar) {
@@ -521,6 +529,21 @@ class AdministradorCandidatos
             + ($forzado ? ['forzado' => true, 'faltantes' => $faltantes, 'motivo' => $motivoForzar] : []));
 
         return $colaborador;
+    }
+
+    /** C-35: turno de la vacante, solo si está activo y se usa en la sede del nuevo colaborador. */
+    public function turnoDeLaVacante(?int $vacanteId, ?int $sedeId): ?int
+    {
+        $turnoId = $vacanteId === null ? null : Vacante::whereKey($vacanteId)->value('turno_id');
+        if ($turnoId === null) {
+            return null;
+        }
+        $consulta = Turno::whereKey((int) $turnoId)->where('activo', true);
+        if ($sedeId !== null) {
+            $consulta->aplicanEn([$sedeId]);
+        }
+
+        return $consulta->exists() ? (int) $turnoId : null;
     }
 
     public function eliminar(User $actor, Candidato $candidato): void
@@ -838,6 +861,83 @@ class AdministradorCandidatos
             throw ValidationException::withMessages(['declaracion' => 'Para guardar la firma, marca «Declaro que la información es verdadera».']);
         }
         $this->firmar($candidato, $entrada['firma'], $medio, $actor, false);
+    }
+
+    /**
+     * C-35 (X-02): un solo campo «¿A qué vacante o puesto?» (a_que):
+     *  - «v:ID» = vacante publicada (o en pausa): su puesto y su departamento;
+     *  - «p:ID» = puesto del catálogo: el departamento si el puesto es de uno solo;
+     *  - «otro» = texto libre, que solo se guarda si no coincide con una vacante
+     *    publicada ni con un puesto (si coincide, se liga al catálogo);
+     *  - vacío = sin definir.
+     * El departamento elegido a mano (Avanzado) gana sobre el deducido. Sin
+     * «a_que» (kiosco, bolsa, pruebas de antes) los campos llegan como siempre.
+     *
+     * @param  array<string, mixed>  $entrada
+     * @return array<string, mixed>
+     */
+    public function aQue(array $entrada, ?Candidato $candidato = null): array
+    {
+        if (! array_key_exists('a_que', $entrada)) {
+            return $entrada;
+        }
+        $valor = trim((string) $entrada['a_que']);
+        unset($entrada['a_que']);
+        $texto = trim((string) ($entrada['vacante'] ?? ''));
+        $vacanteId = null;
+        $puestoId = null;
+        if ($valor === 'otro' && $texto !== '') {
+            // El texto libre solo si no existe en el catálogo
+            $buscado = Columna::normalizar($texto);
+            $vacanteId = Vacante::whereIn('estado', ['publicada', 'pausada'])->get(['id', 'titulo'])
+                ->first(fn ($v) => Columna::normalizar((string) $v->titulo) === $buscado)?->id;
+            $puestoId = $vacanteId === null ? Puesto::where('activo', true)->get(['id', 'nombre'])
+                ->first(fn ($p) => Columna::normalizar((string) $p->nombre) === $buscado)?->id : null;
+            if ($vacanteId !== null || $puestoId !== null) {
+                $texto = '';
+            }
+        } elseif (preg_match('/^v:(\d{1,10})$/', $valor, $m)) {
+            $vacanteId = (int) $m[1];
+            $texto = '';
+        } elseif (preg_match('/^p:(\d{1,10})$/', $valor, $m)) {
+            $puestoId = (int) $m[1];
+            $texto = '';
+        } elseif ($valor !== 'otro') {
+            $texto = '';
+        }
+
+        if ($vacanteId !== null) {
+            $vacante = Vacante::whereKey($vacanteId)->first(['id', 'estado', 'puesto_id', 'departamento_id']);
+            $vigente = $vacante !== null && (in_array($vacante->estado, ['publicada', 'pausada'], true) || $vacanteId === $candidato?->vacante_id);
+            if (! $vigente) {
+                throw ValidationException::withMessages(['a_que' => 'Elige una vacante publicada (o en pausa) o un puesto de la lista.']);
+            }
+            $puestoId = $vacante->puesto_id !== null ? (int) $vacante->puesto_id : null;
+        } elseif ($puestoId !== null && ! Puesto::where('activo', true)->whereKey($puestoId)->exists() && $puestoId !== $candidato?->puesto_id) {
+            throw ValidationException::withMessages(['a_que' => 'Elige una vacante publicada (o en pausa) o un puesto de la lista.']);
+        }
+
+        $elegido = is_numeric($entrada['departamento_id'] ?? null) ? (int) $entrada['departamento_id'] : null;
+        $entrada['vacante_id'] = $vacanteId;
+        $entrada['puesto_id'] = $puestoId;
+        $entrada['vacante'] = $texto === '' ? null : $texto;
+        $entrada['departamento_id'] = $elegido ?? $this->departamentoDeducido($vacanteId, $puestoId);
+
+        return $entrada;
+    }
+
+    /** C-35: el departamento que sale de la vacante, o del puesto si es de un solo departamento activo. */
+    public function departamentoDeducido(?int $vacanteId, ?int $puestoId): ?int
+    {
+        if ($vacanteId !== null && ($d = Vacante::whereKey($vacanteId)->value('departamento_id')) !== null) {
+            return (int) $d;
+        }
+        if ($puestoId === null) {
+            return null;
+        }
+        $ids = Puesto::find($puestoId)?->departamentos()->where('departamentos.activo', true)->pluck('departamentos.id') ?? collect();
+
+        return $ids->count() === 1 ? (int) $ids->first() : null;
     }
 
     /**

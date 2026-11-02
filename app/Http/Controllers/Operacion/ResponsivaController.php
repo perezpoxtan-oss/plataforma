@@ -14,6 +14,8 @@ use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Firmas\Firmas;
 use App\Services\Responsivas\AdministradorResponsivas;
 use App\Support\AjustesCaseta;
+use App\Support\Csv;
+use App\Support\HoraLocal;
 use App\Support\Receptor;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
@@ -224,6 +226,34 @@ class ResponsivaController extends Controller
     /**
      * @return Builder<Responsiva>
      */
+    /** C-43 (E-13): «Exportar a Excel» con su permiso (responsivas.exportar): las que están en campo y el historial. */
+    public function exportar(Request $request, HoraLocal $hora): StreamedResponse
+    {
+        Gate::authorize('responsivas.exportar');
+        $empresaId = $this->empresaDeTrabajo($request);
+        $lista = $this->tenant->conEmpresa($empresaId, fn () => $this->consulta($request->user(), 'responsivas.exportar')
+            ->orderByDesc('responsivas.entregado_en')->orderByDesc('responsivas.id')->limit(20000)->get());
+
+        return $this->descargarCsv('responsivas', ['Folio', 'Sede', 'A cargo de', 'Equipos', 'Estado', 'Entregó', 'Entregada', 'Recibió', 'Devuelta'],
+            $lista->map(fn (Responsiva $r) => [$r->folio, $r->sede?->nombre, $r->nombreReceptor(),
+                $r->equipos->map(fn ($e) => trim(($e->equipo?->tipo?->nombre ?? '').' '.($e->equipo?->numero_serie ?? '')))->join(', '),
+                $r->enCampo() ? 'EN CAMPO' : 'DEVUELTA', $r->entrego?->name, $hora->formatear($r->entregado_en, 'd/m/Y H:i'), $r->recibio?->name, $hora->formatear($r->devuelto_en, 'd/m/Y H:i')]));
+    }
+
+    /** C-43 (E-13): descarga en Excel (CSV con BOM para que Excel lea los acentos). */
+    private function descargarCsv(string $archivo, array $encabezados, iterable $filas): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($encabezados, $filas) {
+            $salida = fopen('php://output', 'w');
+            fwrite($salida, "\xEF\xBB\xBF");
+            Csv::fila($salida, $encabezados);
+            foreach ($filas as $fila) {
+                Csv::fila($salida, $fila);
+            }
+            fclose($salida);
+        }, $archivo.'-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
     private function consulta(User $actor, string $permiso): Builder
     {
         return $this->responsivas->limitar(Responsiva::query(), $actor, $permiso)->with([

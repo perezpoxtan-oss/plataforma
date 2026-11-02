@@ -48,7 +48,7 @@ resumen: Directorio del personal de la empresa, sus sedes, lo que registra la ca
 
 ![Alta](img/colaboradores/2-alta.png)
 
-**Qué debes ver:** «Colaborador «Juan Pérez López» creado correctamente.»
+**Qué debes ver:** «Colaborador «Juan Pérez López» creado correctamente.» y, debajo, el **Siguiente paso**: **Crear su cuenta** (abre el alta en [Usuarios](usuarios.md) con su número y su nombre ya puestos y la cuenta vinculada; no los vuelvas a escribir) e **Imprimir credencial** (abre [Etiquetas QR](etiquetas-qr.md) ya filtrado a esa persona). Cada botón aparece si tu rol puede hacerlo.
 
 ### Avisos mientras escribes
 
@@ -170,6 +170,17 @@ La ficha reúne en una sola pantalla lo que la plataforma sabe de la persona, or
 ![Celular](img/colaboradores/5-celular.png) ![Alta en el celular](img/colaboradores/6-celular-alta.png) ![Ficha en el celular: desliza la barra de pestañas](img/colaboradores/17-ficha-celular.png)
 
 ![Modo Noche](img/colaboradores/7-noche.png)
+
+## Cómo exportar a Excel
+
+Necesitas que tu rol pueda **Exportar** en *Colaboradores* (si no ves el botón, pide a tu administrador que lo agregue a tu rol).
+
+1. Entra a **Estructura → Colaboradores**.
+2. Toca **Exportar a Excel**.
+
+**Qué debes ver:** se descarga un archivo de Excel (CSV) con lo que puedes ver en tus sedes.
+
+Los filtros de **departamento** y **turno** solo ofrecen los que se usan en tus sedes. El archivo no lleva datos personales (CURP, RFC, NSS, nacimiento ni domicilio).
 
 ## Si algo sale mal
 

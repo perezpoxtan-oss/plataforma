@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Importacion;
 use App\Services\Importacion\AdministradorImportaciones;
+use App\Services\Importacion\FaltantesDeCatalogo;
 use App\Services\Importacion\Importador;
 use App\Support\Csv;
 use App\Support\Tenancy\EmpresaDeTrabajo;
@@ -128,6 +129,9 @@ class ImportacionController extends Controller
                 'conteo' => $modelo->resumen ?? [],
                 'puedeEditar' => $importador->actualizable() && $actor->can($importador->modulo().'.editar'),
                 'puedeOriginal' => $this->importaciones->vePersonales($actor, $importador),
+                // C-43 (A-19): lo que el archivo trae y no existe en los catálogos, y si puede crearlo
+                'faltantes' => $faltantes = app(FaltantesDeCatalogo::class)->faltantes($actor, $modelo),
+                'puedeFaltantes' => collect(array_keys($faltantes))->mapWithKeys(fn ($c) => [$c => app(FaltantesDeCatalogo::class)->puede($actor, $c)])->all(),
             ]);
         });
     }
@@ -213,6 +217,26 @@ class ImportacionController extends Controller
      *
      * @return array{0: Importacion, 1: Importador, 2: int}
      */
+    /**
+     * C-43 (A-19): crea los departamentos, puestos y turnos que faltan y
+     * vuelve a revisar el archivo (todavía no se guarda ningún colaborador).
+     */
+    public function crearFaltantes(Request $request, int $importacion): RedirectResponse
+    {
+        [$modelo, , $empresaId] = $this->buscar($request, $importacion);
+        $faltantes = app(FaltantesDeCatalogo::class);
+        abort_unless($faltantes->aplica($modelo), 404);
+
+        $r = $this->tenant->conEmpresa($empresaId, fn () => $faltantes->crear($request->user(), $empresaId, $modelo));
+        $nombres = ['departamento' => 'departamentos', 'puesto' => 'puestos', 'turno' => 'turnos'];
+        $creados = collect($r['creados'])->map(fn ($lista, $c) => count($lista).' '.$nombres[$c].' ('.implode(', ', $lista).')')->values()->all();
+        $texto = ($creados === [] ? 'No se creó nada.' : 'Listo: se crearon '.implode('; ', $creados).'. Revisamos el archivo otra vez.')
+            .($r['sin_horario'] !== [] ? ' Sin crear (el nombre no trae su horario, por ejemplo «Matutino 07:00-15:00»): '.implode(', ', $r['sin_horario']).'. Créalos en Estructura → Turnos.' : '')
+            .($r['sin_permiso'] !== [] ? ' Tu rol no puede crear '.implode(' ni ', $r['sin_permiso']).': pide a tu administrador que los cree.' : '');
+
+        return redirect()->route('importaciones.show', $modelo)->with($creados === [] ? 'aviso' : 'ok', $texto);
+    }
+
     private function buscar(Request $request, int $id): array
     {
         $empresaId = $this->empresaDeTrabajo($request);

@@ -101,14 +101,14 @@ class PrestamoLlavesTest extends TestCase
         $devuelta = $this->prestamo($l2, $c, ['estado' => PrestamoLlave::DEVUELTA, 'devuelto_en' => now(), 'recibido_por' => $this->admin->id]);
 
         $this->actingAs($this->admin)->get('/prestamo-llaves')->assertOk()
-            ->assertSee('Bitácora de Llaves')->assertSee('Registro operativo, préstamos y devoluciones.')
+            ->assertSee('<h1>Préstamo de llaves</h1>', false)->assertSee('Registro operativo, préstamos y devoluciones.')
             ->assertSee('Llaves en Uso (<span data-conteo-en-uso>1</span>)', false)->assertSee('Historial de Entregas')
             ->assertSee('Excel (Auditoría)')->assertSee('Prestar Llave')->assertSee('Escáner Listo')
             ->assertSee('Buscar por colaborador, nómina o llave...')
             ->assertSee('id="prestamo-'.$fuera->id.'"', false)->assertSee('LLAVE FUERA')->assertSee('ID: #'.str_pad((string) $fuera->id, 5, '0', STR_PAD_LEFT))
             ->assertSee('No. Nómina: 1005')->assertSee('Garantía: INE')->assertSee('Recibir Llave a Caseta')
             ->assertSee('id="prestamo-'.$devuelta->id.'"', false)->assertSee('EN CASETA')->assertSee('Usada por: Persona Num1005')->assertSee('Regresó:')
-            ->assertSee('Registrar y Capturar Siguiente')->assertSee('ID Dejada en Garantía')->assertSee('Ninguna (Riesgo)')
+            ->assertSee('Guardar y capturar siguiente')->assertSee('ID Dejada en Garantía')->assertSee('Ninguna (Riesgo)')
             ->assertDontSee('onclick')->assertDontSee('Hotel)');
     }
 

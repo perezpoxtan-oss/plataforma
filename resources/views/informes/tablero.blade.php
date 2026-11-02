@@ -11,7 +11,7 @@
         <div class="encabezado-pantalla m-0">
             <div class="icono"><i class="bi bi-speedometer2 text-primary" aria-hidden="true"></i></div>
             <div>
-                <h1>Consola de Monitoreo</h1>
+                <h1>Tablero</h1>
                 <p>Las cifras de este momento. Toca una ficha para ver su gráfica, el listado y el enlace al módulo.</p>
             </div>
         </div>

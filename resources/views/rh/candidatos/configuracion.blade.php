@@ -82,7 +82,7 @@
                 @endforeach
             </div>
             <h3 class="h6 fw-bold mt-3"><i class="bi bi-archive me-2 text-secondary" aria-hidden="true"></i>Caducidad y privacidad</h3>
-            <p class="small text-muted">Las postulaciones en «Considerar» o «Rechazado» se archivan (salen de la lista; la ficha se conserva). Las fichas sin contratación se borran con sus documentos y su firma: {{ $diasAviso }} días antes se avisa a Recursos Humanos de la sede con el botón <strong>Conservar 6 meses más</strong>. Las fichas de contratados nunca se borran: su expediente ya es del colaborador.</p>
+            <p class="small text-muted">Las postulaciones en «Considerar» o «Rechazado» se archivan (salen de la lista; la ficha se conserva). Las fichas sin contratación se borran con sus documentos y su firma: {{ $diasAviso }} días antes se avisa a Recursos Humanos de la sede con el botón <strong>Guardar 6 meses más</strong>. Las fichas de contratados nunca se borran: su expediente ya es del colaborador.</p>
             <div class="rejilla-cv">
                 <div>
                     <label class="campo-etiqueta" for="plazo_archivar_meses">Archivar Considerar y Rechazado a los (meses)</label>

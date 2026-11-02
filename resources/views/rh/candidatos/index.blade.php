@@ -35,7 +35,57 @@
                     <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Candidatos de: <strong>{{ $empresaNombre }}</strong></p>
                 </div>
             </div>
-            <div class="d-flex flex-wrap gap-2">
+            {{-- C-35: arriba solo «Nuevo candidato» y la búsqueda; lo demás en «Avanzado» --}}
+            @if ($puede['crear'] && $sedesAlta->isNotEmpty())
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn-verde btn-accion-rh" data-abrir-dialogo="dialogoCandidato"><i class="bi bi-person-plus-fill me-1" aria-hidden="true"></i>Nuevo candidato</button>
+                </div>
+            @endif
+        </div>
+
+        @php $avanzadoAbierto = $filtros['sede'] > 0 || $filtros['departamento'] > 0 || $filtros['vacante'] > 0; @endphp
+        <form method="GET" action="{{ route('candidatos.index') }}" class="filtros-rh" role="search" data-autoenviar id="filtrosCandidatos">
+            <input type="hidden" name="etapa" value="{{ $filtros['etapa'] }}">
+            @if ($filtros['revisar'])<input type="hidden" name="revisar" value="1">@endif
+            @if ($filtros['archivadas'])<input type="hidden" name="archivadas" value="1">@endif
+            @if ($filtros['caducar'])<input type="hidden" name="caducar" value="1">@endif
+            <div class="buscador">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="search" name="q" value="{{ $filtros['q'] }}" maxlength="100" placeholder="Buscar por nombre o vacante..." aria-label="Buscar candidato">
+            </div>
+            @if ($hayFiltros)
+                <a href="{{ route('candidatos.index') }}" class="btn-limpiar-filtros">Limpiar</a>
+            @endif
+        </form>
+
+        <details class="avanzado-candidatos mb-3" data-avanzado-candidatos @if ($avanzadoAbierto) open @endif>
+            <summary><i class="bi bi-sliders me-1" aria-hidden="true"></i>Avanzado</summary>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                @if ($sedes->count() > 1)
+                    <select name="sede" form="filtrosCandidatos" class="filtro-select" aria-label="Filtrar por sede" data-enviar-al-cambiar>
+                        <option value="">Todas las sedes</option>
+                        @foreach ($sedes as $s)
+                            <option value="{{ $s->id }}" @selected($filtros['sede'] === $s->id)>{{ $s->nombre }}</option>
+                        @endforeach
+                    </select>
+                @endif
+                <select name="departamento" form="filtrosCandidatos" class="filtro-select" aria-label="Filtrar por departamento" data-enviar-al-cambiar>
+                    <option value="">Todos los departamentos</option>
+                    @foreach ($departamentos as $d)
+                        <option value="{{ $d->id }}" @selected($filtros['departamento'] === $d->id)>{{ $d->nombre }}</option>
+                    @endforeach
+                </select>
+                {{-- Vacantes (lección 36) --}}
+                @if ($vacantesFiltro->isNotEmpty())
+                    <select name="vacante" form="filtrosCandidatos" class="filtro-select" aria-label="Filtrar por vacante" data-enviar-al-cambiar>
+                        <option value="">Todas las vacantes</option>
+                        @foreach ($vacantesFiltro as $vf)
+                            <option value="{{ $vf->id }}" @selected($filtros['vacante'] === $vf->id)>{{ $vf->titulo }}{{ $vf->estado !== 'publicada' ? ' ('.\App\Models\Vacante::ESTADOS[$vf->estado].')' : '' }}</option>
+                        @endforeach
+                    </select>
+                @endif
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-2">
                 <a href="{{ route('recepcion.index') }}" class="btn-secundario-rh"><i class="bi bi-person-check me-1" aria-hidden="true"></i>Recepción</a>
                 {{-- Configuración de Candidatos: criterios de entrevista (ADR-0010) y documentos y plazos (fase 3) --}}
                 @if ($puede['configurar'] ?? false)
@@ -52,49 +102,8 @@
                         <button type="submit" class="btn-secundario-rh"><i class="bi bi-file-earmark-lock me-1" aria-hidden="true"></i>Con datos personales</button>
                     </form>
                 @endif
-                @if ($puede['crear'] && $sedesAlta->isNotEmpty())
-                    <button type="button" class="btn-verde btn-accion-rh" data-abrir-dialogo="dialogoCandidato"><i class="bi bi-person-plus-fill me-1" aria-hidden="true"></i>Nuevo candidato</button>
-                @endif
             </div>
-        </div>
-
-        <form method="GET" action="{{ route('candidatos.index') }}" class="filtros-rh" role="search" data-autoenviar>
-            <input type="hidden" name="etapa" value="{{ $filtros['etapa'] }}">
-            @if ($filtros['revisar'])<input type="hidden" name="revisar" value="1">@endif
-            @if ($filtros['archivadas'])<input type="hidden" name="archivadas" value="1">@endif
-            @if ($filtros['caducar'])<input type="hidden" name="caducar" value="1">@endif
-            <div class="buscador">
-                <i class="bi bi-search" aria-hidden="true"></i>
-                <input type="search" name="q" value="{{ $filtros['q'] }}" maxlength="100" placeholder="Buscar por nombre o vacante..." aria-label="Buscar candidato">
-            </div>
-            @if ($sedes->count() > 1)
-                <select name="sede" class="filtro-select" aria-label="Filtrar por sede" data-enviar-al-cambiar>
-                    <option value="">Todas las sedes</option>
-                    @foreach ($sedes as $s)
-                        <option value="{{ $s->id }}" @selected($filtros['sede'] === $s->id)>{{ $s->nombre }}</option>
-                    @endforeach
-                </select>
-            @endif
-            <select name="departamento" class="filtro-select" aria-label="Filtrar por departamento" data-enviar-al-cambiar>
-                <option value="">Todos los departamentos</option>
-                @foreach ($departamentos as $d)
-                    <option value="{{ $d->id }}" @selected($filtros['departamento'] === $d->id)>{{ $d->nombre }}</option>
-                @endforeach
-            </select>
-            {{-- Vacantes (lección 36) --}}
-            @if ($vacantesFiltro->isNotEmpty())
-                <select name="vacante" class="filtro-select" aria-label="Filtrar por vacante" data-enviar-al-cambiar>
-                    <option value="">Todas las vacantes</option>
-                    @foreach ($vacantesFiltro as $vf)
-                        <option value="{{ $vf->id }}" @selected($filtros['vacante'] === $vf->id)>{{ $vf->titulo }}{{ $vf->estado !== 'publicada' ? ' ('.\App\Models\Vacante::ESTADOS[$vf->estado].')' : '' }}</option>
-                    @endforeach
-                </select>
-            @endif
-            {{-- Fin Vacantes --}}
-            @if ($hayFiltros)
-                <a href="{{ route('candidatos.index') }}" class="btn-limpiar-filtros">Limpiar</a>
-            @endif
-        </form>
+        </details>
 
         <nav class="pildoras-pases" aria-label="Etapas">
             <a href="{{ route('candidatos.index', $base) }}" class="btn-pill-tipo {{ $filtros['etapa'] === '' && $sinEspecial ? 'active' : '' }}">Todos ({{ $conteos->sum() }})</a>
@@ -118,7 +127,7 @@
             @endif
         </nav>
         @if ($filtros['caducar'])
-            <p class="small text-muted"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Estas fichas se borrarán con sus documentos el día que muestra cada una (no fueron contratadas y llevan mucho tiempo sin movimiento). Abre la ficha y toca <strong>Conservar 6 meses más</strong> si aún la necesitas.</p>
+            <p class="small text-muted"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Estas fichas se borrarán con sus documentos el día que muestra cada una (no fueron contratadas y llevan mucho tiempo sin movimiento). Abre la ficha y toca <strong>Guardar 6 meses más</strong> si aún la necesitas.</p>
         @endif
 
         <div class="fichas-grid fichas-candidatos">

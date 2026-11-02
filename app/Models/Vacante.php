@@ -41,7 +41,7 @@ class Vacante extends Model
     ];
 
     /** Texto del botón que lleva a cada estado (según desde dónde). */
-    public const BOTONES = ['publicada' => 'Publicar', 'pausada' => 'Pausar', 'cerrada' => 'Cerrar', 'borrador' => 'Reabrir como borrador'];
+    public const BOTONES = ['publicada' => 'Aprobar y publicar', 'pausada' => 'Dar de baja · pausar', 'cerrada' => 'Dar de baja · cerrar', 'borrador' => 'Reactivar como borrador']; // C-40: los diez verbos
 
     public const MOTIVOS_CIERRE = ['cubierta' => 'Cubierta (ya se contrató)', 'cancelada' => 'Cancelada'];
 

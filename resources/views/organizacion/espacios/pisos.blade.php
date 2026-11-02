@@ -58,7 +58,7 @@
         @include('organizacion.espacios.partes.formulario', [
             'id' => 'dialogoNuevoPiso', 'titulo' => 'Nuevo Piso', 'icono' => 'bi-layers text-warning',
             'nivel' => 'area', 'padreId' => $nodo->id, 'tipos' => $tiposPiso, 'editar' => false,
-            'boton' => 'Agregar Piso', 'claseBoton' => 'btn-ambar', 'etiquetaNombre' => 'Nombre del Piso (ej. Piso 1, Planta Baja)',
+            'boton' => 'Guardar piso', 'claseBoton' => 'btn-ambar', 'etiquetaNombre' => 'Nombre del Piso (ej. Piso 1, Planta Baja)',
         ])
 
         <dialog id="dialogoCopiarPisos" class="dialogo" aria-labelledby="tituloCopiarPisos">

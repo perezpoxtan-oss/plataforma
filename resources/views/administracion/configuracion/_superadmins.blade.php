@@ -68,7 +68,7 @@
                                     <p class="small text-muted">Quita sus dos pasos; al entrar los activa con su teléfono nuevo.</p>
                                     <label class="campo-etiqueta" for="sa_2p_yo_{{ $c->id }}">Tu contraseña</label>
                                     <input type="password" id="sa_2p_yo_{{ $c->id }}" name="contrasena_actual" class="campo" autocomplete="current-password" required>
-                                    <button type="submit" class="btn btn-outline-primary w-100" style="min-height:44px;border-radius:10px;">Quitar sus dos pasos</button>
+                                    <button type="submit" class="btn btn-outline-primary w-100" style="min-height:44px;border-radius:10px;">Dar de baja sus dos pasos</button>
                                 </form>
                             @endif
                             <form action="{{ route('superadmins.estado', $c->id) }}" method="POST" class="col-md-4"

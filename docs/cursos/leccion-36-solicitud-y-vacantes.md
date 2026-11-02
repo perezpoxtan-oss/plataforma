@@ -31,7 +31,7 @@ Usa el demo (`plataforma:demo`), contraseña `Demo1234!`. Usuarios: **admin.demo
 
 1. **Recursos Humanos → Recepción y candidatos → Vacantes**.
 2. Toca **Nueva vacante**: «Mesero», 2 plazas, sede Centro, sueldo de 8500 a 9500, tres requisitos (uno por renglón). **Guardar y publicar**.
-3. En **Cocinero de línea** (borrador) toca **Publicar**. Luego **Pausar** y **Reanudar**.
+3. En **Cocinero de línea** (borrador) toca **Aprobar y publicar**. Luego **Dar de baja · pausar** y **Reactivar**.
 4. Intenta crear otra vacante «MESERO»: no te deja, ya hay una abierta con ese título.
 5. En **Recepcionista bilingüe** (cerrada · cubierta) toca **2 candidatos**: llegas a Candidatos filtrado por esa vacante.
 

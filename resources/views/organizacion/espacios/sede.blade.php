@@ -78,7 +78,7 @@
             @include('organizacion.espacios.partes.formulario', [
                 'id' => 'dialogoNuevaZona', 'titulo' => 'Alta de Zona / Edificio', 'icono' => 'bi-building text-danger',
                 'nivel' => 'edificio', 'padreId' => null, 'sedes' => collect([$sede]), 'tipos' => $tiposEdificio, 'conCodigo' => true,
-                'editar' => false, 'boton' => 'Registrar Zona', 'claseBoton' => 'btn-rojo', 'etiquetaNombre' => 'Nombre de la Zona / Edificio',
+                'editar' => false, 'boton' => 'Guardar zona', 'claseBoton' => 'btn-rojo', 'etiquetaNombre' => 'Nombre de la Zona / Edificio',
                 // Las zonas no llevan sección; sin esto heredan $secciones (agrupadas por sede) de la pantalla
                 'secciones' => null,
             ])
@@ -184,7 +184,7 @@
                                data-duplicado="{{ route('espacios.duplicado') }}" data-duplicado-campo="seccion" data-duplicado-con="sede_id">
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                            <button type="submit" class="btn-rojo">Crear Sección</button>
+                            <button type="submit" class="btn-rojo">Guardar sección</button>
                         </div>
                     </form>
                 </div>

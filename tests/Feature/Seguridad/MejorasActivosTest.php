@@ -482,7 +482,7 @@ class MejorasActivosTest extends TestCase
     public function test_folio_de_garantia_se_llena_con_el_gafete_escaneado(): void
     {
         $this->actingAs($this->agente)->get('/prestamo-llaves')->assertOk()
-            ->assertSee('data-folio-garantia', false)->assertSee('Con «Gafete interno» se llena solo con el número del gafete que escaneaste.');
+            ->assertSee('data-folio-garantia', false)->assertSee('Con «Credencial de empleado» se llena solo con el número de la credencial que escaneaste.');
     }
 
     public function test_semaforo_y_avisos_de_llaves_que_llevan_mucho_tiempo_fuera(): void
@@ -569,13 +569,13 @@ class MejorasActivosTest extends TestCase
         $agente = $this->conColaborador($this->agente, $this->centro);
         $p = $this->publicar($this->procedimiento(critico: false));
         // Original: pide firma
-        $this->actingAs($agente)->get("/procedimientos/{$p->id}/leer")->assertOk()->assertSee('Firmar de enterado')->assertDontSee('Guardar «Leí y entendí»');
+        $this->actingAs($agente)->get("/procedimientos/{$p->id}/leer")->assertOk()->assertSee('Guardar · firmar de enterado')->assertDontSee('Guardar «Leí y entendí»');
         $this->actingAs($agente)->post("/procedimientos/{$p->id}/acuse", ['version_id' => $p->vigente->id, 'entendido' => '1', 'firma_modo' => 'nueva'])
             ->assertSessionHasErrors('firma');
 
         // Solo casilla: queda con nombre, fecha y hora, sin firma
         $this->configurar(['procedimientos_acuse' => 'casilla']);
-        $this->actingAs($agente)->get("/procedimientos/{$p->id}/leer")->assertOk()->assertSee('Guardar «Leí y entendí»')->assertDontSee('Firmar de enterado');
+        $this->actingAs($agente)->get("/procedimientos/{$p->id}/leer")->assertOk()->assertSee('Guardar «Leí y entendí»')->assertDontSee('Guardar · firmar de enterado');
         $this->actingAs($agente)->post("/procedimientos/{$p->id}/acuse", ['version_id' => $p->vigente->id, 'entendido' => '1'])->assertSessionHasNoErrors();
         $acuse = $this->enEmpresa(fn () => ProcedimientoAcuse::where('user_id', $agente->id)->firstOrFail());
         $this->assertNull($acuse->firma_ruta);

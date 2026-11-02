@@ -2835,7 +2835,7 @@ class CrearDatosDemo extends Command
             Notificacion::create(['user_id' => $rh->id, 'tipo' => 'caducidad_candidato', 'icono' => 'bi-archive', 'nivel' => 'alerta', 'titulo' => 'Se borrará la ficha de Hugo Balam Poot el '.now()->addDays(10)->format('d/m/Y'),
                 'texto' => 'Lleva 12 meses sin movimiento y no fue contratado: por privacidad, su ficha y sus documentos se borrarán ese día. Si aún lo necesitas, consérvalo 6 meses más.',
                 'url' => route('candidatos.show', $hugo->id), 'referencia_tipo' => PlazosCandidatos::REFERENCIA_CADUCIDAD, 'referencia_id' => $hugo->id,
-                'acciones' => [['etiqueta' => 'Conservar 6 meses más', 'url' => route('candidatos.conservar', $hugo->id), 'campos' => [], 'estilo' => 'aceptar']]]);
+                'acciones' => [['etiqueta' => 'Guardar 6 meses más', 'url' => route('candidatos.conservar', $hugo->id), 'campos' => [], 'estilo' => 'aceptar']]]);
 
             // Los avisos de candidatos de días anteriores ya se leyeron
             Notificacion::where('referencia_tipo', 'candidato')->whereIn('referencia_id', [$jorge->id, $mariela->id, $ramon->id, $silvia->id, $pedro->id])
@@ -3129,12 +3129,12 @@ class CrearDatosDemo extends Command
     }
     // Fin Solicitud de empleo formal y Vacantes
 
-    // Candidatos, fase 1: postulaciones, «¿A qué viene?» y el «Que pase» de RR. HH.
+    // Candidatos, fase 1: postulaciones, «¿A qué viene?» y el «Aprobar · que pase» de RR. HH.
 
     /**
      * Solo la primera vez (o en una base donde el demo ya existía):
      *  - Jorge Tun Pech vuelve hoy a su entrevista: la caseta lo registra, RR. HH.
-     *    dice «Que pase» y queda en sitio (su ficha tiene dos visitas);
+     *    dice «Aprobar · que pase» y queda en sitio (su ficha tiene dos visitas);
      *  - Silvia Mena Couoh (en cartera) volvió ayer buscando empleo de Camarista:
      *    nueva postulación en su misma ficha (la anterior queda en su historial);
      *  - Martha Ek Chan llegó hace unos minutos y espera a RR. HH. en caseta.
@@ -3165,7 +3165,7 @@ class CrearDatosDemo extends Command
 
         try {
             auth()->setUser($agente);
-            // Jorge: segunda visita (entrevista) con el «Que pase» de RR. HH.
+            // Jorge: segunda visita (entrevista) con el «Aprobar · que pase» de RR. HH.
             $jorge = Candidato::where('nombre_completo', 'Jorge Tun Pech')->first();
             if ($jorge !== null) {
                 $a = $visita('Jorge Tun Pech', 40, 'entrevista', true, $jorge->persona_id);
@@ -3193,7 +3193,7 @@ class CrearDatosDemo extends Command
                 Notificacion::where('referencia_tipo', 'candidato')->where('referencia_id', $silvia->id)->update(['leida_en' => now()]);
             }
 
-            // Martha: espera ahora mismo a que RR. HH. diga «Que pase»
+            // Martha: espera ahora mismo a que RR. HH. diga «Aprobar · que pase»
             $a = $visita('Martha Ek Chan', 4, 'busca_empleo', true);
             $a->forceFill(['estado' => 'pendiente', 'autorizacion' => 'esperando'])->save();
             $martha = $candidatos->desdeAcceso($agente, $a, ['viene_a' => 'busca_empleo', 'esperar_rh' => true]);

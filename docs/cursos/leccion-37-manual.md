@@ -24,7 +24,7 @@ Usa el demo (`php artisan plataforma:demo`), contraseña `Demo1234!`. Usuarios: 
 ## Práctica 2 · El botón «?» de cada pantalla (agente.demo)
 
 1. Entra a **Operación → Caseta → Bitácora de accesos**.
-2. Junto al título **Control de Accesos** toca el **?** redondo: se abre la página **Bitácora de accesos**.
+2. Junto al título **Bitácora de accesos** toca el **?** redondo: se abre la página **Bitácora de accesos**.
 3. Repite en **Novedades** y **Procedimientos**.
 
 ## Práctica 3 · Cada quien ve lo suyo (admin.demo y rh.demo)

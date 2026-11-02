@@ -16,7 +16,7 @@ Usa una empresa de prueba con Reservas, Préstamo de llaves e Incidentes, con un
 
 ## Práctica 1 · Eventos de hoy
 
-1. Entra a **Operación → Caseta → Accesos**.
+1. Entra a **Operación → Caseta → Bitácora de accesos**.
 2. Arriba de las tarjetas abre **Eventos de hoy**.
 
 Comprueba: ves el horario, el salón, el nombre del evento, cuántas personas vienen y desde qué hora es el montaje.
@@ -25,7 +25,7 @@ Comprueba: ves el horario, el salón, el nombre del evento, cuántas personas vi
 
 1. **Nuevo Ingreso** → **Proveedor**. Llena la empresa y **¿A quién viene?**.
 2. Abre **¿Trae herramienta o equipo?** y anota «Taladro», cantidad 1 y su serie. Toca **Otro artículo** y anota «Escalera».
-3. Registra y, cuando esté en sitio, toca **Registrar Salida**.
+3. Registra y, cuando esté en sitio, toca **Dar salida**.
 4. Revisa la lista. Esta vez quita la marca de **Sale con lo mismo** y escribe «Lleva una caja más». Toca **Dar salida**.
 
 Comprueba: el mensaje dice que se avisó a tu supervisor. En el historial la tarjeta dice «salió con algo distinto».
@@ -39,7 +39,7 @@ Comprueba: el renglón desaparece de Mis pendientes y el aviso de la campana que
 
 ## Práctica 4 · Quién tuvo la llave
 
-1. Abre un robo en una habitación (**Operación → Incidentes → Robo → Abrir Expediente**). Elige la habitación y guarda.
+1. Abre un robo en una habitación (**Operación → Bitácora → Robo → Abrir Expediente**). Elige la habitación y guarda.
 2. Toca **Ficha de Hechos (habitación, llaves y más)**.
 
 Comprueba: aparece «Préstamo de llave · abre esta habitación» con quién la tuvo y cuándo la devolvió, y los accesos ligados a la habitación.

@@ -79,8 +79,8 @@ class GafetesTest extends TestCase
     public function test_lista_con_textos_de_segcat_tipos_basicos_y_filtros(): void
     {
         $this->actingAs($this->admin)->get('/gafetes')->assertOk()
-            ->assertSee('Inventario Gafetes')->assertSee('Plásticos físicos para accesos.')
-            ->assertSee('Generar Lote')->assertSee('Todavía no hay gafetes');
+            ->assertSee('<h1>Gafetes</h1>', false)->assertSee('Plásticos físicos para accesos.')
+            ->assertSee('Guardar lote')->assertSee('Todavía no hay gafetes');
         // La primera vez se crean los tipos de siempre (como la semilla de SEGCAT)
         $this->assertSame(['Contratista', 'Proveedor', 'Visitante'], $this->enEmpresa(fn () => TipoGafete::orderBy('nombre')->pluck('nombre')->all()));
 
@@ -385,7 +385,7 @@ class GafetesTest extends TestCase
         $tipo = $this->tipo('Visitante');
 
         $this->actingAs($agente)->get('/gafetes')->assertOk()->assertSee('HOT-CEN-VIS-001')
-            ->assertDontSee('Generar Lote')->assertDontSee('dialogoEditarGafete')->assertDontSee('dialogoBajaGafete')
+            ->assertDontSee('Guardar lote')->assertDontSee('dialogoEditarGafete')->assertDontSee('dialogoBajaGafete')
             ->assertDontSee('Marcar todos')->assertDontSee(route('gafetes.reactivar', $g->id));
         $this->actingAs($agente)->post('/gafetes/lote', ['sede_id' => $this->centro->id, 'tipo_gafete_id' => $tipo->id, 'cantidad' => 1])->assertForbidden();
         $this->actingAs($agente)->put("/gafetes/{$g->id}", ['nomenclatura' => 'X', 'tipo_gafete_id' => $tipo->id])->assertForbidden();
@@ -406,7 +406,7 @@ class GafetesTest extends TestCase
 
         $this->actingAs($sa)->get('/gafetes')->assertOk()->assertSee('Elige arriba la');
         $this->actingAs($sa)->post('/gafetes/lote', ['sede_id' => $this->centro->id, 'tipo_gafete_id' => 1, 'cantidad' => 1])->assertNotFound();
-        $this->actingAs($sa)->withSession([EmpresaDeTrabajo::SESION => $this->empresa->id])->get('/gafetes')->assertOk()->assertSee('HOT-CEN-VIS-001')->assertSee('Generar Lote');
+        $this->actingAs($sa)->withSession([EmpresaDeTrabajo::SESION => $this->empresa->id])->get('/gafetes')->assertOk()->assertSee('HOT-CEN-VIS-001')->assertSee('Guardar lote');
     }
 
     public function test_menu_enlaza_a_gafetes_y_vouchers(): void

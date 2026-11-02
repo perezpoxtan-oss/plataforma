@@ -212,7 +212,7 @@ class PasesSalidaTest extends TestCase
             ->assertSee('Mi bandeja')->assertSee('Circuito')
             ->assertSee('No se encontraron pases.')->assertSee('Nuevo Pase de Salida')
             ->assertSee('Motivo y Solicitante')->assertSee('Enviar A')->assertSee('Artículos que Salen')
-            ->assertSee('Guardar y Enviar a Aprobación')->assertSee('Registrar y capturar siguiente')->assertDontSee('onclick');
+            ->assertSee('Guardar y Enviar a Aprobación')->assertSee('Guardar y capturar siguiente')->assertDontSee('onclick');
     }
 
     public function test_la_ficha_muestra_folio_pasos_y_quien_debe_firmar(): void
@@ -308,7 +308,7 @@ class PasesSalidaTest extends TestCase
             ->assertSee('Mariana López · Núm. 1007')->assertSee('value="Laptop"', false);
         $this->assertMatchesRegularExpression('/id="dialogoNuevoPase"[^>]*data-abrir-al-cargar/', $respuesta->getContent());
 
-        // "Registrar y capturar siguiente": vuelve a la lista con el diálogo abierto
+        // "Guardar y capturar siguiente": vuelve a la lista con el diálogo abierto
         $this->actingAs($this->admin)->post('/pases-salida', $this->datos(['siguiente' => 1]))
             ->assertRedirect(route('pases-salida.index', ['nuevo' => 1]))->assertSessionHas('ok');
         $html = $this->actingAs($this->admin)->get('/pases-salida?nuevo=1')->getContent();
@@ -635,7 +635,7 @@ class PasesSalidaTest extends TestCase
         [$conRadio, $cargador] = $pase->articulos->all();
 
         // La ventana de caseta usa el lector universal para escanear lo que sale
-        $this->actingAs($this->admin)->get('/pases-salida/'.$pase->id)->assertOk()->assertSee('Registrar Salida')
+        $this->actingAs($this->admin)->get('/pases-salida/'.$pase->id)->assertOk()->assertSee('Dar salida')
             ->assertSee('data-lector data-modo="buscar" data-tipos="equipo"', false)->assertSee('data-equipo-id="'.$radio->id.'"', false)
             ->assertSee('Quien se lleva el equipo')->assertSee('Guardar mi firma para usarla la próxima vez');
 
@@ -967,7 +967,7 @@ class PasesSalidaTest extends TestCase
 
         $this->actingAs($this->admin)->get('/pases-salida?filtro=pendientes')->assertSee('id="pase-'.$pendiente->id.'"', false)->assertDontSee('id="pase-'.$aprobado->id.'"', false)
             ->assertSee('aria-current="page"', false);
-        $this->actingAs($this->admin)->get('/pases-salida?filtro=aprobados')->assertSee('id="pase-'.$aprobado->id.'"', false)->assertSee('Ver / Registrar Salida')
+        $this->actingAs($this->admin)->get('/pases-salida?filtro=aprobados')->assertSee('id="pase-'.$aprobado->id.'"', false)->assertSee('Ver / Dar salida')
             ->assertDontSee('id="pase-'.$pendiente->id.'"', false);
         $this->actingAs($this->admin)->get('/pases-salida?filtro=rechazados')->assertSee('id="pase-'.$rechazado->id.'"', false)->assertSee('Ver / Corregir')
             ->assertDontSee('id="pase-'.$pendiente->id.'"', false);

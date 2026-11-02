@@ -9,7 +9,7 @@ Como `admin.demo`:
 1. Abre **Padrones → Proveedores**. Verás 9 empresas demo; *Fletes Rápidos del Sureste* aparece como **BAJA / VETADA**.
 2. Toca la píldora **Contratistas**: queda solo *Constructora Maya*, que dice **1 de 2 sedes** (solo Playa).
 3. En el filtro de sedes elige **Hotel Demo Centro**: *Constructora Maya* y *Tours Xcaret Express* desaparecen.
-4. Toca **Registrar Empresa Externa** y escribe "abarrotes del caribe": te avisa que ya existe. Cámbialo a **Lavandería Industrial del Sur**, RFC `lis101010ab1`, teléfono `998 100 2000`, y guarda. Abre la ficha: el RFC quedó en mayúsculas y el teléfono sin espacios.
+4. Toca **Guardar empresa Externa** y escribe "abarrotes del caribe": te avisa que ya existe. Cámbialo a **Lavandería Industrial del Sur**, RFC `lis101010ab1`, teléfono `998 100 2000`, y guarda. Abre la ficha: el RFC quedó en mayúsculas y el teléfono sin espacios.
 5. Intenta un RFC `ABC123` o un teléfono `998-ABC`: el sistema los rechaza con un mensaje claro.
 6. Abre la **Ficha** de *Transportes Kin-Ha* y recorre **Resumen**, **Personal** y **Flotilla**.
 7. Desactiva la lavandería con ⊘ y reactívala con ↺.

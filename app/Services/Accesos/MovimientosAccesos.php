@@ -44,7 +44,7 @@ class MovimientosAccesos
     {
         if ($acceso->esperaAlDepartamento()) {
             // Proveedor/contratista que espera al departamento: solo pasa con su respuesta o por excepción (con motivo)
-            throw new MovimientoNoPermitido('Este acceso espera la autorización del departamento. Si no puede esperar, toca «Autorizar por excepción» y elige el motivo.');
+            throw new MovimientoNoPermitido('Este acceso espera la autorización del departamento. Si no puede esperar, toca «Aprobar por excepción» y elige el motivo.');
         }
         $cambio = Acceso::whereKey($acceso->id)->where('estado', 'pendiente')
             ->update(['estado' => 'en_sitio', 'autorizado_at' => now(), 'autorizado_por' => $actor->id, 'actualizado_por' => $actor->id, 'updated_at' => now()]);

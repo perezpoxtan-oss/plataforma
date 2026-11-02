@@ -224,7 +224,7 @@ class EscalamientoAutorizacionesTest extends TestCase
         $this->assertNull($a->escalado_en);
         $this->assertSame([2, 2], [$this->notificaciones($this->jefeDepto, 'autorizacion_visita'), $this->notificaciones($this->suplente, 'autorizacion_visita')]);
         $this->actingAs($this->jefeDepto)->getJson('/notificaciones/resumen')->assertJsonPath('lista.0.titulo', 'Recordatorio: Ingrid Solís lleva 10 min esperando tu respuesta')
-            ->assertJsonPath('lista.0.acciones.0.etiqueta', 'Autorizar ingreso');
+            ->assertJsonPath('lista.0.acciones.0.etiqueta', 'Aprobar ingreso');
         Mail::assertSent(AvisoRecepcion::class, fn ($m) => $m->hasTo($this->jefeDepto->email) && str_starts_with($m->titulo, 'Recordatorio:'));
         $this->assertSame(0, $this->notificaciones($this->jefeSeguridad, 'autorizacion_escalada'));
         $this->assertTrue(Auditoria::where('evento', 'autorizaciones.recordatorio')->where('auditable_id', $a->id)->exists());
@@ -240,7 +240,7 @@ class EscalamientoAutorizacionesTest extends TestCase
         $this->assertEqualsCanonicalizing([$this->suplente->id, $this->jefeSeguridad->id], $a->escalado_a);
         $this->assertSame(3, $this->notificaciones($this->suplente, 'autorizacion_visita'));
         $this->actingAs($this->suplente)->getJson('/notificaciones/resumen')->assertJsonPath('lista.0.titulo', 'Nadie ha respondido: Ingrid Solís lleva 20 min en caseta')
-            ->assertJsonPath('lista.0.acciones.0.etiqueta', 'Autorizar ingreso');
+            ->assertJsonPath('lista.0.acciones.0.etiqueta', 'Aprobar ingreso');
         Mail::assertSent(AvisoRecepcion::class, fn ($m) => $m->hasTo($this->suplente->email) && str_starts_with($m->titulo, 'Nadie ha respondido'));
         $this->assertSame([1, 0], [$this->notificaciones($this->jefeSeguridad, 'autorizacion_escalada'), $this->notificaciones($this->jefeSeguridad, 'autorizacion_visita')]);
         $this->actingAs($this->jefeSeguridad)->getJson('/notificaciones/resumen')->assertJsonPath('lista.0.acciones', [])
@@ -292,7 +292,7 @@ class EscalamientoAutorizacionesTest extends TestCase
         $this->assertSame(1, $this->notificaciones($this->jefeSeguridad, 'autorizacion_escalada'));
         $this->assertSame(0, $this->notificaciones($this->jefeSeguridad, 'autorizacion_visita'));
         $this->actingAs($this->jefeSeguridad)->getJson('/notificaciones/resumen')->assertJsonPath('lista.0.acciones', [])
-            ->assertJsonPath('lista.0.texto', fn ($t) => str_contains($t, 'Confirmar Autorización'));
+            ->assertJsonPath('lista.0.texto', fn ($t) => str_contains($t, 'Aprobar ingreso'));
         Mail::assertSent(AvisoRecepcion::class, fn ($m) => $m->hasTo($this->jefeSeguridad->email) && str_starts_with($m->titulo, 'Nadie ha respondido'));
         // Alcance por sede: el Jefe de seguridad de la otra sede no se entera
         $this->assertSame(0, $this->notificaciones($this->jefeSeguridadPlaya, 'autorizacion_escalada'));
@@ -350,7 +350,7 @@ class EscalamientoAutorizacionesTest extends TestCase
         // Pasaron 20 min: la sesión de prueba se renueva para no chocar con el cierre por inactividad (20 min)
         $this->flushSession();
         $this->actingAs($this->rh)->getJson('/notificaciones/resumen')->assertJsonPath('lista.0.titulo', 'Recordatorio: Karla Pérez Uc lleva 20 min esperando tu respuesta')
-            ->assertJsonPath('lista.0.acciones.0.etiqueta', 'Que pase');
+            ->assertJsonPath('lista.0.acciones.0.etiqueta', 'Aprobar · que pase');
         $this->assertContains($this->jefeSeguridad->id, $a->escalado_a);
         $this->assertSame([], array_values(array_intersect($a->escalado_a, $a->avisados)));
         $this->assertSame(1, $this->notificaciones($this->jefeSeguridad, 'autorizacion_escalada'));

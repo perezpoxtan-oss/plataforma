@@ -14,7 +14,7 @@ use Illuminate\Support\Collection;
  * 30 s (hosting compartido: sin websockets) y se pausa con la pestaña oculta.
  *
  * Los módulos crean avisos con avisar(); una notificación puede llevar
- * botones de acción (p. ej. [Autorizar ingreso] [Rechazar]) que la lista
+ * botones de acción (p. ej. [Aprobar ingreso] [Rechazar]) que la lista
  * envía al formulario del módulo: el módulo decide (permiso y alcance).
  * Cuando el asunto se resuelve, resolver() quita los botones a todos.
  */

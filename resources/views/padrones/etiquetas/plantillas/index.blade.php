@@ -98,7 +98,7 @@
                                     @csrf @method('PATCH')
                                     <input type="hidden" name="activo" value="{{ $pl->activo ? 0 : 1 }}">
                                     <button type="submit" class="{{ $pl->activo ? 'btn-desactivar-plantilla' : 'btn-activar-plantilla' }}">
-                                        <i class="bi {{ $pl->activo ? 'bi-slash-circle' : 'bi-check-circle' }} me-1" aria-hidden="true"></i>{{ $pl->activo ? 'Desactivar' : 'Activar' }}
+                                        <i class="bi {{ $pl->activo ? 'bi-slash-circle' : 'bi-check-circle' }} me-1" aria-hidden="true"></i>{{ $pl->activo ? 'Dar de baja' : 'Reactivar' }}
                                     </button>
                                 </form>
                             </div>

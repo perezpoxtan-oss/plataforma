@@ -92,16 +92,16 @@ class PaseSalida extends Model
      * entrega o se lleva el equipo y Seguridad (el usuario en sesión).
      */
     public const PASOS_FISICOS = [
-        'salida' => ['Salida física', 'Registrar Salida', 'origen', [
+        'salida' => ['Salida física', 'Dar salida', 'origen', [
             'salida_lleva' => 'Quien se lleva el equipo', 'salida_seguridad' => 'Seguridad (salida)',
         ]],
-        'recepcion' => ['Recepción en destino', 'Confirmar llegada a esta sede', 'destino', [
+        'recepcion' => ['Recepción en destino', 'Recibir en esta sede', 'destino', [
             'destino_entrega' => 'Quien entrega en destino', 'destino_seguridad' => 'Seguridad (destino)',
         ]],
-        'salida_regreso' => ['Salida de regreso (desde destino)', 'Autorizar salida de regreso', 'destino', [
+        'salida_regreso' => ['Salida de regreso (desde destino)', 'Dar salida de regreso', 'destino', [
             'retorno_lleva' => 'Quien lo trae de vuelta', 'retorno_seguridad' => 'Seguridad (salida de regreso)',
         ]],
-        'regreso' => ['Regreso a origen', 'Registrar Regreso', 'origen', [
+        'regreso' => ['Regreso a origen', 'Recibir de regreso', 'origen', [
             'regreso_entrega' => 'Quien lo entrega al regresar', 'regreso_seguridad' => 'Seguridad (regreso)',
         ]],
     ];
@@ -281,17 +281,17 @@ class PaseSalida extends Model
     }
 
     /**
-     * Texto del botón de la ficha (SEGCAT: "Ver / Aprobar", "Ver / Registrar Salida"…).
+     * Texto del botón de la ficha (SEGCAT: "Ver / Aprobar", "Ver / Dar salida"…).
      */
     public function textoBoton(): string
     {
         return match (true) {
             $this->estado === self::PENDIENTE => 'Ver / Aprobar',
             $this->estado === self::RECHAZADO => 'Ver / Corregir',
-            $this->estado === self::APROBADO => 'Ver / Registrar Salida',
+            $this->estado === self::APROBADO => 'Ver / Dar salida',
             $this->estado === self::SALIO && $this->requiere_regreso && $this->destino_tipo === 'sede' => 'Ver / Confirmar llegada a destino',
-            $this->estado === self::SALIO && $this->requiere_regreso => 'Ver / Registrar Regreso',
-            $this->estado === self::EN_DESTINO => 'Ver / Autorizar salida de regreso',
+            $this->estado === self::SALIO && $this->requiere_regreso => 'Ver / Recibir de regreso',
+            $this->estado === self::EN_DESTINO => 'Ver / Dar salida de regreso',
             in_array($this->estado, [self::EN_TRANSITO_REGRESO, self::REGRESO_PARCIAL], true) => 'Ver / Confirmar Regreso',
             default => 'Ver Detalle',
         };

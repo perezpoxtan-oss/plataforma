@@ -67,7 +67,7 @@
             @if ($puede['crear'])
                 <button type="button" class="ficha-card ficha-create" data-abrir-dialogo="dialogoNuevoVehiculo">
                     <i class="bi bi-plus-circle-fill" aria-hidden="true"></i>
-                    <span class="h6 fw-bold m-0 mt-2 titulo-crear">Registrar Vehículo</span>
+                    <span class="h6 fw-bold m-0 mt-2 titulo-crear">Guardar vehículo</span>
                 </button>
             @endif
 

@@ -37,7 +37,7 @@
                 @endif
                 <div class="dialogo-acciones">
                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                    <button type="submit" class="btn-azul"><i class="bi bi-send me-1" aria-hidden="true"></i>Enviar a revisión</button>
+                    <button type="submit" class="btn-azul"><i class="bi bi-send me-1" aria-hidden="true"></i>Canalizar a revisión</button>
                 </div>
             </form>
         </div>
@@ -110,7 +110,7 @@
                 <textarea id="retiro_motivo" name="motivo" class="campo" rows="3" maxlength="1000" required placeholder="Ej: Lo sustituye PRO-SEG-010.">{{ $dialogo === 'retirar' ? old('motivo') : '' }}</textarea>
                 <div class="dialogo-acciones">
                     <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                    <button type="submit" class="btn-confirmar-rechazo">Retirar procedimiento</button>
+                    <button type="submit" class="btn-confirmar-rechazo">Dar de baja el procedimiento</button>
                 </div>
             </form>
         </div>

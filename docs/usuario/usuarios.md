@@ -23,7 +23,7 @@ La contraseña es de su dueño: por omisión **la persona la crea** con un enlac
 
 ## Cómo encontrar una cuenta
 
-1. Entra a **Estructura → Usuarios**. Se abre **Usuarios Operativos**.
+1. Entra a **Estructura → Usuarios**. Se abre **Usuarios**.
 2. Escribe en **Buscar por nombre, correo o rol...**. Si hay varias sedes, usa **Todas las sedes**.
 
 **Qué debes ver:** fichas con el nombre, el usuario (@…), el rol, el correo, si está vinculado a un colaborador, la sede y el último acceso.
@@ -41,11 +41,15 @@ La contraseña es de su dueño: por omisión **la persona la crea** con un enlac
 7. En **Contraseña** elige cómo la tendrá:
    - **Enviar enlace de bienvenida por correo** (recomendado, viene marcado): la persona recibe el correo **«Bienvenido a … : crea tu contraseña»** con el botón **Crear mi contraseña**. El enlace vale **24 horas**. Nadie más conoce su contraseña.
    - **Escribir la contraseña ahora**: escribe una **Contraseña inicial** (mínimo 8 caracteres, con letras y números) y dísela. Al entrar, la plataforma le pedirá cambiarla antes de usar cualquier pantalla.
-8. Toca **Registrar Usuario**.
+8. Toca **Guardar usuario**.
 
 ![Alta de usuario en tres pasos](img/usuarios/5-alta-por-pasos.png)
 
 **Qué debes ver:** con enlace: «Usuario «…» creado; le enviamos el correo de bienvenida para que cree su contraseña (vale 24 horas). ¿Quieres dar de alta otro? Toca «Nuevo Usuario».» Con contraseña escrita: «Usuario «…» creado; al entrar tendrá que cambiar la contraseña que escribiste…». En su ficha aparece **Creará su contraseña al entrar** hasta que lo haga.
+
+Si la cuenta nueva puede autorizar visitas (por ejemplo, la de un jefe de departamento) y tú nombras responsables, debajo aparece **Nombrarlo responsable**: te lleva a **Responsables por departamento** (con la ventana de su departamento abierta, si su colaborador tiene uno).
+
+**Desde Colaboradores:** al dar de alta a un colaborador, el botón **Crear su cuenta** abre esta misma ventana con su número y su nombre ya puestos y la cuenta vinculada.
 
 - Si tu plataforma **no tiene correo configurado**, la ventana lo dice y solo puedes escribir la contraseña.
 - Si el correo de bienvenida no se pudo enviar, aparece un aviso amarillo: usa la **llave** (Restablecer contraseña) de su ficha para intentarlo de nuevo o escribirle una contraseña.
@@ -68,7 +72,7 @@ La contraseña es de su dueño: por omisión **la persona la crea** con un enlac
 1. En **Núm. Colaborador** escribe su número (`1008`) o parte de su nombre (`dani`). Basta con 2 letras o números.
 2. En la lista que aparece toca **Daniela Canul May · #1008**. Se llenan solos su número y su **Nombre Completo**, y aparece en verde **Vinculado a Colaboradores**.
 3. Otra forma: escribe primero el **Nombre Completo**. Si hay un colaborador con ese nombre sin cuenta, toca **Vincular** en el aviso.
-4. Completa lo demás y toca **Registrar Usuario**.
+4. Completa lo demás y toca **Guardar usuario**.
 
 ![Buscar colaborador](img/usuarios/4-num-colaborador.png)
 
@@ -198,7 +202,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | El nombre de usuario solo puede tener letras, números, punto, guion y guion bajo (sin espacios). | Escribiste espacios o acentos. | Por ejemplo `juan.perez`. |
 | Ya existe un usuario con ese nombre: @… ¿Es la misma persona? | Hay otra cuenta con ese nombre. | Edita la existente o marca **Sí, es otra persona con el mismo nombre**. |
 | Ese colaborador ya tiene una cuenta de usuario: búscala en la lista en vez de crear otra. | El colaborador ya tiene cuenta. | Edita su cuenta. |
-| Ese colaborador está dado de baja. | El colaborador está dado de baja. | Pide a Recursos Humanos que lo reingrese o no lo vincules. |
+| Ese colaborador está dado de baja. | El colaborador está dado de baja. | Pide a Recursos Humanos que lo **Reactive** en Colaboradores, o no lo vincules. |
 | Ya existe otro usuario registrado con ese número de colaborador. | Ese número ya está en otra cuenta. | Revisa el número. |
 | El campo contraseña es obligatorio. | Elegiste **Escribir la contraseña ahora** (o no hay correo configurado) y la dejaste vacía. | Escríbela, o elige **Enviar enlace de bienvenida por correo**. |
 | Usuario «…» creado, pero el correo de bienvenida no se pudo enviar. | La cuenta existe, pero el correo no salió. | Revisa su correo y toca la **llave** para reenviar el enlace o escribirle una contraseña. |

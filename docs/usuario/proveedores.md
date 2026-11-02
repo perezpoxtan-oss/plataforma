@@ -15,7 +15,7 @@ resumen: Directorio de proveedores, contratistas, agencias, taxis y transportado
 ## Antes de empezar
 
 - Para ver la pantalla tu rol debe poder consultar *Empresas externas*. Si no aparece en el menú, pide el permiso a tu administrador.
-- Para registrar, editar o dar de baja necesitas esos permisos. Si no ves **Registrar Empresa Externa** ni el lápiz de editar, tu rol solo consulta.
+- Para registrar, editar o dar de baja necesitas esos permisos. Si no ves **Guardar empresa Externa** ni el lápiz de editar, tu rol solo consulta.
 - Si trabajas en **una sola sede**, solo ves las empresas que operan en tu sede, y solo puedes editar las que operan **únicamente** ahí.
 
 ## Cómo encontrar una empresa
@@ -32,7 +32,7 @@ resumen: Directorio de proveedores, contratistas, agencias, taxis y transportado
 
 ## Cómo registrar una empresa externa
 
-1. Toca la tarjeta **Registrar Empresa Externa**.
+1. Toca la tarjeta **Guardar empresa Externa**.
 2. Escribe la **Razón Social o Nombre Comercial**. Mientras escribes te avisa si ya existe (ver abajo).
 3. Elige la **Categoría**.
 4. Si los tienes, escribe:

@@ -43,7 +43,7 @@ Si solo tienes acceso a una sede, entras directo a su pantalla: no verás las ta
 2. Toca la tarjeta **Nueva Zona / Edificio**. Se abre **Alta de Zona / Edificio**.
 3. Escribe el **Nombre de la Zona / Edificio**. No tienes que elegir la sede: se guarda en la sede en la que estás. El **Código** es opcional (por ejemplo `TA`).
 4. Si quieres, elige el **Tipo**.
-5. Toca **Registrar Zona**.
+5. Toca **Guardar zona**.
 
 **Qué debes ver:** ««Torre B» agregado correctamente.» y sigues en la pantalla de tu sede. Para seguir bajando toca **Entrar a Pisos**.
 
@@ -66,7 +66,7 @@ Arriba de cada pantalla está la ruta completa, con el nombre de cada nivel: **Z
 ## Cómo agregar pisos
 
 1. En la zona toca **Entrar a Pisos**. Se abre **Pisos de …**.
-2. Toca **Nuevo Piso**, escribe el **Nombre del Piso** y toca **Agregar Piso**.
+2. Toca **Nuevo Piso**, escribe el **Nombre del Piso** y toca **Guardar piso**.
 3. Si otro edificio ya tiene los mismos pisos, toca **Copiar estructura de pisos de otra zona**, elige el edificio en **Copiar desde** y toca **Copiar Pisos**. Solo se copian los que faltan.
 
 ![Pisos](img/espacios/9-pisos.png)
@@ -101,9 +101,9 @@ Si tu sede tiene muchas habitaciones (u oficinas), cárgalas desde un archivo:
 Las áreas y los elementos son **opcionales**: captúralos solo si los vas a usar en llaves, equipos de Protección Civil o recorridos. Si no, la habitación ya está lista (la pantalla te lo recuerda arriba).
 
 1. En la habitación toca **Ver detalle**.
-2. Toca **Agregar Área** y elige qué **Es un** (Baño, Recámara, Terraza…). La **Etiqueta** es opcional: si la dejas vacía se usa el tipo y, si se repite, se numera (Baño, Baño 2).
-3. Dentro de cada área toca **Agregar Elemento** (Cama, Lavabo, Caja fuerte…).
-4. ¿Falta un tipo? Abre **¿No encuentras el tipo…?** al final, escríbelo y toca **Agregar tipo**. Solo lo verá tu empresa.
+2. Toca **Guardar área** y elige qué **Es un** (Baño, Recámara, Terraza…). La **Etiqueta** es opcional: si la dejas vacía se usa el tipo y, si se repite, se numera (Baño, Baño 2).
+3. Dentro de cada área toca **Guardar elemento** (Cama, Lavabo, Caja fuerte…).
+4. ¿Falta un tipo? Abre **¿No encuentras el tipo…?** al final, escríbelo y toca **Guardar tipo**. Solo lo verá tu empresa.
 
 ![Detalle de la habitación](img/espacios/4-detalle.png)
 
@@ -114,7 +114,7 @@ Las áreas y los elementos son **opcionales**: captúralos solo si los vas a usa
 Las secciones agrupan habitaciones de una sede, por ejemplo «Vista al mar» o «Torre Norte». Las llaves pueden abrir una sección completa.
 
 1. Entra a **Estructura → Zonas y edificios**, toca la tarjeta de tu sede (**Entrar a la sede**) y arriba toca **Secciones**. Solo verás las secciones de esa sede.
-2. Toca **Nueva Sección**, escribe el **Nombre de la Sección** y toca **Crear Sección**. Se crea en la sede en la que estás.
+2. Toca **Nueva Sección**, escribe el **Nombre de la Sección** y toca **Guardar sección**. Se crea en la sede en la que estás.
 3. En la sección toca **Asignar Habitaciones**, marca las que le pertenecen (solo aparecen las de esta sede; puedes buscar por número o piso) y toca **Guardar**.
 4. La forma principal es esta pestaña, porque asignas varias a la vez. Para cambiar la sección de una sola habitación también puedes elegirla al darla de alta o editarla.
 

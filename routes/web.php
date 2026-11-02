@@ -217,6 +217,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/colaboradores', [ColaboradorController::class, 'index'])->name('colaboradores.index');
     Route::post('/colaboradores', [ColaboradorController::class, 'store'])->name('colaboradores.store');
     Route::get('/colaboradores/buscar', [ColaboradorController::class, 'buscar'])->name('colaboradores.buscar');
+    Route::get('/colaboradores/exportar', [ColaboradorController::class, 'exportar'])->name('colaboradores.exportar'); // C-43 (E-13)
     Route::post('/colaboradores/rapido', [ColaboradorController::class, 'rapido'])->name('colaboradores.rapido');
     Route::put('/colaboradores/{colaborador}', [ColaboradorController::class, 'update'])->whereNumber('colaborador')->name('colaboradores.update');
     Route::patch('/colaboradores/{colaborador}/estado', [ColaboradorController::class, 'estado'])->whereNumber('colaborador')->name('colaboradores.estado');
@@ -354,6 +355,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/gafetes/{gafete}/recibir', [GafeteController::class, 'recibir'])->whereNumber('gafete')->name('gafetes.recibir');
     Route::patch('/gafetes/{gafete}/reactivar', [GafeteController::class, 'reactivar'])->whereNumber('gafete')->name('gafetes.reactivar');
     Route::get('/vouchers', [VoucherController::class, 'index'])->name('vouchers.index');
+    Route::get('/vouchers/exportar', [VoucherController::class, 'exportar'])->name('vouchers.exportar'); // C-43 (E-13)
     Route::get('/vouchers/{voucher}/imprimir', [VoucherController::class, 'imprimir'])->whereNumber('voucher')->name('vouchers.imprimir');
     // Fin Padrones: Gafetes y Vouchers de reposición
     // Padrones: Equipos de seguridad y Estacionamientos
@@ -423,6 +425,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/prestamo-llaves/{prestamo}/anular', [PrestamoLlaveController::class, 'anular'])->whereNumber('prestamo')->name('prestamo_llaves.anular');
     Route::patch('/prestamo-llaves/{prestamo}/reactivar', [PrestamoLlaveController::class, 'reactivar'])->whereNumber('prestamo')->name('prestamo_llaves.reactivar');
     Route::get('/responsivas', [ResponsivaController::class, 'index'])->name('responsivas.index');
+    Route::get('/responsivas/exportar', [ResponsivaController::class, 'exportar'])->name('responsivas.exportar'); // C-43 (E-13)
     Route::post('/responsivas', [ResponsivaController::class, 'store'])->name('responsivas.store');
     Route::get('/responsivas/equipos/{equipo}/historial', [ResponsivaController::class, 'historial'])->whereNumber('equipo')->name('responsivas.historial');
     Route::patch('/responsivas/{responsiva}/recibir', [ResponsivaController::class, 'recibir'])->whereNumber('responsiva')->name('responsivas.recibir');
@@ -462,6 +465,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/pases-salida', [PaseSalidaController::class, 'index'])->name('pases-salida.index');
     Route::post('/pases-salida', [PaseSalidaController::class, 'store'])->name('pases-salida.store');
     Route::get('/pases-salida/mis-pendientes', [PaseSalidaController::class, 'pendientes'])->name('pases-salida.pendientes');
+    Route::get('/pases-salida/exportar', [PaseSalidaController::class, 'exportar'])->name('pases-salida.exportar'); // C-43 (E-13)
     Route::get('/pases-salida/circuito', ['App\Http\Controllers\Seguridad\CircuitoPasesSalidaController', 'edit'])->name('pases-salida.circuito');
     Route::put('/pases-salida/circuito', ['App\Http\Controllers\Seguridad\CircuitoPasesSalidaController', 'update'])->name('pases-salida.circuito.update');
     Route::delete('/pases-salida/circuito', ['App\Http\Controllers\Seguridad\CircuitoPasesSalidaController', 'destroy'])->name('pases-salida.circuito.destroy');
@@ -788,6 +792,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/importar/{tipo}', 'store')->where('tipo', '[a-z0-9_]{1,20}')->name('importaciones.store');
         Route::get('/importaciones/{importacion}', 'show')->whereNumber('importacion')->name('importaciones.show');
         Route::post('/importaciones/{importacion}/guardar', 'aplicar')->whereNumber('importacion')->name('importaciones.aplicar');
+        // C-43 (A-19): «Crear los que faltan» (departamentos, puestos y turnos que el archivo trae y no existen)
+        Route::post('/importaciones/{importacion}/crear-faltantes', 'crearFaltantes')->whereNumber('importacion')->name('importaciones.crear-faltantes');
         Route::get('/importaciones/{importacion}/original', 'original')->whereNumber('importacion')->name('importaciones.original');
         Route::get('/importaciones/{importacion}/resultado', 'resultado')->whereNumber('importacion')->name('importaciones.resultado');
     });

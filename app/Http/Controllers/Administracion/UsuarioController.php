@@ -93,8 +93,15 @@ class UsuarioController extends Controller
         // C-36: peticiones de «Pedir a mi administrador» que este usuario puede atender
         $solicitudesCuenta = app(SolicitudesCuenta::class)->porAtender($actor, $empresaId);
 
+        // C-41: «Crear su cuenta» desde Colaboradores abre el alta con el colaborador ya vinculado (el dato no se recaptura)
+        $precolaborador = $actor->can('usuarios.crear') && is_numeric($request->query('colaborador'))
+            ? $this->tenant->conEmpresa($empresaId, fn () => Colaborador::query()->personal()->where('activo', true)->whereKey((int) $request->query('colaborador'))
+                ->whereDoesntHave('usuario')->first(['id', 'num_empleado', 'nombre', 'apellido_paterno', 'apellido_materno']))
+            : null;
+
         return view('administracion.usuarios.index', [
             'sinEmpresa' => false,
+            'precolaborador' => $precolaborador,
             'solicitudesCuenta' => $solicitudesCuenta,
             // C-36 (A-06): cuentas de un rol que administra y que no tienen correo
             'sinCorreo' => $actor->can('usuarios.editar') ? AdministradorUsuarios::administrativasSinCorreo($empresaId) : collect(),
@@ -143,7 +150,26 @@ class UsuarioController extends Controller
 
         return redirect()->route('usuarios.index')->with('ok', $enlace
             ? "Usuario «{$usuario->name}» creado; le enviamos el correo de bienvenida para que cree su contraseña (vale 24 horas). ¿Quieres dar de alta otro? Toca «Nuevo Usuario»."
-            : "Usuario «{$usuario->name}» creado; al entrar tendrá que cambiar la contraseña que escribiste. ¿Quieres dar de alta otro? Toca «Nuevo Usuario».");
+            : "Usuario «{$usuario->name}» creado; al entrar tendrá que cambiar la contraseña que escribiste. ¿Quieres dar de alta otro? Toca «Nuevo Usuario».")
+            ->with('siguiente_paso', $this->siguientePaso($request->user(), $usuario));
+    }
+
+    /**
+     * C-41 (regla 5): si la cuenta nueva puede autorizar visitas, el siguiente
+     * paso es nombrarla responsable de su departamento (si su colaborador
+     * tiene uno, esa ventana se abre sola).
+     *
+     * @return list<array{texto: string, url: string, icono: string}>
+     */
+    private function siguientePaso(User $actor, User $usuario): array
+    {
+        if (! $actor->can('autorizaciones.configurar') || ! app(Autorizador::class)->puede($usuario->fresh(), 'autorizaciones.responder')) {
+            return [];
+        }
+        $depto = $usuario->colaborador_id ? Colaborador::query()->withoutGlobalScopes()->whereKey($usuario->colaborador_id)->value('departamento_id') : null;
+
+        return [['texto' => 'Nombrarlo responsable', 'icono' => 'bi-person-check',
+            'url' => route('autorizaciones.responsables', array_filter(['desde' => 'usuarios', 'abrir' => $depto])).($depto ? '#depto-'.$depto : '')]];
     }
 
     /**

@@ -10,7 +10,7 @@
     @if ($sinEmpresa)
         <div class="encabezado-pantalla mb-4">
             <div class="icono"><i class="bi bi-clock-fill text-indigo" aria-hidden="true"></i></div>
-            <div><h1>Turnos</h1><p>Horarios corporativos predefinidos.</p></div>
+            <div><h1>Turnos</h1><p>Horarios de trabajo de cada sede.</p></div>
         </div>
         <div class="tarjeta estado-vacio">
             <div class="icono"><i class="bi bi-buildings" aria-hidden="true"></i></div>
@@ -30,7 +30,7 @@
                 <div class="icono"><i class="bi bi-clock-fill text-indigo" aria-hidden="true"></i></div>
                 <div>
                     <h1>Turnos</h1>
-                    <p>Horarios corporativos predefinidos.</p>
+                    <p>Horarios de trabajo de cada sede.</p>
                 </div>
             </div>
             @if ($turnos->count() > 1 || $variasSedes)

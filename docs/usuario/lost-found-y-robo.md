@@ -18,7 +18,7 @@ Los casos de robo **se registran en la [Bitácora de novedades](novedades.md)** 
 
 ## Cómo registrar un objeto encontrado
 
-1. Entra a **Operación → Incidentes → Lost & Found** y toca **Registrar objeto encontrado**.
+1. Entra a **Operación → Bitácora → Lost & Found** y toca **Registrar objeto encontrado**.
 2. Escribe **¿Qué se encontró?** (por ejemplo «Paraguas negro») y elige el **Tipo de valor**. Marca y color son opcionales.
 3. Escribe **¿Dónde se encontró?** y, si ya lo guardaste, la **Ubicación en bodega**.
 4. En **¿Quién lo encontró o lo entregó?** escribe el nombre o toca **Fui yo**. Revisa **¿Cuándo se encontró?** (trae la hora actual).
@@ -32,7 +32,7 @@ Los casos de robo **se registran en la [Bitácora de novedades](novedades.md)** 
 
 ## Cómo leer el archivo de Lost & Found
 
-1. Entra a **Operación → Incidentes → Lost & Found**.
+1. Entra a **Operación → Bitácora → Lost & Found**.
 2. Cada renglón dice el folio y el objeto (por ejemplo **LF-000123 — CARTERA**), cuándo se encontró, **cuántos días lleva en resguardo**, marca, color, dónde se encontró y en qué **Bodega** está.
 3. El **color** es el semáforo: **verde** en tiempo, **ámbar** por vencer, **rojo** vencido.
 4. Usa los filtros (**Todos**, **En resguardo**, **Solo urgentes / vencidos**, **Devueltos**…) o escribe en el buscador: se aplican solos.
@@ -55,7 +55,7 @@ Para abrir un objeto rápido, en **Escanear etiqueta de la bolsa** escanea el QR
    - **Destruido**.
    - **Entregado a beneficencia**: escribe la institución.
 3. Pide la **firma** en el recuadro (quien recibe, o quien autoriza).
-4. Toca **Registrar Cierre**.
+4. Toca **Guardar cierre**.
 
 ![Cerrar o entregar un objeto](img/lost-found-y-robo/cerrar-entregar.png)
 
@@ -109,7 +109,7 @@ Arriba de la lista, **Sin artículos capturados aún** muestra los tickets de Lo
 
 ## Cómo dar seguimiento a un robo
 
-1. Entra a **Operación → Incidentes → Robo**.
+1. Entra a **Operación → Bitácora → Robo**.
 2. Filtra (**Todos**, **Abiertos**, **Sin parte a la policía**, **Con sospechoso**) o busca por objeto, lugar o número de ticket.
 3. Toca **Abrir Expediente** en el caso. Se abre el **mismo expediente** de la Bitácora de novedades (una sola ficha por robo), con el enlace **Volver a Seguimiento de robos**.
 4. Completa circunstancias, sospechoso, testigos y canalización, y anota el avance en el **Minuto a Minuto**.

@@ -269,7 +269,7 @@
                     <button type="submit" class="btn-rpc btn-rpc-contorno"><i class="bi bi-cloud-arrow-up me-1" aria-hidden="true"></i>Guardar y Continuar Después</button>
                     <button type="submit" name="finalizar" value="1" class="btn-rpc btn-rpc-verde"
                             data-confirmar-boton="¿Finalizar el recorrido? Ya no se podrán agregar equipos.{{ $progreso['total'] > $progreso['revisados'] ? ' Quedan '.($progreso['total'] - $progreso['revisados']).' equipos del catálogo sin revisar.' : '' }}">
-                        <i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i>Finalizar Recorrido
+                        <i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i>Guardar y terminar recorrido
                     </button>
                 </div>
             </form>

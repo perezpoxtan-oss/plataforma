@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('titulo', 'Préstamo de Llaves')
+@section('titulo', 'Préstamo de llaves')
 
 @section('contenido')
 <div class="pantalla-prestamo-llaves">
@@ -10,7 +10,7 @@
     @if ($sinEmpresa)
         <div class="encabezado-pantalla mb-4">
             <div class="icono"><i class="bi bi-key-fill text-warning" aria-hidden="true"></i></div>
-            <div><h1>Bitácora de Llaves</h1><p>Registro operativo, préstamos y devoluciones.</p></div>
+            <div><h1>Préstamo de llaves</h1><p>Registro operativo, préstamos y devoluciones.</p></div>
         </div>
         <div class="tarjeta estado-vacio">
             <div class="icono"><i class="bi bi-buildings" aria-hidden="true"></i></div>
@@ -26,7 +26,7 @@
             <div class="encabezado-pantalla m-0">
                 <div class="icono"><i class="bi bi-key-fill text-warning" aria-hidden="true"></i></div>
                 <div>
-                    <h1>Bitácora de Llaves</h1>
+                    <h1>Préstamo de llaves</h1>
                     <p>Registro operativo, préstamos y devoluciones.</p>
                     <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Bitácora de: <strong>{{ $empresaNombre }}</strong></p>
                 </div>
@@ -161,7 +161,7 @@
             @endforelse
         </div>
 
-        {{-- ===== Prestar Llave (Registrar y Capturar Siguiente) ===== --}}
+        {{-- ===== Prestar Llave (Guardar y capturar siguiente) ===== --}}
         @if ($puede['prestar'])
             <dialog id="dialogoPrestarLlave" class="dialogo dialogo-prestar" aria-labelledby="titulo-prestar-llave" @if ($trasError || $llavePrestar) data-abrir-al-cargar @endif>
                 <div class="dialogo-cabecera">
@@ -213,7 +213,7 @@
                             <div class="flex-fill">
                                 <label class="campo-etiqueta" for="prestamo_folio">Folio / Detalles ID (Opcional)</label>
                                 <input type="text" id="prestamo_folio" name="folio_garantia" class="campo" maxlength="80" placeholder="Ej. Depto Ama de Llaves" value="{{ old('folio_garantia') }}" data-folio-garantia>
-                                <p class="campo-ayuda mt-0" data-ayuda-folio-gafete>Con «Gafete interno» se llena solo con el número del gafete que escaneaste.</p>
+                                <p class="campo-ayuda mt-0" data-ayuda-folio-gafete>Con «Credencial de empleado» se llena solo con el número de la credencial que escaneaste.</p>
                             </div>
                         </div>
 
@@ -227,7 +227,7 @@
 
                         <div class="dialogo-acciones">
                             <button type="button" class="btn-cancelar btn-cerrar-prestamo" data-cerrar-dialogo>Cerrar</button>
-                            <button type="submit" class="btn-registrar-prestamo" data-texto-original="Registrar y Capturar Siguiente"><i class="bi bi-key me-2" aria-hidden="true"></i><span>Registrar y Capturar Siguiente</span></button>
+                            <button type="submit" class="btn-registrar-prestamo" data-texto-original="Guardar y capturar siguiente"><i class="bi bi-key me-2" aria-hidden="true"></i><span>Guardar y capturar siguiente</span></button>
                         </div>
                     </form>
                 </div>

@@ -47,7 +47,7 @@ use Illuminate\Support\Facades\Validator;
  *    se aplican cuando el administrador guarda la tarjeta (plazos_ampliados).
  *  - candidatos no contratados: NO se duplica; es el plazo «Borrar» que ya
  *    tienen Candidatos → Documentos y plazos (12 meses, con aviso 15 días
- *    antes y «Conservar 6 meses más»). Aquí solo se muestra con su enlace.
+ *    antes y «Guardar 6 meses más»). Aquí solo se muestra con su enlace.
  *
  * La tarea diaria (plataforma:privacidad --si-toca, en proceso) quita lo
  * vencido de las empresas que la tienen ENCENDIDA. Las empresas que ya

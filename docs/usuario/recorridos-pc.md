@@ -29,7 +29,7 @@ Está pensado para hacerse **caminando con el celular**: botones grandes, un equ
 2. Revisa la **Sede** (si trabajas en una sola, ya viene elegida).
 3. Si quieres, elige **Edificio / Zona**: el avance contará solo los equipos de esa zona.
 4. Si quieres, escribe **Observaciones Generales**.
-5. Toca **Iniciar Recorrido**.
+5. Toca **Guardar e iniciar recorrido**.
 
 ![Nuevo recorrido](img/recorridos-pc/nuevo.png)
 
@@ -65,7 +65,7 @@ Además, el **jefe de seguridad** de la sede y quien **administra los equipos de
 ## Cómo guardar para después o terminar
 
 1. **Guardar y Continuar Después**: deja el recorrido **En Proceso**. Para seguir, toca **Continuar Recorrido** en la lista.
-2. **Finalizar Recorrido**: confirma y se cierra como **Completo** o **Con Hallazgos**. Después ya no se le agregan equipos.
+2. **Guardar y terminar recorrido**: confirma y se cierra como **Completo** o **Con Hallazgos**. Después ya no se le agregan equipos.
 
 **Qué debes ver:** la tarjeta del recorrido con su estado final en la lista.
 

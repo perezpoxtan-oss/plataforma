@@ -27,7 +27,7 @@
         @endforeach
     </select>
     <p class="campo-ayuda mt-0"><i class="bi bi-info-circle" aria-hidden="true"></i>
-        {{ $rhAutorizaPaso ? 'Recursos Humanos recibe el aviso en ese momento. La persona espera en caseta hasta que RR. HH. diga «Que pase» (esta tarjeta cambia sola).' : 'Recursos Humanos recibe el aviso en ese momento.' }}</p>
+        {{ $rhAutorizaPaso ? 'Recursos Humanos recibe el aviso en ese momento. La persona espera en caseta hasta que RR. HH. diga «Aprobar · que pase» (esta tarjeta cambia sola).' : 'Recursos Humanos recibe el aviso en ese momento.' }}</p>
 
     <div data-condicion data-solo-viene-a="busca_empleo">
         @if ($vacantesRecepcion->isNotEmpty())

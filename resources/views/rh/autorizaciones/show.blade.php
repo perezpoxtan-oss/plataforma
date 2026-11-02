@@ -92,7 +92,7 @@
                 <div class="botones-autorizacion">
                     @foreach (array_keys(Autorizacion::RESPUESTAS[$a->tipo]) as $respuesta)
                         <button type="submit" name="respuesta" value="{{ $respuesta }}" class="btn-respuesta grande {{ in_array($respuesta, Autorizacion::NEGATIVAS, true) ? 'rechazar' : ($respuesta === 'espere' ? 'esperar' : 'aceptar') }} {{ $confirmar === $respuesta ? 'sugerida' : '' }}">
-                            <i class="bi {{ in_array($respuesta, Autorizacion::NEGATIVAS, true) ? 'bi-x-lg' : (in_array($respuesta, ['autorizar', 'pase'], true) ? 'bi-door-open-fill' : ($respuesta === 'espere' ? 'bi-hourglass-split' : 'bi-chat-square-text-fill')) }} me-1" aria-hidden="true"></i>{{ $confirmar === $respuesta ? 'Confirmar: ' : '' }}{{ Autorizacion::BOTONES[$respuesta] }}
+                            <i class="bi {{ in_array($respuesta, Autorizacion::NEGATIVAS, true) ? 'bi-x-lg' : (in_array($respuesta, ['autorizar', 'pase'], true) ? 'bi-door-open-fill' : ($respuesta === 'espere' ? 'bi-hourglass-split' : 'bi-chat-square-text-fill')) }} me-1" aria-hidden="true"></i>{{ Autorizacion::BOTONES[$respuesta] }}{{ $confirmar === $respuesta ? ' (confirmar)' : '' }}
                         </button>
                     @endforeach
                 </div>

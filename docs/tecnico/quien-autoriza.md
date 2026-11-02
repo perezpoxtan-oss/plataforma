@@ -25,7 +25,7 @@ Quién llama a `revisarDespues`: `AdministradorUsuarios::actualizar` y `cambiarE
 - `AjustesRecepcion::SIN_COBERTURA` (`supervisor` de fábrica, `directo`), guardado en `empresas.preferencias.recepcion.sin_cobertura` desde la tarjeta «Qué espera en la caseta» (parte `esperas`).
 - `RecepcionEnCaseta::preparar`: visita con departamento, ajuste de visitas encendido y sin cobertura → `sin_responsable = true` (si el ajuste es `supervisor`). `RegistroAccesos` deja el acceso `pendiente` y `despues()` guarda `autorizacion = sin_resp` y llama `Autorizaciones::avisarSinCobertura()`.
 - `Autorizaciones::supervisoresDeSede()`: con `accesos.aprobar` en la sede y rol «Supervisor» o «Jefe de seguridad»; si la empresa no usa esos roles, todos los que aprueban accesos ahí. Aviso `acceso_sin_cobertura` (urgente, referencia `acceso`), resuelto por `MovimientosAccesos::autorizar` y `Excepciones::autorizar`.
-- La visita se autoriza con **Confirmar Autorización** (`accesos.aprobar`); el proveedor y el contratista, con **Autorizar por excepción**, como antes.
+- La visita se autoriza con **Aprobar ingreso** (`accesos.aprobar`); el proveedor y el contratista, con **Aprobar por excepción**, como antes.
 - Mis pendientes: `esperan_supervisor` (una consulta: total y la más antigua; color con los umbrales de Recepción).
 - JS: `data-sin-cobertura-espera="1"` hace que el botón diga «Registrar · queda pendiente de autorización» para cualquier visita a departamento.
 

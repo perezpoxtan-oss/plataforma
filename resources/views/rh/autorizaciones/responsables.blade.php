@@ -28,7 +28,7 @@
         <div class="alert alert-secondary small py-2"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Los responsables y las esperas son de toda la empresa: con tu alcance solo puedes consultarlos.</div>
     @endunless
 
-    {{-- Esperas (ADR-0010): autorización de visitas, «Que pase» de RR. HH., recordatorio y escalamiento, en un solo lugar --}}
+    {{-- Esperas (ADR-0010): autorización de visitas, «Aprobar · que pase» de RR. HH., recordatorio y escalamiento, en un solo lugar --}}
     <section class="tarjeta p-4 mb-3" id="esperas" aria-labelledby="t-esperas">
         <h2 id="t-esperas" class="h6 fw-bold"><i class="bi bi-hourglass-split me-2 text-primary" aria-hidden="true"></i>Qué espera en la caseta</h2>
         <form action="{{ route('recepcion.ajustes.guardar') }}" method="POST" class="m-0">
@@ -54,13 +54,13 @@
                         {{ $textoSc }}@if ($claveSc === 'supervisor') <span class="valor-original">(valor original)</span>@endif
                     </label>
                 @endforeach
-                <p class="campo-ayuda">El supervisor o el jefe de seguridad recibe el aviso y la autoriza en la bitácora; la tarjeta muestra cuánto lleva esperando. El proveedor o contratista sin quien autorice siempre espera: lo pasa quien supervisa la caseta con <strong>Autorizar por excepción</strong>.</p>
+                <p class="campo-ayuda">El supervisor o el jefe de seguridad recibe el aviso y la autoriza en la bitácora; la tarjeta muestra cuánto lleva esperando. El proveedor o contratista sin quien autorice siempre espera: lo pasa quien supervisa la caseta con <strong>Aprobar por excepción</strong>.</p>
             </fieldset>
             <input type="hidden" name="rh_autoriza_paso" value="0">
             <label class="casilla-privacidad mt-2">
                 <input type="checkbox" name="rh_autoriza_paso" value="1" @checked(old('rh_autoriza_paso', $ajustesRecepcion->rhAutorizaPaso($empresa))) @disabled(! $deEmpresa)>
-                <span><strong>La caseta espera a que RR. HH. diga «Que pase»</strong><br>
-                    <span class="small text-muted">Quien viene a Recursos Humanos queda «Esperando a RR. HH.» en caseta hasta que alguien de RR. HH. responda Que pase, Que espere o No puede pasar. Apagado: pasa directo y RR. HH. solo recibe el aviso.</span></span>
+                <span><strong>La caseta espera a que RR. HH. diga «Aprobar · que pase»</strong><br>
+                    <span class="small text-muted">Quien viene a Recursos Humanos queda «Esperando a RR. HH.» en caseta hasta que alguien de RR. HH. responda Aprobar · que pase o Rechazar · que espere / no puede pasar. Apagado: pasa directo y RR. HH. solo recibe el aviso.</span></span>
             </label>
             <p class="small text-muted mt-3 mb-1"><strong>Cuando la respuesta tarda.</strong> A los primeros minutos se vuelve a avisar a quien debe responder (campana y correo); después se avisa a los suplentes (o a quien los cubre) y al Jefe de seguridad de la sede; para Recursos Humanos, al resto del equipo y al Jefe de seguridad. La caseta ve a quién espera, cuántos minutos lleva y a quién se escaló.</p>
             <div class="rejilla-cv">
@@ -93,7 +93,8 @@
         @forelse ($departamentos as $d)
             @php
                 $lista = $responsables[$d->id] ?? collect();
-                $reabrir = old('_dialogo') === 'depto-'.$d->id;
+                // C-41: «Nombrar responsable» (Departamentos, Mis pendientes) abre su ventana
+                $reabrir = old('_dialogo') === 'depto-'.$d->id || (old('_dialogo') === null && (int) request()->query('abrir') === (int) $d->id);
                 $filas = $reabrir ? array_values((array) old('responsables', [])) : $lista->map(fn ($r) => ['user_id' => $r->user_id, 'sede_id' => $r->sede_id, 'es_suplente' => $r->es_suplente])->all();
                 // Renglones vacíos: si aún no hay titular, el primero vacío es el titular («El primero es el titular»); los demás, suplentes
                 $hayTitular = collect($filas)->contains(fn ($f) => ($f['user_id'] ?? '') !== '' && ! filter_var($f['es_suplente'] ?? false, FILTER_VALIDATE_BOOL));

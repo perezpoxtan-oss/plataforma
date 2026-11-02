@@ -90,6 +90,15 @@ Si tu rol no puede dar de baja con voucher y eliges **Faltante**, la pantalla te
 
 ![Responsivas en el celular](img/responsivas/celular.png)
 
+## Cómo exportar a Excel
+
+Necesitas que tu rol pueda **Exportar** en *Responsivas* (si no ves el botón, pide a tu administrador que lo agregue a tu rol).
+
+1. Entra a **Operación → Activos → Responsivas**.
+2. Toca **Exportar a Excel**.
+
+**Qué debes ver:** se descarga un archivo de Excel (CSV) con lo que puedes ver en tus sedes.
+
 ## Si algo sale mal
 
 | Mensaje o síntoma | Qué significa | Qué hacer |
@@ -110,7 +119,7 @@ Si tu rol no puede dar de baja con voucher y eliges **Faltante**, la pantalla te
 ## Preguntas frecuentes
 
 - **¿Qué diferencia hay entre Turno y Fijo?** **Turno** se devuelve al terminar el turno; **Fijo** es una asignación que se queda con la persona y no tiene hora de regreso.
-- **¿Quién decide a qué hora deben regresar los equipos de Turno?** El administrador, en **Estructura → Configuración → Caseta y activos** (ver [Configuración](configuracion.md)). Si no lo configura, no hay hora de regreso.
+- **¿Quién decide a qué hora deben regresar los equipos de Turno?** El administrador, en **Estructura → Configuración → Activos** (ver [Configuración](configuracion.md)). Si no lo configura, no hay hora de regreso.
 - **¿Qué hago si un equipo se perdió?** Recíbelo como **Faltante** con **Dañado o falta**: se genera el voucher de reposición.
 - **¿Puedo entregar equipo de otra sede?** No; solo de la sede elegida.
 - **¿Dónde veo quién tiene un radio?** En [Equipos de seguridad](equipos.md) la ficha del equipo dice **A cargo de**.

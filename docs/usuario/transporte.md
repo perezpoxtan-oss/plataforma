@@ -26,10 +26,10 @@ resumen: Anotar las llegadas y salidas del transporte de personal y los taxis cu
 1. Toca **Registrar Movimiento**.
 2. Revisa la **Sede** (si atiendes una sola, ya viene elegida).
 3. En **Tipo de Movimiento** elige **LLEGADA** o **SALIDA** (ya viene el más probable por la hora).
-4. En **Estatus del Servicio** elige **SERVICIO NORMAL (A Tiempo)** o **SERVICIO NORMAL (Con Retraso)**.
+4. En **Estatus del Servicio** ya viene sugerido **SERVICIO NORMAL (A Tiempo)** o **SERVICIO NORMAL (Con Retraso)** según la hora de la ruta (a tiempo hasta 10 minutos después). Cámbialo si no es así.
 5. Revisa la **Ruta**: ya viene la más cercana a la hora actual.
 6. Si quieres, escribe placas, chofer y número de pasajeros. Si ya están registrados, aparecen en la lista y se llenan solos los demás datos.
-7. Toca **Guardar Registro Operativo**, o **Registrar y capturar siguiente** si viene otra unidad.
+7. Toca **Guardar Registro Operativo**, o **Guardar y capturar siguiente** si viene otra unidad.
 
 ![Registrar un movimiento](img/transporte/registrar.png)
 
@@ -103,6 +103,8 @@ En **Mis pendientes**, el renglón **Vales de taxi por autorizar** también se p
 
 ![Bitácora de transporte en el celular](img/transporte/celular.png)
 
+**Rutas que cruzan la medianoche:** una ruta que sale a las 23:20 y llega a las 00:30 es del día en que sale. Si la de los lunes llega el martes a las 00:30, el martes a esa hora se sugiere esa ruta y, si no se registra, aparece en **Rutas sin registro**.
+
 ## Si algo sale mal
 
 | Mensaje o síntoma | Qué significa | Qué hacer |
@@ -120,7 +122,7 @@ En **Mis pendientes**, el renglón **Vales de taxi por autorizar** también se p
 
 - **¿Tengo que llenar placas y chofer?** No es obligatorio en un servicio normal, pero ayuda a llevar el control.
 - **¿Qué pasa si el guardia no firma en pantalla?** El vale impreso trae las líneas para firmar a mano.
-- **¿Se puede firmar solo una vez?** Sí. El administrador elige en **Estructura → Configuración → Caseta y activos** quién firma en la pantalla: los dos (como siempre), solo el guardia, solo el taxista o nadie. Quien no firma en pantalla firma a mano en el vale impreso.
+- **¿Se puede firmar solo una vez?** Sí. El administrador elige en **Estructura → Configuración → Transporte** quién firma en la pantalla: los dos (como siempre), solo el guardia, solo el taxista o nadie. Quien no firma en pantalla firma a mano en el vale impreso.
 - **¿A quién le llega el correo del vale?** A las personas que el administrador puso en **Estructura → Configuración → Avisos por correo**.
 - **¿Puedo borrar un registro?** No; se anula y queda en el historial.
 

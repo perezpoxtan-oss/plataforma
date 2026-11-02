@@ -973,8 +973,8 @@ class AdministradorPasesSalida
             PaseSalida::RECHAZADO => 'Devuelto al solicitante: corregir y reenviar, o cancelar.',
             PaseSalida::APROBADO => 'Caseta de '.$sede((int) $pase->sede_id).': registrar la salida.',
             default => match ($pase->pasoFisico()) {
-                'recepcion' => 'Caseta de '.$sede($pase->sede_destino_id).' (destino): «Confirmar llegada a esta sede» cuando llegue.',
-                'salida_regreso' => 'Caseta de '.$sede($pase->sede_destino_id).' (destino): «Autorizar salida de regreso» cuando vuelva a '.$sede((int) $pase->sede_id).'.',
+                'recepcion' => 'Caseta de '.$sede($pase->sede_destino_id).' (destino): «Recibir en esta sede» cuando llegue.',
+                'salida_regreso' => 'Caseta de '.$sede($pase->sede_destino_id).' (destino): «Dar salida de regreso» cuando vuelva a '.$sede((int) $pase->sede_id).'.',
                 'regreso' => 'Caseta de '.$sede((int) $pase->sede_id).': registrar el regreso'
                     .($pase->estado === PaseSalida::REGRESO_PARCIAL ? ' de lo que falta.' : '.'),
                 default => null,

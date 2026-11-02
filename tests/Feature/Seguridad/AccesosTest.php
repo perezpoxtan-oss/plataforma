@@ -48,7 +48,7 @@ class AccesosTest extends TestCase
         $this->playa = $this->crearSede($this->empresa, 'PLA');
         $this->admin = $this->crearUsuario($this->empresa, 'Administrador');
         // Estas pruebas son de la bitácora: el personal externo que va a RR. HH. pasa directo
-        // (la espera del «Que pase» de RR. HH. se prueba en CandidatosFase1Test) y, como en una empresa que
+        // (la espera del «Aprobar · que pase» de RR. HH. se prueba en CandidatosFase1Test) y, como en una empresa que
         // ya existía, nadie espera al departamento: el proveedor y el contratista se confirman con el host
         // (la espera al departamento se prueba en ProveedoresEsperanAlDepartamentoTest y CandidatosYAutorizacionesTest)
         $this->empresa->forceFill(['preferencias' => array_merge($this->empresa->preferencias ?? [], ['recepcion' => ['rh_autoriza_paso' => false,
@@ -124,18 +124,18 @@ class AccesosTest extends TestCase
     public function test_pantalla_con_textos_de_segcat_pestanas_y_lector_universal(): void
     {
         $this->actingAs($this->admin)->get('/accesos')->assertOk()
-            ->assertSee('Control de Accesos')->assertSee('Registro dinámico según el tipo de persona que ingresa.')
+            ->assertSee('<h1>Bitácora de accesos</h1>', false)->assertSee('Registro dinámico según el tipo de persona que ingresa.')
             ->assertSee('Nuevo Ingreso')->assertSee('Gente en Sitio (0)')->assertSee('Historial Finalizados')
             ->assertDontSee('Pendientes de Autorización')
             ->assertSee('No hay personal en sitio.')
-            ->assertSee('Registro Inteligente de Ingreso')->assertSee('Registrar y dejar pasar')->assertSee('data-boton-registrar', false)->assertSee('Guardar y capturar siguiente')
+            ->assertSee('Registro Inteligente de Ingreso')->assertSee('Guardar y dejar pasar')->assertSee('data-boton-registrar', false)->assertSee('Guardar y capturar siguiente')
             ->assertSee('PERSONAL EXTERNO / VISITA')->assertSee('CONTRATISTA (OBRA)')->assertSee('SERVICIO DE EMERGENCIA')
             ->assertSee('Gafete Asignado')->assertSee('¿A quién viene?')->assertSee('ID Custodiada')->assertSee('Enviar a')
             // Donde SEGCAT escaneaba (gafete, colaborador, host, a quién visita, placas) va el lector universal
             ->assertSee('data-lector', false)->assertSee('data-tipos="gafete"', false)->assertSee('data-tipos="colaborador"', false)
             // C-09: host y «a quién visita» son un solo buscador «¿A quién viene?»
             ->assertSee('data-tipos="vehiculo"', false)->assertSee('id="ingreso_a_quien_proveedor"', false)->assertSee('id="ingreso_a_quien_visita"', false)
-            ->assertSee('Dar Salida')->assertSee('Cambiar Zona')->assertSee('Salida a Tour')->assertSee('Regreso de Tour')
+            ->assertSee('Dar Salida')->assertSee('Cambiar Zona')->assertSee('Dar salida a tour')->assertSee('Regreso de Tour')
             ->assertDontSee('onclick')->assertDontSee('jsQR.js"></script>', false);
     }
 
@@ -162,7 +162,7 @@ class AccesosTest extends TestCase
 
         $this->actingAs($this->admin)->get('/accesos')->assertOk()
             ->assertSee('Gente en Sitio (1)')->assertSee('ROBERTO HERNÁNDEZ CRUZ')->assertSee('EN SITIO')->assertSee('GAFETE: S/G')
-            ->assertSee('Registrar Salida')->assertSee('id="acceso-'.$a->id.'"', false);
+            ->assertSee('Dar salida')->assertSee('id="acceso-'.$a->id.'"', false);
     }
 
     public function test_el_colaborador_es_obligatorio_y_debe_ser_de_la_sede(): void
@@ -294,7 +294,7 @@ class AccesosTest extends TestCase
 
         $this->actingAs($this->admin)->get('/accesos?pestana=pendientes')->assertOk()
             ->assertSee('Pendientes de Autorización (1)')->assertSee('PENDIENTE')->assertSee('Viene con:')->assertSee('CARLOS HERNÁNDEZ CRUZ')
-            ->assertSee('Confirmar Autorización')->assertSee('Ejecución de Trabajo');
+            ->assertSee('Aprobar ingreso')->assertSee('Ejecución de Trabajo');
 
         // Pendiente → salida no se permite
         $this->actingAs($this->admin)->patch("/accesos/{$a->id}/salida")
@@ -325,9 +325,9 @@ class AccesosTest extends TestCase
     {
         $host = $this->colaborador('2001', null, null, 'Carlos');
         $datos = ['tipo' => 'proveedor', 'nombre' => 'Jesús Balam Tun', 'empresa_procedencia' => 'Abarrotes del Caribe', 'host_colaborador_id' => $host->id];
-        // Quien puede aprobar: confirma con el host y toca Confirmar Autorización
+        // Quien puede aprobar: confirma con el host y toca Aprobar ingreso
         $this->registrar($datos)->assertRedirect(route('accesos.index', ['pestana' => 'pendientes']))
-            ->assertSessionHas('ok', 'Registrado: JESÚS BALAM TUN queda pendiente de autorización. Confirma con quien lo citó (Carlos Hernández Cruz) y toca Confirmar Autorización.');
+            ->assertSessionHas('ok', 'Registrado: JESÚS BALAM TUN queda pendiente de autorización. Confirma con quien lo citó (Carlos Hernández Cruz) y toca Aprobar ingreso.');
         // El agente no aprueba: su supervisor confirma
         $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
         $this->registrar($datos + ['persona_decision' => 'misma'], $agente)
@@ -372,7 +372,7 @@ class AccesosTest extends TestCase
         $this->registrar(['tipo' => 'huesped'])->assertSessionHasErrors(['nombre' => 'Escribe el nombre del huésped.']);
 
         $this->actingAs($this->admin)->get('/accesos')->assertSee('Hab. 204')->assertSee('Reserva:')->assertSee('Sí — #ABC-1')->assertSee('Pase:')->assertSee('Nightpass')
-            ->assertSee('Salida a Tour')->assertSee('Salida Final');
+            ->assertSee('Dar salida a tour')->assertSee('Dar salida final');
     }
 
     public function test_emergencia_es_de_friccion_minima(): void
@@ -485,7 +485,7 @@ class AccesosTest extends TestCase
         $this->assertSame(['salida_temporal', 'en_sitio', $a->id, 'W2M123', 'GUÍA TOURS', '310'], [$tour->movimiento, $tour->estado, $tour->acceso_origen_id, $tour->placas, $tour->conductor, $tour->habitacion]);
 
         // Sigue contando como una sola persona en sitio, marcada FUERA con el detalle «Fuera en tour» (vocabulario corto de estados)
-        $this->actingAs($this->admin)->get('/accesos')->assertSee('Gente en Sitio (1)')->assertSee('>FUERA <', false)->assertSee('Fuera en tour')->assertDontSee('FUERA EN TOUR')->assertSee('Registrar Regreso')->assertDontSee('Salida Final');
+        $this->actingAs($this->admin)->get('/accesos')->assertSee('Gente en Sitio (1)')->assertSee('>FUERA <', false)->assertSee('Fuera en tour')->assertDontSee('FUERA EN TOUR')->assertSee('Recibir de regreso')->assertDontSee('Dar salida final');
 
         $this->actingAs($this->admin)->post("/accesos/{$a->id}/salida-temporal")->assertSessionHas('error', 'Esta persona ya está fuera: registra primero su regreso.');
 
@@ -536,7 +536,7 @@ class AccesosTest extends TestCase
         // Sale un rato: su gafete sigue reservado; no puede salir definitivamente sin regresar
         $this->actingAs($this->admin)->patch("/accesos/acompanantes/{$uno->id}/salida-temporal")->assertSessionHas('ok', 'Salida temporal de AYUDANTE UNO registrada — su gafete sigue reservado.');
         $this->assertFalse($this->libre($g));
-        $this->actingAs($this->admin)->get('/accesos')->assertSee('Regresó');
+        $this->actingAs($this->admin)->get('/accesos')->assertSee('Recibir</button>', false);
         $this->actingAs($this->admin)->patch("/accesos/acompanantes/{$uno->id}/salida")
             ->assertSessionHas('error', 'Este acompañante tiene una salida temporal abierta: registra primero su regreso.');
         $this->actingAs($this->admin)->patch("/accesos/acompanantes/{$uno->id}/salida-temporal")->assertSessionHas('error', 'Este acompañante ya está fuera (o ya salió).');
@@ -641,7 +641,7 @@ class AccesosTest extends TestCase
         $this->flushSession(); // el mensaje de éxito del administrador no es del agente
 
         $this->actingAs($agente)->get('/accesos?pestana=pendientes')->assertOk()->assertSee('JESÚS BALAM TUN')
-            ->assertDontSee('Confirmar Autorización')->assertSee('Espera a que el Host autorice');
+            ->assertDontSee('Aprobar ingreso')->assertSee('Espera a que quien lo citó autorice');
         $this->actingAs($agente)->patch("/accesos/{$a->id}/autorizar")->assertForbidden();
         $this->actingAs($agente)->get('/accesos/exportar')->assertForbidden();
         $this->actingAs($agente)->get('/accesos?pestana=historial')->assertDontSee('Exportar a Excel');
@@ -743,13 +743,13 @@ class AccesosTest extends TestCase
 
         $buscar = fn (string $q) => $this->actingAs($this->admin)->getJson('/accesos/en-sitio?q='.urlencode($q))->assertOk();
         // Lo que entrega el lector: la nomenclatura impresa (pistola), el QR con dirección (cámara) y la etiqueta NFC en cualquiera de sus formas
-        $buscar($g->nomenclatura)->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $a->id)->assertJsonPath('resultados.0.texto_salida', 'Salida');
+        $buscar($g->nomenclatura)->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $a->id)->assertJsonPath('resultados.0.texto_salida', 'Dar salida');
         $buscar('https://plataforma.ejemplo/e/'.$g->codigo_qr)->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $a->id);
         $buscar('04:a2:3b:1c')->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $a->id);
         // Nombre, placas y habitación
         $buscar('ortega')->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $a->id);
         $buscar('qrr 44')->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.placas', 'QRR44X');
-        $buscar('310')->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $huesped->id)->assertJsonPath('resultados.0.texto_salida', 'Salida Final');
+        $buscar('310')->assertJsonCount(1, 'resultados')->assertJsonPath('resultados.0.id', $huesped->id)->assertJsonPath('resultados.0.texto_salida', 'Dar salida final');
         $buscar('nadie con ese nombre')->assertExactJson(['resultados' => []]);
         // Ya salió: no aparece
         $this->actingAs($this->admin)->patch("/accesos/{$a->id}/salida");

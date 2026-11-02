@@ -137,7 +137,7 @@
 
                     <div class="dialogo-acciones">
                         <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                        <button type="submit" class="btn-indigo">Crear Rol</button>
+                        <button type="submit" class="btn-indigo">Guardar rol</button>
                     </div>
                 </form>
             </div>

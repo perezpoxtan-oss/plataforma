@@ -20,7 +20,7 @@ Usa la empresa de práctica con `admin.demo` (Administrador), `director.demo`, `
 
 1. **Estructura → Roles → Nuevo Rol**. Nombre «Coordinador de turno».
 2. En **¿Dónde va en la jerarquía?** elige **Debajo de** «Jefe de seguridad». Lee la línea de abajo: «Quedará debajo de «Jefe de seguridad» y arriba de «Asistente de seguridad» (nivel 35)».
-3. En **Permisos iniciales** elige **Los mismos que «Supervisor»** y toca **Crear Rol**.
+3. En **Permisos iniciales** elige **Los mismos que «Supervisor»** y toca **Guardar rol**.
 
 Comprueba: se abre la Matriz de ese rol con el mensaje «…creado con los permisos de «Supervisor»…» y **Lo que verá** muestra Operación, Padrones y Recursos Humanos.
 

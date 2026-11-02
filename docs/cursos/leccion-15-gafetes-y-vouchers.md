@@ -15,7 +15,7 @@
 1. **`admin.demo`:** abre Padrones → **Gafetes**.
    - Toca la píldora **Proveedor** y luego **Todos**. Cambia **Todas las sedes** por **Hotel Demo Playa**.
    - Busca `vis-01`: aparece `HOT-CEN-VIS-010` como **NO DISPONIBLE** (es de los datos demo).
-2. Toca **Generar Lote**: sede **Hotel Demo Centro**, tipo **Visitante**, cantidad **3**. Fíjate que se crean `HOT-CEN-VIS-011` a `HOT-CEN-VIS-013` (continúan después del último).
+2. Toca **Guardar lote**: sede **Hotel Demo Centro**, tipo **Visitante**, cantidad **3**. Fíjate que se crean `HOT-CEN-VIS-011` a `HOT-CEN-VIS-013` (continúan después del último).
 3. Otro lote con **+ Nuevo tipo...** llamado `Capital Humano`, cantidad 2: se crean `HOT-CEN-CAP-001` y `002`, y aparece la píldora **Capital Humano**.
 4. Intenta generar **60**: el sistema te dice que el máximo es 50 por lote.
 5. Toca **Marcar todos** con la píldora **Capital Humano** activa y luego **Imprimir**: revisa la hoja doble vista y escanea un QR con el celular.

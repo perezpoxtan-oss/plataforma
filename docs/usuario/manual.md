@@ -33,7 +33,7 @@ resumen: Buscar una página, abrir la ayuda de la pantalla donde estás e imprim
 
 ## Cómo abrir la ayuda de la pantalla donde estás
 
-1. Junto al título de la pantalla (por ejemplo **Bitácora de Llaves**) toca el botón redondo **?**.
+1. Junto al título de la pantalla (por ejemplo **Préstamo de llaves**) toca el botón redondo **?**.
 2. Se abre la página del manual de esa pantalla.
 3. En algunas ventanas (por ejemplo **Alta de Usuario**, **Nuevo Rol** o **Nueva Sede**) aparece **¿Cómo se hace?**: abre el manual, en otra pestaña, directo en los pasos de esa tarea.
 

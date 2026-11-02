@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  *   desde ahí) → Entrevista con el departamento (canalizado, con cita y
  *   entrevistador) → Evaluado por el departamento → Elegido (lo decide el
  *   jefe) → Contratado
- *   y a un lado: Considerar / cartera, Rechazado (con motivo) y No se presentó.
+ *   y a un lado: Considerar, Rechazado (con motivo) y No se presentó.
  */
 class Candidato extends Model
 {
@@ -40,7 +40,7 @@ class Candidato extends Model
         'evaluado' => 'Evaluado por el departamento',
         'elegido' => 'Elegido',
         'contratado' => 'Contratado',
-        'considerar' => 'Considerar / cartera',
+        'considerar' => 'Considerar',
         'rechazado' => 'Rechazado',
         'no_se_presento' => 'No se presentó',
     ];

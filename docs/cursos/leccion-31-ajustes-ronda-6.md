@@ -28,7 +28,7 @@ Entra a QA con **`admin.demo`** (contraseña de la demo). Para el paso 7 usa **`
 
 ### 2. Placas parecidas (Vehículos)
 
-1. Padrones → **Padrón vehicular** → **Registrar Vehículo**.
+1. Padrones → **Padrón vehicular** → **Guardar vehículo**.
 2. En **Placas** escribe `ABCI23A` (con la letra I en vez del uno).
    - Caja amarilla: se parecen a **ABC123A**. Si escribes `ABC-123-A`, la caja es **roja**: ya existen.
 3. Toca **Cancelar**.
@@ -68,9 +68,9 @@ Entra a QA con **`admin.demo`** (contraseña de la demo). Para el paso 7 usa **`
 
 1. Operación → Caseta → **Vouchers de reposición**.
 2. En el voucher del gafete **HOT-CEN-VIS-010** (con cobro de $150.00) toca **Recuperado**.
-3. Deja **sin marcar** «Ya se le cobró al responsable», escribe `Lo entregó Ama de Llaves` y toca **Confirmar recuperado**.
+3. Deja **sin marcar** «Ya se le cobró al responsable», escribe `Lo entregó Ama de Llaves` y toca **Atender · recuperado**.
    - El voucher queda **Cancelado por recuperación** y dice **COBRO CANCELADO**. El gafete vuelve a estar activo en Gafetes.
-4. Mira el voucher de la llave **HDP-MANT-02**: está en **Reembolso pendiente** (ya se le había cobrado). Toca **Reembolso entregado** y confirma: queda **Reembolsado**.
+4. Mira el voucher de la llave **HDP-MANT-02**: está en **Reembolso pendiente** (ya se le había cobrado). Toca **Atender · reembolso entregado** y confirma: queda **Reembolsado**.
 5. Con el filtro **Cualquier estado** elige **Reembolsado** para verlo solo.
 
 ![Recuperado](../usuario/img/ronda-6/17-voucher-recuperado-dialogo.png)
@@ -79,7 +79,7 @@ Entra a QA con **`admin.demo`** (contraseña de la demo). Para el paso 7 usa **`
 
 1. Sal y entra como **`agente.demo`**.
 2. Padrones → **Etiquetas QR**: solo aparece **Lost & Found** (en los demás padrones el Agente solo consulta).
-3. Padrones → **Vouchers**: no aparecen **Recuperado** ni **Reembolso entregado**.
+3. Padrones → **Vouchers**: no aparecen **Recuperado** ni **Atender · reembolso entregado**.
 
 ![Vista del Agente](../usuario/img/ronda-6/27-etiquetas-qr-agente.png)
 

@@ -19,7 +19,7 @@
 5. Escanea `LAM-01`, deja todo en verde pero escribe en Observaciones «Batería baja». Guarda: también es FALLA y se anota en el **mismo** ticket.
 6. Toca **¿No tiene etiqueta…? Captúralo a mano**: ID `EXT-80`, categoría *1. Extintores*, guarda.
 7. Escribe una observación general y toca **Guardar y Continuar Después**: el recorrido sigue En Proceso en la lista.
-8. Ábrelo otra vez y toca **Finalizar Recorrido** → confirma. Queda *Con Hallazgos*.
+8. Ábrelo otra vez y toca **Guardar y terminar recorrido** → confirma. Queda *Con Hallazgos*.
 9. Toca **Reporte de Auditoría**, elige el rango del mes y revisa tus recorridos. Imprime o guarda como PDF.
 10. **`agente.demo`** abre **Padrones → Equipos de Protección Civil**: puede ver los equipos y sus QR, pero no aparece **Nuevo Equipo**.
 11. **`admin.demo`**: en Padrones → Equipos de Protección Civil toca **Nuevo Equipo**, sede Centro, *Extintor*, ID `EXT-01` → guarda: el mensaje dice que ya existe en esta sede. Cámbialo a `EXT-04`, zona *Torre A · Piso 2* y toca **Guardar y capturar siguiente**; registra `EXT-05` con lo mismo. Imprime la etiqueta de `EXT-04`.

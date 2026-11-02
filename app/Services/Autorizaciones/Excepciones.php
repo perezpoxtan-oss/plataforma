@@ -15,7 +15,7 @@ use App\Support\Entrada;
 use Illuminate\Support\Facades\DB;
 
 /**
- * «Autorizar por excepción»: el proveedor o contratista espera la autorización
+ * «Aprobar por excepción»: el proveedor o contratista espera la autorización
  * del departamento, pero la caseta (con accesos.aprobar) lo deja pasar sin
  * ella, siempre con motivo. Se permite solo cuando:
  *  a) el departamento no tiene responsable en esa sede (no hubo solicitud);

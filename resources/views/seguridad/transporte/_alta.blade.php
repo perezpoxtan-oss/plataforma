@@ -12,8 +12,9 @@
     $sugerencia = $alta['sugerencias'][(int) $sedeElegida] ?? null;
     $sentidoPorDefecto = $sugerencia['sentido'] ?? 'llegada';
     $tipoElegido = $trasError ? (string) old('tipo_movimiento') : (string) ($siguiente['tipo_movimiento'] ?? $sentidoPorDefecto);
-    $estatusElegido = $trasError ? (string) old('estatus', 'a_tiempo') : 'a_tiempo';
     $horarioElegido = $trasError ? (string) old('ruta_horario_id') : (string) ($sugerencia[$tipoElegido] ?? '');
+    // C-43 (D-21): el estatus viene sugerido por la hora de la ruta (A tiempo o Con retraso); el guardia lo cambia si no es así
+    $estatusElegido = $trasError ? (string) old('estatus', 'a_tiempo') : (string) ($alta['estatusSugeridos'][(int) $horarioElegido] ?? 'a_tiempo');
     $taxisAnteriores = $trasError ? array_values(array_filter((array) old('taxis', []), 'is_array')) : [];
     // ADR-0014: qué firmas se capturan en pantalla (Configuración → Caseta y activos; por omisión, las dos)
     $conFirmaGuardia = $puede['firma_guardia'];
@@ -100,7 +101,7 @@
                         $hora = $h->ruta->sentido === 'llegada' ? 'llega '.$h->fin() : 'sale '.$h->inicio();
                     @endphp
                     <option value="{{ $h->id }}" data-sede="{{ $h->ruta->sede_id }}" data-sentido="{{ $h->ruta->sentido }}"
-                            data-tope="{{ $h->ruta->costo_maximo_taxi }}" data-transportista="{{ $h->ruta->proveedor?->nombre }}"
+                            data-tope="{{ $h->ruta->costo_maximo_taxi }}" data-transportista="{{ $h->ruta->proveedor?->nombre }}" data-estatus="{{ $alta['estatusSugeridos'][$h->id] ?? 'a_tiempo' }}"
                             @selected($horarioElegido === (string) $h->id) @unless ($visible) hidden disabled @endunless>{{ $h->ruta->nombre }} · {{ $hora }} · {{ $h->patronDias() }}</option>
                 @endforeach
             </select>
@@ -197,7 +198,7 @@
 
             <div class="dialogo-acciones transporte-acciones">
                 <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
-                <button type="submit" name="_siguiente" value="1" class="btn-siguiente"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i><span class="d-none d-sm-inline">Registrar y capturar siguiente</span><span class="d-sm-none">Y capturar otro</span></button>
+                <button type="submit" name="_siguiente" value="1" class="btn-siguiente"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i><span class="d-none d-sm-inline">Guardar y capturar siguiente</span><span class="d-sm-none">Y capturar otro</span></button>
                 <button type="submit" class="btn-transporte">Guardar Registro Operativo</button>
             </div>
         </form>

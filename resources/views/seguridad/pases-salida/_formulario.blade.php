@@ -205,7 +205,7 @@
                 @if ($corrigiendo)
                     <button type="submit" class="btn-azul">Guardar y Reenviar a Aprobación</button>
                 @else
-                    <button type="submit" class="btn-cancelar btn-siguiente-pase" name="siguiente" value="1">Registrar y capturar siguiente</button>
+                    <button type="submit" class="btn-cancelar btn-siguiente-pase" name="siguiente" value="1">Guardar y capturar siguiente</button>
                     <button type="submit" class="btn-azul">Guardar y Enviar a Aprobación</button>
                 @endif
             </div>

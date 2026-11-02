@@ -145,7 +145,7 @@ class RevisionEtapaCincoTest extends TestCase
         $mis = $this->en($corp, fn () => app(MisPendientes::class)->para($laura));
         $this->assertSame(1, collect($mis['items'])->firstWhere('clave', 'autorizaciones')['total'] ?? null);
         $this->assertStringContainsStringIgnoringCase('Ana Cliente', $this->actingAs($laura)->get(route('autorizaciones.index'))->assertOk()->getContent());
-        $this->actingAs($laura)->get(route('autorizaciones.show', $aut->id))->assertOk()->assertSee('Autorizar ingreso');
+        $this->actingAs($laura)->get(route('autorizaciones.show', $aut->id))->assertOk()->assertSee('Aprobar ingreso');
         $this->actingAs($pedro)->get(route('autorizaciones.show', $aut->id))->assertForbidden();
         // Sergio («No molestar»): ya no le espera a él, pero puede responderla si quiere
         $this->olvidar();
@@ -348,7 +348,7 @@ class RevisionEtapaCincoTest extends TestCase
 
         // La bandeja no es suya (no tiene el permiso); su visita sí la abre, y en Mis pendientes solo cuenta la suya
         $this->actingAs($sinRol)->get(route('autorizaciones.index'))->assertForbidden();
-        $this->actingAs($sinRol)->get(route('autorizaciones.show', $suya->id))->assertOk()->assertSee('Autorizar ingreso');
+        $this->actingAs($sinRol)->get(route('autorizaciones.show', $suya->id))->assertOk()->assertSee('Aprobar ingreso');
         $this->olvidar();
         $mis = $this->en($corp, fn () => app(MisPendientes::class)->para($sinRol));
         $this->assertSame(1, collect($mis['items'])->firstWhere('clave', 'autorizaciones')['total'] ?? null);

@@ -1,11 +1,11 @@
 ---
-titulo: Tablero (Consola de Monitoreo)
+titulo: Tablero
 modulos: [dashboard]
 seccion: Informes
 orden: 10
 resumen: Las cifras del momento en fichas: gente en sitio, llaves en uso, novedades abiertas, pases vencidos y más, con hoja para imprimir.
 ---
-# Tablero (Consola de Monitoreo)
+# Tablero
 
 **¿Para qué sirve?** Para saber de un vistazo cómo está la operación **en este momento**: cuántas personas hay en sitio, cuántas llaves están prestadas, cuántas novedades siguen abiertas, qué objetos de Lost & Found están por vencer y qué pases de salida no han regresado. Cada ficha abre su gráfica, el listado de registros y un enlace al módulo ya filtrado.
 

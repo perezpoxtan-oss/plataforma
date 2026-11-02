@@ -10,12 +10,12 @@ resumen: Inventario de los gafetes de plástico que se prestan en caseta, con su
 
 **¿Para qué sirve?** Aquí están los gafetes de plástico que la caseta presta a visitantes, proveedores y contratistas. Cada gafete tiene un nombre corto (su **nomenclatura**, por ejemplo `HOT-CEN-VIS-001`) y un **código QR** para encontrarlo rápido con el lector.
 
-![Inventario de gafetes](img/gafetes/lista.png)
+![Lista de gafetes](img/gafetes/lista.png)
 
 ## Antes de empezar
 
 - Para ver la pantalla tu rol debe poder consultar *Gafetes*. Si no aparece en el menú, pide el permiso a tu administrador.
-- Para generar, editar, imprimir o dar de baja necesitas esos permisos. Si no ves **Generar Lote**, tu rol solo consulta (como el agente de caseta).
+- Para generar, editar, imprimir o dar de baja necesitas esos permisos. Si no ves **Guardar lote**, tu rol solo consulta (como el agente de caseta).
 - Solo ves los gafetes de **tus sedes**.
 
 ## Cómo leer una ficha
@@ -39,11 +39,11 @@ resumen: Inventario de los gafetes de plástico que se prestan en caseta, con su
 
 ## Cómo generar gafetes nuevos (lote)
 
-1. Toca la tarjeta **Generar Lote**. Se abre **Generar Gafetes**.
+1. Toca la tarjeta **Guardar lote**. Se abre **Generar Gafetes**.
 2. Elige la **Sede** donde se van a usar.
 3. Elige el **Tipo de Gafete**. Si no está, elige **+ Nuevo tipo...** y escribe el **Nombre del tipo nuevo** (por ejemplo «Capital Humano»).
 4. Escribe la **Cantidad a Crear** (máximo 50 por lote).
-5. Toca **Generar Lote**.
+5. Toca **Guardar lote**.
 
 ![Generar gafetes](img/gafetes/generar-lote.png)
 

@@ -52,6 +52,26 @@
         @endforeach
     </nav>
 
+    {{-- C-43 (A-19): «Crear los que faltan» --}}
+    @if (! $aplicada && ($faltantes ?? []) !== [])
+        @php $etiquetas = ['departamento' => 'Departamentos', 'puesto' => 'Puestos', 'turno' => 'Turnos']; @endphp
+        <section class="tarjeta p-4 mb-4" aria-labelledby="t-faltantes">
+            <h2 id="t-faltantes" class="h6 fw-bold mb-2"><i class="bi bi-diagram-2 me-1 text-warning" aria-hidden="true"></i>Faltan en tus catálogos</h2>
+            <ul class="small mb-2">
+                @foreach ($faltantes as $columna => $nombres)
+                    <li><strong>{{ $etiquetas[$columna] }}:</strong> {{ implode(', ', $nombres) }}@unless ($puedeFaltantes[$columna] ?? false) <span class="text-muted">(tu rol no puede crearlos)</span>@endunless</li>
+                @endforeach
+            </ul>
+            <p class="small text-muted mb-2">Los departamentos se crean para todas las sedes y el puesto se liga a su departamento; un turno se crea solo si su nombre trae el horario (por ejemplo «Matutino 07:00-15:00»). Todavía no se guarda ningún colaborador: después de crearlos revisamos el archivo otra vez.</p>
+            @if (collect($puedeFaltantes ?? [])->contains(true))
+                <form action="{{ route('importaciones.crear-faltantes', $importacion) }}" method="POST" class="m-0">
+                    @csrf
+                    <button type="submit" class="btn-azul" style="min-height:44px;border-radius:10px;padding:0 1.25rem;"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Guardar · crear los que faltan</button>
+                </form>
+            @endif
+        </section>
+    @endif
+
     @if (! $aplicada)
         <section class="tarjeta p-4 mb-4" aria-labelledby="t-guardar">
             <h2 id="t-guardar" class="h5 fw-bold mb-2"><span class="numero-paso">3</span>Guarda lo que está bien</h2>

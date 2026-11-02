@@ -4,7 +4,7 @@
 
 Aprenderás:
 
-1. Que **sin configurar nada** todo funciona como siempre, y dónde se ajusta: **Estructura → Configuración → Caseta y activos**.
+1. Que **sin configurar nada** todo funciona como siempre, y dónde se ajusta: **Estructura → Configuración** (secciones **Activos**, **Transporte** y la de la bitácora para Procedimientos).
 2. A registrar taxis con el texto nuevo **LA UNIDAD NO LLEGÓ** y a firmar el vale **una sola vez** si tu empresa lo decide.
 3. A dar el **Vo.Bo.** desde la campana y **Mis pendientes**.
 4. A **recibir una llave escaneándola** y a leer el **semáforo** de llaves fuera.
@@ -18,7 +18,7 @@ Usa la empresa de práctica con `admin.demo` (Administrador), `agente.demo` (cas
 
 ## Práctica 1 · Lo de siempre y dónde se ajusta (admin.demo)
 
-1. Abre **Estructura → Configuración** y baja a **Caseta y activos**. Revisa que diga: guardia y taxista firman en pantalla, horas en **0** y acuse con firma dibujada.
+1. Abre **Estructura → Configuración** y revisa las secciones **Transporte**, **Activos** y la de la bitácora (Procedimientos). Revisa que diga: guardia y taxista firman en pantalla, horas en **0** y acuse con firma dibujada.
 2. No cambies nada todavía. Toca **Guardar ajustes de caseta**: «Ajustes de caseta guardados: todo funciona como el diseño original.»
 
 ## Práctica 2 · Taxis y Vo.Bo. (agente.demo y director.demo)
@@ -28,15 +28,15 @@ Usa la empresa de práctica con `admin.demo` (Administrador), `agente.demo` (cas
 3. Con `director.demo` abre la **campana**: «Vale de taxi por autorizar: #…». Toca **Abrir vale** y luego **Autorizar (Vo.Bo.)**.
 4. Abre **Mis pendientes**: **Vales de taxi por autorizar** bajó en uno y el aviso de la campana quedó leído.
    Antes de autorizar, mira la tarjeta del vale: junto a **Pendiente de Vo.Bo.** dice desde cuándo espera, por ejemplo **Hace 3 h · a tiempo** (verde). Con más de 24 horas se pone amarillo (**más de 1 día**) y con más de 72 horas rojo (**más de 3 días**); el renglón de Mis pendientes toma el mismo color.
-5. Con `admin.demo`, en **Caseta y activos**, elige **Solo el guardia firma en pantalla** y guarda.
+5. Con `admin.demo`, en **Configuración → Transporte**, elige **Solo el guardia firma en pantalla** y guarda.
 6. Con `agente.demo` registra otro taxi: ya no aparece el recuadro del taxista. Imprime el vale: arriba dice «El conductor y quien autoriza firman a mano.»
 7. Con `admin.demo` regresa a **Guardia y taxista firman en pantalla (original)**.
 
 ## Práctica 3 · Recibir llaves escaneando y semáforo (agente.demo, admin.demo y jefe.demo)
 
 1. Con `agente.demo` abre **Préstamo de llaves**. Arriba está **Recibir: escanea la llave que te devuelven**. Escribe `hdc-bod-01` y toca **Recibir**: «Llave «HDC-BOD-01» recibida de … Devuelve su garantía: …».
-2. Toca **Prestar Llave**, deja la garantía en **Gafete interno** y escanea el gafete `1007`: el **Folio** se llena con «GAFETE NÚM. 1007».
-3. Con `admin.demo`, en **Caseta y activos**, pon **1** y **2** horas en **Préstamo de llaves** y guarda.
+2. Toca **Prestar Llave**, deja la garantía en **Credencial de empleado** y escanea la credencial `1007`: el **Folio** se llena con «CREDENCIAL NÚM. 1007».
+3. Con `admin.demo`, en **Configuración → Activos**, pon **1** y **2** horas en **Préstamo de llaves** y guarda.
 4. Con `agente.demo` recarga: `HDC-MASTER-01` (prestada desde hace días) aparece en **rojo** con «Fuera hace … · pasó del límite». Las recién prestadas, en verde.
 5. En unos minutos (cuando corra la revisión automática) llegan los avisos: a `agente.demo` el recordatorio y a `jefe.demo` el aviso rojo. **Mis pendientes → Llaves fuera de tiempo** muestra cuántas.
 6. Recibe `HDC-MASTER-01` escaneándola: sus avisos se quitan solos.
@@ -49,12 +49,12 @@ Usa la empresa de práctica con `admin.demo` (Administrador), `agente.demo` (cas
 3. Toca **Pedir cambios** con un comentario. `jefe.demo` recibe «Tu procedimiento … necesita cambios» con el comentario.
 4. `jefe.demo` lo envía otra vez; `director.demo` lo aprueba y firma. `jefe.demo` recibe «Tu procedimiento … se publicó».
 5. Con `agente.demo` abre la campana: «Procedimiento por leer: …». Toca **Leer ahora**, marca la casilla y firma.
-6. Con `admin.demo`, en **Caseta y activos**, elige **Solo la casilla, salvo procedimientos con puntos críticos**. Publica otro procedimiento **sin** puntos críticos: `agente.demo` solo marca la casilla y toca **Guardar «Leí y entendí»**. En la pestaña **Acuses** su renglón dice **Casilla**.
+6. Con `admin.demo`, en la sección de la bitácora (**Procedimientos: acuse «Leí y entendí» y recordatorio**), elige **Solo la casilla, salvo procedimientos con puntos críticos**. Publica otro procedimiento **sin** puntos críticos: `agente.demo` solo marca la casilla y toca **Guardar «Leí y entendí»**. En la pestaña **Acuses** su renglón dice **Casilla**.
 7. Regresa a **Casilla y firma dibujada (original)**.
 
 ## Práctica 5 · Un solo «Recibir» y equipos de Turno (agente.demo, supervisor.demo y admin.demo)
 
-1. Con `admin.demo`, en **Caseta y activos**, pon **1** hora en **Deben regresar después de** y **1** en **Avisar al supervisor si pasan otras**. Guarda.
+1. Con `admin.demo`, en **Configuración → Activos**, pon **1** hora en **Deben regresar después de** y **1** en **Avisar al supervisor si pasan otras**. Guarda.
 2. Con `agente.demo` abre **Operación → Activos → Responsivas**: `CENRES-000002` dice **Debía regresar a las …** en ámbar o rojo (se entregó hace tiempo).
 3. Toca **Nueva responsiva**, entrega dos equipos en **Turno** a `1005` y guarda: la ficha dice **Debe regresar a las …**.
 4. Toca **Recibir** en esa responsiva: los dos vienen marcados. Desmarca uno y toca **Recibir marcados (OK)**: «… 1 equipo vuelve a DISPONIBLE. Falta 1 equipo por regresar.»
@@ -71,7 +71,7 @@ Usa la empresa de práctica con `admin.demo` (Administrador), `agente.demo` (cas
 
 ## Para recordar
 
-- Sin configurar, **todo es como siempre**; lo distinto se decide en **Caseta y activos**.
+- Sin configurar, **todo es como siempre**; lo distinto se decide en **Configuración** (Activos, Transporte y la sección de la bitácora).
 - Lo que espera a alguien (Vo.Bo., procedimientos por aprobar o por leer) **llega a la campana y a Mis pendientes** y se quita solo al resolverse.
 - Las llaves y los equipos de Turno **solo** tienen semáforo si la empresa puso horas.
 - **Recibir** con casillas cubre «regresó todo» y «regresaron 4 de 5»; lo dañado o faltante va por **Dañado o falta**.
@@ -79,7 +79,7 @@ Usa la empresa de práctica con `admin.demo` (Administrador), `agente.demo` (cas
 
 ## Autoevaluación
 
-1. ¿Dónde se decide quién firma en pantalla el vale de taxi? *(Estructura → Configuración → Caseta y activos)*
+1. ¿Dónde se decide quién firma en pantalla el vale de taxi? *(Estructura → Configuración → Transporte)*
 2. ¿Qué pasa con el aviso de la campana cuando alguien da el Vo.Bo.? *(Queda leído y sin botón para todos)*
 3. ¿Cómo recibes una llave sin buscar su ficha? *(Escaneándola en «Recibir: escanea la llave que te devuelven»)*
 4. ¿Quién recibe el aviso rojo de una llave que pasó del límite? *(Quien puede anular préstamos en esa sede, normalmente el jefe de seguridad)*

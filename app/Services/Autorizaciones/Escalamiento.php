@@ -278,7 +278,7 @@ class Escalamiento
         $minutos = $a->minutosEspera();
         $titulo = "Recordatorio: {$nombre} lleva {$minutos} min esperando tu respuesta";
         $texto = $a->tipo === 'recepcion'
-            ? 'Sigue en caseta esperando que digas «Que pase». Sede: '.($a->sede?->nombre ?? '').'.'
+            ? 'Sigue en caseta esperando que digas «Aprobar · que pase». Sede: '.($a->sede?->nombre ?? '').'.'
             : ($a->colaborador_id !== null ? 'Sigue en caseta esperando tu autorización. Sede: '.($a->sede?->nombre ?? '').'.'
                 : 'Sigue en caseta esperando la autorización de '.($a->departamento?->nombre ?? 'tu departamento').'. Sede: '.($a->sede?->nombre ?? '').'.');
         $this->avisar($a, $usuarios, $titulo, $texto, true);
@@ -304,7 +304,7 @@ class Escalamiento
         $minutos = $a->minutosEspera();
         $titulo = "Nadie ha respondido: {$nombre} lleva {$minutos} min en caseta";
         $texto = $a->tipo === 'recepcion'
-            ? 'Espera que Recursos Humanos diga «Que pase» y nadie ha contestado. Sede: '.($a->sede?->nombre ?? '').'.'
+            ? 'Espera que Recursos Humanos diga «Aprobar · que pase» y nadie ha contestado. Sede: '.($a->sede?->nombre ?? '').'.'
             : ($a->colaborador_id !== null ? 'Espera la autorización de la persona a quien viene y no ha contestado; te toca como suplente. Sede: '.($a->sede?->nombre ?? '').'.'
                 : 'Espera la autorización de '.($a->departamento?->nombre ?? 'su departamento').' y su responsable no ha contestado. Sede: '.($a->sede?->nombre ?? '').'.');
         // Quien puede responder recibe los botones; el Jefe de seguridad, el enlace a la bitácora para confirmar en caseta
@@ -315,7 +315,7 @@ class Escalamiento
         }
         if ($soloVen->isNotEmpty()) {
             $this->notificaciones->avisar((int) $a->empresa_id, $soloVen->pluck('id'), 'autorizacion_escalada', [
-                'titulo' => $titulo, 'texto' => $texto.' Si te lo confirman por teléfono o en persona, usa Confirmar Autorización en la bitácora.',
+                'titulo' => $titulo, 'texto' => $texto.' Si te lo confirman por teléfono o en persona, usa Aprobar ingreso en la bitácora.',
                 'url' => route('accesos.index', ['pestana' => 'pendientes']), 'referencia_tipo' => 'autorizacion', 'referencia_id' => $a->id,
             ]);
             app(AvisosCorreo::class)->recepcion((int) $a->empresa_id, $a->tipo === 'recepcion' ? 'candidato_llegada' : 'autorizacion_departamento',

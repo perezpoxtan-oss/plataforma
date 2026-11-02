@@ -35,7 +35,7 @@ class InicioSesionTest extends TestCase
     {
         $this->get('/login')
             ->assertOk()
-            ->assertSee('Autenticar Ingreso')
+            ->assertSee('Entrar')
             ->assertSee('Usuario o Correo');
     }
 

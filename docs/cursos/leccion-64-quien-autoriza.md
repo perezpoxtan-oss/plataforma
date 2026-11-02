@@ -37,7 +37,7 @@ Comprueba: llega «Sin quien autorice en Recepción (…)» y desaparece al nomb
 ## Práctica 3 · La visita sin quien autorice (Operador y Supervisor)
 
 1. Como agente, registra una visita a Recepción en la sede sin cobertura. Es el mismo formulario de siempre.
-2. Como supervisor, abre **Mis pendientes → Esperan tu autorización en caseta** y toca **Confirmar Autorización**.
+2. Como supervisor, abre **Mis pendientes → Esperan tu autorización en caseta** y toca **Aprobar ingreso**.
 
 Comprueba: la tarjeta dijo «Sin quien autorice en Recepción: espera al supervisor o al jefe de seguridad» con su reloj, y pasó a **Gente en Sitio** al confirmar.
 

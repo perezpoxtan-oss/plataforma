@@ -36,7 +36,7 @@ resumen: El panorama de la operación para Dirección, con gráficas, listados y
 1. Si trabajas en varias sedes, marca las que quieres en **Sedes** (sin marcar ninguna se incluyen todas las tuyas).
 2. Toca **Aplicar**.
 
-**Qué debes ver:** la línea de arriba dice qué sedes incluye. Vehículos y Proveedores son de toda la empresa (esos padrones no son por sede).
+**Qué debes ver:** la línea de arriba dice qué sedes incluye. Vehículos y Empresas externas son de toda la empresa (esos padrones no son por sede).
 
 ## Cómo imprimir o guardar como PDF
 

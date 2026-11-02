@@ -481,7 +481,7 @@ class Entrevistas
                 $this->citaCancelada($actor, $o, $motivo.'.', (int) $o->entrevistador_id === $actor->id);
             }
         }
-        // Aviso «Vacante cubierta» a RR. HH. con el botón «Cerrar como cubierta» (ADR-0010); se resuelve al cerrar o publicar la vacante
+        // Aviso «Vacante cubierta» a RR. HH. con el botón «Dar de baja · cerrar como cubierta» (ADR-0010); se resuelve al cerrar o publicar la vacante
         $rh = $this->destinatarios->conPermiso((int) $elegida->empresa_id, 'candidatos.editar', (int) $elegida->sede_id)->reject(fn (User $u) => $u->id === $actor->id);
         $this->notificaciones->resolver(AdministradorVacantes::REFERENCIA, $vacante->id);
         Vacante::whereKey($vacante->id)->whereNull('cubierta_en')->update(['cubierta_en' => now()]); // C-23: reloj de «Vacante cubierta por cerrar»
@@ -491,7 +491,7 @@ class Entrevistas
                 .' Si ya no buscas a nadie más, ciérrala.',
             'url' => route('vacantes.candidatos', $vacante->id),
             'referencia_tipo' => AdministradorVacantes::REFERENCIA, 'referencia_id' => $vacante->id,
-            'acciones' => [['etiqueta' => 'Cerrar como cubierta', 'url' => route('vacantes.estado', $vacante->id),
+            'acciones' => [['etiqueta' => 'Dar de baja · cerrar como cubierta', 'url' => route('vacantes.estado', $vacante->id),
                 'campos' => ['_method' => 'PATCH', 'estado' => 'cerrada', 'cierre_motivo' => 'cubierta']]],
         ]);
         app(AvisosCorreo::class)->recepcion((int) $elegida->empresa_id, 'evaluacion_departamento', $rh->pluck('email')->filter()->values()->all(),

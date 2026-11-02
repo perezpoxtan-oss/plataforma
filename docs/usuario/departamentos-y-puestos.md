@@ -28,7 +28,7 @@ resumen: Catálogos de áreas (departamentos) y rangos (puestos) que se eligen a
 
 ![Sedes donde aplica](img/departamentos/2-sedes-donde-aplica.png)
 
-**Qué debes ver:** «Departamento «Spa y Bienestar» creado correctamente.» La ficha dice en qué sedes aplica, cuántos puestos tiene ligados y cuántos colaboradores activos tiene.
+**Qué debes ver:** «Departamento «Spa y Bienestar» creado correctamente.» y, debajo, **Siguiente paso:** el botón **Nombrar responsable** (si puedes nombrar responsables): te lleva a **Responsables por departamento** con la ventana de ese departamento abierta, para elegir quién autoriza sus visitas. La ficha dice en qué sedes aplica, cuántos puestos tiene ligados y cuántos colaboradores activos tiene.
 
 ### Nombrar al responsable del departamento
 

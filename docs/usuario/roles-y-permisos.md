@@ -57,7 +57,7 @@ Son para el personal que **no trabaja en la caseta** (Recepción, Ama de llaves,
 3. En **Núm. Colaborador** escribe su número o su nombre y elígelo de la lista: debe aparecer en verde **Vinculado a Colaboradores**. Sin este vínculo el Solicitante no puede pedir pases y el jefe no aparece como firmante de su departamento.
 4. En **Rol en el Sistema** elige **Solicitante** o **Jefe de departamento**.
 5. En **Sede** elige la sede donde trabaja.
-6. Escribe **Usuario**, **Correo** y **Contraseña** (si es nueva la cuenta) y toca **Registrar Usuario** (o **Guardar Cambios** si la editaste).
+6. Escribe **Usuario**, **Correo** y **Contraseña** (si es nueva la cuenta) y toca **Guardar usuario** (o **Guardar Cambios** si la editaste).
 7. Para que el jefe firme los pases de su gente, responda visitas o entreviste candidatos: entra a **Estructura → Autorizaciones → Responsables por departamento**, toca **Elegir responsables** en su departamento, agrégalo con su sede y toca **Guardar responsables**.
 8. Solo si el circuito de pases de tu empresa es distinto al de siempre: en **Estructura → Configuración → Pases de salida → Configurar circuito**, revisa que haya un paso con **El jefe del departamento del solicitante**; si no lo tiene, toca **Agregar el paso del jefe del departamento**. El circuito de siempre ya lo trae como primer paso.
 
@@ -72,7 +72,7 @@ Son para el personal que **no trabaja en la caseta** (Recepción, Ama de llaves,
 3. Escribe el **Nombre del Rol** y una **Descripción**.
 4. En **¿Dónde va en la jerarquía?** elige **Debajo de** o **Arriba de** y el rol de referencia. Abajo te dice en qué lugar queda, por ejemplo «Quedará debajo de «Jefe de seguridad» y arriba de «Asistente de seguridad»». No tienes que inventar números.
 5. En **Permisos iniciales** elige **Los mismos que «…»** para crearlo a partir de otro rol y después ajustar solo lo que cambia, o **Ninguno** para configurarlos tú desde cero. Solo se copian los permisos que tú tienes.
-6. Toca **Crear Rol**.
+6. Toca **Guardar rol**.
 
 ![Nuevo rol: debajo de otro rol y con los permisos de otro](img/roles/8-nuevo-rol-posicion.png)
 

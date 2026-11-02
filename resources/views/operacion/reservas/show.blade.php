@@ -48,7 +48,7 @@
                     <button type="button" class="btn-secundario-rh" data-abrir-dialogo="dialogoCosto"><i class="bi bi-cash-coin me-1" aria-hidden="true"></i>Ajustar costo</button>
                 @endif
                 @if ($puede['cancelar'])
-                    <button type="button" class="btn-rojo btn-accion-rh" data-abrir-dialogo="dialogoCancelar"><i class="bi bi-calendar-x me-1" aria-hidden="true"></i>Cancelar reserva</button>
+                    <button type="button" class="btn-rojo btn-accion-rh" data-abrir-dialogo="dialogoCancelar"><i class="bi bi-calendar-x me-1" aria-hidden="true"></i>Dar de baja la reserva</button>
                 @endif
             </div>
         </div>
@@ -179,7 +179,7 @@
                                     <form method="POST" action="{{ route('reservas.ordenes.listo', $o->id) }}" class="mt-2">
                                         @csrf
                                         <input type="hidden" name="volver" value="reserva">
-                                        <button type="submit" class="btn-verde btn-accion-rh"><i class="bi bi-check2-all me-1" aria-hidden="true"></i>Listo</button>
+                                        <button type="submit" class="btn-verde btn-accion-rh"><i class="bi bi-check2-all me-1" aria-hidden="true"></i>Atender · listo</button>
                                     </form>
                                 @endif
                             </div>
@@ -244,7 +244,7 @@
                     <textarea id="motivo_cancelacion" name="motivo" class="campo" rows="3" maxlength="255" required>{{ $dialogo === 'cancelar' ? old('motivo') : '' }}</textarea>
                     <div class="dialogo-acciones">
                         <button type="button" class="btn-cancelar" data-cerrar-dialogo>Regresar</button>
-                        <button type="submit" class="btn-confirmar-rechazo">Cancelar reserva</button>
+                        <button type="submit" class="btn-confirmar-rechazo">Dar de baja la reserva</button>
                     </div>
                 </form>
             </div>

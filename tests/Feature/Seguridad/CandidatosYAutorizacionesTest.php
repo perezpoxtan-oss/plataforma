@@ -208,7 +208,7 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->assertNull($c->vacante);
         $this->assertSame('prospecto_rrhh', $c->persona->categoria);
         $this->assertNotNull($c->avisado_rh_en);
-        // Empresa nueva: la caseta espera a que RR. HH. diga «Que pase»
+        // Empresa nueva: la caseta espera a que RR. HH. diga «Aprobar · que pase»
         $this->assertSame('pendiente', $c->acceso->estado);
         $this->assertSame('esperando', $c->acceso->autorizacion);
         $this->assertSame('busca_empleo', $c->acceso->viene_a);
@@ -631,7 +631,7 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->actingAs($this->agente)->getJson('/accesos/autorizaciones-estado?ids='.$acceso->id)->assertJsonPath('estados.'.$acceso->id, 'pendiente|esperando');
 
         // La notificación del jefe trae los botones
-        $this->actingAs($this->jefe)->getJson('/notificaciones/resumen')->assertJsonPath('lista.0.acciones.0.etiqueta', 'Autorizar ingreso')
+        $this->actingAs($this->jefe)->getJson('/notificaciones/resumen')->assertJsonPath('lista.0.acciones.0.etiqueta', 'Aprobar ingreso')
             ->assertJsonPath('lista.0.acciones.1.etiqueta', 'Rechazar');
         // Otro usuario (agente) no puede responder
         $this->actingAs($this->agente)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'autorizar'])->assertForbidden();
@@ -639,7 +639,7 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->actingAs($this->jefe)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'pase'])->assertSessionHas('error');
         $this->actingAs($this->jefe)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'entrevistar'])->assertSessionHasErrors('respuesta'); // ya no existe
 
-        $this->actingAs($this->jefe)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'autorizar', 'comentario' => 'Que pase'])->assertSessionHas('ok');
+        $this->actingAs($this->jefe)->post("/autorizaciones/{$a->id}/responder", ['respuesta' => 'autorizar', 'comentario' => 'Aprobar · que pase'])->assertSessionHas('ok');
         $acceso->refresh();
         $this->assertSame('en_sitio', $acceso->estado);
         $this->assertSame('autorizada', $acceso->autorizacion);
@@ -664,9 +664,9 @@ class CandidatosYAutorizacionesTest extends TestCase
         // RR. HH. autoriza el paso por omisión y hay quien atienda
         $this->visitasConAutorizacion(false);
         $this->actingAs($this->agente)->get('/accesos')->assertOk()
-            ->assertSee('Registrar y dejar pasar')->assertSee('data-visitas-esperan="0"', false)->assertSee('data-rh-espera-en="'.$this->centro->id.'"', false)
+            ->assertSee('Guardar y dejar pasar')->assertSee('data-visitas-esperan="0"', false)->assertSee('data-rh-espera-en="'.$this->centro->id.'"', false)
             ->assertSee('data-departamentos-con-responsable="[]"', false);
-        // Con «Que pase» apagado, nadie espera a RR. HH.
+        // Con «Aprobar · que pase» apagado, nadie espera a RR. HH.
         $this->empresa->refresh()->forceFill(['preferencias' => array_merge($this->empresa->preferencias ?? [], ['recepcion' => ['rh_autoriza_paso' => false]])])->save();
         $this->actingAs($this->agente)->get('/accesos')->assertSee('data-rh-espera-en=""', false);
         $this->empresa->refresh()->forceFill(['preferencias' => array_merge($this->empresa->preferencias ?? [], ['recepcion' => ['rh_autoriza_paso' => true]])])->save();

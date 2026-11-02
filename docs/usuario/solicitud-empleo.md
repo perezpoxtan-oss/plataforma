@@ -55,7 +55,7 @@ Quien entra a la bolsa de trabajo de tu empresa (ver [Vacantes](vacantes.md)) no
 
 1. Abre la ficha del candidato en **Recursos Humanos → Candidatos**.
 2. La tarjeta **Solicitud de empleo** muestra todo lo capturado.
-3. Si dice **Por revisar**, revisa los datos y toca **Ya lo revisé**.
+3. Si dice **Por revisar**, revisa los datos y toca **Atender · ya lo revisé**.
 
 ## Cómo editarla o capturarla por el candidato
 

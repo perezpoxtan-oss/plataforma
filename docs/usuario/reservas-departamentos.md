@@ -16,7 +16,7 @@ resumen: Lo que tu departamento debe preparar para cada reserva confirmada y có
 1. Te llega a la **campana** «Orden de servicio (Cocina): …» y aparece en **Mis pendientes** como **Órdenes de servicio por atender**.
 2. Entra a **Operación → Reservas → Reservas de áreas** → pestaña **Órdenes de servicio**.
 3. Cada orden es una **ficha** con el día y la hora, el área, las personas, el montaje y la lista de lo que pidieron con sus indicaciones. Filtra con **Por atender** o **Listas**.
-4. Cuando esté preparado, escribe un comentario si quieres y toca el botón **Listo** (doble palomita) de la ficha.
+4. Cuando esté preparado, escribe un comentario si quieres y toca el botón **Atender · listo** (doble palomita) de la ficha.
 
 ![Órdenes de servicio](img/reservas/ordenes.png)
 

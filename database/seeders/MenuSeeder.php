@@ -32,7 +32,8 @@ class MenuSeeder extends Seeder
                 'Caseta' => [
                     'accesos' => 'primary', 'prestamo_llaves' => 'info', 'vouchers' => 'danger', 'pases_salida' => 'primary', 'transporte' => 'warning',
                 ],
-                'Incidentes' => [
+                // C-39: «Bitácora» (antes «Incidentes»: con la bitácora renombrada decía «Incidentes → Incidentes»)
+                'Bitácora' => [
                     'novedades' => ['danger', 'Novedades'], 'lost_found' => 'warning', 'robo' => ['danger', 'Robo'],
                 ],
                 'Protección civil' => [
