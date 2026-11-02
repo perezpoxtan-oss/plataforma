@@ -5,6 +5,7 @@
 @section('contenido')
 <div class="tema-rojo">
     @include('administracion.partes.avisos')
+    @include('componentes.siguiente-paso')
 
     @include('administracion.partes.selector-empresa')
 
@@ -226,8 +227,11 @@
             @continue (! $permitido || $roles->isEmpty())
             @php
                 $esNuevo = $modo === 'nuevo';
-                $reabrir = $esNuevo ? $dialogo === 'crear' : $editandoId !== null;
-                $valor = fn (string $campo) => $reabrir ? old($campo) : '';
+                // C-41: desde «Crear su cuenta» (Colaboradores) el alta abre con el colaborador ya vinculado
+                $pre = $esNuevo && $dialogo === null && isset($precolaborador) && $precolaborador !== null
+                    ? ['colaborador_id' => $precolaborador->id, 'numero_colaborador' => $precolaborador->num_empleado, 'name' => $precolaborador->nombreCompleto()] : [];
+                $reabrir = $esNuevo ? ($dialogo === 'crear' || $pre !== []) : $editandoId !== null;
+                $valor = fn (string $campo) => $pre !== [] ? (string) ($pre[$campo] ?? '') : ($reabrir ? old($campo) : '');
             @endphp
             <dialog id="{{ $esNuevo ? 'dialogoNuevoUsuario' : 'dialogoEditarUsuario' }}" class="dialogo ancho" aria-labelledby="titulo-{{ $modo }}" @if ($reabrir) data-abrir-al-cargar @endif>
                 <div class="dialogo-cabecera">

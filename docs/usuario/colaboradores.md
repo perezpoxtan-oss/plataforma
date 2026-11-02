@@ -48,7 +48,7 @@ resumen: Directorio del personal de la empresa, sus sedes, lo que registra la ca
 
 ![Alta](img/colaboradores/2-alta.png)
 
-**Qué debes ver:** «Colaborador «Juan Pérez López» creado correctamente.»
+**Qué debes ver:** «Colaborador «Juan Pérez López» creado correctamente.» y, debajo, el **Siguiente paso**: **Crear su cuenta** (abre el alta en [Usuarios](usuarios.md) con su número y su nombre ya puestos y la cuenta vinculada; no los vuelvas a escribir) e **Imprimir credencial** (abre [Etiquetas QR](etiquetas-qr.md) ya filtrado a esa persona). Cada botón aparece si tu rol puede hacerlo.
 
 ### Avisos mientras escribes
 

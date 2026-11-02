@@ -98,7 +98,14 @@ class DepartamentoController extends Controller
 
         $this->auditoria->auditar($request->user(), 'departamentos.creado', $departamento, null, $foto);
 
-        return redirect()->route('departamentos.index')->with('ok', "Departamento «{$departamento->nombre}» creado correctamente.");
+        // C-41 (regla 5): el siguiente paso natural es nombrar quién autoriza en él
+        $redireccion = redirect()->route('departamentos.index')->with('ok', "Departamento «{$departamento->nombre}» creado correctamente.");
+        if ($request->user()->can('autorizaciones.configurar')) {
+            $redireccion->with('siguiente_paso', ['texto' => 'Nombrar responsable', 'icono' => 'bi-person-check',
+                'url' => route('autorizaciones.responsables', ['desde' => 'departamentos', 'abrir' => $departamento->id]).'#depto-'.$departamento->id]);
+        }
+
+        return $redireccion;
     }
 
     public function update(Request $request, int $departamento): RedirectResponse

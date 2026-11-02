@@ -47,6 +47,10 @@ La contraseña es de su dueño: por omisión **la persona la crea** con un enlac
 
 **Qué debes ver:** con enlace: «Usuario «…» creado; le enviamos el correo de bienvenida para que cree su contraseña (vale 24 horas). ¿Quieres dar de alta otro? Toca «Nuevo Usuario».» Con contraseña escrita: «Usuario «…» creado; al entrar tendrá que cambiar la contraseña que escribiste…». En su ficha aparece **Creará su contraseña al entrar** hasta que lo haga.
 
+Si la cuenta nueva puede autorizar visitas (por ejemplo, la de un jefe de departamento) y tú nombras responsables, debajo aparece **Nombrarlo responsable**: te lleva a **Responsables por departamento** (con la ventana de su departamento abierta, si su colaborador tiene uno).
+
+**Desde Colaboradores:** al dar de alta a un colaborador, el botón **Crear su cuenta** abre esta misma ventana con su número y su nombre ya puestos y la cuenta vinculada.
+
 - Si tu plataforma **no tiene correo configurado**, la ventana lo dice y solo puedes escribir la contraseña.
 - Si el correo de bienvenida no se pudo enviar, aparece un aviso amarillo: usa la **llave** (Restablecer contraseña) de su ficha para intentarlo de nuevo o escribirle una contraseña.
 

@@ -93,7 +93,8 @@
         @forelse ($departamentos as $d)
             @php
                 $lista = $responsables[$d->id] ?? collect();
-                $reabrir = old('_dialogo') === 'depto-'.$d->id;
+                // C-41: «Nombrar responsable» (Departamentos, Mis pendientes) abre su ventana
+                $reabrir = old('_dialogo') === 'depto-'.$d->id || (old('_dialogo') === null && (int) request()->query('abrir') === (int) $d->id);
                 $filas = $reabrir ? array_values((array) old('responsables', [])) : $lista->map(fn ($r) => ['user_id' => $r->user_id, 'sede_id' => $r->sede_id, 'es_suplente' => $r->es_suplente])->all();
                 // Renglones vacíos: si aún no hay titular, el primero vacío es el titular («El primero es el titular»); los demás, suplentes
                 $hayTitular = collect($filas)->contains(fn ($f) => ($f['user_id'] ?? '') !== '' && ! filter_var($f['es_suplente'] ?? false, FILTER_VALIDATE_BOOL));

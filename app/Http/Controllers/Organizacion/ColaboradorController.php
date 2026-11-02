@@ -122,7 +122,16 @@ class ColaboradorController extends Controller
 
         $colaborador = $this->tenant->conEmpresa($empresaId, fn () => $this->colaboradores->crear($request->user(), $empresaId, $request));
 
-        return redirect()->route('colaboradores.index')->with('ok', "Colaborador «{$colaborador->nombreCompleto()}» creado correctamente.");
+        // C-41 (regla 5): crear su cuenta (con el colaborador ya vinculado) o imprimir su credencial
+        $actor = $request->user();
+        $pasos = array_values(array_filter([
+            $actor->can('usuarios.crear') && ! $colaborador->esResidente() ? ['texto' => 'Crear su cuenta', 'icono' => 'bi-person-plus', 'url' => route('usuarios.index', ['colaborador' => $colaborador->id])] : null,
+            $actor->can('etiquetas_qr.ver') && $actor->can('colaboradores.editar') && ! $colaborador->provisional
+                ? ['texto' => 'Imprimir credencial', 'icono' => 'bi-printer', 'url' => route('etiquetas.index', ['tipo' => 'colaborador', 'q' => $colaborador->num_empleado ?: $colaborador->nombreCompleto()])] : null,
+        ]));
+
+        return redirect()->route('colaboradores.index')->with('ok', "Colaborador «{$colaborador->nombreCompleto()}» creado correctamente.")
+            ->with('siguiente_paso', $pasos);
     }
 
     public function update(Request $request, int $colaborador): RedirectResponse

@@ -73,3 +73,17 @@ El glosario está en el manual: `docs/usuario/glosario.md` (Primeros pasos, visi
 - **Prueba automática** `Tests\Feature\Nucleo\DiezVerbosTest`: lee todos los `<button>` de enviar de las vistas Blade (sin Accidentes) y los textos de `Autorizacion::BOTONES`, `Vacante::BOTONES` y `PaseSalida::PASOS_FISICOS`; falla si un texto no empieza con uno de los diez verbos, con un verbo ya aceptado (No regresó, Restringir acceso, Quitar restricción, Liberar lugar, Canalizar al supervisor, Delegar…, Aprobar por excepción, Aprobar · es el mismo) o con algo de la **lista de exclusión** documentada en la prueba (`EXCLUIDOS`: moverse, buscar y filtrar, exportar, sesión y cuenta, respuestas de un diálogo, formularios de alguien de fuera, herramientas de la plataforma y de configuración, borrado definitivo y «No se presentó»). Agregar algo a la exclusión necesita la aprobación del dueño.
 - **Sin tocar:** Accidentes; las acciones del lector universal (`AccionesLector`, Etapa 8 las unifica con «Dar salida / Recibir»); los botones que abren un diálogo (`type="button"`), que llevan al formulario cuyo botón de enviar sí usa el verbo.
 - Las claves internas (respuestas de autorización, estados, rutas) no cambian.
+
+## C-41 · Siguiente paso tras guardar
+
+Con el patrón de Sedes («¿Qué sigue?»), el aviso verde trae su botón (`componentes.siguiente-paso`, sesión `siguiente_paso`):
+
+| Al guardar | Botón | A dónde lleva | Quién lo ve |
+|---|---|---|---|
+| Un departamento nuevo | **Nombrar responsable** | Responsables por departamento con la ventana de ese departamento abierta (`?abrir=ID#depto-ID`) | Quien tiene `autorizaciones.configurar` |
+| Un colaborador nuevo | **Crear su cuenta** | Usuarios con «Alta de Usuario» abierta y el colaborador ya vinculado (`usuarios.index?colaborador=ID`: número, nombre y vínculo; solo personal activo sin cuenta de la misma empresa) | Quien tiene `usuarios.crear` (no para residentes) |
+| Un colaborador nuevo | **Imprimir credencial** | Etiquetas QR filtradas a ese colaborador | Quien tiene `etiquetas_qr.ver` y `colaboradores.editar` (no en altas provisionales) |
+| Una cuenta que puede autorizar visitas (`autorizaciones.responder`) | **Nombrarlo responsable** | Responsables por departamento (con la ventana del departamento de su colaborador abierta, si tiene) | Quien tiene `autorizaciones.configurar` |
+
+- Responsables por departamento abre la ventana de un departamento con `?abrir=ID` (también sirve para los enlaces de Mis pendientes).
+- Pruebas: `EtapaSieteSiguientePasoTest`.

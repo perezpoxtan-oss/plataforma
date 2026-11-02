@@ -5,6 +5,7 @@
 @section('contenido')
 <div class="tema-ambar">
     @include('administracion.partes.avisos')
+    @include('componentes.siguiente-paso')
     @include('administracion.partes.selector-empresa')
 
     @if ($sinEmpresa)
