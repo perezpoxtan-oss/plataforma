@@ -118,7 +118,8 @@ class AjustesRonda5bTest extends TestCase
         // El agente (Padrones solo consulta) no captura personas: no pregunta
         $agente = $this->crearUsuario($this->empresa, 'Agente', $this->centro);
         $this->actingAs($agente)->getJson('/personas/duplicado?campo=folio_identificacion&valor=MERL850314')->assertForbidden();
-        $this->actingAs($agente)->get('/personas')->assertOk()->assertDontSee('data-duplicado=', false);
+        // C-44: el diálogo «Código e identificación» trae su propio aviso de tarjeta; aquí se revisa el de nombre/folio
+        $this->actingAs($agente)->get('/personas')->assertOk()->assertDontSee('data-duplicado="'.route('personas.duplicado').'"', false);
 
         // La pantalla conecta los dos campos al aviso en vivo
         $this->actingAs($this->admin)->get('/personas')->assertSee('data-duplicado="'.route('personas.duplicado').'" data-duplicado-min="4"', false);

@@ -11,6 +11,7 @@ use App\Models\Candidato;
 use App\Models\CandidatoDocumento;
 use App\Models\CandidatoEvento;
 use App\Models\Colaborador;
+use App\Models\Credencial;
 use App\Models\Delegacion;
 use App\Models\Departamento;
 use App\Models\DepartamentoResponsable;
@@ -70,6 +71,7 @@ use App\Services\Candidatos\PlazosCandidatos;
 use App\Services\Candidatos\Postulaciones;
 use App\Services\Comercial\Calculadora;
 use App\Services\Comercial\CatalogoPublico;
+use App\Services\Credenciales\AdministradorCredenciales;
 use App\Services\Equipos\AdministradorEquipos;
 use App\Services\Espacios\AdministradorEspacios;
 use App\Services\Gafetes\AdministradorGafetes;
@@ -242,6 +244,7 @@ class CrearDatosDemo extends Command
         $paso('rutasDemo', fn () => $this->rutasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
         $paso('accesosDemo', fn () => $this->accesosDemo($empresa, $sedes, User::where('username', 'jefe.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $paso('prestamosYResponsivasDemo', fn () => $this->prestamosYResponsivasDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
+        $paso('credencialesDemo', fn () => $this->credencialesDemo($sedes, User::where('username', 'rh.demo')->firstOrFail()));
         $paso('novedadesDemo', fn () => $this->novedadesDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail(), User::where('username', 'agente2.demo')->firstOrFail()));
         $paso('pasesSalidaDemo', fn () => $this->pasesSalidaDemo($sedes, User::where('username', 'admin.demo')->firstOrFail(), User::where('username', 'agente.demo')->firstOrFail()));
         $paso('transporteDemo', fn () => $this->transporteDemo($sedes, User::where('username', 'admin.demo')->firstOrFail()));
@@ -1468,6 +1471,36 @@ class CrearDatosDemo extends Command
      *
      * @param  Collection<string, Sede>  $sedes
      */
+    /**
+     * C-44 (Etapa 8): una credencial entregada por sede (a un colaborador que
+     * solo trabaja en esa sede) y, en Centro, otra marcada «No regresó» para
+     * ver la campana y Mis pendientes. Solo si aún no hay credenciales.
+     */
+    private function credencialesDemo($sedes, User $rh): void
+    {
+        if (Credencial::exists()) {
+            return;
+        }
+        $credenciales = app(AdministradorCredenciales::class);
+        $previo = auth()->user();
+        auth()->login($rh);
+        try {
+            foreach ($sedes as $codigo => $sede) {
+                $elegidos = Colaborador::where('sede_id', $sede->id)->where('activo', true)->where('provisional', false)->whereNull('fusionado_en_id')
+                    ->whereNotExists(fn ($q) => $q->from('colaborador_sede')->whereColumn('colaborador_sede.colaborador_id', 'colaboradores.id'))
+                    ->orderBy('id')->limit($codigo === 'CEN' ? 2 : 1)->get();
+                foreach ($elegidos as $i => $c) {
+                    $credencial = $credenciales->darSalida($rh, $c);
+                    if ($i === 1) {
+                        $credenciales->recibir($rh, $credencial, 'no_regreso');
+                    }
+                }
+            }
+        } finally {
+            $previo ? auth()->login($previo) : auth()->logout();
+        }
+    }
+
     private function pasesSalidaDemo($sedes, User $admin, User $agente): void
     {
         if (PaseSalida::exists() || ! function_exists('imagecreatetruecolor')) {

@@ -30,6 +30,7 @@ class CredencialController extends Controller
 
     public function darSalida(Request $request, int $colaborador): RedirectResponse
     {
+        abort_unless($request->user()->can(AdministradorCredenciales::PERMISO), 403);
         $request->validate(['etiqueta_nfc' => ['nullable', 'string', 'max:'.Etiqueta::MAXIMO]]);
         $credencial = $this->enEmpresa($request, function () use ($request, $colaborador) {
             $c = $this->credenciales->colaborador($request->user(), $colaborador);
@@ -43,13 +44,13 @@ class CredencialController extends Controller
 
     public function recibir(Request $request, int $credencial): RedirectResponse
     {
+        // Primero permiso y alcance (403/404 sin revelar nada), después los datos
+        abort_unless($request->user()->can(AdministradorCredenciales::PERMISO), 403);
+        $colaboradorId = $this->enEmpresa($request, fn () => $this->credenciales->credencial($request->user(), $credencial)->colaborador_id);
         $datos = $request->validate(['resultado' => ['required', Rule::in(array_keys(MovimientoActivo::RESULTADOS))]],
             ['resultado.required' => 'Elige cómo regresa: OK, Dañado o No regresó.', 'resultado.in' => 'Elige cómo regresa: OK, Dañado o No regresó.']);
-        [$colaboradorId, $mensaje] = $this->enEmpresa($request, function () use ($request, $credencial, $datos) {
-            $cred = $this->credenciales->credencial($request->user(), $credencial);
-
-            return [$cred->colaborador_id, $this->credenciales->recibir($request->user(), $cred, $datos['resultado'])];
-        });
+        $mensaje = $this->enEmpresa($request, fn () => $this->credenciales->recibir($request->user(),
+            $this->credenciales->credencial($request->user(), $credencial), $datos['resultado']));
 
         return $this->volver($colaboradorId)->with('ok', $mensaje)
             ->with('siguientes', $datos['resultado'] === 'danado' ? $this->imprimir($request, $colaboradorId) : []);
