@@ -172,7 +172,9 @@ class CatalogoEquiposPc
             'area_especifica_id' => ['nullable', 'integer'],
             'referencia' => ['nullable', 'string', 'max:150'],
             'etiqueta_nfc' => ['nullable', 'string', 'max:64'],
+            'proxima_recarga' => ['nullable', 'date_format:Y-m-d'],
         ], [
+            'proxima_recarga.date_format' => 'Revisa la fecha de la próxima recarga.',
             'sede_id.required' => 'Elige la sede donde está el equipo.',
             'categoria.required' => 'Elige el tipo de equipo.',
             'categoria.in' => 'Elige un tipo de equipo de la lista.',
@@ -204,6 +206,7 @@ class CatalogoEquiposPc
             'espacio_id' => $this->espacioValido($sedeId, $datos['zona_id'] ?? null, $datos['area_especifica_id'] ?? null, $actual),
             'referencia' => $datos['referencia'] ?? null,
             'etiqueta_nfc' => $etiqueta,
+            'proxima_recarga' => $datos['proxima_recarga'] ?? null, // DD-17
         ];
     }
 
@@ -213,7 +216,7 @@ class CatalogoEquiposPc
      */
     private function normalizar(array $entrada): array
     {
-        $entrada = array_intersect_key($entrada, array_flip(['sede_id', 'categoria', 'numero_serie', 'zona_id', 'area_especifica_id', 'referencia', 'etiqueta_nfc']));
+        $entrada = array_intersect_key($entrada, array_flip(['sede_id', 'categoria', 'numero_serie', 'zona_id', 'area_especifica_id', 'referencia', 'etiqueta_nfc', 'proxima_recarga']));
         foreach ($entrada as $campo => $valor) {
             if (is_string($valor)) {
                 $entrada[$campo] = trim((string) preg_replace('/\s+/u', ' ', $valor));
@@ -298,7 +301,7 @@ class CatalogoEquiposPc
             'sede_id' => $e->sede_id, 'categoria' => $e->categoria, 'numero_serie' => $e->numero_serie,
             'zona_id' => $esArea ? (end($nodo['ancestros']) ?: null) : $e->espacio_id,
             'area_especifica_id' => $esArea ? $e->espacio_id : null,
-            'referencia' => $e->referencia, 'etiqueta_nfc' => $e->etiqueta_nfc,
+            'referencia' => $e->referencia, 'etiqueta_nfc' => $e->etiqueta_nfc, 'proxima_recarga' => $e->proxima_recarga?->format('Y-m-d'),
         ];
     }
 
@@ -309,6 +312,6 @@ class CatalogoEquiposPc
      */
     public function foto(EquipoPc $e): array
     {
-        return $e->only(['sede_id', 'categoria', 'numero_serie', 'espacio_id', 'referencia', 'etiqueta_nfc', 'activo']);
+        return $e->only(['sede_id', 'categoria', 'numero_serie', 'espacio_id', 'referencia', 'etiqueta_nfc', 'activo']) + ['proxima_recarga' => $e->proxima_recarga?->format('Y-m-d')];
     }
 }

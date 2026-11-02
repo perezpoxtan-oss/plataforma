@@ -878,6 +878,7 @@ class AccesosTest extends TestCase
         // 62: C-08 revisa una vez por petición el permiso «Responder» de cada responsable (la caseta anticipa a quién espera)
         // 85: Etapa 4 suma consultas fijas en el encabezado (Mis pendientes: una por reloj que aplica al administrador) y la empresa
         // una vez para el reloj de permanencia de todas las tarjetas; las tarjetas siguen sin consultas propias
-        $this->assertLessThan(85, $consultas, "La pantalla hizo {$consultas} consultas.");
+        // 92: DD-17 suma en el encabezado las rutas del día y los equipos de Protección Civil (fijas por petición)
+        $this->assertLessThan(92, $consultas, "La pantalla hizo {$consultas} consultas.");
     }
 }

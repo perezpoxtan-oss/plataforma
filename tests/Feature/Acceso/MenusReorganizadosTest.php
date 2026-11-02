@@ -431,6 +431,8 @@ class MenusReorganizadosTest extends TestCase
         // responsable, que se recuerda en la petición), Reservas con la misma regla de cobertura y «No molestar» (1)
         // Etapa 4 (C-22 a C-26) suma una consulta por cada reloj que le aplica a la persona (lo que espera de ese módulo,
         // memorizado en la petición), más la zona de las sedes para la permanencia: unas 28 fijas, nunca una por renglón
-        $this->assertLessThan(125, count(DB::getQueryLog()));
+        // DD-17 suma las rutas del día (sedes y horarios con su ruta, y lo registrado en una sola consulta) y los
+        // equipos de Protección Civil (recargas, y equipos con su última revisión): unas 6 fijas, nunca una por renglón
+        $this->assertLessThan(135, count(DB::getQueryLog()));
     }
 }

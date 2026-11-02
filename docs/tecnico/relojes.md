@@ -71,6 +71,21 @@ Siempre **en proceso** (sin `exec` ni `proc_open`; el hospedaje no tiene termina
 
 Además (C-24 y C-25): `ExcepcionesPorRevisar`, `Permanencia`, `SalidaTemporal`, `EquiposEnMantenimiento`, `VouchersPendientes`, `FaltantesPorRecibir` y `HallazgosDeRecorrido`.
 
+## Operación programada (DD-17)
+
+Lo que tiene hora fija y no una petición: el reloj cuenta desde la hora en que debió pasar.
+
+| Reloj | Espera | Recordatorio → suplente | Responsables → suplente |
+|---|---|---|---|
+| `RutasSinRegistro` (`ruta_sin_registro`, id del horario) | Horario de hoy que opera hoy, sin movimiento no anulado en la fecha local de la sede, entre 15 min y 6 h después de su hora de caseta | al minuto 15 → +60 min | `transporte.crear` y `transporte.aprobar` de la sede → `transporte.aprobar` de toda la empresa |
+| `OrdenesDeServicio` (`reserva_orden`) | Orden pendiente de una reserva confirmada que no ha terminado | 24 h antes del montaje → al empezar el montaje | `ResponsablesReservas::delDepartamento` → `generales` que puedan marcarla «Listo» (D-01: atienden el departamento o configuran Reservas en la sede; si no, quien configura Reservas en la empresa). Quien la recibe la ve en «Órdenes de servicio por atender» o en «Te lo pasaron» |
+| `RecargasDeEquiposPc` (`equipo_pc_recarga`) | `equipos_pc.proxima_recarga` a 15 días o menos | 15 días antes → el día que vence | `equipos_pc.editar` de la sede → de toda la empresa |
+| `RevisionesDeEquiposPc` (`equipo_pc_revision`) | Equipo activo cuya última revisión de recorrido (o su alta) pasó la frecuencia de su tipo | al vencer → +7 días | igual |
+
+Frecuencia por tipo: `App\Services\RecorridosPc\AjustesEquiposPc` (`empresas.preferencias.equipos_pc.frecuencia_dias`, solo lo distinto de fábrica; de fábrica `EXTINTOR = 30`, lo demás 0 = sin frecuencia; máximo 730). Se edita en `PUT /configuracion/equipos-pc` (`configuracion.editar` con alcance de empresa; auditoría `configuracion.equipos_pc`) y se restablece con `ajuste = equipos_pc`. Migración `2026_11_13_000200_operacion_programada`: `equipos_pc.proxima_recarga` (fecha, opcional); `down()` la quita.
+
+Las tres primeras se ven también en «Avanzado» de Reloj y suplente (se pueden apagar o cambiar de rol), pero sus horas son las propias: las de la tabla.
+
 ## Silenciar en Mi cuenta (DD-10)
 
 `PreferenciasAvisos::noSilenciable($tipo)`: no se silencian los de la propia cuenta, `reloj_escalado`, `excepcion_agente` y cualquier aviso de nivel «alerta» sin renglón en Mis pendientes (`RENGLON_DE_TIPO`). `SOLO_INFORMAN` lista las alertas que solo informan. Una prueba (`EtapaCuatroFlujosTest`) revisa que todo aviso de alerta tenga su renglón o esté en una de esas listas: un aviso nuevo que espera una acción tiene que traer su renglón.
