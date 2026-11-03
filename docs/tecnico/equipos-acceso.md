@@ -8,7 +8,7 @@ Los lectores, torniquetes y checadores registran solos la entrada y la salida de
 
 | Pieza | Archivo |
 |---|---|
-| Migración | `database/migrations/2026_11_21_000100_equipos_de_acceso.php` |
+| Migración | `database/migrations/2026_11_21_000200_equipos_de_acceso.php` |
 | Modelos | `app/Models/EquipoAcceso.php`, `ComandoEquipoAcceso.php`, `MarcajeEquipoAcceso.php` |
 | Interfaz común y registro de marcas | `app/Services/EquiposAcceso/Conector.php`, `Conectores.php`, `MarcajeLeido.php` |
 | Conectores | `ConectorZkteco.php` (PUSH «iclock»), `ConectorHikvision.php` (eventos ISAPI) |
@@ -36,7 +36,7 @@ Los marcajes crean las entradas y salidas por el servicio de la caseta, extraíd
 - `MovimientosAccesos::salida(?User, Acceso, [equipo_salida_id, salida_at])`: la salida de siempre (actualización condicionada, acompañantes, auditoría `accesos.salida`).
 - `AdministradorRoles::auditar(?User …)`: sin usuario cuando lo hizo un equipo.
 
-Por eso aparecen en la Bitácora de accesos, en Gente en sitio y en Asistencia sin tocar esos módulos. Prueba: `EntradaSalidaComunTest`.
+Por eso aparecen en la Bitácora de accesos, en Gente en sitio y en Asistencia sin tocar esos módulos (Asistencia los lee con `App\Services\Asistencia\MarcajesColaborador`, la misma tabla `accesos`). Pruebas: `EntradaSalidaComunTest` y `AsistenciaConEquiposTest` (marcaje ZKTeco → entrada → asistencia, retardo, salida anticipada y horas en «Asistencia del día», el reporte y el Excel).
 
 ## Reglas de un marcaje (`RegistroMarcajes`)
 

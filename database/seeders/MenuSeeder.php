@@ -70,6 +70,10 @@ class MenuSeeder extends Seeder
                 'Recepción y candidatos' => [
                     'vacantes' => 'warning', 'recepcion_rh' => 'primary', 'candidatos' => 'success',
                 ],
+                // Asistencia (ADR-0024): solo se ve con el complemento encendido
+                'Asistencia' => [
+                    'asistencia' => 'primary',
+                ],
             ]],
             // Sin pantallas todavía: el menú se oculta solo mientras ningún módulo tenga ruta
             'informes' => ['Informes', 'bi-graph-up', 4, [

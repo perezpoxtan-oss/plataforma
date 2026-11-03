@@ -5,6 +5,7 @@ namespace App\Services\Privacidad;
 use App\Models\Acceso;
 use App\Models\AccidenteColaborador;
 use App\Models\AccidenteHuesped;
+use App\Models\AsistenciaJustificacion;
 use App\Models\Auditoria;
 use App\Models\ConfiguracionPlataforma;
 use App\Models\Empresa;
@@ -72,15 +73,18 @@ class ConservacionDatos
         'incidentes_dias' => ['Novedades y accidentes cerrados: huéspedes, testigos, sospechosos y datos médicos', 1825, 365, 3650],
         'reservas_dias' => ['Reservas terminadas: datos del cliente', 1825, 365, 3650],
         'transporte_dias' => ['Transporte: firma del taxista en los vales', 1825, 365, 3650],
+        // Asistencia (ADR-0024): la nota de las justificaciones (el día y el motivo quedan como constancia laboral)
+        'asistencia_dias' => ['Asistencia: notas de las justificaciones de faltas y retardos', 1825, 365, 3650],
     ];
 
     /** Plazos que llegaron con C-37: en las empresas que ya existían se aplican cuando el administrador los confirma. */
-    public const AMPLIADOS = ['lost_found_dias', 'incidentes_dias', 'reservas_dias', 'transporte_dias'];
+    public const AMPLIADOS = ['lost_found_dias', 'incidentes_dias', 'reservas_dias', 'transporte_dias', 'asistencia_dias'];
 
     /** Lo que se cuenta y se quita en cada corrida: clave del resumen => clave de días. */
     public const QUITA = [
         'fotos_persona' => 'fotos_persona_dias', 'fotos_identificacion' => 'fotos_identificacion_dias', 'visitantes' => 'visitantes_dias',
         'lost_found' => 'lost_found_dias', 'incidentes' => 'incidentes_dias', 'reservas' => 'reservas_dias', 'transporte' => 'transporte_dias',
+        'asistencia' => 'asistencia_dias',
     ];
 
     public const RECORDAR_ARCO = 5;
@@ -216,6 +220,7 @@ class ConservacionDatos
             'reservas' => [Reserva::query()->whereNull('datos_eliminados_en')->where('fin', '<=', $limite)
                 ->where(fn ($q) => $q->whereNotNull('cliente_nombre')->orWhereNotNull('cliente_correo')->orWhereNotNull('cliente_telefono'))],
             'transporte' => [MovimientoTransporte::query()->whereNull('datos_eliminados_en')->whereNotNull('firma_taxista')->where('fecha', '<=', $limite->toDateString())],
+            'asistencia' => [AsistenciaJustificacion::query()->whereNull('datos_eliminados_en')->whereNotNull('nota')->where('fecha', '<=', $limite->toDateString())],
             default => [],
         };
     }
@@ -272,12 +277,12 @@ class ConservacionDatos
         $total['arco_vencidas'] += $plataforma['vencidas'];
 
         if (array_sum(array_intersect_key($total, self::QUITA)) > 0) {
-            $otros = $total['lost_found'] + $total['incidentes'] + $total['reservas'] + $total['transporte'];
+            $otros = $total['lost_found'] + $total['incidentes'] + $total['reservas'] + $total['transporte'] + $total['asistencia'];
             $this->campana->avisarPlataforma(User::where('es_superadmin', true)->where('activo', true)->pluck('id'), 'privacidad_conservacion', [
                 'titulo' => 'Conservación de datos: se quitaron datos vencidos',
                 'texto' => sprintf('En %d empresa(s): %d foto(s) de personas, %d de identificaciones, los datos de %d registro(s) de visitantes%s. El detalle de cada empresa está en la Bitácora de auditoría.',
                     $total['empresas'], $total['fotos_persona'], $total['fotos_identificacion'], $total['visitantes'],
-                    $otros > 0 ? sprintf(' y %d de Lost & Found, novedades, reservas o transporte', $otros) : ''),
+                    $otros > 0 ? sprintf(' y %d de Lost & Found, novedades, reservas, transporte o asistencia', $otros) : ''),
                 'url' => route('auditoria.index'),
             ]);
         }
@@ -327,6 +332,8 @@ class ConservacionDatos
             $registro instanceof Novedad => $this->datos->anonimizarIncidente($registro, $texto),
             $registro instanceof Reserva => $this->datos->anonimizarReserva($registro, $texto),
             $registro instanceof MovimientoTransporte => $this->datos->anonimizarTransporte($registro, $texto, '', true),
+            $registro instanceof AsistenciaJustificacion => AsistenciaJustificacion::whereKey($registro->id)
+                ->update(['nota' => null, 'datos_eliminados_en' => now(), 'updated_at' => $registro->updated_at]),
             default => null,
         };
     }

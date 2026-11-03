@@ -64,7 +64,8 @@
                     $sedesActivas = $t->sedes->where('activo', true);
                     $usaSedes = $t->todas_las_sedes ? $idsActivas : $sedesActivas->pluck('id');
                     $etiquetaSedes = $t->todas_las_sedes ? 'Todas las sedes' : $sedesActivas->count().' sede'.($sedesActivas->count() !== 1 ? 's' : '');
-                    $valores = json_encode(['nombre' => $t->nombre, 'hora_inicio' => $t->inicio(), 'hora_fin' => $t->fin()]);
+                    $valores = json_encode(['nombre' => $t->nombre, 'hora_inicio' => $t->inicio(), 'hora_fin' => $t->fin()]
+                        + ($conAsistencia ? ['dias' => $t->diasLaborables()] : []));
                 @endphp
                 <div class="ficha-card" id="turno-{{ $t->id }}" data-ficha data-estado="{{ $t->activo ? 1 : 0 }}"
                      data-sede="{{ $usaSedes->join(' ') }}" data-texto="{{ mb_strtolower($t->nombre.' '.$t->inicio().' '.$t->fin()) }}">
@@ -74,6 +75,10 @@
                             <span><i class="bi bi-clock" aria-hidden="true"></i> {{ $t->inicio() }} a {{ $t->fin() }} · {{ $t->duracion() }}</span>
                             @if ($t->cruzaMedianoche())
                                 <span class="turno-medianoche"><i class="bi bi-moon-stars" aria-hidden="true"></i> Termina al día siguiente</span>
+                            @endif
+                            @if ($conAsistencia)
+                                {{-- Asistencia (ADR-0024): días que se trabaja --}}
+                                <span><i class="bi bi-calendar-week" aria-hidden="true"></i> {{ $t->textoDias() }}</span>
                             @endif
                         </div>
                         @if ($puede['sedes'])
@@ -163,6 +168,21 @@
                             </div>
                         </div>
                         <p class="small text-muted turno-ayuda"><i class="bi bi-moon-stars me-1" aria-hidden="true"></i>Si la hora de fin es menor que la de inicio (p. ej. 23:00 a 07:00), el turno termina al día siguiente.</p>
+
+                        @if ($conAsistencia)
+                            {{-- Asistencia (ADR-0024): los días de descanso no cuentan como falta. Regla 7: plegado en «Avanzado» --}}
+                            @php $diasMarcados = $reabrir && old('_con_dias') ? array_map('intval', (array) old('dias', [])) : [1, 2, 3, 4, 5, 6, 7]; @endphp
+                            <input type="hidden" name="_con_dias" value="1">
+                            <details class="mb-3">
+                                <summary class="campo-etiqueta">Avanzado · Días que se trabaja (para Asistencia)</summary>
+                                <div class="caja-checks">
+                                    @foreach (\App\Models\Turno::DIAS as $numero => $nombreDia)
+                                        <label class="fila-check"><input type="checkbox" name="dias[]" value="{{ $numero }}" @checked(in_array($numero, $diasMarcados, true))> {{ $nombreDia }}</label>
+                                    @endforeach
+                                </div>
+                                <p class="small text-muted">De fábrica, todos los días. Los días sin marcar son de descanso: no cuentan como falta.</p>
+                            </details>
+                        @endif
 
                         @if ($esNuevo)
                             @if ($variasSedes)

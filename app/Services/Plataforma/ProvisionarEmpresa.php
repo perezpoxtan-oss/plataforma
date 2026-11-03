@@ -18,7 +18,7 @@ class ProvisionarEmpresa
 {
     /**
      * @param  array<string, mixed>  $datos
-     * @param  list<string>|null  $modulos  claves de modulos a activar; null = todos
+     * @param  list<string>|null  $modulos  claves de modulos a activar; null = todos salvo los apagados de fábrica (Modulo::APAGADOS_DE_FABRICA)
      */
     public function crear(Rubro $rubro, array $datos, ?array $modulos = null): Empresa
     {
@@ -29,6 +29,8 @@ class ProvisionarEmpresa
             if ($modulos !== null) {
                 $consulta->where(fn ($q) => $q->whereIn('clave', $modulos)
                     ->orWhereIn('padre_id', Modulo::whereIn('clave', $modulos)->select('id')));
+            } else {
+                $consulta->whereNotIn('clave', Modulo::APAGADOS_DE_FABRICA);
             }
             $autor = ['creado_por' => Auth::id(), 'actualizado_por' => Auth::id()];
             $empresa->modulos()->syncWithoutDetaching($consulta->pluck('id')->mapWithKeys(fn ($id) => [$id => $autor])->all());

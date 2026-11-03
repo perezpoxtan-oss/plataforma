@@ -150,6 +150,10 @@ Ver [mejoras-padrones.md](mejoras-padrones.md): «Registro rápido» / «POR VER
 - **Bitácora:** `turno_id` va en la foto de `colaboradores.creado/actualizado`.
 - **Lista:** cada ficha lleva `data-turno="{id|sin}"` y la línea «Turno: Nombre (hh:mm–hh:mm)» si tiene; el filtro `[data-filtro-colab="turno"]` (turnos activos más los que ya tiene alguien, y «Sin turno») se recuerda con los demás filtros. El nombre del turno también entra en la búsqueda por texto.
 
+## Asistencia (ADR-0024)
+
+Con el módulo Asistencia encendido y `asistencia.ver`, la ficha de la lista trae el ícono de calendario **Asistencia** (`asistencia.periodo?colaborador=`), salvo a los residentes. `AlcanceAsistencia::disponible()` lo decide (con el módulo apagado no aparece, ni para el Super Administrador). El turno del colaborador es el que usa el cálculo; sin turno no hay retardos ni faltas. Ver [asistencia.md](asistencia.md).
+
 ## Ficha del colaborador en pestañas
 
 `GET /colaboradores/{id}/expediente` (permiso `colaboradores.ver` con su alcance; otra empresa u otra sede → 404). Vista `organizacion/colaboradores/expediente.blade.php` con las pestañas en `$pestanas` (`clave => [título, ícono, ¿se muestra?]`) y una vista por pestaña en `organizacion/colaboradores/ficha/_<clave>.blade.php`:

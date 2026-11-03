@@ -95,6 +95,8 @@ class MotorRelojes
         Relojes\RevisionesDeEquiposPc::class,
         // Decisión 10: equipos de acceso (ZKTeco, Hikvision) que dejaron de llamar
         Relojes\EquiposSinConexion::class,
+        // Asistencia (ADR-0024): opcional, apagado de fábrica (Asistencia → Avanzado)
+        Relojes\FaltasDelDia::class,
     ];
 
     public const TIPO_RECORDATORIO = 'reloj_recordatorio';

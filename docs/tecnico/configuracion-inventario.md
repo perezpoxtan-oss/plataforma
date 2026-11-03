@@ -53,6 +53,9 @@ Convenciones:
 | Documentos para contratar | `documentos_para_contratar` | Candidatos → Documentos y plazos (enlace) | `candidatos.configurar` empresa | lista base |
 | Bolsa de trabajo: publicar, presentación, Google | pref. `bolsa_trabajo.*` y `empresas.bolsa_slug` | Configuración → Recepción y RR. HH. y Vacantes → Ajustes (mismo formulario) | `vacantes.configurar` empresa | apagada, sin Google |
 | Avisos de Recepción y candidatos | pref. `avisos.*` | Configuración → Recepción y RR. HH. | `configuracion.editar` empresa | encendidos |
+| Asistencia: tolerancia de retardo y aviso de faltas al jefe (ADR-0024) | pref. `asistencia.tolerancia_minutos`, `asistencia.aviso_faltas` | Asistencia → Avanzado (resumen con «Configurar en…» en Configuración → Recepción y RR. HH.) | `asistencia.configurar` empresa | 10 min, apagado |
+| Asistencia: días que se trabaja cada turno | `turnos.dias_laborables` | Turnos → Editar → Avanzado (solo con Asistencia encendida) | `turnos.editar` empresa | todos los días |
+| Asistencia: conservación de las notas de justificaciones | pref. `privacidad.asistencia_dias` | Configuración → Privacidad (solo con Asistencia encendida) | `configuracion.datos_personales` empresa | 1825 días |
 
 ### Novedades / Incidentes
 

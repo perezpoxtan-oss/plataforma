@@ -64,6 +64,19 @@ resumen: Los horarios fijos de la empresa (Matutino, Vespertino, Nocturno…) y 
 
 > Si tiene cosas vigentes (colaboradores o rutas que lo usan), antes de confirmar se abre [Antes de dar de baja](antes-de-dar-de-baja.md) con la lista y lo que pasará con cada una.
 
+## Cómo marcar los días de descanso (solo con Asistencia)
+
+Si tu empresa tiene el complemento **Asistencia**, cada turno dice qué días se trabaja (por ejemplo «Lun a Vie»). Los días sin marcar son de descanso y no cuentan como falta.
+
+1. En la ficha del turno toca **Editar**.
+2. Abre **Avanzado · Días que se trabaja (para Asistencia)**.
+3. Marca los días que se trabaja y desmarca los de descanso. Debe quedar al menos uno.
+4. Toca **Guardar**.
+
+![Días que se trabaja en un turno](img/asistencia/6-turno-dias.png)
+
+**Qué debes ver:** la ficha del turno dice sus días, por ejemplo «Lun a Vie». De fábrica se trabajan **Todos los días**. Sin Asistencia, este apartado no aparece. Ver [Asistencia](asistencia.md).
+
 ## En el celular y en los modos Noche y Sol
 
 ![Celular](img/turnos/4-celular.png)
@@ -98,6 +111,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 ## Relacionado
 
+- [Asistencia](asistencia.md)
 - [Rutas de transporte](rutas.md)
 - [Colaboradores](colaboradores.md)
 - [Departamentos y puestos](departamentos-y-puestos.md)

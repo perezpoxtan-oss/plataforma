@@ -5,6 +5,8 @@
 @php
     $a = $p['ajustes'];
     $dias = \App\Services\Privacidad\ConservacionDatos::DIAS;
+    // Asistencia (ADR-0024): su plazo solo se ve con el módulo encendido
+    $conAsistencia = app(\App\Services\Asistencia\AlcanceAsistencia::class)->encendido(isset($empresa) ? $empresa?->id : null);
 @endphp
 
 {{-- Conservación --}}
@@ -27,6 +29,7 @@
 
         <div class="row g-3">
             @foreach ($dias as $clave => [$etiqueta, $omision, $min, $max])
+                @continue($clave === 'asistencia_dias' && ! $conAsistencia)
                 <div class="col-md-4">
                     <label class="campo-etiqueta" for="cons_{{ $clave }}">{{ $etiqueta }} (días)</label>
                     <input type="number" id="cons_{{ $clave }}" name="{{ $clave }}" class="campo" min="{{ $min }}" max="{{ $max }}" value="{{ old($clave, $a[$clave]) }}" required>

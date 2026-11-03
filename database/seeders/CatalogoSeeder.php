@@ -43,6 +43,8 @@ class CatalogoSeeder extends Seeder
         'accidentes' => 'Ver accidentes',
         // C-44 (Etapa 8): credencialización (dar salida, recibir y dar de baja la credencial del colaborador)
         'credencial' => 'Credencial',
+        // Asistencia (ADR-0024): justificar una falta, un retardo o una salida anticipada con su motivo
+        'justificar' => 'Justificar',
     ];
 
     private const CRUD = ['ver', 'crear', 'editar', 'eliminar'];
@@ -99,6 +101,8 @@ class CatalogoSeeder extends Seeder
         'informe_ejecutivo' => 'informe_ejecutivo.index',
         // Reservas de áreas (docs/tecnico/reservas.md)
         'reservas' => 'reservas.index',
+        // Asistencia (ADR-0024): módulo opcional, apagado de fábrica
+        'asistencia' => 'asistencia.index',
     ];
 
     /**
@@ -147,6 +151,8 @@ class CatalogoSeeder extends Seeder
                 'candidatos' => ['Candidatos', 'bi-person-workspace', ['exportar', 'contratar', 'configurar', 'evaluar']],
                 // Bolsa de trabajo (lección 36): «configurar» = bolsa pública por internet
                 'vacantes' => ['Vacantes', 'bi-megaphone', ['configurar']],
+                // Asistencia (ADR-0024): complemento opcional, apagado de fábrica (Modulo::APAGADOS_DE_FABRICA)
+                'asistencia' => ['Asistencia', 'bi-calendar2-check', ['justificar', 'exportar', 'configurar'], [], ['ver']],
             ]],
             // Seguridad: padrones, operación y sus reportes.
             'seguridad' => ['Seguridad', 'bi-shield-lock', [

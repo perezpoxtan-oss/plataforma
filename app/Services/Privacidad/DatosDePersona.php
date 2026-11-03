@@ -11,6 +11,7 @@ use App\Models\AccidenteHuesped;
 use App\Models\AccidenteIncapacidad;
 use App\Models\AcompananteAcceso;
 use App\Models\ArticuloAcceso;
+use App\Models\AsistenciaJustificacion;
 use App\Models\Candidato;
 use App\Models\CandidatoDocumento;
 use App\Models\Colaborador;
@@ -41,6 +42,7 @@ use App\Support\Receptor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -93,6 +95,8 @@ class DatosDePersona
         'prestamo_llave' => 'Préstamos de llaves a su nombre',
         'responsiva' => 'Responsivas a su nombre',
         'voucher' => 'Vouchers a su cargo',
+        // Asistencia (ADR-0024): entradas y salidas del colaborador y sus justificaciones
+        'asistencia' => 'Asistencia (entradas, salidas y justificaciones)',
     ];
 
     /** Tipos que no se eliminan por ARCO: solo se consultan y rectifican en su ficha. */
@@ -198,6 +202,7 @@ class DatosDePersona
                         'url' => route('colaboradores.index', ['buscar' => $c->nombreCompleto()])];
             }
             $idsColaboradores = $colaboradores->pluck('id');
+            $resultado['asistencia'] = $this->buscarAsistencia($colaboradores);
         }
 
         // C-37 (X-01): Lost & Found, Novedades, Accidentes, Reservas y Transporte
@@ -216,6 +221,38 @@ class DatosDePersona
     }
 
     /** @param  array{porNombre: bool, like: string, correo: string, telefono: string}  $c */
+    /**
+     * Asistencia (ADR-0024): por colaborador encontrado (personal), cuántas
+     * entradas y justificaciones tiene. El id es el del colaborador.
+     *
+     * @param  Collection<int, Colaborador>  $colaboradores
+     * @return list<array{id: int, titulo: string, detalle: string, url: ?string}>
+     */
+    private function buscarAsistencia(Collection $colaboradores): array
+    {
+        $personal = $colaboradores->reject(fn (Colaborador $c) => $c->esResidente());
+        if ($personal->isEmpty()) {
+            return [];
+        }
+        $ids = $personal->pluck('id');
+        $entradas = Acceso::where('tipo', 'colaborador')->whereIn('colaborador_id', $ids)->selectRaw('colaborador_id, count(*) as n')->groupBy('colaborador_id')->pluck('n', 'colaborador_id');
+        $justificaciones = AsistenciaJustificacion::whereIn('colaborador_id', $ids)->selectRaw('colaborador_id, count(*) as n')->groupBy('colaborador_id')->pluck('n', 'colaborador_id');
+        $r = [];
+        foreach ($personal as $c) {
+            $e = (int) ($entradas[$c->id] ?? 0);
+            $j = (int) ($justificaciones[$c->id] ?? 0);
+            if ($e + $j === 0) {
+                continue;
+            }
+            $r[] = ['id' => (int) $c->id, 'titulo' => $c->nombreCompleto(),
+                'detalle' => $e.' entrada(s) y salida(s) · '.$j.' justificación(es)'
+                    .($c->activo ? ' · relación laboral vigente: se consulta y exporta' : ' · dado de baja: «Eliminar» quita las notas de sus justificaciones'),
+                'url' => Route::has('asistencia.periodo') ? route('asistencia.periodo', ['colaborador' => $c->id]) : null];
+        }
+
+        return $r;
+    }
+
     private function buscarReportesPerdida(array $c): array
     {
         $filas = LostFoundReportePerdida::query()->whereNull('datos_eliminados_en')->where(function (Builder $q) use ($c) {
@@ -512,6 +549,12 @@ class DatosDePersona
             $r['responsivas'] = $filas(Responsiva::class, 'id', $ids);
             $r['responsivas_equipos'] = $filas(EquipoResponsiva::class, 'responsiva_id', $ids);
         }
+        if ($ids = $seleccion['asistencia'] ?? []) {
+            // Asistencia (ADR-0024): sus entradas y salidas (de la Bitácora de accesos) y sus justificaciones
+            $r['asistencia_entradas_salidas'] = Acceso::where('tipo', 'colaborador')->whereIn('colaborador_id', $ids)->orderBy('entrada_at')
+                ->get(['id', 'colaborador_id', 'sede_id', 'entrada_at', 'salida_at'])->map(fn ($m) => $quitar($m->getAttributes()))->all();
+            $r['asistencia_justificaciones'] = $filas(AsistenciaJustificacion::class, 'colaborador_id', $ids);
+        }
         if ($ids = $seleccion['voucher'] ?? []) {
             $r['vouchers'] = VoucherReposicion::whereIn('id', $ids)->get()
                 ->map(fn ($m) => $quitar(array_diff_key($m->getAttributes(), ['firma_seguridad' => 1])))->all();
@@ -608,6 +651,18 @@ class DatosDePersona
                 $this->firmas->borrar($v->firma_responsable);
                 VoucherReposicion::whereKey($v->id)->update(['firma_responsable' => null, 'descripcion' => self::sinNombre($v->descripcion, $nombre, $texto), 'updated_at' => $v->updated_at]);
                 $hecho['voucher']++;
+            }
+            // Asistencia (ADR-0024): de quien ya causó baja se quitan las notas de sus justificaciones (el motivo y el
+            // día se conservan como constancia laboral); las entradas y salidas son de la Bitácora de accesos y siguen su plazo.
+            foreach (Colaborador::whereIn('id', $seleccion['asistencia'] ?? [])->get() as $c) {
+                if ($c->activo) {
+                    $hecho['omitidos']++; // relación laboral vigente
+
+                    continue;
+                }
+                AsistenciaJustificacion::where('colaborador_id', $c->id)->whereNull('datos_eliminados_en')
+                    ->update(['nota' => null, 'datos_eliminados_en' => now(), 'updated_at' => now()]);
+                $hecho['asistencia']++;
             }
             $choferes = Persona::whereIn('id', $seleccion['persona'] ?? [])->pluck('id');
             foreach (MovimientoTransporte::whereIn('id', $seleccion['transporte'] ?? [])->whereNull('datos_eliminados_en')->get() as $m) {

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
- * Migración 2026_11_21_000100_equipos_de_acceso: con datos, migrar →
+ * Migración 2026_11_21_000200_equipos_de_acceso: con datos, migrar →
  * revertir → migrar deja el esquema igual y las entradas que registraron
  * los equipos se conservan (sin su equipo).
  */
@@ -18,7 +18,7 @@ class MigracionEquiposAccesoTest extends TestCase
 
     private function migracion(): object
     {
-        return require database_path('migrations/2026_11_21_000100_equipos_de_acceso.php');
+        return require database_path('migrations/2026_11_21_000200_equipos_de_acceso.php');
     }
 
     /** @return array<string, mixed> */

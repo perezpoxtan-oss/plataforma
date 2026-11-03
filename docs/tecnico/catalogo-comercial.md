@@ -132,6 +132,10 @@ Pasos para conectar una pasarela (por ejemplo Mercado Pago, Stripe o Conekta):
 
 `tests/Feature/Administracion/CatalogoComercialTest.php`: datos iniciales una sola vez; landing oculta (404 y `/` al acceso) y publicada; con sesión `/` es el Inicio; ocultos y de baja no se ven; vista previa del Super Administrador; cálculo (mínimo de sedes, cotizar, incompatibles, IVA y redondeo); calculadora del navegador = servidor (Node); solicitud válida (desglose del servidor, congelado, campana sin empresa, correos), campana con empresa de trabajo elegida, inválida, campo trampa, límite por equipo; ruta de pagos apagada; solo el Super Administrador administra; alta, edición, baja, reactivación y orden; ajustes (publicar, IVA, textos, correos, aviso); atender una solicitud; `down()` y `up()` de la migración. Se ajustaron `MenusReorganizadosTest`, `SuperficieDeRutasTest`, `MatrizDeRutasTest` / `EscenarioAuditoria` y `RecorridoPantallasTest` (rutas nuevas).
 
+## Complemento «Asistencia» (ADR-0024)
+
+Producto `asistencia` (módulo `asistencia`) y paquete `asistencia` (suscripción, por sede, `CatalogoComercialSeeder::PRECIO_ASISTENCIA`, precio de ejemplo) que se suma a Esencial, Profesional y Corporativo. En una instalación nueva el seeder lo crea publicado (la página pública nace sin publicar); en una base existente la migración `2026_11_21_000100_modulo_asistencia` lo crea **sin publicar** para que el dueño revise el precio. Ningún plan lo trae: el módulo está en `Modulo::APAGADOS_DE_FABRICA` y solo se enciende al contratarlo (o en Empresas → Módulos). `DependenciasModulos`: necesita Colaboradores y Turnos.
+
 ## Lista de dependencias y planes coherentes (Etapa 1, C-02 y C-05)
 
 - **`App\Support\DependenciasModulos::REQUIERE`**: módulo => módulos que necesita (solo dependencias duras). Ejemplos: `accesos` → colaboradores, departamentos, autorizaciones; `transporte` → rutas; `equipos_pc` ↔ `recorridos_pc`; `reservas` → departamentos; `recepcion_rh` → candidatos, accesos. `ACCIONES_CON_MODULO`: `colaboradores.datos_personales` solo con `candidatos`.
