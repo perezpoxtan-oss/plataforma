@@ -7,6 +7,7 @@ use App\Http\Controllers\Organizacion\Concerns\CatalogoDeEmpresa;
 use App\Models\Empresa;
 use App\Models\Sede;
 use App\Models\Turno;
+use App\Services\Asistencia\AlcanceAsistencia;
 use App\Services\Bajas\AntesDeDarDeBaja;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
@@ -68,6 +69,8 @@ class TurnoController extends Controller
         ];
 
         return $this->tenant->conEmpresa($empresaId, function () use ($empresaId, $permitidas, $editables, $puede) {
+            // Asistencia (ADR-0024): los días que se trabaja solo se ven con el módulo encendido
+            $conAsistencia = app(AlcanceAsistencia::class)->encendido($empresaId);
             $sedes = Sede::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
             // Con alcance de sede se ven los turnos que usa su sede; quien puede
             // asignar ve todos, para poder activar en su sede uno que aún no usa.
@@ -87,6 +90,7 @@ class TurnoController extends Controller
                 'sedesAsignables' => $editables === null ? $sedes : $sedes->whereIn('id', $editables ?? [])->values(),
                 'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
                 'puede' => $puede,
+                'conAsistencia' => $conAsistencia,
             ]);
         });
     }
@@ -226,7 +230,29 @@ class TurnoController extends Controller
             throw ValidationException::withMessages(['hora_fin' => 'La hora de fin debe ser distinta a la de inicio.']);
         }
 
-        return ['nombre' => $datos['nombre'], 'hora_inicio' => $inicio.':00', 'hora_fin' => $fin.':00'];
+        return ['nombre' => $datos['nombre'], 'hora_inicio' => $inicio.':00', 'hora_fin' => $fin.':00'] + $this->validarDias($request, $empresaId);
+    }
+
+    /**
+     * Asistencia (ADR-0024): «Días que se trabaja». Solo cuando el formulario
+     * los trae (módulo encendido); si no, el turno conserva los suyos.
+     * Los siete días (o ninguno guardado) = todos los días.
+     *
+     * @return array{dias_laborables?: ?string}
+     */
+    private function validarDias(Request $request, int $empresaId): array
+    {
+        if (! $request->boolean('_con_dias') || ! app(AlcanceAsistencia::class)->encendido($empresaId)) {
+            return [];
+        }
+        $datos = $request->validate(['dias' => ['nullable', 'array'], 'dias.*' => ['integer', 'between:1,7']]);
+        $dias = array_values(array_unique(array_map('intval', $datos['dias'] ?? [])));
+        sort($dias);
+        if ($dias === []) {
+            throw ValidationException::withMessages(['dias' => 'Marca al menos un día que se trabaja en este turno.']);
+        }
+
+        return ['dias_laborables' => count($dias) === 7 ? null : implode(',', $dias)];
     }
 
     /**
@@ -293,7 +319,7 @@ class TurnoController extends Controller
      */
     private function foto(Turno $t): array
     {
-        return $t->only(['nombre', 'hora_inicio', 'hora_fin', 'todas_las_sedes', 'activo'])
+        return $t->only(['nombre', 'hora_inicio', 'hora_fin', 'todas_las_sedes', 'activo', 'dias_laborables'])
             + ['sedes' => $t->sedes()->orderBy('sedes.id')->pluck('sedes.id')->all()];
     }
 }

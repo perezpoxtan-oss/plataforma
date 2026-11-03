@@ -113,6 +113,8 @@
                 </button>
             @endif
 
+            {{-- Asistencia (ADR-0024): enlace al reporte de la persona solo con el módulo encendido --}}
+            @php $verAsistencia = app(\App\Services\Asistencia\AlcanceAsistencia::class)->disponible(auth()->user()); @endphp
             @forelse ($colaboradores as $c)
                 @php
                     $adicionales = $c->sedesAdicionales;
@@ -217,6 +219,9 @@
                                 'identImprimirTexto' => 'Imprimir credencial', 'identEditable' => $editable && ! $pendiente])
                             {{-- Ficha del colaborador (pestañas Datos, Expediente, Código y etiqueta, Historial) --}}
                             <a href="{{ route('colaboradores.expediente', $c->id) }}" class="btn-icono" title="Ficha" aria-label="Ficha de {{ $nombreCompleto }}"><i class="bi bi-folder2-open" aria-hidden="true"></i></a>
+                            @if ($verAsistencia && ! $c->esResidente())
+                                <a href="{{ route('asistencia.periodo', ['colaborador' => $c->id]) }}#detalle" class="btn-icono" title="Asistencia" aria-label="Asistencia de {{ $nombreCompleto }}"><i class="bi bi-calendar2-check" aria-hidden="true"></i></a>
+                            @endif
                             @include('componentes.ver-historial', ['registro' => \App\Models\Colaborador::class, 'id' => $c->id, 'nombre' => $nombreCompleto])
                             @if ($editable)
                                 <button type="button" class="btn-icono editar" title="Editar" aria-label="Editar a {{ $nombreCompleto }}"
