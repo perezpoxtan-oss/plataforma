@@ -89,6 +89,8 @@ Plantillas (`RolesPlantillaSeeder::ASISTENCIA`, misma tabla en la migración): A
 | ARCO y conservación | Tipo `asistencia` y plazo `asistencia_dias`. |
 | Mis pendientes y campana | Renglón **Faltas de hoy** (solo con el aviso encendido). |
 | Configuración | Tarjeta «Asistencia: tolerancia y aviso de faltas» en Recepción y RR. HH. con «Configurar en Asistencia → Avanzado». |
+| Colaboradores (unir duplicados) | Las justificaciones del provisional pasan al correcto (`AdministradorColaboradores::REFERENCIAS_ADICIONALES`); si el correcto ya tiene una del mismo día y tipo, se queda la suya. |
+| Bitácora de auditoría | Eventos `asistencia.justificada`, `asistencia.justificacion_cambiada` y `asistencia.ajustes` con etiqueta en español. |
 | Accidentes | Nada. |
 
 ## Criterios de experiencia de uso

@@ -6,6 +6,7 @@ use App\Models\AsistenciaJustificacion;
 use App\Models\Auditoria;
 use App\Models\Departamento;
 use App\Models\Turno;
+use App\Services\Colaboradores\AdministradorColaboradores;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -155,6 +156,23 @@ class AsistenciaPantallasTest extends TestCase
         $this->actingAs($this->rh)->get('/colaboradores')->assertOk()->assertSee('Asistencia de Ana Prueba')
             ->assertSee(route('asistencia.periodo', ['colaborador' => $ana->id]), false);
         $this->actingAs($this->rh)->get('/asistencia')->assertSee('Hay 1 colaborador sin turno')->assertSee('Asígnales su turno en Colaboradores');
+    }
+
+    public function test_al_unir_un_colaborador_duplicado_sus_justificaciones_pasan_al_correcto(): void
+    {
+        $correcto = $this->colaborador('Ana', $this->matutino);
+        $provisional = $this->colaborador('Ana Duplicada', null);
+        $this->enEmpresa(function () use ($correcto, $provisional) {
+            $provisional->forceFill(['provisional' => true])->save();
+            AsistenciaJustificacion::create(['colaborador_id' => $provisional->id, 'fecha' => '2026-11-02', 'tipo' => 'falta', 'motivo' => 'permiso']);
+            AsistenciaJustificacion::create(['colaborador_id' => $provisional->id, 'fecha' => '2026-11-03', 'tipo' => 'falta', 'motivo' => 'otro', 'nota' => 'Repetida']);
+            AsistenciaJustificacion::create(['colaborador_id' => $correcto->id, 'fecha' => '2026-11-03', 'tipo' => 'falta', 'motivo' => 'vacaciones']);
+        });
+        $this->enEmpresa(fn () => app(AdministradorColaboradores::class)->fusionar($this->rh, $provisional->fresh(), $correcto->fresh()));
+
+        $this->assertSame(0, $this->enEmpresa(fn () => AsistenciaJustificacion::where('colaborador_id', $provisional->id)->count()));
+        $this->assertSame(['2026-11-02' => 'permiso', '2026-11-03' => 'vacaciones'], $this->enEmpresa(fn () => AsistenciaJustificacion::where('colaborador_id', $correcto->id)
+            ->orderBy('fecha')->get()->mapWithKeys(fn ($j) => [$j->fecha->format('Y-m-d') => $j->motivo])->all()));
     }
 
     public function test_otra_empresa_no_ve_ni_justifica(): void
