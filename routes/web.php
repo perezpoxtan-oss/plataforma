@@ -7,6 +7,7 @@ use App\Http\Controllers\Administracion\CatalogoComercialController;
 use App\Http\Controllers\Administracion\ConfiguracionController;
 use App\Http\Controllers\Administracion\EmpresaActivaController;
 use App\Http\Controllers\Administracion\EmpresaController;
+use App\Http\Controllers\Administracion\EquiposAccesoController;
 use App\Http\Controllers\Administracion\IdentidadController;
 use App\Http\Controllers\Administracion\PermisoController;
 use App\Http\Controllers\Administracion\PrivacidadController;
@@ -803,6 +804,16 @@ Route::middleware('auth')->group(function () {
     Route::put('/configuracion/caseta', [AjustesCasetaController::class, 'update'])->name('configuracion.caseta');
     // C-44 (Etapa 8): ajustes de credenciales (vigencia, tecnología y reverso)
     Route::put('/configuracion/credenciales', [AjustesCredencialesController::class, 'update'])->name('configuracion.credenciales');
+    // Decisión 10: Configuración → Equipos de acceso (ZKTeco, Hikvision). Las llamadas de los equipos están en routes/equipos.php
+    Route::controller(EquiposAccesoController::class)->prefix('configuracion/equipos-acceso')->name('equipos-acceso.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::put('/ajustes', 'ajustes')->name('ajustes');
+        Route::put('/{equipo}', 'update')->whereNumber('equipo')->name('update');
+        Route::patch('/{equipo}/estado', 'estado')->whereNumber('equipo')->name('estado');
+        Route::post('/{equipo}/token', 'token')->whereNumber('equipo')->name('token');
+        Route::post('/{equipo}/sincronizar', 'sincronizar')->whereNumber('equipo')->name('sincronizar');
+    });
     // C-22: «Reloj y suplente» (horas generales, avisos y lo de cada módulo en Avanzado)
     Route::put('/configuracion/relojes', [RelojesController::class, 'update'])->name('configuracion.relojes');
     Route::post('/prestamo-llaves/recibir', [PrestamoLlaveController::class, 'recibirEscaneada'])->middleware('throttle:prestamo_llaves.recibir-escaneada')->name('prestamo_llaves.recibir-escaneada');

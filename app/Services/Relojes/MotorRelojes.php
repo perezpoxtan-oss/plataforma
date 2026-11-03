@@ -93,6 +93,8 @@ class MotorRelojes
         Relojes\OrdenesDeServicio::class,
         Relojes\RecargasDeEquiposPc::class,
         Relojes\RevisionesDeEquiposPc::class,
+        // Decisión 10: equipos de acceso (ZKTeco, Hikvision) que dejaron de llamar
+        Relojes\EquiposSinConexion::class,
     ];
 
     public const TIPO_RECORDATORIO = 'reloj_recordatorio';
