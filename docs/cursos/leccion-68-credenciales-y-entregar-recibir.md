@@ -36,7 +36,7 @@ Comprueba: la llave está en caseta, el aviso te dice qué hacer si ya no sirve 
 3. **Emitir credencial** → **Imprimir credencial** (frente y reverso en CR80) → **Dar salida**.
 4. Con la cámara de un celular sin sesión escanea el QR impreso.
 
-Comprueba: la credencial está en ASIGNADO y el celular muestra **Vigente** con la foto y el nombre, sin ningún otro dato.
+Comprueba: la credencial está en ASIGNADO y el celular muestra **Vigente** con el nombre, la empresa y la vigencia, **sin foto** y sin ningún otro dato.
 
 ## Práctica 4 · Reponer una credencial perdida
 

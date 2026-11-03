@@ -54,7 +54,7 @@ En la caseta, si un colaborador se identifica con una credencial que ya no vale,
 
 **¿Qué pasa con la credencial anterior cuando la repongo?** Deja de valer en ese momento: al escanearla dice **No vigente** y la caseta ya no lo encuentra con ella.
 
-**¿Qué ve alguien que escanea la credencial con su celular?** Solo **Vigente** con la foto, el nombre, la empresa y hasta cuándo vale, o **No vigente**. Nunca CURP, RFC, NSS, teléfono ni domicilio.
+**¿Qué ve alguien que escanea la credencial con su celular?** Solo **Vigente** con el nombre, la empresa y hasta cuándo vale, o **No vigente**. **No muestra la foto**: para confirmar que es la persona, compárala con la foto impresa en la credencial. Nunca CURP, RFC, NSS, teléfono ni domicilio.
 
 **¿Puedo usar mi impresora de credenciales?** Sí, cualquiera que imprima tamaño CR80: la hoja ya viene a la medida exacta.
 

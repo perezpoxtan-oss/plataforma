@@ -862,8 +862,9 @@ Route::controller(PublicoPrivacidadController::class)->group(function () {
 });
 // Fin Público: privacidad
 
-// Público: verificación de una credencial (C-44, propuesta de credencialización): el QR impreso abre «Vigente» con foto y
-// nombre o «No vigente», sin datos personales; con sesión iniciada lleva a la acción de la caseta. Límite por IP.
+// Público: verificación de una credencial (C-44, propuesta de credencialización): el QR impreso abre «Vigente» con el
+// nombre (sin foto, decisión del dueño 3 nov) o «No vigente», sin datos personales; con sesión iniciada lleva a la acción
+// de la caseta. Límite por IP.
 Route::get('/credencial/{codigo}', [VerificarCredencialController::class, 'show'])
     ->where('codigo', '[A-Za-z0-9]{8,32}')->middleware('throttle:credenciales.verificar')->name('credenciales.verificar');
 
