@@ -94,6 +94,7 @@ Antes era la pantalla `/lost-found/dias-resguardo` dentro de Lost & Found; ahora
 - **Cuándo los llama `desplegar.sh`** (no hace falta otro cron):
   - antes de `migrate`, cuando se instala una versión nueva (`--motivo=antes-de-actualizar`);
   - en cada corrida, con `--si-toca`: hace el respaldo diario si ya pasaron las 3:00 (hora de Cancún) y aún no hay uno de hoy.
+  - solo en QA, antes de la limpieza única de la base (`plataforma:limpiar-qa`, `--motivo=antes-de-limpiar-qa`; en la pantalla «Antes de limpiar la base de pruebas»). Ver `docs/tecnico/despliegue.md`.
 - **Conservación:** 14 días, y siempre al menos los 3 más recientes. Los archivos quedan con permisos `600`, fuera de la carpeta pública y compartidos entre versiones.
 - **Qué no lleva:** las tablas `sessions`, `cache`, `cache_locks` y `password_reset_tokens` se respaldan solo con su estructura (son datos temporales que no deben viajar en un archivo descargable). La carpeta queda en `700` y el archivo es `600` desde que se empieza a escribir.
 - **Descarga:** solo el Super Administrador, y cada descarga queda en la bitácora (`configuracion.respaldo_descargado`). El nombre del archivo se valida contra el patrón del servicio para evitar rutas arbitrarias.

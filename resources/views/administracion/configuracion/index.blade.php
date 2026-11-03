@@ -449,7 +449,7 @@
                         @foreach ($respaldos as $r)
                             <div class="fila-respaldo">
                                 <span><i class="bi bi-file-earmark-zip me-1" aria-hidden="true"></i><strong>@fecha($r['fecha'])</strong></span>
-                                <span class="chip-catalogo">{{ ['diario' => 'Diario', 'antes-de-actualizar' => 'Antes de actualizar', 'manual' => 'Manual'][$r['motivo']] ?? $r['motivo'] }}</span>
+                                <span class="chip-catalogo">{{ ['diario' => 'Diario', 'antes-de-actualizar' => 'Antes de actualizar', 'antes-de-limpiar-qa' => 'Antes de limpiar la base de pruebas', 'manual' => 'Manual'][$r['motivo']] ?? $r['motivo'] }}</span>
                                 <span class="small text-muted">{{ number_format($r['bytes'] / 1024, 1) }} KB</span>
                                 <a href="{{ route('configuracion.respaldos.descargar', $r['archivo']) }}" class="btn-icono editar" title="Descargar" aria-label="Descargar respaldo del @fecha($r['fecha'])"><i class="bi bi-download" aria-hidden="true"></i></a>
                             </div>

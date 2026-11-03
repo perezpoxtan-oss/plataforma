@@ -214,6 +214,8 @@ class LectorAuditoria
         'solicitud_cuenta_rechazada' => 'Petición de ayuda con la cuenta rechazada', 'superadmin_creado' => 'Alta de Super Administrador',
         'superadmin_dado_de_baja' => 'Baja de Super Administrador', 'superadmin_reactivado' => 'Super Administrador reactivado',
         'superadmin_contrasena' => 'Contraseña de Super Administrador restablecida',
+        // Limpieza de la base de pruebas (plataforma:limpiar-qa)
+        'base_limpiada' => 'Base de QA limpiada',
     ];
 
     /**

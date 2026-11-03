@@ -49,7 +49,7 @@ Se suben a la carpeta principal (`/home/vdcpcomm`) con el Administrador de archi
 | `github_token.txt` | Token *fine-grained* de GitHub, solo lectura de *Contents* del repositorio `plataforma` |
 | `env_qa.txt` | Configuración de QA (plantilla en `despliegue/env_qa.txt`); la `APP_KEY` se genera sola |
 | `env_prod.txt` | Configuración de Producción (plantilla en `despliegue/env_prod.txt`): debe decir `APP_ENV=production`, `APP_DEBUG=false` y `APP_URL` con `https://`, o el script no instala |
-| `qa_inicial.txt` | Correo, nombre, usuario y contraseña para crear el Super Administrador y la empresa demo |
+| `qa_inicial.txt` | Correo, nombre, usuario y contraseña para crear el Super Administrador (y la empresa demo, solo con el interruptor `demo_encendido`; ver «QA: datos demo con interruptor») |
 
 Para cambiar la configuración después, basta con subir otro `env_qa.txt`: se conserva la `APP_KEY` y queda un respaldo del `.env` anterior.
 
@@ -66,14 +66,15 @@ Para cambiar la configuración después, basta con subir otro `env_qa.txt`: se c
 | Franja amarilla "Ambiente de pruebas" | Sí | No |
 | `APP_ENV` | `qa` (modo estricto de Eloquent activo: los errores de programación se notan) | `production` |
 | Buscadores | `noindex` | Indexable |
-| Datos demo (`plataforma:demo`) | Sí | Bloqueado |
+| Datos demo (`plataforma:demo`) | Solo con el interruptor `demo_encendido` (o a mano) | Bloqueado |
+| Limpieza de la base (`plataforma:limpiar-qa`) | Una vez por solicitud | Bloqueado |
 | Correo | Solo a bitácora | Real |
 
 `SESSION_LIFETIME=120` es intencional: el cierre por inactividad lo controla la plataforma (`PLATAFORMA_INACTIVIDAD_MINUTOS=20`), que además avisa "Sesión finalizada por seguridad".
 
 ## Usuarios demo (QA)
 
-`php artisan plataforma:demo` crea **Hotel Demo** (sedes Centro y Playa) con un usuario por rol. Todos usan la contraseña de `qa_inicial.txt`.
+`php artisan plataforma:demo` crea **Hotel Demo** (sedes Centro y Playa) con un usuario por rol. Todos usan la contraseña de `qa_inicial.txt`. Desde la limpieza de la base de QA (2026-11-02) el despliegue ya no los crea solo: ver «QA: datos demo con interruptor».
 
 | Usuario | Rol | Sede |
 |---|---|---|
@@ -117,14 +118,56 @@ Antes de autorizar la primera versión de Producción (y al cambiar de hospedaje
 5. **Aviso de privacidad** de cada empresa completado por su abogado y publicado en Configuración → Privacidad (los borradores de los textos legales están en [privacidad.md](privacidad.md)).
 6. Prueba en un **teléfono real** (app y navegador).
 
-## QA: datos demo al día
+## QA: limpieza única de la base
 
-En QA, cada versión nueva corre `plataforma:demo` una vez, con la contraseña de `qa_inicial` (si ya no está, las cuentas nuevas reciben la contraseña de admin.demo; cada parte del demo se completa por separado y el resultado, con los usuarios nuevos, queda en `despliegue_qa_estado.txt`); la marca de la versión ya completada queda en `$APP/.demo_completado`. El comando:
+A pedido del dueño («limpia toda la base de datos, solo conservamos el usuario Super Administrador y los datos críticos para su operación; haremos las pruebas desde cero»), `php artisan plataforma:limpiar-qa` deja la base de QA como recién instalada.
+
+**Cuándo corre.** `desplegar.sh qa` la corre **una sola vez**, en automático, unos 5 a 10 minutos después de que se instala en QA la versión que la trae (el script se actualiza a sí mismo al final de la instalación y el paso corre en la siguiente revisión del cron). El identificador de la solicitud vive en el código (`LimpiarQa::SOLICITUD = '2026-11-02'`; el script lo pregunta con `--solicitud`) y la marca de la solicitud ya hecha queda en `$APP/.limpieza_qa_completada`, con el mismo patrón que `.demo_completado`. Corre **antes** del paso de datos demo. El resultado queda en `despliegue_qa_estado.txt` (renglón «Limpieza QA:», que se conserva en las siguientes revisiones) y el detalle, tabla por tabla, en `despliegue.log`. Si falla, se reintenta en las siguientes revisiones, como máximo 3 veces por solicitud (`$APP/.limpieza_qa_intentos`). **Nunca corre en Producción:** el script solo la llama en `qa` y el comando se niega con `APP_ENV=production` («Bloqueado en Producción») o con cualquier ambiente fuera de `local`, `testing` y `qa` (la misma lista que `plataforma:demo`). Para pedir otra limpieza más adelante basta con cambiar `LimpiarQa::SOLICITUD` en una versión nueva.
+
+**Cómo funciona.**
+
+1. Pide `--confirmar` (sin él no hace nada). `--simular` solo lista qué borraría, cuántos renglones por tabla y cuántos archivos por carpeta; no cambia nada ni respalda.
+2. **Respaldo primero:** `plataforma:respaldar --motivo=antes-de-limpiar-qa`. Si el respaldo falla, no borra nada.
+3. **Lista blanca:** toma todas las tablas de *esta* base (las mismas que el respaldo, `SHOW FULL TABLES`; nunca las de otra base del mismo servidor) y vacía todas salvo las que se conservan. Una tabla nueva que nadie anotó también se vacía. Las tablas que mezclan renglones de plataforma (`empresa_id` NULL) con renglones de empresa conservan solo los de plataforma. Borra con las llaves foráneas desactivadas y en una sola transacción (`DELETE`, no `TRUNCATE`, para que MariaDB no confirme a medias); funciona en MariaDB y en SQLite.
+4. Borra los archivos subidos de empresas en `storage/app/private` y `storage/app/public` (fotos, documentos, firmas, credenciales, importaciones, logotipos). **Nunca** toca `private/respaldos`, `private/traslados` ni `public/identidad`.
+5. Vacía la caché, vuelve a correr los seeders repetibles (`plataforma:instalar`), deja la línea de auditoría de plataforma **«Base de QA limpiada»** (`plataforma.base_limpiada`, con los renglones por tabla, los archivos, el respaldo y los Super Administradores conservados) y escribe el resumen.
+
+**Se conserva** (`App\Services\BaseDatos\LimpiezaQa`):
+
+| Qué | Tablas |
+|---|---|
+| Control de versiones de la base | `migrations` |
+| Catálogo base: áreas, módulos, acciones (permisos), menús y giros | `areas`, `modulos`, `acciones`, `modulo_acciones`, `menus`, `rubros` |
+| Catálogo comercial: productos, planes, paquetes, precios y promociones | `productos`, `planes`, `paquetes`, `plan_producto`, `paquete_producto`, `paquete_plan`, `modulo_producto`, `promociones`, `promocion_plan` |
+| Configuración global: Identidad de la plataforma, correo de la plataforma, textos legales, traslado, catálogo comercial | `configuracion_plataforma` (y la carpeta `public/identidad`) |
+| Solo los renglones de plataforma (`empresa_id` NULL) | `roles` (plantillas), `rol_permisos` (de las plantillas), `tipos_espacio` (globales), `avisos_privacidad` (aviso de la plataforma), `auditoria` (bitácora de la plataforma) |
+| Super Administradores, con contraseña, dos pasos y códigos de respaldo | `users` con `es_superadmin` (quedan sin empresa ni colaborador ligado) |
+| Respaldos y paquetes de traslado | carpetas `private/respaldos` y `private/traslados` |
+
+**Se borra** todo lo demás: empresas y sedes; los demás usuarios y sus roles; todo dato operativo (accesos, personas, colaboradores, activos, novedades, accidentes, reservas, transporte, RR. HH., notificaciones, delegaciones, auditoría de empresas); sesiones, colas, caché de base y fichas para restablecer contraseña; solicitudes y pruebas de clientes, suscripciones y pagos de clientes; y los archivos subidos de empresas.
+
+**Después.** El Super Administrador entra con su misma contraseña (y sus dos pasos) y da de alta empresas desde cero; cada empresa nueva recibe sus roles de las plantillas, sus módulos y «Configura tu empresa».
+
+### Restaurar la base si hiciera falta
+
+1. En **Configuración → Respaldos** descarga el respaldo con motivo **«Antes de limpiar la base de pruebas»** (archivo `respaldo_qa_<fecha>_antes-de-limpiar-qa.sql.gz`). Sin acceso a la plataforma, cópialo con el **Administrador de archivos de cPanel** desde `apps/plataforma-qa/shared/storage/app/private/respaldos`. Los respaldos se conservan 14 días: descárgalo pronto si crees que lo vas a necesitar.
+2. En **phpMyAdmin**, elige la base de QA → **Importar** → el `.sql.gz` → **Continuar**. El archivo borra y vuelve a crear cada tabla con sus datos.
+3. Los archivos subidos (fotos, firmas, documentos) **no** vienen en el respaldo de la base: si también hacen falta, restaura el paquete de traslado más reciente (ver `docs/tecnico/traslado.md`) o vuelve a cargar los datos demo con el interruptor.
+4. Para que la limpieza no vuelva a correr, no borres `apps/plataforma-qa/.limpieza_qa_completada`.
+
+## QA: datos demo con interruptor
+
+Desde la limpieza de la base de QA (2026-11-02), **QA ya no siembra los datos demo en cada versión**, para que la limpieza no se deshaga sola en el siguiente despliegue. `plataforma:demo` sigue existiendo y se enciende con un interruptor que el dueño maneja sin terminal:
+
+- **Encender:** en el **Administrador de archivos de cPanel**, entra a `apps/plataforma-qa/shared` y crea un archivo vacío llamado **`demo_encendido`** (botón «+ Archivo»). En la siguiente revisión del cron (unos 5 minutos) se cargan los datos demo y el resultado, con los usuarios nuevos, queda en `despliegue_qa_estado.txt`.
+- **Apagar:** borra `apps/plataforma-qa/shared/demo_encendido`. Lo ya cargado se queda; para quitarlo hace falta otra limpieza.
+
+Con el interruptor encendido, cada versión nueva corre `plataforma:demo` una vez, con la contraseña de `qa_inicial` (si ya no está, las cuentas nuevas reciben la contraseña de admin.demo; cada parte del demo se completa por separado); la marca de la versión ya completada queda en `$APP/.demo_completado`. El comando:
 
 - crea solo las cuentas demo que faltan (por ejemplo `rh.demo`) y no cambia el correo ni la contraseña de las que ya existen;
 - llena los datos de ejemplo de los módulos nuevos (cada uno solo si su tabla está vacía).
 
-Como `desplegar.sh` se actualiza a sí mismo al final de una instalación, este paso empieza a correr a partir de la siguiente revisión del cron, unos 5 minutos después.
+**Instalación nueva de QA.** Con `qa_inicial.txt` se crea siempre el Super Administrador; la empresa demo solo si `demo_encendido` ya existe (el estado dice «Super Administrador creado (datos demo apagados)» o «usuarios de prueba creados (Super Administrador y empresa demo)»).
 
 ## Candados de seguridad del despliegue
 

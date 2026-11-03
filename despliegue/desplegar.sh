@@ -17,7 +17,8 @@
 # un lugar privado y los borra):
 #   github_token.txt  token de GitHub de SOLO LECTURA
 #   env_<amb>.txt     configuracion (.env) del ambiente, con la contrasena de la base
-#   <amb>_inicial.txt (solo QA) correo, nombre y contrasena para crear los usuarios de prueba
+#   <amb>_inicial.txt (solo QA) correo, nombre y contrasena para crear el Super Administrador
+#                     (y la empresa demo, solo si existe $APP/shared/demo_encendido)
 # =============================================================================
 set -u
 # Archivos legibles por el servidor web (Apache necesita leer .htaccess, css, js...).
@@ -59,6 +60,7 @@ estado() {
     echo "Version actual:  $(cat "$APP/.release_actual" 2>/dev/null || echo 'ninguna')"
     echo "Resultado:       $1"
     echo "PHP del cron:    ${PHP_CLI_VERSION:-sin detectar}"
+    [ -f "$APP/.limpieza_qa_resumen" ] && echo "Limpieza QA:     $(head -1 "$APP/.limpieza_qa_resumen")"
     echo
     echo "Detalle en: $LOG"
   } > "$ESTADO"
@@ -401,11 +403,46 @@ else
   fi
 fi
 
-# --- QA: completar los datos demo con cada version nueva ------------------------
-# Los modulos nuevos traen sus datos de ejemplo (y a veces usuarios demo nuevos,
-# como rh.demo). Se agregan una vez por version; lo que ya existe no se toca.
-# Si no hay contraseña guardada, las cuentas nuevas reciben la de admin.demo.
-if [ "$AMB" = "qa" ] && [ -d "$APP/actual" ] \
+# --- QA: limpieza unica de la base (solo QA, una vez por solicitud del dueño) ---
+# El identificador de la solicitud vive en el codigo (LimpiarQa::SOLICITUD) y se
+# pregunta con --solicitud; la marca $APP/.limpieza_qa_completada guarda el ultimo
+# ya hecho (mismo patron que .demo_completado). El comando respalda primero
+# (motivo antes-de-limpiar-qa) y, si el respaldo falla, no borra nada. Si falla
+# se reintenta en las siguientes revisiones, maximo 3 veces por solicitud.
+# Nunca corre en Produccion (el script lo limita a qa y el comando se niega).
+if [ "$AMB" = "qa" ] && [ -d "$APP/actual" ]; then
+  ID_LIMPIEZA="$(cd "$APP/actual" && "${P[@]}" artisan plataforma:limpiar-qa --solicitud 2>/dev/null | tail -1 | tr -cd '0-9A-Za-z._-')"
+  INTENTOS_LIMPIEZA="$(awk -v i="$ID_LIMPIEZA" '$1 == i { print $2 }' "$APP/.limpieza_qa_intentos" 2>/dev/null | tail -1)"
+  if [ -n "$ID_LIMPIEZA" ] && [ "$ID_LIMPIEZA" != "$(cat "$APP/.limpieza_qa_completada" 2>/dev/null)" ] \
+     && [ "${INTENTOS_LIMPIEZA:-0}" -lt 3 ]; then
+    log "Limpieza de la base de QA (solicitud $ID_LIMPIEZA), intento $(( ${INTENTOS_LIMPIEZA:-0} + 1 ))"
+    SALIDA_LIMPIEZA="$(cd "$APP/actual" && "${P[@]}" artisan plataforma:limpiar-qa --confirmar 2>&1)"; RC_LIMPIEZA=$?
+    printf '%s\n' "$SALIDA_LIMPIEZA" >> "$LOG"
+    if [ $RC_LIMPIEZA -eq 0 ]; then
+      echo "$ID_LIMPIEZA" > "$APP/.limpieza_qa_completada"
+      rm -f "$APP/.limpieza_qa_intentos"
+      # Queda a la vista en despliegue_qa_estado.txt en cada revision (no solo en esta)
+      echo "$(ahora) · solicitud $ID_LIMPIEZA · $(printf '%s\n' "$SALIDA_LIMPIEZA" | grep 'Base de QA limpiada' | tail -1 | cut -c1-300)" > "$APP/.limpieza_qa_resumen"
+      RESUMEN_LIMPIEZA="$(printf '%s\n' "$SALIDA_LIMPIEZA" | grep 'Base de QA limpiada' | tail -1 | cut -c1-300)"
+      log "Base de QA limpiada (solicitud $ID_LIMPIEZA)"
+      estado "OK: $(cat "$APP/.release_actual") · ${RESUMEN_LIMPIEZA:-Base de QA limpiada} (solicitud $ID_LIMPIEZA)"
+    else
+      echo "$ID_LIMPIEZA $(( ${INTENTOS_LIMPIEZA:-0} + 1 ))" > "$APP/.limpieza_qa_intentos"
+      log "ERROR: no se pudo limpiar la base de QA (solicitud $ID_LIMPIEZA)"
+      estado "ERROR: no se pudo limpiar la base de QA (intento $(( ${INTENTOS_LIMPIEZA:-0} + 1 )) de 3; no se borro nada si fallo el respaldo): $(printf '%s\n' "$SALIDA_LIMPIEZA" | grep -v '^\s*$' | tail -1 | cut -c1-200)"
+    fi
+  fi
+fi
+
+# --- QA: datos demo, solo con el interruptor encendido --------------------------
+# Desde la limpieza de la base de QA (2026-11-02), QA ya NO siembra los datos demo
+# en cada version. Se encienden creando el archivo $APP/shared/demo_encendido
+# (vacio, desde el Administrador de archivos) y se apagan borrandolo.
+# Con el interruptor encendido se completan una vez por version, como antes:
+# lo que ya existe no se toca y, si no hay contraseña guardada, las cuentas
+# nuevas reciben la de admin.demo.
+DEMO_ENCENDIDO="$APP/shared/demo_encendido"
+if [ "$AMB" = "qa" ] && [ -d "$APP/actual" ] && [ -f "$DEMO_ENCENDIDO" ] \
    && [ "$(cat "$APP/.release_actual" 2>/dev/null)" != "$(cat "$APP/.demo_completado" 2>/dev/null)" ]; then
   PLATAFORMA_CONTRASENA="$(grep -E '^CONTRASENA=' "$PRIVADO/qa_inicial" 2>/dev/null | cut -d= -f2-)"
   export PLATAFORMA_CONTRASENA
@@ -523,9 +560,15 @@ elif [ "$AMB" = "qa" ] && [ -f "$HOME/qa_inicial.txt" ]; then
   cd "$APP/actual" || fallo "No hay version instalada para crear usuarios"
   if [ -n "$CORREO" ] && [ -n "$PLATAFORMA_CONTRASENA" ] \
      && "${P[@]}" artisan plataforma:superadmin --nombre="${NOMBRE_SA:-Super Administrador}" --usuario="${USUARIO_SA}" -- "$CORREO" >> "$LOG" 2>&1 \
-     && "${P[@]}" artisan plataforma:demo >> "$LOG" 2>&1; then
-    log "Usuarios de prueba creados (Super Administrador y empresa demo)"
-    estado "OK: $(cat "$APP/.release_actual") · usuarios de prueba creados"
+     && { [ ! -f "$DEMO_ENCENDIDO" ] || "${P[@]}" artisan plataforma:demo >> "$LOG" 2>&1; }; then
+    # La empresa demo solo con el interruptor encendido ($APP/shared/demo_encendido)
+    if [ -f "$DEMO_ENCENDIDO" ]; then
+      log "Usuarios de prueba creados (Super Administrador y empresa demo)"
+      estado "OK: $(cat "$APP/.release_actual") · usuarios de prueba creados (Super Administrador y empresa demo)"
+    else
+      log "Super Administrador creado (datos demo apagados)"
+      estado "OK: $(cat "$APP/.release_actual") · Super Administrador creado (datos demo apagados)"
+    fi
   else
     log "ERROR: no se pudieron crear los usuarios de prueba (revisa CORREO y CONTRASENA en qa_inicial.txt)"
     estado "ERROR: no se pudieron crear los usuarios de prueba"
