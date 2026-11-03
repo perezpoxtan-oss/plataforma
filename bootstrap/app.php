@@ -18,6 +18,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 $app = Application::configure(basePath: dirname(__DIR__))
@@ -25,6 +27,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        // Decisión 10: equipos de acceso (ZKTeco, Hikvision) sin sesión ni CSRF; solo sustituir parámetros y su límite
+        then: function (): void {
+            Route::middleware(SubstituteBindings::class)
+                ->group(base_path('routes/equipos.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Cierre por inactividad, empresa activa y cierre de usuarios desactivados.

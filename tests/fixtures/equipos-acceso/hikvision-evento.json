@@ -1,0 +1,30 @@
+{
+    "ipAddress": "192.168.1.64",
+    "portNo": 80,
+    "protocol": "HTTP",
+    "macAddress": "24:0f:9b:00:00:01",
+    "channelID": 1,
+    "dateTime": "2026-11-03T08:05:30-06:00",
+    "activePostCount": 1,
+    "eventType": "AccessControllerEvent",
+    "eventState": "active",
+    "eventDescription": "Access Controller Event",
+    "AccessControllerEvent": {
+        "deviceName": "Acceso personal",
+        "majorEventType": 5,
+        "subEventType": 1,
+        "cardNo": "12345678",
+        "cardType": 1,
+        "cardReaderKind": 1,
+        "cardReaderNo": 1,
+        "doorNo": 1,
+        "verifyNo": 120,
+        "employeeNoString": "1001",
+        "serialNo": 4521,
+        "userType": "normal",
+        "currentVerifyMode": "cardOrFp",
+        "attendanceStatus": "checkIn",
+        "statusValue": 0,
+        "name": "nombre que el equipo manda y no se guarda"
+    }
+}

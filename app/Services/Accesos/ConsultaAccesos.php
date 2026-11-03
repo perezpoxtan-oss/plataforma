@@ -117,6 +117,7 @@ class ConsultaAccesos
             'articulos:id,acceso_id,articulo,cantidad,serie', // C-19: lo que trae el proveedor
             'espacio:id,uso', // revisión Etapa 5 (A-4): el área común no se nombra «Vivienda» en la tarjeta
             'registradoPor:id,name', 'autorizadoPor:id,name', 'salidaPor:id,name',
+            'equipoEntrada:id,nombre', 'equipoSalida:id,nombre', // decisión 10: «Equipo: <nombre>» cuando lo registró un equipo de acceso
             ...($abiertos ? [
                 'acompanantes' => fn ($q) => $q->whereNull('salida_at'),
                 'salidaTemporalAbierta.registradoPor:id,name',
