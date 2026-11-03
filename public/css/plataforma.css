@@ -4915,3 +4915,4 @@ html.modo-noche .aviso-padron-acceso { background: rgba(245,158,11,0.12); color:
 .asis-neutro { background: #f1f5f9; color: #475569; }
 .tabla-asistencia td { vertical-align: middle; }
 .avanzado-asistencia summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.acciones-asistencia { display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; flex-wrap: nowrap; }

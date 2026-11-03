@@ -11,7 +11,6 @@
                 <input type="hidden" name="_volver" value="{{ request()->getRequestUri() }}">
                 <label class="campo-etiqueta" for="justificar_persona">Colaborador y día</label>
                 <input type="text" id="justificar_persona" name="persona" class="campo" readonly tabindex="-1">
-                <input type="date" name="fecha" class="campo" readonly tabindex="-1" aria-label="Día que se justifica" max="{{ $hoy }}">
 
                 <label class="campo-etiqueta" for="justificar_tipo">Qué se justifica</label>
                 <select id="justificar_tipo" name="tipo" class="campo" required>

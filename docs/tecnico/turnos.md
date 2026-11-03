@@ -67,6 +67,10 @@ En SEGCAT, Rutas usaba los turnos de la empresa sin mirar `turnos_hoteles`. Ruta
 
 Cada colaborador puede tener un turno (`colaboradores.turno_id`, opcional, `nullOnDelete`). En su alta y edición se ofrecen solo los turnos activos que `aplicanEn` su sede, y la lista de Colaboradores filtra por turno (ver [colaboradores.md](colaboradores.md#turno-del-colaborador-mapa-de-procesos)). Dar de baja un turno no se lo quita a quien ya lo tiene; «Eliminar definitivamente» lo impide mientras algún colaborador lo tenga.
 
+## Asistencia: días que se trabaja (ADR-0024)
+
+Columna `turnos.dias_laborables` (días ISO separados por coma; vacío = todos los días, como siempre), migración `2026_11_21_000100_modulo_asistencia`. Solo con el módulo Asistencia encendido el alta y la edición muestran «Avanzado · Días que se trabaja (para Asistencia)» y la ficha dice «Lun a Vie» / «Todos los días». El formulario manda `_con_dias = 1`; sin ese campo (módulo apagado o formulario anterior) el turno conserva sus días. Al menos un día; los siete se guardan como vacío. `Turno::diasLaborables()`, `trabajaEl()`, `textoDias()`. Ver [asistencia.md](asistencia.md).
+
 ## Pruebas
 
 `tests/Feature/Organizacion/TurnosTest.php`

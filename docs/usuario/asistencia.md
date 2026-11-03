@@ -32,7 +32,13 @@ La plataforma **no calcula la nómina**: entrega el reporte en Excel para que tu
    - **Descanso**: ese día no trabaja según su turno.
    - **En sitio** en la salida: entró y todavía no sale.
 
+![Asistencia del día](img/asistencia/1-asistencia-del-dia.png)
+
 **Qué debes ver:** la lista de tu gente con su estado de hoy, primero quien falta.
+
+Si eres **jefe de departamento**, solo ves a la gente de tus departamentos y no tienes el botón **Justificar**:
+
+![Asistencia del día de un jefe de departamento](img/asistencia/7-jefe-departamento.png)
 
 ## Cómo justificar una falta o un retardo
 
@@ -43,6 +49,8 @@ La plataforma **no calcula la nómina**: entrega el reporte en Excel para que tu
 5. Si quieres, escribe una **Nota** (con «Otro» es obligatoria).
 6. Toca **Guardar**.
 
+![Justificar una falta](img/asistencia/2-justificar.png)
+
 **Qué debes ver:** «Justificación guardada para Juan Pérez. Sigue con el reporte del periodo o justifica a otra persona.» El renglón ahora dice, por ejemplo, «Falta justificada: Vacaciones».
 
 Si te equivocaste de motivo, vuelve a abrir **Justificar** en ese día y guarda el correcto: se cambia el que había. Queda registrado quién lo justificó y cuándo.
@@ -52,8 +60,12 @@ Si te equivocaste de motivo, vuelve a abrir **Justificar** en ese día y guarda 
 1. En **Asistencia** toca **Reporte por periodo**.
 2. De fábrica se muestra la **quincena en curso**. Cambia **Desde** y **Hasta** si necesitas otro periodo (hasta 62 días).
 3. Cada renglón muestra las **Asistencias** (de los días que debía trabajar), las **Faltas**, los **Retardos**, las **Salidas anticipadas** y las **Horas** trabajadas. Lo justificado aparece aparte, por ejemplo «2 (+1 just.)».
+![Reporte por periodo](img/asistencia/3-reporte-por-periodo.png)
+
 4. Toca el nombre de una persona para ver su **detalle día por día**. Desde ahí también puedes **Justificar**. Para volver a la lista toca **Ver a todos**.
 5. Para la nómina toca **Exportar a Excel**. El archivo trae un renglón por persona y día con la hora programada, la entrada, la salida, los minutos de retardo, la salida anticipada, las horas trabajadas, el estado y la justificación. Si tienes a una persona abierta, el archivo trae solo a esa persona.
+
+![Detalle día por día de un colaborador](img/asistencia/4-detalle-colaborador.png)
 
 **Qué debes ver:** se descarga el archivo «asistencia-…csv», que se abre en Excel con los acentos correctos.
 
@@ -75,6 +87,8 @@ Solo quien configura Asistencia en toda la empresa (por ejemplo Recursos Humanos
 2. Cambia la **Tolerancia de retardo (minutos)**.
 3. Marca **Avisar al jefe del departamento cuando alguien no llegue** si quieres que el jefe reciba el aviso en la campana y en **Mis pendientes** (de fábrica está apagado).
 4. Toca **Guardar**.
+
+![Avanzado · Ajustes de asistencia](img/asistencia/5-avanzado.png)
 
 **Qué debes ver:** «Ajustes de asistencia guardados. Revisa la asistencia de hoy con la nueva tolerancia.»
 

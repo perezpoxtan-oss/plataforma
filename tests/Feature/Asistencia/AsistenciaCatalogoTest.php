@@ -130,6 +130,22 @@ class AsistenciaCatalogoTest extends TestCase
         $this->assertEqualsCanonicalizing(['esencial', 'profesional', 'corporativo'], Paquete::where('slug', 'asistencia')->firstOrFail()->planes()->pluck('slug')->all());
     }
 
+    public function test_las_cuatro_piezas_del_modulo_existen(): void
+    {
+        // Código, técnico, usuario y curso (docs/README.md), más su ADR y el CHANGELOG
+        foreach (['docs/tecnico/asistencia.md', 'docs/usuario/asistencia.md', 'docs/cursos/leccion-69-asistencia.md', 'docs/decisiones/ADR-0024-asistencia.md'] as $archivo) {
+            $this->assertFileExists(base_path($archivo));
+        }
+        $this->assertStringContainsString('MarcajesColaborador', (string) file_get_contents(base_path('docs/tecnico/asistencia.md')), 'El punto de extensión está documentado');
+        $this->assertStringContainsString('Asistencia, módulo opcional', (string) file_get_contents(base_path('CHANGELOG.md')));
+        $manual = (string) file_get_contents(base_path('docs/usuario/asistencia.md'));
+        $this->assertStringStartsWith("---\ntitulo: Asistencia\nmodulos: [asistencia]", $manual);
+        foreach (['img/asistencia/1-asistencia-del-dia.png', 'img/asistencia/2-justificar.png', 'img/asistencia/3-reporte-por-periodo.png'] as $img) {
+            $this->assertStringContainsString($img, $manual);
+            $this->assertFileExists(base_path('docs/usuario/'.$img));
+        }
+    }
+
     /** @return array<string, mixed> */
     private function foto(): array
     {

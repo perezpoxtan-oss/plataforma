@@ -64,8 +64,8 @@
                                     <td>{{ $dia['entrada']?->format('H:i') ?? '—' }}</td>
                                     <td>{{ $dia['sin_salida'] ? 'En sitio' : ($dia['salida'] ? ($dia['salida']->format('Y-m-d') !== $dia['fecha'] ? $dia['salida']->format('d/m H:i') : $dia['salida']->format('H:i')) : '—') }}</td>
                                     <td>@include('rh.asistencia._estado', ['dia' => $dia])</td>
-                                    <td class="text-end">@include('rh.asistencia._boton-justificar', ['colaborador' => $c, 'dia' => $dia])
-                                        <a href="{{ route('asistencia.periodo', array_filter(['colaborador' => $c->id, 'sede' => $sede, 'departamento' => $departamento])) }}" class="btn-icono" title="Reporte por periodo" aria-label="Reporte por periodo de {{ $c->nombreCompleto() }}"><i class="bi bi-calendar-range" aria-hidden="true"></i></a></td>
+                                    <td><div class="acciones-asistencia">@include('rh.asistencia._boton-justificar', ['colaborador' => $c, 'dia' => $dia])
+                                        <a href="{{ route('asistencia.periodo', array_filter(['colaborador' => $c->id, 'sede' => $sede, 'departamento' => $departamento])) }}" class="btn-icono" title="Reporte por periodo" aria-label="Reporte por periodo de {{ $c->nombreCompleto() }}"><i class="bi bi-calendar-range" aria-hidden="true"></i></a></div></td>
                                 </tr>
                             @endforeach
                         </tbody>

@@ -58,7 +58,7 @@
                                 <td>{{ $dia['sin_salida'] ? 'Sin salida' : ($dia['salida'] ? ($dia['salida']->format('Y-m-d') !== $dia['fecha'] ? $dia['salida']->format('d/m H:i') : $dia['salida']->format('H:i')) : '—') }}</td>
                                 <td>{{ $dia['trabajados'] > 0 ? \App\Services\Asistencia\CalculoAsistencia::horas($dia['trabajados']) : '—' }}</td>
                                 <td>@include('rh.asistencia._estado', ['dia' => $dia])</td>
-                                <td class="text-end">@include('rh.asistencia._boton-justificar', ['colaborador' => $c, 'dia' => $dia])</td>
+                                <td><div class="acciones-asistencia">@include('rh.asistencia._boton-justificar', ['colaborador' => $c, 'dia' => $dia])</div></td>
                             </tr>
                         @endforeach
                     </tbody>

@@ -75,6 +75,12 @@ class AsistenciaPantallasTest extends TestCase
         $this->actingAs($this->rh)->post($url, ['fecha' => '2026-11-03', 'tipo' => 'x', 'motivo' => 'y'])->assertSessionHasErrors(['tipo', 'motivo']);
         $this->actingAs($this->rh)->post(route('asistencia.justificar', $rita->id), ['fecha' => '2026-11-09', 'tipo' => 'falta', 'motivo' => 'permiso'])
             ->assertSessionHasErrors(['fecha']);
+        // El botón «Justificar» de la pantalla lleva el día en la dirección del formulario (el 2 de noviembre sigue sin justificar)
+        $this->actingAs($this->rh)->get('/asistencia?fecha=2026-11-02')
+            ->assertSee(e(route('asistencia.justificar', ['colaborador' => $rita->id, 'fecha' => '2026-11-02'])), false);
+        $this->actingAs($this->rh)->post(route('asistencia.justificar', ['colaborador' => $rita->id, 'fecha' => '2026-11-02']), ['tipo' => 'falta', 'motivo' => 'vacaciones'])
+            ->assertSessionHasNoErrors();
+        $this->assertSame('vacaciones', $this->enEmpresa(fn () => AsistenciaJustificacion::where('fecha', '2026-11-02')->firstOrFail()->motivo));
         // Un regreso fuera de Asistencia no se sigue
         $this->actingAs($this->rh)->post($url, ['fecha' => '2026-11-03', 'tipo' => 'falta', 'motivo' => 'permiso', '_volver' => 'https://otro.sitio/x'])->assertRedirect(route('asistencia.index'));
 

@@ -73,6 +73,8 @@ Si tu empresa tiene el complemento **Asistencia**, cada turno dice qué días se
 3. Marca los días que se trabaja y desmarca los de descanso. Debe quedar al menos uno.
 4. Toca **Guardar**.
 
+![Días que se trabaja en un turno](img/asistencia/6-turno-dias.png)
+
 **Qué debes ver:** la ficha del turno dice sus días, por ejemplo «Lun a Vie». De fábrica se trabajan **Todos los días**. Sin Asistencia, este apartado no aparece. Ver [Asistencia](asistencia.md).
 
 ## En el celular y en los modos Noche y Sol
