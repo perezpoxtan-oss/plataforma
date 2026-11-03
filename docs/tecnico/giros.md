@@ -87,7 +87,7 @@ Las cachés (`manual.pagina.*`, `manual.texto.*`) incluyen el giro en la clave.
 | Corporativo Demo | corporativo | Corporativo Demo Torre Reforma (`TOR`), Corporativo Demo Planta Querétaro (`PLA`) | `corp.admin.demo` (Administrador), `corp.jefe.demo` (Jefe de seguridad), `corp.agente.demo` (Agente, Torre Reforma) | Torre Reforma › Piso 10 › oficinas 1001–1004 y Sala de juntas Roble; Nave 1 en la planta; 6 departamentos; 5 colaboradores; 5 accesos (colaborador y visitante en sitio, proveedor pendiente, contratista y visitante finalizados ayer); Sala de juntas Roble reservable con una junta mañana; un incidente. |
 | Condominio Demo | condominio | Residencial Demo Norte (`NOR`), Residencial Demo Sur (`SUR`) | `condo.admin.demo` (Administrador), `condo.jefe.demo` (Jefe de seguridad), `condo.agente.demo` (Agente, Norte) | Torre A › Piso 1 y 2 › departamentos 101–104 y 201–204; Áreas comunes (Salón de usos múltiples, Asador, Alberca); Torre B en Sur; Administración, Mantenimiento y Seguridad; 5 residentes; 5 accesos (residente en sitio, visita al 101, servicio de limpieza pendiente, contratista y visita al 201 finalizados); Salón de usos múltiples (con una asamblea mañana) y Asador reservables; un incidente. |
 
-Para regenerarlos en QA basta con que corra `plataforma:demo` (lo hace el despliegue de QA una vez por versión). Los usuarios se documentan en `docs/tecnico/despliegue.md`, «Usuarios demo (QA)».
+Para regenerarlos en QA basta con que corra `plataforma:demo` (el despliegue de QA lo hace una vez por versión solo con el interruptor `demo_encendido`; ver «QA: datos demo con interruptor» en `docs/tecnico/despliegue.md`). Los usuarios se documentan en `docs/tecnico/despliegue.md`, «Usuarios demo (QA)».
 
 ## Pruebas
 

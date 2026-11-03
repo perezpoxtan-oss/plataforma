@@ -67,8 +67,27 @@ class DesplegarScriptTest extends TestCase
         $this->home = sys_get_temp_dir().'/plataforma-despliegue-'.bin2hex(random_bytes(6));
         mkdir($this->home.'/bin', 0700, true);
 
-        // PHP simulado: anota artisan con sus argumentos exactos (uno por corchete)
-        $this->escribir('bin/php', "#!/bin/bash\nfor a in \"\$@\"; do\n  if [ \"\$a\" = artisan ]; then\n    { printf '[%s]' \"\$@\"; printf ' PLATAFORMA_CONTRASENA=[%s]\\n' \"\${PLATAFORMA_CONTRASENA-}\"; } >> \"\$HOME/artisan.log\"\n    exit 0\n  fi\ndone\nexec ".escapeshellarg(PHP_BINARY)." \"\$@\"\n", 0700);
+        // PHP simulado: anota artisan con sus argumentos exactos (uno por corchete).
+        // plataforma:limpiar-qa responde con la solicitud de $HOME/solicitud_limpieza
+        // y falla si existe $HOME/limpieza_falla (como cuando no se pudo respaldar).
+        $falso = <<<'BASH'
+            #!/bin/bash
+            for a in "$@"; do
+              if [ "$a" = artisan ]; then
+                { printf '[%s]' "$@"; printf ' PLATAFORMA_CONTRASENA=[%s]\n' "${PLATAFORMA_CONTRASENA-}"; } >> "$HOME/artisan.log"
+                case " $* " in
+                  *' plataforma:limpiar-qa --solicitud '*) cat "$HOME/solicitud_limpieza" 2>/dev/null ;;
+                  *' plataforma:limpiar-qa --confirmar '*)
+                    if [ -f "$HOME/limpieza_falla" ]; then echo 'No se limpió la base: no se pudo hacer el respaldo previo.'; exit 1; fi
+                    echo 'Base de QA limpiada: 10 renglones de 2 tablas y 0 archivos; se conservaron 1 Super Administrador(es).' ;;
+                esac
+                exit 0
+              fi
+            done
+            exec PHP_REAL "$@"
+
+            BASH;
+        $this->escribir('bin/php', str_replace('PHP_REAL', escapeshellarg(PHP_BINARY), $falso), 0700);
         $this->escribir('bin/curl', "#!/bin/bash\nprintf '%s\\n' \"\$*\" >> \"\$HOME/curl_args.log\"\nexec ".escapeshellarg(trim((string) shell_exec('command -v curl')))." \"\$@\"\n", 0700);
         $this->escribir('.php_cli_path', $this->home.'/bin/php');
         $this->escribir('github_token.txt', self::TOKEN."\n");
@@ -91,7 +110,7 @@ class DesplegarScriptTest extends TestCase
         $this->desplegar('qa');
 
         $this->assertSame('qa-101', trim($this->leer('apps/plataforma-qa/.release_actual')));
-        $this->assertStringContainsString('OK: qa-101', $this->leer('despliegue_qa_estado.txt'));
+        $this->assertStringContainsString('OK: instalada qa-101', $this->leer('despliegue_qa_estado.txt'));
         // INF-03: el token no aparece en la línea de comandos de curl (visible con ps)
         $this->assertStringNotContainsString(self::TOKEN, $this->leer('curl_args.log'));
         $this->assertStringContainsString('-K -', $this->leer('curl_args.log'));
@@ -244,6 +263,143 @@ class DesplegarScriptTest extends TestCase
         // El archivo con la contraseña no queda en ningún lado
         $this->assertFileDoesNotExist($this->home.'/qa_inicial.txt');
         $this->assertFileDoesNotExist($this->home.'/.config/plataforma/qa_inicial');
+    }
+
+    // ------------------------------------------- limpieza única de la base de QA
+
+    public function test_qa_limpia_la_base_una_sola_vez_y_antes_del_demo(): void
+    {
+        $this->publicar('qa', 701, $this->paquete());
+        $this->escribir('env_qa.txt', $this->envQa());
+        $this->escribir('solicitud_limpieza', "2026-11-02\n");
+        $this->escribir('apps/plataforma-qa/shared/demo_encendido', '');
+
+        $this->desplegar('qa');
+
+        $log = $this->leer('artisan.log');
+        $this->assertSame(1, substr_count($log, '[plataforma:limpiar-qa][--confirmar]'));
+        $this->assertLessThan(strpos($log, '[plataforma:demo]'), strpos($log, '[plataforma:limpiar-qa][--confirmar]'), 'La limpieza corre antes del demo');
+        $this->assertSame('2026-11-02', trim($this->leer('apps/plataforma-qa/.limpieza_qa_completada')));
+        $this->assertStringContainsString('Base de QA limpiada: 10 renglones', $this->leer('despliegue_qa_estado.txt'));
+
+        // Las siguientes revisiones no la repiten y el resultado sigue a la vista
+        $this->desplegar('qa');
+        $this->desplegar('qa');
+        $this->assertSame(1, substr_count($this->leer('artisan.log'), '[plataforma:limpiar-qa][--confirmar]'));
+        $this->assertStringContainsString('Limpieza QA:', $this->leer('despliegue_qa_estado.txt'));
+        $this->assertStringContainsString('solicitud 2026-11-02', $this->leer('despliegue_qa_estado.txt'));
+
+        // Otra solicitud (otro identificador en el código) vuelve a correrla una vez
+        $this->escribir('solicitud_limpieza', "2026-12-01\n");
+        $this->desplegar('qa');
+        $this->assertSame(2, substr_count($this->leer('artisan.log'), '[plataforma:limpiar-qa][--confirmar]'));
+    }
+
+    public function test_si_la_limpieza_falla_no_se_marca_y_se_reintenta_maximo_tres_veces(): void
+    {
+        $this->publicar('qa', 702, $this->paquete());
+        $this->escribir('env_qa.txt', $this->envQa());
+        $this->escribir('solicitud_limpieza', "2026-11-02\n");
+        $this->escribir('limpieza_falla', '');
+
+        foreach (range(1, 4) as $_) {
+            $this->desplegar('qa');
+        }
+
+        $this->assertSame(3, substr_count($this->leer('artisan.log'), '[plataforma:limpiar-qa][--confirmar]'));
+        $this->assertFileDoesNotExist($this->home.'/apps/plataforma-qa/.limpieza_qa_completada');
+        $this->assertFileDoesNotExist($this->home.'/apps/plataforma-qa/.limpieza_qa_resumen');
+    }
+
+    public function test_la_limpieza_falla_y_lo_dice_el_estado(): void
+    {
+        $this->publicar('qa', 703, $this->paquete());
+        $this->escribir('env_qa.txt', $this->envQa());
+        $this->escribir('solicitud_limpieza', "2026-11-02\n");
+        $this->escribir('limpieza_falla', '');
+
+        $this->desplegar('qa');
+
+        $estado = $this->leer('despliegue_qa_estado.txt');
+        $this->assertStringContainsString('ERROR: no se pudo limpiar la base de QA (intento 1 de 3', $estado);
+        $this->assertStringContainsString('no se pudo hacer el respaldo previo', $estado);
+    }
+
+    public function test_version_sin_el_comando_de_limpieza_no_limpia(): void
+    {
+        $this->publicar('qa', 704, $this->paquete());
+        $this->escribir('env_qa.txt', $this->envQa());
+
+        $this->desplegar('qa');
+
+        $this->assertStringNotContainsString('[plataforma:limpiar-qa][--confirmar]', $this->leer('artisan.log'));
+        $this->assertFileDoesNotExist($this->home.'/apps/plataforma-qa/.limpieza_qa_completada');
+    }
+
+    public function test_produccion_nunca_limpia_la_base_ni_siembra_demo(): void
+    {
+        $this->escribir('env_prod.txt', $this->envProd());
+        $this->escribir('desplegar_version.txt', "v1.0.0\n");
+        $this->escribir('solicitud_limpieza', "2026-11-02\n");
+        $this->escribir('apps/plataforma-produccion/shared/demo_encendido', '');
+        $this->publicar('v1.0.0', 705, $this->paquete());
+
+        $this->desplegar('prod');
+
+        $this->assertSame('v1.0.0-705', trim($this->leer('apps/plataforma-produccion/.release_actual')));
+        $log = $this->leer('artisan.log');
+        $this->assertStringNotContainsString('plataforma:limpiar-qa', $log);
+        $this->assertStringNotContainsString('plataforma:demo', $log);
+    }
+
+    // ------------------------------------------------ interruptor de datos demo
+
+    public function test_qa_ya_no_siembra_el_demo_salvo_con_el_interruptor(): void
+    {
+        $this->publicar('qa', 801, $this->paquete());
+        $this->escribir('env_qa.txt', $this->envQa());
+
+        $this->desplegar('qa');
+        $this->assertStringNotContainsString('[plataforma:demo]', $this->leer('artisan.log'));
+        $this->assertFileDoesNotExist($this->home.'/apps/plataforma-qa/.demo_completado');
+
+        // El dueño crea el archivo vacío demo_encendido desde el Administrador de archivos
+        $this->escribir('apps/plataforma-qa/shared/demo_encendido', '');
+        $this->desplegar('qa');
+        $this->assertSame(1, substr_count($this->leer('artisan.log'), '[plataforma:demo]'));
+        $this->assertSame('qa-801', trim($this->leer('apps/plataforma-qa/.demo_completado')));
+        // Una vez por versión
+        $this->desplegar('qa');
+        $this->assertSame(1, substr_count($this->leer('artisan.log'), '[plataforma:demo]'));
+    }
+
+    public function test_instalacion_nueva_de_qa_crea_el_superadministrador_sin_empresa_demo(): void
+    {
+        $this->publicar('qa', 802, $this->paquete());
+        $this->escribir('env_qa.txt', $this->envQa());
+        $this->escribir('qa_inicial.txt', "CORREO=ana@ejemplo.com\nNOMBRE=Ana\nUSUARIO=ana\nCONTRASENA=Clave.Segura.2026\n");
+
+        $this->desplegar('qa');
+
+        $log = $this->leer('artisan.log');
+        $this->assertStringContainsString('[plataforma:superadmin][--nombre=Ana][--usuario=ana][--][ana@ejemplo.com]', $log);
+        $this->assertStringNotContainsString('[plataforma:demo]', $log);
+        $this->assertStringContainsString('Super Administrador creado (datos demo apagados)', $this->leer('despliegue_qa_estado.txt'));
+        $this->assertFileDoesNotExist($this->home.'/qa_inicial.txt');
+    }
+
+    public function test_instalacion_nueva_de_qa_con_el_interruptor_tambien_crea_la_empresa_demo(): void
+    {
+        $this->publicar('qa', 803, $this->paquete());
+        $this->escribir('env_qa.txt', $this->envQa());
+        $this->escribir('apps/plataforma-qa/shared/demo_encendido', '');
+        $this->escribir('qa_inicial.txt', "CORREO=ana@ejemplo.com\nNOMBRE=Ana\nUSUARIO=ana\nCONTRASENA=Clave.Segura.2026\n");
+
+        $this->desplegar('qa');
+
+        $log = $this->leer('artisan.log');
+        $this->assertStringContainsString('[plataforma:superadmin]', $log);
+        $this->assertStringContainsString('usuarios de prueba creados (Super Administrador y empresa demo)', $this->leer('despliegue_qa_estado.txt'));
     }
 
     public function test_un_regreso_tambien_regresa_los_archivos_publicos(): void
