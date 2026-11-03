@@ -243,7 +243,7 @@
                             </select>
                             @endif
                             @if (! $proveedorFijo && $proveedores->where('activo', true)->isEmpty())
-                                <p class="campo-ayuda mt-2 mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> Todavía no hay proveedores registrados: dalos de alta en el módulo Proveedores.</p>
+                                <p class="campo-ayuda mt-2 mb-0"><i class="bi bi-info-circle" aria-hidden="true"></i> Todavía no hay empresas externas registradas: dalas de alta en Padrones → Empresas externas.</p>
                             @endif
                         </div>
 

@@ -196,9 +196,9 @@ class InformeEjecutivo
         $filas = (clone $q)->orderBy('proveedores.nombre')->limit(self::MAX_FILAS)->get(['nombre', 'categoria'])
             ->map(fn (Proveedor $p) => [$p->nombre, Proveedor::CATEGORIAS[$p->categoria] ?? ($p->categoria ?: '—')])->all();
 
-        return [$this->ficha('Proveedores y contratistas', number_format(array_sum($porCategoria)), [
+        return [$this->ficha('Empresas externas', number_format(array_sum($porCategoria)), [
             'nota' => 'De toda la empresa',
-            'grafica' => GraficaSvg::barras($porCategoria, 'Proveedores por categoría'),
+            'grafica' => GraficaSvg::barras($porCategoria, 'Empresas externas por categoría'),
             'columnas' => ['Empresa', 'Categoría'], 'filas' => $filas, 'enlace' => route('proveedores.index'),
         ])];
     }

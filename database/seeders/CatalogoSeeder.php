@@ -167,7 +167,7 @@ class CatalogoSeeder extends Seeder
                 'pases_salida' => ['Pases de salida', 'bi-box-arrow-right', ['aprobar', 'firmar', 'imprimir', 'configurar', 'exportar']],
                 'visitantes' => ['Padrón de personas', 'bi-person-lines-fill', ['importar']],
                 'vehiculos' => ['Padrón vehicular', 'bi-car-front', ['imprimir', 'importar']],
-                'proveedores' => ['Proveedores', 'bi-truck', ['importar']],
+                'proveedores' => ['Empresas externas', 'bi-truck', ['importar']],
                 'rutas' => ['Rutas de transporte', 'bi-signpost-split', ['imprimir']],
                 'transporte' => ['Bitácora de transporte', 'bi-bus-front', ['aprobar', 'firmar', 'exportar']],
                 'procedimientos' => ['Procedimientos', 'bi-book', ['aprobar']],

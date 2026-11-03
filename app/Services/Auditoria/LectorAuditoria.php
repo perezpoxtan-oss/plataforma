@@ -249,7 +249,7 @@ class LectorAuditoria
         Puesto::class => ['Puesto', 'nombre'],
         Turno::class => ['Turno', 'nombre'],
         Colaborador::class => ['Colaborador', null],
-        Proveedor::class => ['Proveedor', 'nombre'],
+        Proveedor::class => ['Empresa externa', 'nombre'],
         Persona::class => ['Persona', 'nombre_completo'],
         Vehiculo::class => ['Vehículo', 'placas'],
         VoucherReposicion::class => ['Voucher', 'folio'],

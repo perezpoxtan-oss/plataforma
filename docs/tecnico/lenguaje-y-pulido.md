@@ -45,7 +45,7 @@ El glosario está en el manual: `docs/usuario/glosario.md` (Primeros pasos, visi
 | Menú Operación | Sección «Incidentes» (con la bitácora renombrada: «Operación → Incidentes → Incidentes») | Sección **Bitácora**: Novedades/Incidentes, Lost & Found y Robo. Migración `2026_11_17_000200_seccion_bitacora_en_operacion` (solo si la sección seguía con su nombre de fábrica; `down()` probado) |
 | Candidatos | Considerar / cartera | Considerar (C-35) |
 
-- **Sin tocar:** Accidentes (formato, vistas, textos, «Huésped» y el anexo de **guardavidas**, que es parte del formato de Accidente y de su sección en Tendencias). El nombre del módulo **Proveedores** en la Matriz de permisos se dejó como estaba (decisión de la reorganización de menús); el menú y la pantalla ya dicen **Empresas externas**.
+- **Sin tocar:** Accidentes (formato, vistas, textos, «Huésped» y el anexo de **guardavidas**, que es parte del formato de Accidente y de su sección en Tendencias). El nombre del módulo en la Matriz de permisos, la Bitácora de auditoría y lo que se contrata pasó de **Proveedores** a **Empresas externas** (decisión del dueño del 3 nov, migración `2026_11_19_000100_empresas_externas_en_la_matriz`, `down()` lo regresa); la clave `proveedores` y los permisos `proveedores.*` no cambian. `EtapaSieteGlosarioTest` lo vigila.
 - **Plural de residente:** se revisaron Residentes, Colaboradores y el manual en condominio; ninguno dice «residente(es)».
 - Prueba `EtapaSieteGlosarioTest`: ninguna palabra retirada vuelve a vistas, mensajes del código, `plataforma.js` ni el manual (fuera de comentarios y de Accidentes); el título de cada pantalla es el nombre de su menú; la migración de la sección.
 
