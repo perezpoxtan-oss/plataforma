@@ -31,7 +31,7 @@ resumen: Atender las solicitudes de las personas sobre sus datos (acceso, rectif
 1. En **Solicitudes ARCO** toca **Atender** en la solicitud.
 2. Lee **Quién la pide** y **Lo que pide**.
 3. En **1. Busca lo que la plataforma tiene de la persona**, revisa el nombre, correo y teléfono (ya vienen llenos) y, si lo tienes, escribe el **folio de su identificación**. Toca **Buscar**. Deja su **nombre completo**: con él se encuentran también los tickets, accidentes y observaciones que la mencionan.
-4. Aparecen los registros encontrados, agrupados: **Padrón de personas**, **Bitácora de accesos**, **Candidatos**, **Colaboradores**, **Lost & Found: reportes de pérdida**, **Lost & Found: entregas**, **Novedades que la mencionan**, **Accidentes (con datos médicos)**, **Reservas**, **Bitácora de transporte**, **Préstamos de llaves a su nombre**, **Responsivas a su nombre** y **Vouchers a su cargo** (cuando se le prestó, entregó o cobró algo como persona externa o a nombre de su empresa). **Marca solo los que sí son de esa persona** (puede haber personas con el mismo nombre).
+4. Aparecen los registros encontrados, agrupados: **Padrón de personas**, **Bitácora de accesos**, **Candidatos**, **Colaboradores**, **Lost & Found: reportes de pérdida**, **Lost & Found: entregas**, **Novedades que la mencionan**, **Accidentes (con datos médicos)**, **Reservas**, **Bitácora de transporte**, **Préstamos de llaves a su nombre**, **Responsivas a su nombre** y **Vouchers a su cargo** (cuando se le prestó, entregó o cobró algo como persona externa o a nombre de su empresa) y, si tu empresa tiene el complemento, **Asistencia (entradas, salidas y justificaciones)** de un colaborador. **Marca solo los que sí son de esa persona** (puede haber personas con el mismo nombre).
 5. Según lo que pidió:
    - **Acceso:** toca **Exportar datos**. Se prepara un archivo con sus registros, fotos y documentos. La pantalla regresa con la misma búsqueda y lo que marcaste. Toca **Descargar el archivo** y entrégaselo por el medio que acordaron (el botón sigue ahí aunque después busques con otros datos).
    - **Rectificación:** toca **Abrir ficha (rectificar)** junto al registro y corrige ahí los datos.
@@ -51,6 +51,7 @@ resumen: Atender las solicitudes de las personas sobre sus datos (acceso, rectif
 - **Novedades:** su nombre se quita de la descripción, de los involucrados, de las notas, de los testigos y de «¿Quién o quiénes fueron observados?» del Reporte General.
 - **Reservas:** la reserva sigue en pie, sin el nombre, la empresa, el correo ni el teléfono del cliente.
 - **Transporte:** su nombre sale de las observaciones y, si manejó el taxi, se borra su firma.
+- **Asistencia:** de un colaborador que ya causó baja se quitan las notas de sus justificaciones (el día y el motivo se conservan). Si sigue trabajando en la empresa no se quita nada. Sus entradas y salidas son de la Bitácora de accesos.
 - Los **colaboradores** y sus **accidentes de trabajo** no se eliminan desde aquí (la relación laboral obliga a conservar sus datos); solo se rectifican en su ficha o en el ticket.
 - El mensaje te dice cuántos registros se trataron de cada módulo.
 

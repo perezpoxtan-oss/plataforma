@@ -60,6 +60,8 @@ final class InventarioDatosPersonales
         // C-10: también los residentes (tipo = residente) con su vivienda (espacio_id), que es su domicilio
         'colaboradores' => ['trato' => 'arco', 'tipo' => 'colaborador', 'columnas' => ['nombre', 'apellido_paterno', 'apellido_materno', 'nombre_normalizado', 'telefono', 'fecha_nacimiento', 'lugar_nacimiento', 'curp', 'rfc', 'nss', 'correo_personal', 'direccion_completa', 'espacio_id', 'foto_credencial_ruta'],
             'conservacion' => self::LABORAL.' Residentes: mientras vivan en la sede; al darlos de baja, ARCO los muestra para rectificar o cancelar.'],
+        // Asistencia (ADR-0024): la nota libre de una justificación; la entrada y salida están en accesos (tipo colaborador)
+        'asistencia_justificaciones' => ['trato' => 'arco', 'tipo' => 'asistencia', 'columnas' => ['nota'], 'conservacion' => 'asistencia_dias'],
         'vacantes' => ['trato' => 'laboral', 'columnas' => ['contacto_nombre', 'contacto_telefono', 'contacto_correo'], 'conservacion' => self::LABORAL],
 
         // ------------------------------------------------ Novedades, Lost & Found y Accidentes

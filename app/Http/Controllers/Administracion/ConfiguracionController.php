@@ -8,6 +8,8 @@ use App\Models\ConfiguracionPlataforma;
 use App\Models\Empresa;
 use App\Models\LostFoundUmbral;
 use App\Models\User;
+use App\Services\Asistencia\AjustesAsistencia;
+use App\Services\Asistencia\AlcanceAsistencia;
 use App\Services\Autorizaciones\Cobertura;
 use App\Services\Candidatos\DocumentosParaContratar;
 use App\Services\Candidatos\PlazosCandidatos;
@@ -151,6 +153,11 @@ class ConfiguracionController extends Controller
             ];
             $criterios = $recepcion->criterios($empresa);
             $r['criterios'] = ['lista' => $criterios, 'propios' => $criterios !== AjustesRecepcion::CRITERIOS_DEFECTO, 'url' => route('candidatos.criterios')];
+        }
+        // Asistencia (ADR-0024): tolerancia y aviso de faltas, solo con el módulo encendido
+        if ($actor->can(AlcanceAsistencia::CONFIGURAR) && app(AlcanceAsistencia::class)->encendido((int) $empresa->id)) {
+            $a = app(AjustesAsistencia::class)->ajustes($empresa);
+            $r['asistencia'] = ['tolerancia' => $a['tolerancia_minutos'], 'aviso' => $a['aviso_faltas'], 'url' => route('asistencia.index').'#ajustes-asistencia'];
         }
         if ($actor->can(PlantillasEtiquetas::CONFIGURAR)) {
             $modo = app(ImpresionDesdePadron::class)->modo($empresa->id);

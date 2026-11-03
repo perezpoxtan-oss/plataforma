@@ -78,7 +78,7 @@
 
         {{-- Regla 7: lo que casi no se cambia, en «Avanzado» --}}
         @if ($configura)
-            <details class="tarjeta p-3 mt-3 avanzado-asistencia">
+            <details class="tarjeta p-3 mt-3 avanzado-asistencia" id="ajustes-asistencia">
                 <summary class="fw-semibold">Avanzado · Ajustes de asistencia</summary>
                 <form method="POST" action="{{ route('asistencia.ajustes') }}" class="mt-3">
                     @csrf

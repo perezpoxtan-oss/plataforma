@@ -30,7 +30,7 @@
         ['caseta', 'Caseta y accesos', 'bi-door-open', $mostrarAvisos || isset($enOtras['esperas']) || isset($enOtras['impresion'])],
         // C-38: Estructura (avisos de Colaboradores)
         ['sec-estructura', 'Estructura', 'bi-diagram-3', $mostrarAvisos && $tiene('colaboradores')],
-        ['sec-rh', 'Recepción y RR. HH.', 'bi-people', ($mostrarAvisos || $verRecepcion || $verBolsa) && $tiene('candidatos', 'recepcion_rh', 'vacantes')],
+        ['sec-rh', 'Recepción y RR. HH.', 'bi-people', (($mostrarAvisos || $verRecepcion || $verBolsa) && $tiene('candidatos', 'recepcion_rh', 'vacantes')) || isset($enOtras['asistencia'])],
         ['sec-novedades', $nombreBitacora, 'bi-headset', ($mostrarAvisos || $lostFound) && $tiene('novedades', 'procedimientos')],
         ['sec-activos', 'Activos', 'bi-key', $mostrarAvisos && $tiene('llaves', 'prestamo_llaves', 'responsivas', 'vouchers')],
         ['sec-transporte', 'Transporte', 'bi-taxi-front', $mostrarAvisos && $tiene('transporte')],
@@ -187,6 +187,17 @@
                         <p class="small mb-1">{{ implode(' · ', $enOtras['criterios']['lista']) }}</p>
                         <p class="small text-muted mb-2"><span class="valor-original">{{ $enOtras['criterios']['propios'] ? 'Tu empresa cambió la lista original.' : 'Es la lista original.' }}</span></p>
                         <a href="{{ $enOtras['criterios']['url'] }}" class="btn-enlace-config"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Configurar en Candidatos → Criterios de entrevista</a>
+                    </div>
+                @endisset
+                {{-- Asistencia (ADR-0024): se configura en su pantalla («Avanzado») --}}
+                @isset($enOtras['asistencia'])
+                    <div class="tarjeta p-4 tarjeta-enlace-config" id="cfg-asistencia">
+                        <h3 class="h6 fw-bold"><i class="bi bi-calendar2-check me-2 text-primary" aria-hidden="true"></i>Asistencia: tolerancia y aviso de faltas</h3>
+                        <ul class="small mb-2">
+                            <li>Tolerancia de retardo: <strong>{{ $enOtras['asistencia']['tolerancia'] }} min</strong> <span class="valor-original">· original {{ \App\Services\Asistencia\AjustesAsistencia::TOLERANCIA }} min</span></li>
+                            <li>Aviso al jefe cuando alguien no llega: <strong>{{ $enOtras['asistencia']['aviso'] ? 'encendido' : 'apagado' }}</strong> <span class="valor-original">· original apagado</span></li>
+                        </ul>
+                        <a href="{{ $enOtras['asistencia']['url'] }}" class="btn-enlace-config"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Configurar en Asistencia → Avanzado</a>
                     </div>
                 @endisset
                 {{-- Vacantes: bolsa de trabajo en internet (lección 36) --}}
