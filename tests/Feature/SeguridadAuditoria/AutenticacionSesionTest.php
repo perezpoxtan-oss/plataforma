@@ -314,7 +314,11 @@ class AutenticacionSesionTest extends TestCase
                 $sinWeb[] = $ruta->uri();
             }
         }
-        $this->assertSame([], $sinWeb, 'Rutas que cambian datos fuera del grupo web (sin CSRF)');
+        // Decisión 10: las llamadas de los equipos de acceso no tienen sesión ni cookies (CSRF no aplica: no hay navegador
+        // que engañar); se autentican por equipo (número de serie e IP, o token) y tienen límite (routes/equipos.php).
+        // Cualquier otra ruta fuera del grupo web sigue fallando.
+        $equipos = ['iclock/cdata', 'iclock/devicecmd', 'equipos-acceso/hikvision/{token?}'];
+        $this->assertSame([], array_values(array_diff($sinWeb, $equipos)), 'Rutas que cambian datos fuera del grupo web (sin CSRF)');
 
         // AUT-07: el disco privado (respaldos de la base) no se publica en /storage/{ruta}
         $this->assertFalse(Route::has('storage.local'));

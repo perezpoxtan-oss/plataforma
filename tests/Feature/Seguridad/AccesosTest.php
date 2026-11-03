@@ -882,6 +882,8 @@ class AccesosTest extends TestCase
         // 92: DD-17 suma en el encabezado las rutas del día y los equipos de Protección Civil (fijas por petición)
         // 96: Etapa 6 suma consultas fijas por petición: los eventos de hoy de Reservas (C-31), lo que trae cada proveedor
         // (una para todas las tarjetas), los pases aprobados de su empresa (una sola) y el reloj «Salidas con algo distinto» (C-19)
-        $this->assertLessThan(96, $consultas, "La pantalla hizo {$consultas} consultas.");
+        // 97: decisión 10 suma una consulta fija en el encabezado (Mis pendientes: el reloj «Equipos de acceso sin conexión»);
+        // el equipo de cada tarjeta solo se carga si alguna lo tiene (Acceso::cargarEquipos), así que las tarjetas siguen sin consultas propias
+        $this->assertLessThan(97, $consultas, "La pantalla hizo {$consultas} consultas.");
     }
 }

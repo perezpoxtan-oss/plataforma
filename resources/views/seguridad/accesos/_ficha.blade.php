@@ -95,9 +95,9 @@
 
     @if ($modo === 'historial')
         <div class="ficha-acceso-tiempos">
-            <div><strong>{{ $a->movimiento === 'salida_temporal' ? 'Salió:' : ($a->movimiento === 'regreso' ? 'Regresó:' : 'Ingreso:') }}</strong> @fecha($a->entrada_at)@if ($a->equipoEntrada) <span class="text-muted">({{ $a->equipoEntrada->origen() }})</span>@endif</div>
+            <div><strong>{{ $a->movimiento === 'salida_temporal' ? 'Salió:' : ($a->movimiento === 'regreso' ? 'Regresó:' : 'Ingreso:') }}</strong> @fecha($a->entrada_at)@if ($a->equipo_entrada_id && $a->equipoEntrada) <span class="text-muted">({{ $a->equipoEntrada->origen() }})</span>@endif</div>
             @if ($a->movimiento !== 'regreso')
-                <div><strong>{{ $a->movimiento === 'salida_temporal' ? 'Regresó:' : 'Salida:' }}</strong> {{ $a->salida_at ? $hora->formatear($a->salida_at) : '—' }}@if ($a->equipoSalida) <span class="text-muted">({{ $a->equipoSalida->origen() }})</span>@endif</div>
+                <div><strong>{{ $a->movimiento === 'salida_temporal' ? 'Regresó:' : 'Salida:' }}</strong> {{ $a->salida_at ? $hora->formatear($a->salida_at) : '—' }}@if ($a->equipo_salida_id && $a->equipoSalida) <span class="text-muted">({{ $a->equipoSalida->origen() }})</span>@endif</div>
             @endif
             @if ($a->placas)
                 <div><strong>Vehículo:</strong> {{ $a->placas }}@if ($a->conductor) · {{ $a->conductor }}@endif</div>

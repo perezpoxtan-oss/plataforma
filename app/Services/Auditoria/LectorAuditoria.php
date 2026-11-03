@@ -85,6 +85,9 @@ class LectorAuditoria
         'desbloqueado' => 'Desbloqueo', 'rol_asignado' => 'Asignación de rol',
         'restringido' => 'Acceso restringido', 'restriccion_quitada' => 'Restricción quitada', 'no_regreso' => 'No regresó',
         'excepcion' => 'Préstamo por excepción',
+        // Decisión 10: equipos de acceso (ZKTeco, Hikvision)
+        'sin_salida' => 'Cerrado sin salida (entró de nuevo; antipassback)', 'baja' => 'Baja', 'marcaje_rechazado' => 'Marcaje rechazado (credencial no vigente)',
+        'token' => 'Token nuevo', 'sincronizacion' => 'Altas y bajas en cola (Sincronizar)', 'equipos_acceso' => 'Ajustes de equipos de acceso',
         // Etapa 5: la llamada de la caseta (C-09) y el departamento que atiende su ticket (C-28)
         'llamada_autorizo' => 'Autorizó por teléfono', 'llamada_no_autorizo' => 'No autorizó por teléfono',
         'departamento_atendio' => 'Atendido por el departamento', 'nota_departamento' => 'Nota del departamento',
@@ -234,6 +237,7 @@ class LectorAuditoria
         'cuenta' => 'Mi cuenta',
         'privacidad' => 'Privacidad',
         'relojes' => 'Reloj y suplente',
+        'equipos_acceso' => 'Equipos de acceso',
     ];
 
     /** Qué es cada registro y cómo se llama. */

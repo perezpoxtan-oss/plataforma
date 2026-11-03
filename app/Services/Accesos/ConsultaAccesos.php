@@ -117,7 +117,6 @@ class ConsultaAccesos
             'articulos:id,acceso_id,articulo,cantidad,serie', // C-19: lo que trae el proveedor
             'espacio:id,uso', // revisión Etapa 5 (A-4): el área común no se nombra «Vivienda» en la tarjeta
             'registradoPor:id,name', 'autorizadoPor:id,name', 'salidaPor:id,name',
-            'equipoEntrada:id,nombre', 'equipoSalida:id,nombre', // decisión 10: «Equipo: <nombre>» cuando lo registró un equipo de acceso
             ...($abiertos ? [
                 'acompanantes' => fn ($q) => $q->whereNull('salida_at'),
                 'salidaTemporalAbierta.registradoPor:id,name',
@@ -140,7 +139,7 @@ class ConsultaAccesos
             ->when(! empty($filtros['rebasaron']), fn ($q) => $q->whereIn('accesos.id', $this->idsRebasaron() ?: [0]))
             ->with($this->relaciones(true))
             ->orderByDesc('accesos.entrada_at')->orderByDesc('accesos.id')
-            ->get();
+            ->get()->tap(fn ($c) => Acceso::cargarEquipos($c)); // decisión 10
     }
 
     /**
@@ -154,7 +153,7 @@ class ConsultaAccesos
             // La solicitud pendiente (a quién espera y si ya se escaló) viene cargada: la tarjeta no consulta
             ->with([...$this->relaciones(true), 'autorizacionDepartamento.departamento:id,nombre', 'autorizacionDepartamento.colaborador:id,nombre,apellido_paterno,apellido_materno'])
             ->orderBy('accesos.entrada_at')->orderBy('accesos.id')
-            ->get();
+            ->get()->tap(fn ($c) => Acceso::cargarEquipos($c)); // decisión 10
     }
 
     /**
@@ -196,10 +195,11 @@ class ConsultaAccesos
      */
     public function historial(User $actor, array $filtros = [], string $permiso = 'accesos.ver'): LengthAwarePaginator
     {
-        return $this->consultaHistorial($actor, $filtros, $permiso)
+        // Decisión 10: el equipo de acceso solo se carga si alguna fila lo tiene
+        return tap($this->consultaHistorial($actor, $filtros, $permiso)
             ->with($this->relaciones(false))
             ->paginate(self::POR_PAGINA)
-            ->withQueryString();
+            ->withQueryString(), fn ($p) => Acceso::cargarEquipos($p->getCollection()));
     }
 
     /**

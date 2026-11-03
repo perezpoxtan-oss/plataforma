@@ -73,7 +73,7 @@ class SincronizacionUsuarios
         foreach ($mandados->diff($pinesDeben) as $pin) {
             $bajas += $this->encolarPin($equipo, (string) $pin, 'baja', null, null) ? 1 : 0;
         }
-        app(AdministradorRoles::class)->auditar($actor, 'equipos_acceso.sincronizado', $equipo, null, ['altas' => $altas, 'bajas' => $bajas]);
+        app(AdministradorRoles::class)->auditar($actor, 'equipos_acceso.sincronizacion', $equipo, null, ['altas' => $altas, 'bajas' => $bajas]);
 
         return ['altas' => $altas, 'bajas' => $bajas];
     }

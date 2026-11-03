@@ -124,7 +124,7 @@ class PantallaEquiposAccesoTest extends TestCase
         $this->actingAs($this->admin)->post(route('equipos-acceso.sincronizar', $equipo->id))->assertSessionHasNoErrors()
             ->assertSessionHas('ok', fn ($t) => str_contains($t, '1 alta(s)'));
         $this->assertSame(1, $this->enEmpresa(fn () => ComandoEquipoAcceso::where('equipo_acceso_id', $equipo->id)->count()), 'El alta aún no entregada se reemplaza: el equipo recibe una');
-        $this->assertTrue(Auditoria::where('evento', 'equipos_acceso.sincronizado')->exists());
+        $this->assertTrue(Auditoria::where('evento', 'equipos_acceso.sincronizacion')->exists());
 
         $hik = $this->equipo('hikvision');
         $this->actingAs($this->admin)->post(route('equipos-acceso.sincronizar', $hik->id))->assertSessionHasErrors('sincronizar');

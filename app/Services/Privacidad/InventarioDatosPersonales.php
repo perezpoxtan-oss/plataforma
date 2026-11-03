@@ -72,6 +72,8 @@ final class InventarioDatosPersonales
         'robo_detalles' => ['trato' => 'referencia', 'tipo' => 'novedad', 'columnas' => ['hay_sospechoso', 'descripcion_sospechoso'], 'conservacion' => 'incidentes_dias'],
         'valores_vista_detalles' => ['trato' => 'laboral', 'columnas' => ['num_habitacion', 'quien_reporta', 'depto_reporta', 'puesto_reporta', 'actividad_reporta', 'quien_atiende', 'depto_atiende', 'puesto_atiende', 'cliente_llega'],
             'conservacion' => 'Quién reporta y quién atiende es personal de la empresa; la habitación sola no identifica al huésped.'],
+        // Decisión 10: marcaje del colaborador en un equipo de acceso (número de tarjeta enmascarado; la entrada y salida vive en accesos)
+        'equipos_acceso_marcajes' => ['trato' => 'laboral', 'columnas' => ['identificador'], 'conservacion' => self::LABORAL.' Solo el registro técnico del equipo; la tarjeta va enmascarada.'],
         'valores_vista_personas' => ['trato' => 'laboral', 'columnas' => ['nombre'], 'conservacion' => self::LABORAL],
         'lost_found_reportes_perdida' => ['trato' => 'arco', 'tipo' => 'lost_found_reporte', 'columnas' => ['nombre_huesped', 'telefono', 'correo'], 'conservacion' => 'lost_found_dias'],
         'lost_found_entregas' => ['trato' => 'arco', 'tipo' => 'lost_found_entrega', 'columnas' => ['nombre_recibe', 'tipo_identificacion', 'correo_recibe', 'firma_ruta'], 'conservacion' => 'lost_found_dias'],
@@ -136,6 +138,8 @@ final class InventarioDatosPersonales
         'proveedores' => ['trato' => 'empresa', 'columnas' => ['nombre', 'rfc', 'telefono', 'direccion'], 'conservacion' => 'Proveedor (empresa); si es persona física, se rectifica en su ficha.'],
 
         // ------------------------------------------------ Catálogos (sin datos personales)
+        // Decisión 10: el nombre y la última llamada son del equipo (un lector), no de una persona
+        'equipos_acceso' => ['trato' => 'sin_datos', 'columnas' => ['nombre', 'ultimo_contacto_at'], 'conservacion' => self::CATALOGO],
         'acciones' => ['trato' => 'sin_datos', 'columnas' => ['nombre'], 'conservacion' => self::CATALOGO],
         'areas' => ['trato' => 'sin_datos', 'columnas' => ['nombre'], 'conservacion' => self::CATALOGO],
         'departamentos' => ['trato' => 'sin_datos', 'columnas' => ['nombre'], 'conservacion' => self::CATALOGO],

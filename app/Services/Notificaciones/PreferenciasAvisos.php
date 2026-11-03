@@ -61,7 +61,8 @@ class PreferenciasAvisos
     ];
 
     /** Alertas que solo informan (no esperan una respuesta): se pueden silenciar. */
-    public const SOLO_INFORMAN = ['movimiento_sensible', 'delegacion_terminada']; // al terminar la delegación, lo suyo ya vuelve a su Mis pendientes
+    public const SOLO_INFORMAN = ['movimiento_sensible', 'delegacion_terminada',
+        'equipo_no_vigente']; // decisión 10: aviso inmediato en la puerta; el equipo ya rechazó el paso y no queda nada pendiente // al terminar la delegación, lo suyo ya vuelve a su Mis pendientes
 
     /** C-22: ¿este tipo de aviso NO se puede silenciar en «Mi cuenta»? */
     public static function noSilenciable(string $tipo): bool
@@ -88,6 +89,9 @@ class PreferenciasAvisos
         // Etapa 4 (C-22, C-25)
         'excepcion_pedida' => ['Bitácora de accesos', 'La caseta te pide autorizar a alguien que espera', ['accesos.aprobar']],
         'excepcion_agente' => ['Bitácora de accesos', 'El agente aprobó por excepción porque nadie respondió (siempre llega)', ['accesos.aprobar']],
+        // Decisión 10: equipos de acceso
+        'equipo_no_vigente' => ['Bitácora de accesos', 'Alguien usó una credencial no vigente en un equipo de acceso', ['accesos.crear', 'accesos.aprobar']],
+        'equipo_antipassback' => ['Bitácora de accesos', 'Un equipo de acceso detectó a alguien que no registró su salida o su entrada', ['accesos.aprobar']],
         // Etapa 6 (C-19)
         'acceso_articulos' => ['Bitácora de accesos', 'Un proveedor o contratista salió con algo distinto de lo que trajo', ['accesos.aprobar']],
         'reloj_recordatorio' => ['Reloj y suplente', 'Recordatorio de algo que lleva tiempo esperando tu respuesta', []],

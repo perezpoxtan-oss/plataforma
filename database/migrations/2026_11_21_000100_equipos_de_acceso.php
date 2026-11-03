@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\BaseDatos\Restricciones;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -97,16 +98,20 @@ return new class extends Migration
         });
 
         Schema::table('accesos', function (Blueprint $table) {
-            $table->foreignId('equipo_entrada_id')->nullable()->after('sede_id')->constrained('equipos_acceso')->nullOnDelete();
-            $table->foreignId('equipo_salida_id')->nullable()->after('equipo_entrada_id')->constrained('equipos_acceso')->nullOnDelete();
+            $table->foreignId('equipo_entrada_id')->nullable()->after('sede_id');
+            $table->foreignId('equipo_salida_id')->nullable()->after('equipo_entrada_id');
         });
+        // Las llaves aparte: en SQLite sin reconstruir accesos (conserva sus CHECK y sus hijos restrict; docs/tecnico/integridad-bd.md)
+        Restricciones::agregarForanea('accesos', 'equipo_entrada_id', 'equipos_acceso', 'set null');
+        Restricciones::agregarForanea('accesos', 'equipo_salida_id', 'equipos_acceso', 'set null');
     }
 
     public function down(): void
     {
+        Restricciones::quitarForanea('accesos', 'equipo_salida_id');
+        Restricciones::quitarForanea('accesos', 'equipo_entrada_id');
         Schema::table('accesos', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('equipo_salida_id');
-            $table->dropConstrainedForeignId('equipo_entrada_id');
+            $table->dropColumn(['equipo_entrada_id', 'equipo_salida_id']);
         });
         Schema::dropIfExists('equipos_acceso_marcajes');
         Schema::dropIfExists('equipos_acceso_comandos');
