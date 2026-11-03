@@ -241,11 +241,12 @@ class AdministradorRoles
             ->all();
     }
 
-    public function auditar(User $actor, string $evento, Model $sujeto, ?array $antes, ?array $despues): void
+    public function auditar(?User $actor, string $evento, Model $sujeto, ?array $antes, ?array $despues): void
     {
+        // Sin usuario (decisión 10): lo registró un equipo de acceso; el evento lo dice en «despues.equipo»
         Auditoria::create([
-            'empresa_id' => $sujeto->getAttributes()['empresa_id'] ?? $actor->empresa_id,
-            'user_id' => $actor->id,
+            'empresa_id' => $sujeto->getAttributes()['empresa_id'] ?? $actor?->empresa_id,
+            'user_id' => $actor?->id,
             'evento' => $evento,
             'auditable_type' => $sujeto::class,
             'auditable_id' => $sujeto->getKey(),

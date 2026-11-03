@@ -150,7 +150,7 @@ class Acceso extends Model
         'gafete_id', 'gafete_texto', 'modo_arribo', 'vehiculo_id', 'placas', 'zona_estacionamiento_id',
         'conductor', 'num_acompanantes', 'tiene_reserva', 'numero_reserva', 'tipo_pase', 'habitacion',
         'tipo_visita', 'departamento_id', 'viene_a', 'area_trabajo', 'actividad', 'tipo_emergencia', 'observaciones',
-        'entrada_at', 'aviso_padron', 'espacio_id',
+        'entrada_at', 'aviso_padron', 'espacio_id', 'equipo_entrada_id',
     ];
 
     protected function casts(): array
@@ -278,6 +278,30 @@ class Acceso extends Model
     public function salidaPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'salida_por');
+    }
+
+    /** Decisión 10: el equipo de acceso que registró la entrada (sin persona en caseta). */
+    public function equipoEntrada(): BelongsTo
+    {
+        return $this->belongsTo(EquipoAcceso::class, 'equipo_entrada_id');
+    }
+
+    /** Decisión 10: el equipo de acceso que registró la salida. */
+    public function equipoSalida(): BelongsTo
+    {
+        return $this->belongsTo(EquipoAcceso::class, 'equipo_salida_id');
+    }
+
+    /** Quién registró la entrada: la persona o «Equipo: <nombre>». */
+    public function quienRegistro(): string
+    {
+        return $this->registradoPor?->name ?? ($this->equipoEntrada ? $this->equipoEntrada->origen() : '—');
+    }
+
+    /** Quién registró la salida: la persona o «Equipo: <nombre>». */
+    public function quienDioSalida(): string
+    {
+        return $this->salidaPor?->name ?? ($this->equipoSalida ? $this->equipoSalida->origen() : '—');
     }
 
     // Recepción de candidatos y autorizaciones (ADR-0007)
