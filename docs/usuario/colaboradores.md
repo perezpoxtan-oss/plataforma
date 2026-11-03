@@ -127,7 +127,7 @@ La **credencial** es el plástico del colaborador con su foto y su código QR (e
 2. **Foto:** abre **Tomar foto**. Toca **Usar la cámara**, luego **Tomar la foto**; o elige un archivo (en el celular se abre la cámara). Toca **Guardar foto**. Se recorta sola a tamaño credencial.
 3. Toca **Emitir credencial**. Nace con su folio (CRED-000001) y su vigencia según tu empresa.
 4. Toca **Imprimir credencial**: se abre la hoja con el **frente y el reverso** en tamaño CR80. En la impresora de credenciales elige CR80 y «Tamaño real / 100 %» (o **Guardar como PDF**).
-5. Cuando se la entregues, toca **Dar salida**.
+5. Cuando se la entregues, toca **Dar salida**. Si tu empresa usa tarjeta en el plástico, antes abre **Avanzado: tarjeta NFC / RFID del plástico (opcional)**: si usa las dos, marca en **¿Qué tarjeta es?** si es **Proximidad 125 kHz** o **MIFARE 13.56 MHz**; luego acerca la tarjeta al lector (o escribe su número). Si tu empresa usa solo código QR, este apartado no aparece. Ver [Credenciales](credenciales.md#qué-lector-necesita-cada-tecnología).
 
 **Qué debes ver:** la credencial en **ASIGNADO**, con su vigencia.
 

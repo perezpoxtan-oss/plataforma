@@ -17,7 +17,7 @@ Entra a QA con **`admin.demo`** (contraseña de la demo). Para el paso 7 usa **`
 
 ## Práctica
 
-### 1. Empresa que ya existe (Proveedores)
+### 1. Empresa que ya existe (Empresas externas)
 
 1. Padrones → **Empresas externas** → tarjeta **Registrar** (Nueva Empresa Externa).
 2. En **Razón Social** escribe `Abarrotes del Caribe SA`.

@@ -36,19 +36,28 @@
             </div>
         </div>
         <p class="campo-ayuda mt-0">La vigencia se calcula al emitir; las ya emitidas no cambian. <span class="valor-original">Valor original: sin vencimiento, aviso 30 días antes.</span></p>
-        <details class="mt-2" @if ($val('tecnologia') !== 'qr' || $val('reverso_texto') !== '' || $val('telefono') !== '') open @endif>
+        @php $tarjetasCred = array_values(array_filter((array) $val('tarjetas'), fn ($t) => is_string($t) && $t !== '')); @endphp
+        <details class="mt-2" @if ($tarjetasCred !== [] || $val('reverso_texto') !== '' || $val('telefono') !== '') open @endif>
             <summary class="small fw-semibold">Avanzado: tecnología y reverso</summary>
-            <label class="campo-etiqueta" for="cfg_cred_tecnologia">Tecnología</label>
-            <select id="cfg_cred_tecnologia" name="tecnologia" class="campo" @disabled(! $puedeEditar)>
-                @foreach (\App\Support\AjustesCredenciales::TECNOLOGIAS as $clave => $texto)
-                    <option value="{{ $clave }}" @selected($val('tecnologia') === $clave)>{{ $texto }}</option>
+            {{-- Decisión del dueño (3 nov): el QR siempre; cada empresa habilita las tarjetas que usa (pueden convivir) --}}
+            <fieldset>
+                <legend class="campo-etiqueta">Tecnología de la credencial</legend>
+                <label class="d-flex align-items-start gap-2 small"><input type="checkbox" checked disabled>
+                    <span><strong>Código QR</strong> (siempre) — {{ \App\Support\AjustesCredenciales::LECTOR_QR }}.</span></label>
+                <input type="hidden" name="tarjetas[]" value="">
+                @foreach (\App\Support\AjustesCredenciales::TARJETAS as $clave => $tj)
+                    <label class="d-flex align-items-start gap-2 small" for="cfg_cred_tarjeta_{{ $clave }}">
+                        <input type="checkbox" id="cfg_cred_tarjeta_{{ $clave }}" name="tarjetas[]" value="{{ $clave }}" @checked(in_array($clave, $tarjetasCred, true)) @disabled(! $puedeEditar)>
+                        <span><strong>Tarjeta {{ $tj['nombre'] }}</strong> — {{ $tj['lector'] }}.</span></label>
                 @endforeach
-            </select>
+                @error('tarjetas')<p class="texto-error-campo">{{ $message }}</p>@enderror
+            </fieldset>
+            <p class="campo-ayuda mt-1">Puedes habilitar las dos. El número de la tarjeta queda en la etiqueta NFC / RFID del colaborador y la caseta la lee igual que el QR. Sin ninguna, al dar salida no se pide número de tarjeta.</p>
             <label class="campo-etiqueta" for="cfg_cred_telefono">Teléfono del reverso (si la encuentran)</label>
             <input type="text" id="cfg_cred_telefono" name="telefono" class="campo" maxlength="30" value="{{ $val('telefono') }}" @disabled(! $puedeEditar)>
             <label class="campo-etiqueta" for="cfg_cred_reverso">Texto adicional del reverso</label>
             <textarea id="cfg_cred_reverso" name="reverso_texto" class="campo" rows="2" maxlength="300" @disabled(! $puedeEditar)>{{ $val('reverso_texto') }}</textarea>
-            <p class="campo-ayuda mt-0"><span class="valor-original">Valor original: solo QR; el reverso dice que es propiedad de la empresa y que se entregue en la caseta.</span></p>
+            <p class="campo-ayuda mt-0"><span class="valor-original">Valor original: solo código QR, sin tarjeta; el reverso dice que es propiedad de la empresa y que se entregue en la caseta.</span></p>
         </details>
         @if ($puedeEditar)
             <button type="submit" class="btn-azul mt-2">Guardar</button>

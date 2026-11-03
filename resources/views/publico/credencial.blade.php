@@ -1,7 +1,8 @@
 {{--
     C-44 (Etapa 8): verificación pública de una credencial (QR impreso, sin
-    sesión). Solo «Vigente» con foto, nombre, empresa y hasta cuándo vale, o
-    «No vigente». Nada más: ni datos personales ni el motivo.
+    sesión). Solo «Vigente» con nombre, empresa y hasta cuándo vale, o
+    «No vigente». Nada más: ni foto (decisión del dueño, 3 nov), ni datos
+    personales, ni el motivo.
 --}}
 @extends('publico.privacidad.plantilla')
 
@@ -11,9 +12,6 @@
 @if ($vigente)
     <div class="verificacion-credencial vigente" role="status">
         <p class="verificacion-estado"><i class="bi bi-patch-check-fill me-1" aria-hidden="true"></i>Vigente</p>
-        @if ($foto)
-            <img src="{{ $foto }}" alt="Foto de {{ $nombre }}" class="verificacion-foto" width="150" height="200">
-        @endif
         <h1 class="acceso-titulo h4 mb-1">{{ $nombre }}</h1>
         <p class="acceso-subtitulo mb-1">{{ $empresa }}</p>
         <p class="small mb-0">{{ $vence ? 'Vale hasta el '.$vence : 'Sin fecha de vencimiento' }}</p>

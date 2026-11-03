@@ -32,6 +32,8 @@ class MigracionEtapa8Test extends TestCase
         '2026_11_18_000200_crear_movimientos_activo',
         '2026_11_18_000300_credenciales_de_colaboradores',
         '2026_11_18_000400_credenciales_fase_uno',
+        // Decisión del dueño (3 nov): tipo de tarjeta de la credencial (depende de la tabla credenciales)
+        '2026_11_19_000200_tarjetas_de_credenciales',
     ];
 
     private Empresa $empresa;

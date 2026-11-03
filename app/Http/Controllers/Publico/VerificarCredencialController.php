@@ -15,9 +15,11 @@ use Illuminate\Http\Response;
 /**
  * C-44 (Etapa 8), propuesta de credencialización: el QR impreso en la
  * credencial lleva /credencial/{código}. Con cualquier celular, sin sesión,
- * abre «Vigente» con la foto, el nombre y la empresa (y hasta cuándo vale), o
- * «No vigente». Nunca muestra datos personales (CURP, RFC, NSS, domicilio,
- * teléfono, número de empleado) ni dice por qué no es vigente.
+ * abre «Vigente» con el nombre y la empresa (y hasta cuándo vale), o
+ * «No vigente». Decisión del dueño (3 nov): sin foto. Nunca muestra datos
+ * personales (foto, CURP, RFC, NSS, domicilio, teléfono, número de empleado)
+ * ni dice por qué no es vigente. La foto vive en el disco privado y solo se
+ * ve dentro de la plataforma (ficha del colaborador e impresión).
  *
  * Con sesión iniciada lleva a la acción de la caseta (/e/{código}: Nuevo
  * ingreso o Dar salida). Límite de 30 por minuto por IP; la respuesta no se
@@ -42,7 +44,6 @@ class VerificarCredencialController extends Controller
             'vigente' => true,
             'nombre' => $colaborador->nombreCompleto(),
             'empresa' => $empresa->nombre_comercial,
-            'foto' => AdministradorCredenciales::fotoDataUri($colaborador),
             'vence' => $credencial->vence_en?->format('d/m/Y'),
         ] : ['vigente' => false])->withHeaders(['Cache-Control' => 'no-store, private', 'X-Robots-Tag' => 'noindex, nofollow', 'Referrer-Policy' => 'no-referrer']);
     }

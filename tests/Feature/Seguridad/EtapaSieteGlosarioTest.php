@@ -7,6 +7,7 @@ use App\Models\Modulo;
 use App\Models\PrestamoLlave;
 use App\Models\Rubro;
 use App\Models\Sede;
+use App\Services\Auditoria\LectorAuditoria;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Feature\Nucleo\CreaDatosNucleo;
@@ -40,6 +41,10 @@ class EtapaSieteGlosarioTest extends TestCase
         'Considerar / cartera' => 'Considerar',
         'residente(es)' => 'residentes',
         'Residentees' => 'Residentes',
+        // Decisión del dueño (3 nov): el módulo se llama igual en el menú, la pantalla y la Matriz de permisos
+        'módulo Proveedores' => 'Empresas externas',
+        'Padrones → Proveedores' => 'Padrones → Empresas externas',
+        'dada de baja en Proveedores' => 'Empresas externas',
     ];
 
     /** Accidentes no se toca (DD-16). */
@@ -116,6 +121,55 @@ class EtapaSieteGlosarioTest extends TestCase
         $super = $this->crearSuperadmin();
         $this->actingAs($super)->get('/empresas')->assertOk()->assertSee('>Giro</label>', false)->assertDontSee('>Rubro<', false);
         unset($centro);
+    }
+
+    public function test_empresas_externas_se_llama_igual_en_menu_pantalla_matriz_auditoria_y_curso(): void
+    {
+        $this->sembrarCatalogo();
+        $empresa = $this->crearEmpresa();
+        $this->crearSede($empresa, 'CEN');
+        $admin = $this->crearUsuario($empresa, 'Administrador');
+
+        // La clave y los permisos no cambian; solo el nombre que se ve
+        $modulo = Modulo::where('clave', 'proveedores')->firstOrFail();
+        $this->assertSame('Empresas externas', $modulo->nombre);
+        $this->assertSame('Empresas externas', $modulo->nombre_menu);
+        $this->assertTrue($admin->can('proveedores.ver'));
+        $this->assertTrue($admin->can('proveedores.importar'));
+
+        // Matriz de permisos: renglón y casillas con el nombre del menú
+        $matriz = (string) $this->actingAs($admin)->get('/permisos')->assertOk()->getContent();
+        $this->assertStringContainsString('Ver · Empresas externas', $matriz);
+        $this->assertStringContainsString('name="permisos[proveedores][acciones][]"', $matriz);
+        $this->assertStringNotContainsString('· Proveedores"', $matriz);
+        $this->assertDoesNotMatchRegularExpression('/<\/i>\s*Proveedores\s*</', $matriz);
+
+        // Bitácora de auditoría: el nombre del módulo
+        $lector = app(LectorAuditoria::class);
+        $this->assertSame('Empresas externas', $lector->modulo('proveedores.crear'));
+
+        // Curso: sin el nombre viejo del módulo
+        foreach (glob(base_path('docs/cursos/*.md')) as $leccion) {
+            $texto = (string) file_get_contents($leccion);
+            foreach (['Padrones → Proveedores', 'módulo Proveedores', 'dada de baja en Proveedores', 'Abre Proveedores'] as $vieja) {
+                $this->assertStringNotContainsString($vieja, $texto, basename($leccion));
+            }
+        }
+    }
+
+    public function test_el_nombre_empresas_externas_migra_y_revierte(): void
+    {
+        $this->sembrarCatalogo();
+        $migracion = require database_path('migrations/2026_11_19_000100_empresas_externas_en_la_matriz.php');
+        $migracion->down();
+        $this->assertSame('Proveedores', Modulo::where('clave', 'proveedores')->value('nombre'));
+        $migracion->up();
+        $this->assertSame('Empresas externas', Modulo::where('clave', 'proveedores')->value('nombre'));
+        // Un nombre cambiado a mano no se toca
+        DB::table('modulos')->where('clave', 'proveedores')->update(['nombre' => 'Padrón de empresas']);
+        $migracion->down();
+        $migracion->up();
+        $this->assertSame('Padrón de empresas', Modulo::where('clave', 'proveedores')->value('nombre'));
     }
 
     public function test_la_seccion_bitacora_migra_y_revierte(): void

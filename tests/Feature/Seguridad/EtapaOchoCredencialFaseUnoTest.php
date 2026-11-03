@@ -177,6 +177,51 @@ class EtapaOchoCredencialFaseUnoTest extends TestCase
         $this->get(route('credenciales.verificar', $codigo))->assertStatus(429);
     }
 
+    public function test_verificacion_publica_sin_foto_ni_forma_de_pedirla(): void
+    {
+        // Decisión del dueño (3 nov): solo nombre y «Vigente / No vigente», sin la foto
+        $c = $this->colaborador('1210');
+        $this->actingAs($this->rh)->post(route('credenciales.foto', $c->id), ['foto' => UploadedFile::fake()->image('yo.jpg', 900, 1200)])->assertSessionHasNoErrors();
+        $ruta = $c->fresh()->foto_credencial_ruta;
+        $this->assertNotNull($ruta);
+        $this->actingAs($this->rh)->post(route('credenciales.emitir', $c->id));
+        $codigo = $this->vigenteDe($c)->codigo_qr;
+        // Dentro de la plataforma la foto sí se ve (ficha e impresión)
+        $this->actingAs($this->rh)->get(route('colaboradores.expediente', $c->id))->assertSee('data:image/jpeg;base64,', false);
+        auth()->logout();
+
+        $resp = $this->get(route('credenciales.verificar', $codigo))->assertOk()->assertSee('Vigente')->assertSee('Diana Vega')
+            ->assertHeader('X-Robots-Tag', 'noindex, nofollow')->assertHeader('Referrer-Policy', 'no-referrer');
+        $this->assertStringContainsString('no-store', (string) $resp->headers->get('Cache-Control'));
+        $this->assertStringContainsString('private', (string) $resp->headers->get('Cache-Control'));
+        $pagina = (string) $resp->getContent();
+        foreach (['data:image', 'base64', 'Foto de', 'verificacion-foto', 'og:image', basename($ruta)] as $nada) {
+            $this->assertStringNotContainsString($nada, $pagina, "La verificación pública no debe llevar «{$nada}»");
+        }
+        $this->assertStringContainsString('<meta name="robots" content="noindex, nofollow, noarchive">', $pagina);
+        // Sin la foto incrustada la respuesta es ligera (antes llevaba la foto en base64)
+        $this->assertLessThan(20 * 1024, strlen($pagina));
+        $this->assertArrayNotHasKey('foto', $resp->original->getData());
+
+        // Ninguna dirección pública entrega la foto: el disco es privado y no se publica en /storage
+        $this->get('/storage/'.$ruta)->assertNotFound();
+        $this->get('/storage/app/private/'.$ruta)->assertNotFound();
+        $this->get(route('colaboradores.expediente', $c->id))->assertRedirect();
+        $this->get(route('credenciales.imprimir', ['credenciales' => [$this->vigenteDe($c)->id]]))->assertRedirect();
+        $this->assertFalse((bool) config('filesystems.disks.local.serve'));
+        foreach (app('router')->getRoutes() as $r) {
+            if (str_contains($r->uri(), 'foto') && in_array('GET', $r->methods(), true)) {
+                $this->assertContains('auth', $r->gatherMiddleware(), "{$r->uri()} entrega una foto sin sesión");
+            }
+        }
+
+        // No vigente: tampoco foto
+        $this->actingAs($this->rh)->post(route('credenciales.reponer', $this->vigenteDe($c)->id), ['motivo' => 'actualizacion'])->assertSessionHasNoErrors();
+        auth()->logout();
+        $viejo = (string) $this->get(route('credenciales.verificar', $codigo))->assertOk()->assertSee('No vigente')->getContent();
+        $this->assertStringNotContainsString('data:image', $viejo);
+    }
+
     public function test_vigencia_configurable_por_vencer_en_mis_pendientes_y_vencida_en_la_caseta(): void
     {
         Carbon::setTestNow('2026-11-02 10:00:00');
@@ -237,7 +282,7 @@ class EtapaOchoCredencialFaseUnoTest extends TestCase
         $this->actingAs($this->rh)->post(route('credenciales.emitir', $c->id));
         // Solo QR (de fábrica): no pide tarjeta al dar salida
         $this->actingAs($this->rh)->get(route('colaboradores.expediente', $c->id))->assertDontSee('Avanzado: tarjeta NFC / RFID del plástico');
-        $this->ajustes(['tecnologia' => 'qr_tarjeta', 'telefono' => '998 000 0000', 'reverso_texto' => 'Uso obligatorio dentro de las instalaciones.']);
+        $this->ajustes(['tarjetas' => ['', 'proximidad_125', 'mifare_1356'], 'telefono' => '998 000 0000', 'reverso_texto' => 'Uso obligatorio dentro de las instalaciones.']);
         $this->actingAs($this->rh)->get(route('colaboradores.expediente', $c->id))->assertSee('Avanzado: tarjeta NFC / RFID del plástico');
         $this->actingAs($this->rh)->get(route('credenciales.imprimir', ['credenciales' => [$this->vigenteDe($c)->id]]))
             ->assertSee('llama al 998 000 0000')->assertSee('Uso obligatorio dentro de las instalaciones.');

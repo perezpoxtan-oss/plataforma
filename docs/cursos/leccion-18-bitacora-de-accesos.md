@@ -42,7 +42,7 @@
 - Proveedor y contratista **siempre** necesitan Host y entran como **Pendientes**. Si la empresa lo pide (de fábrica, sí), también **¿A qué departamento viene?**: su responsable autoriza desde la campana o el correo.
 - **Aprobar por excepción** es solo para quien puede aprobar, siempre con motivo (sin responsable, no contestó a tiempo, autorizó por teléfono, urgencia u otro); queda en la auditoría y le avisa al responsable.
 - Cada empresa decide quién espera al departamento (Visita, Proveedor, Contratista) en **Responsables por departamento → Qué espera en la caseta**.
-- Una empresa vetada (dada de baja en Proveedores) no puede entrar.
+- Una empresa vetada (dada de baja en Empresas externas) no puede entrar.
 - Al dar salida al titular salen también sus acompañantes y se libera su lugar de estacionamiento.
 
 ## Autoevaluación

@@ -126,8 +126,8 @@ class MenusReorganizadosTest extends TestCase
         $this->assertSame('Robo', $items['robo']['nombre']);
         $this->assertSame('Bitácora de accesos', $items['accesos']['nombre']);
         $this->assertSame('Padrón de personas', $items['visitantes']['nombre']);
-        // El nombre del módulo (matriz de permisos) no cambia
-        $this->assertSame('Proveedores', Modulo::where('clave', 'proveedores')->value('nombre'));
+        // Decisión del dueño (3 nov): la Matriz de permisos dice lo mismo que el menú
+        $this->assertSame('Empresas externas', Modulo::where('clave', 'proveedores')->value('nombre'));
 
         $this->actingAs($admin)->get('/')->assertOk()
             ->assertSeeInOrder(['Operación', 'Padrones', 'Recursos Humanos', 'Informes', 'Estructura'])

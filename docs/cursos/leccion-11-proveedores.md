@@ -1,4 +1,4 @@
-# Lección 11 — Empresas Externas (Proveedores)
+# Lección 11 — Empresas externas
 
 **Para:** Administrador del cliente, Jefe de seguridad y Supervisor · **Duración:** 15 minutos
 
@@ -6,7 +6,7 @@
 
 Como `admin.demo`:
 
-1. Abre **Padrones → Proveedores**. Verás 9 empresas demo; *Fletes Rápidos del Sureste* aparece como **BAJA / VETADA**.
+1. Abre **Padrones → Empresas externas**. Verás 9 empresas demo; *Fletes Rápidos del Sureste* aparece como **BAJA / VETADA**.
 2. Toca la píldora **Contratistas**: queda solo *Constructora Maya*, que dice **1 de 2 sedes** (solo Playa).
 3. En el filtro de sedes elige **Hotel Demo Centro**: *Constructora Maya* y *Tours Xcaret Express* desaparecen.
 4. Toca **Guardar empresa Externa** y escribe "abarrotes del caribe": te avisa que ya existe. Cámbialo a **Lavandería Industrial del Sur**, RFC `lis101010ab1`, teléfono `998 100 2000`, y guarda. Abre la ficha: el RFC quedó en mayúsculas y el teléfono sin espacios.
@@ -16,7 +16,7 @@ Como `admin.demo`:
 
 Como `supervisor.demo` (sede Centro):
 
-8. Abre Proveedores: no ves *Constructora Maya* (solo opera en Playa).
+8. Abre Empresas externas: no ves *Constructora Maya* (solo opera en Playa).
 9. Registra **Constructora Maya**: el sistema dice "Ya existía «Constructora Maya»: se agregó a tu sede". Ahora la ves en tu lista y su botón de sedes dice **Todas las sedes**, porque ya opera en las dos sedes que existen hoy (Centro se agregó a la lista; una sede futura no la tendrá).
 10. Intenta editar *Taxis Aeropuerto*: no hay lápiz, porque también opera en Playa.
 
