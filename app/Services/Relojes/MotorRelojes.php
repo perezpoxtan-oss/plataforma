@@ -93,6 +93,8 @@ class MotorRelojes
         Relojes\OrdenesDeServicio::class,
         Relojes\RecargasDeEquiposPc::class,
         Relojes\RevisionesDeEquiposPc::class,
+        // Asistencia (ADR-0024): opcional, apagado de fábrica (Asistencia → Avanzado)
+        Relojes\FaltasDelDia::class,
     ];
 
     public const TIPO_RECORDATORIO = 'reloj_recordatorio';

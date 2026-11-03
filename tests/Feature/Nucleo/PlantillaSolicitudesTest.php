@@ -122,8 +122,9 @@ class PlantillaSolicitudesTest extends TestCase
         // Reservas de áreas: reserva e imprime las suyas; el Jefe de departamento además aprueba en su sede
         $this->assertSame(['pases_salida.crear:propios', 'pases_salida.ver:propios', 'procedimientos.ver:sede',
             'reservas.crear:propios', 'reservas.imprimir:propios', 'reservas.ver:propios'], $this->permisos($solicitante));
+        // Asistencia (ADR-0024): el jefe ve la asistencia de sus departamentos (solo si la empresa la contrata)
         $this->assertSame([
-            'autorizaciones.responder:sede', 'autorizaciones.ver:sede', 'candidatos.evaluar:sede',
+            'asistencia.ver:propios', 'autorizaciones.responder:sede', 'autorizaciones.ver:sede', 'candidatos.evaluar:sede',
             'pases_salida.aprobar:sede', 'pases_salida.crear:propios', 'pases_salida.imprimir:sede', 'pases_salida.ver:sede',
             'procedimientos.ver:sede', 'reservas.aprobar:sede', 'reservas.crear:sede', 'reservas.imprimir:sede', 'reservas.ver:sede',
             'vacantes.crear:propios', 'vacantes.ver:sede',

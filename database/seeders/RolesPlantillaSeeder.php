@@ -96,7 +96,7 @@ class RolesPlantillaSeeder extends Seeder
         // El Agente trabaja en los menús de caseta: Operación y Padrones (no en reportes)
         $deCaseta = fn ($ma) => $deSeguridad($ma) && in_array(self::menuDe($ma->modulo), ['operacion', 'padrones'], true);
 
-        return self::reglaReservas(self::importarComoCrear(self::soloAdministradorBorra(self::reglaVacantes(self::reglaEtiquetasQr(self::reglaProcedimientos(self::reglaRecepcion(self::reglaSolicitudes([
+        return self::reglaAsistencia(self::reglaReservas(self::importarComoCrear(self::soloAdministradorBorra(self::reglaVacantes(self::reglaEtiquetasQr(self::reglaProcedimientos(self::reglaRecepcion(self::reglaSolicitudes([
             'Administrador' => [10, 'Administra toda su empresa', fn ($ma) => Alcance::Empresa],
             // Exportar TODOS los datos de la empresa (empresas.exportar) queda solo para el Administrador
             'Director' => [20, 'Consulta y aprueba en toda la empresa', fn ($ma) => in_array($ma->accion->clave, ['ver', 'aprobar', 'exportar', 'imprimir'], true) && $ma->clave() !== 'empresas.exportar' ? Alcance::Empresa : null],
@@ -114,7 +114,7 @@ class RolesPlantillaSeeder extends Seeder
             // Solicitante y Jefe de departamento: su regla la arma reglaSolicitudes()
             self::SOLICITANTE => [70, 'Levanta solicitudes (pases de salida) y consulta solo las suyas', fn ($ma) => null],
             self::JEFE_DEPARTAMENTO => [45, 'Aprueba y responde las solicitudes de su departamento en su sede', fn ($ma) => null],
-        ]))))))));
+        ])))))))));
     }
 
     // Solicitudes: Solicitante y Jefe de departamento
@@ -401,6 +401,44 @@ class RolesPlantillaSeeder extends Seeder
         return $definiciones;
     }
     // Fin Reservas de áreas
+
+    // Asistencia (ADR-0024)
+
+    /**
+     * Asistencia: Recursos Humanos y el Administrador todo en la empresa; el
+     * Director consulta y exporta; el Jefe de departamento ve a la gente de
+     * los departamentos donde es responsable («Solo los propios» en este
+     * módulo = sus departamentos). La caseta no recibe nada: el agente no
+     * tiene ningún paso nuevo. Misma tabla que la migración del módulo.
+     * rol => [acciones, alcance].
+     */
+    public const ASISTENCIA = [
+        'Administrador' => [['ver', 'justificar', 'exportar', 'configurar'], Alcance::Empresa],
+        'Recursos Humanos' => [['ver', 'justificar', 'exportar', 'configurar'], Alcance::Empresa],
+        'Director' => [['ver', 'exportar'], Alcance::Empresa],
+        self::JEFE_DEPARTAMENTO => [['ver'], Alcance::Propios],
+    ];
+
+    /**
+     * @param  array<string, array{0: int, 1: string, 2: Closure}>  $definiciones
+     * @return array<string, array{0: int, 1: string, 2: Closure}>
+     */
+    private static function reglaAsistencia(array $definiciones): array
+    {
+        foreach ($definiciones as $nombre => [$nivel, $descripcion, $regla]) {
+            $definiciones[$nombre][2] = function ($ma) use ($nombre, $regla) {
+                if ($ma->modulo->clave !== 'asistencia') {
+                    return $regla($ma);
+                }
+                [$acciones, $alcance] = self::ASISTENCIA[$nombre] ?? [[], null];
+
+                return in_array($ma->accion->clave, $acciones, true) ? $alcance : null;
+            };
+        }
+
+        return $definiciones;
+    }
+    // Fin Asistencia
 
     /**
      * Clave del menú donde aparece el módulo (los submódulos heredan el de su padre).

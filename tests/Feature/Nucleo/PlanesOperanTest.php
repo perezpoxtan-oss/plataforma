@@ -232,9 +232,13 @@ class PlanesOperanTest extends TestCase
 
     public function test_corporativo_y_las_empresas_sin_suscripcion_no_pierden_nada(): void
     {
-        // Hotel Demo (sin suscripción): todos los módulos activos y RR. HH. completo
+        // Hotel Demo (sin suscripción): todos los módulos activos y RR. HH. completo, salvo los
+        // complementos apagados de fábrica (Asistencia, ADR-0024), que no se encienden solos
         $hotel = Empresa::where('nombre_comercial', 'Hotel Demo')->firstOrFail();
-        $catalogo = Modulo::where('activo', true)->where('tipo', '!=', Modulo::TIPO_PLATAFORMA)->pluck('clave');
+        $catalogo = Modulo::where('activo', true)->where('tipo', '!=', Modulo::TIPO_PLATAFORMA)->whereNotIn('clave', Modulo::APAGADOS_DE_FABRICA)->pluck('clave');
+        foreach (Modulo::APAGADOS_DE_FABRICA as $clave) {
+            $this->assertFalse(app(Autorizador::class)->moduloActivo($hotel->id, $clave), "Hotel Demo encendió {$clave} sin contratarlo");
+        }
         foreach ($catalogo as $clave) {
             $this->assertTrue(app(Autorizador::class)->moduloActivo($hotel->id, $clave), "Hotel Demo perdió {$clave}");
         }

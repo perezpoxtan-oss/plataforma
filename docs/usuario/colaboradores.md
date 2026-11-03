@@ -191,6 +191,15 @@ La ficha reúne en una sola pantalla lo que la plataforma sabe de la persona, or
 
 **Qué debes ver:** solo las pestañas y apartados que tu rol puede ver. La pestaña **Expediente** son datos personales: si tu rol no tiene el permiso **Datos personales**, no aparece. **Su paso por Candidatos** solo lo ve quien puede consultar Candidatos, y **Ver el detalle en la Bitácora de auditoría** quien puede ver la bitácora.
 
+## Cómo ver la asistencia de un colaborador (solo con Asistencia)
+
+Si tu empresa tiene el complemento **Asistencia** y tu rol puede consultarlo, la ficha de cada colaborador trae el ícono de calendario **Asistencia**.
+
+1. Busca al colaborador.
+2. Toca el ícono de calendario (**Asistencia**).
+
+**Qué debes ver:** su **Reporte por periodo** con el detalle día por día de la quincena. Para que se calculen sus retardos y faltas, el colaborador necesita su **turno**. Ver [Asistencia](asistencia.md).
+
 ## En el celular y en modo Noche
 
 ![Celular](img/colaboradores/5-celular.png) ![Alta en el celular](img/colaboradores/6-celular-alta.png) ![Ficha en el celular: desliza la barra de pestañas](img/colaboradores/17-ficha-celular.png)
@@ -257,6 +266,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 ## Relacionado
 
+- [Asistencia](asistencia.md)
 - [Entregar y recibir](entregar-y-recibir.md)
 
 - [Departamentos y puestos](departamentos-y-puestos.md)

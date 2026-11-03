@@ -78,6 +78,8 @@ class LectorAuditoria
      * aquí, con acentos (LectorAuditoriaTest lo revisa contra el código).
      */
     public const ACCIONES = [
+        // Asistencia (ADR-0024): justificar una falta o retardo y sus ajustes
+        'justificada' => 'Justificación', 'justificacion_cambiada' => 'Cambio de justificación', 'ajustes' => 'Ajustes',
         // Altas, cambios y bajas
         'creado' => 'Alta', 'creada' => 'Alta', 'actualizado' => 'Edición', 'actualizada' => 'Edición',
         'desactivado' => 'Desactivación', 'desactivada' => 'Desactivación', 'reactivado' => 'Reactivación', 'reactivada' => 'Reactivación',

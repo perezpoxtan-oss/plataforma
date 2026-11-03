@@ -58,6 +58,8 @@ final class DependenciasModulos
         'recepcion_rh' => ['candidatos', 'accesos'],
         'candidatos' => ['colaboradores', 'departamentos', 'puestos', 'vacantes'],
         'vacantes' => ['departamentos', 'puestos', 'candidatos'],
+        // Asistencia (ADR-0024): cruza las entradas y salidas de los colaboradores con su turno
+        'asistencia' => ['colaboradores', 'turnos'],
     ];
 
     /**

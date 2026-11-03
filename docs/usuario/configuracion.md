@@ -104,6 +104,7 @@ Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en e
 - **Candidatos: plazos y documentos para contratar**: muestra cada plazo con su valor original. Se cambia con **Configurar en Candidatos → Documentos y plazos**.
 - **Criterios para calificar las entrevistas**: se cambian con **Configurar en Candidatos → Criterios de entrevista**.
 - **Bolsa de trabajo en internet**. Ver [Vacantes](vacantes.md).
+- **Asistencia: tolerancia y aviso de faltas** (solo si tu empresa tiene el complemento Asistencia): muestra la tolerancia de retardo (valor original: 10 minutos) y si el aviso al jefe está encendido (valor original: apagado). Se cambia con **Configurar en Asistencia → Avanzado**. Ver [Asistencia](asistencia.md).
 
 ## Novedades (o el nombre de tu bitácora)
 

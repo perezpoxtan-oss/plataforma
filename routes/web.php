@@ -53,6 +53,7 @@ use App\Http\Controllers\Publico\PlanesController;
 use App\Http\Controllers\Publico\PrivacidadController as PublicoPrivacidadController;
 use App\Http\Controllers\Publico\PwaController;
 use App\Http\Controllers\Publico\VerificarCredencialController;
+use App\Http\Controllers\RecursosHumanos\AsistenciaController;
 use App\Http\Controllers\RecursosHumanos\AutorizacionController;
 use App\Http\Controllers\RecursosHumanos\CandidatoController;
 use App\Http\Controllers\RecursosHumanos\EntrevistaController;
@@ -333,6 +334,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/informes/ejecutivo/imprimir', [InformeEjecutivoController::class, 'imprimir'])->name('informe_ejecutivo.imprimir');
     Route::get('/informes/ejecutivo/exportar', [InformeEjecutivoController::class, 'exportar'])->name('informe_ejecutivo.exportar');
     // Fin Informes
+
+    // Asistencia (ADR-0024): módulo opcional de Recursos Humanos, apagado de fábrica
+    Route::get('/asistencia', [AsistenciaController::class, 'index'])->name('asistencia.index');
+    Route::get('/asistencia/periodo', [AsistenciaController::class, 'periodo'])->name('asistencia.periodo');
+    Route::get('/asistencia/periodo/exportar', [AsistenciaController::class, 'exportar'])->name('asistencia.exportar');
+    Route::post('/asistencia/justificar/{colaborador}', [AsistenciaController::class, 'justificar'])->whereNumber('colaborador')->name('asistencia.justificar');
+    Route::put('/asistencia/ajustes', [AsistenciaController::class, 'ajustes'])->name('asistencia.ajustes');
 
     // Modulos del menu que aun no se migran
     Route::get('/modulos/{clave}', ModuloPendienteController::class)

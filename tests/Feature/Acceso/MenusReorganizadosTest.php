@@ -65,7 +65,8 @@ class MenusReorganizadosTest extends TestCase
     private function acomodo(): array
     {
         $menus = DB::table('menus')->orderBy('orden')->get()->map(fn ($m) => "{$m->clave}|{$m->nombre}|{$m->icono}|{$m->orden}|{$m->orden_movil}")->all();
-        $modulos = DB::table('modulos as mo')->leftJoin('menus as me', 'me.id', '=', 'mo.menu_id')->whereNotNull('mo.menu_id')
+        // Asistencia (ADR-0024) llegó después de estas migraciones y la acomoda la suya (al final de Recursos Humanos)
+        $modulos = DB::table('modulos as mo')->leftJoin('menus as me', 'me.id', '=', 'mo.menu_id')->whereNotNull('mo.menu_id')->where('mo.clave', '!=', 'asistencia')
             ->orderBy('me.orden')->orderBy('mo.orden_menu')
             ->get(['me.clave as menu', 'mo.seccion_menu', 'mo.orden_menu', 'mo.clave', 'mo.nombre_menu'])
             ->map(fn ($f) => "{$f->menu}|{$f->seccion_menu}|{$f->orden_menu}|{$f->clave}|{$f->nombre_menu}")->all();

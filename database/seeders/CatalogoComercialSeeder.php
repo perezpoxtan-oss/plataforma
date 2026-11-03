@@ -22,6 +22,11 @@ class CatalogoComercialSeeder extends Seeder
     /** PRECIO DE EJEMPLO del complemento «Reservas y eventos» (por sede al mes): el dueño lo revisa. */
     public const PRECIO_RESERVAS = 290;
 
+    /** PRECIO DE EJEMPLO del complemento «Asistencia» (por sede al mes): el dueño lo revisa. */
+    public const PRECIO_ASISTENCIA = 190;
+
+    public const DESCRIPCION_PAQUETE_ASISTENCIA = 'Entradas, salidas, retardos y faltas del personal según su turno, con reporte por periodo para nómina externa.';
+
     /** clave => [nombre, descripción, ícono, módulos del catálogo] */
     public const PRODUCTOS = [
         // Organización base en todos los planes (C-01): directorio de colaboradores, departamentos, puestos, turnos y quién autoriza
@@ -41,6 +46,9 @@ class CatalogoComercialSeeder extends Seeder
         // Complemento «Reservas y eventos» (C-05, DD-03): se suma a cualquier plan
         'reservas' => ['Reservas y eventos', 'Reservas de salones, salas y áreas comunes, con aprobación, órdenes de servicio y montaje por departamento.', 'bi-calendar-check',
             ['reservas']],
+        // Complemento «Asistencia» (decisión 13, ADR-0024): opcional en todos los planes, apagado de fábrica
+        'asistencia' => ['Asistencia', 'Asistencia del día y reporte por periodo para nómina: entradas, salidas, retardos, faltas y horas trabajadas de los colaboradores según su turno.', 'bi-calendar2-check',
+            ['asistencia']],
     ];
 
     /** Productos de cada plan (C-05): cada plan opera solo y cumple la lista de dependencias. */
@@ -54,6 +62,7 @@ class CatalogoComercialSeeder extends Seeder
     public const PAQUETES = [
         'recursos-humanos' => [['recursos_humanos'], ['esencial', 'profesional']],
         'reservas-y-eventos' => [['reservas'], ['esencial', 'profesional', 'corporativo']],
+        'asistencia' => [['asistencia'], ['esencial', 'profesional', 'corporativo']],
     ];
 
     public function run(): void
@@ -109,6 +118,13 @@ class CatalogoComercialSeeder extends Seeder
             ]);
             $reservas->productos()->sync($ids(self::PAQUETES['reservas-y-eventos'][0]));
             $reservas->planes()->sync([$esencial->id, $profesional->id, $corporativo->id]);
+            $asistencia = Paquete::create([
+                'nombre' => 'Asistencia', 'slug' => 'asistencia', 'modalidad' => Paquete::SUSCRIPCION,
+                'descripcion' => self::DESCRIPCION_PAQUETE_ASISTENCIA,
+                'precio' => self::PRECIO_ASISTENCIA, 'por_sede' => true, 'publicado' => true, 'orden' => 5,
+            ]);
+            $asistencia->productos()->sync($ids(self::PAQUETES['asistencia'][0]));
+            $asistencia->planes()->sync([$esencial->id, $profesional->id, $corporativo->id]);
             Paquete::create([
                 'nombre' => 'Puesta en marcha y capacitación', 'slug' => 'puesta-en-marcha', 'modalidad' => Paquete::UNICO,
                 'descripcion' => 'Carga inicial de padrones, configuración de la sede y capacitación del personal de caseta.',

@@ -78,6 +78,8 @@ class AdministradorColaboradores
         ['pases_salida', 'colaborador_destino_id'],
         // C-44 (Etapa 8): la credencial pasa al registro correcto al unir duplicados
         ['credenciales', 'colaborador_id'],
+        // Asistencia (ADR-0024): sus justificaciones (si el correcto ya tiene una del mismo día y tipo, se queda la suya)
+        ['asistencia_justificaciones', 'colaborador_id'],
     ];
 
     private const SIN_ACENTOS = ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u', 'Ü' => 'u'];
@@ -313,6 +315,12 @@ class AdministradorColaboradores
                 }
                 $movidos[$tabla] = $consulta->update([$columna => $destino->id]);
             }
+            // Asistencia: una justificación por colaborador, día y tipo; la repetida del provisional no se mueve
+            $delCorrecto = DB::table('asistencia_justificaciones')->where('colaborador_id', $destino->id)->get(['fecha', 'tipo'])
+                ->map(fn ($j) => substr((string) $j->fecha, 0, 10).'|'.$j->tipo)->all();
+            $repetidas = DB::table('asistencia_justificaciones')->where('colaborador_id', $provisional->id)->get(['id', 'fecha', 'tipo'])
+                ->filter(fn ($j) => in_array(substr((string) $j->fecha, 0, 10).'|'.$j->tipo, $delCorrecto, true))->pluck('id');
+            DB::table('asistencia_justificaciones')->whereIn('id', $repetidas)->delete();
             foreach (self::REFERENCIAS_ADICIONALES as [$tabla, $columna]) {
                 $movidos["{$tabla}.{$columna}"] = DB::table($tabla)->where($columna, $provisional->id)->update([$columna => $destino->id]);
             }

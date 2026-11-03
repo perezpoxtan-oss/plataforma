@@ -16,6 +16,13 @@ class Modulo extends Model
     /** Solo para el Super Administrador: nunca se contrata ni se copia a las empresas. */
     public const TIPO_PLATAFORMA = 'plataforma';
 
+    /**
+     * Módulos opcionales que NO se encienden solos (ADR-0024): ni al dar de
+     * alta una empresa sin lista de módulos ni en las migraciones. Se
+     * encienden al contratar su complemento o en Empresas → Módulos.
+     */
+    public const APAGADOS_DE_FABRICA = ['asistencia'];
+
     protected $table = 'modulos';
 
     /** Mismos valores por defecto que la base de datos (disponibles antes de recargar). */
