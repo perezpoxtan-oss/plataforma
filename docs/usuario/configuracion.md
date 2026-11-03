@@ -95,7 +95,7 @@ Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en e
 |---|---|---|---|
 | **Colaboradores: avisos por correo** | Si se avisa por correo del alta provisional de un colaborador que hizo la caseta. | Encendido. | Aquí, con **Guardar avisos** |
 
-**Credenciales del personal:** la **vigencia** (de fábrica, sin vencimiento; o a los meses que elijas desde que se emite; o cada año en la misma fecha), cuántos días antes de vencer avisa en **Mis pendientes** (30) y, en **Avanzado**, la **tecnología** (solo QR, de fábrica, o QR y tarjeta NFC / RFID) y el **reverso** (teléfono y texto). Ver [Credenciales](credenciales.md).
+**Credenciales del personal:** la **vigencia** (de fábrica, sin vencimiento; o a los meses que elijas desde que se emite; o cada año en la misma fecha), cuántos días antes de vencer avisa en **Mis pendientes** (30) y, en **Avanzado**, la **tecnología de la credencial** (el código QR va siempre; de fábrica, solo QR; marca **Tarjeta Proximidad 125 kHz**, **Tarjeta MIFARE 13.56 MHz** o las dos si tu empresa las usa) y el **reverso** (teléfono y texto). Ver [Credenciales](credenciales.md).
 
 ## Recepción y RR. HH.
 

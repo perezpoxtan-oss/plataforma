@@ -94,13 +94,18 @@ class AdministradorCredenciales
     /**
      * «Dar salida»: entrega la credencial. Si Recursos Humanos guarda la que
      * ya tenía (DISPONIBLE), se le vuelve a dar esa; si no, nace una nueva con
-     * su folio. Opcional: la tarjeta NFC/RFID del plástico (la misma regla
-     * única de «Código e identificación»).
+     * su folio. Opcional: la tarjeta del plástico, solo si la empresa
+     * habilitó alguna (proximidad 125 kHz y/o MIFARE 13.56 MHz; de fábrica
+     * solo QR y no se pide). Su número es la etiqueta NFC/RFID del
+     * colaborador, con la misma regla única entre todos los tipos de
+     * «Código e identificación»; la credencial guarda qué tarjeta es.
      */
-    public function darSalida(User $actor, Colaborador $c, ?string $etiqueta = null): Credencial
+    public function darSalida(User $actor, Colaborador $c, ?string $etiqueta = null, ?string $tipoTarjeta = null): Credencial
     {
         $this->exigirEmitible($c);
-        if ($etiqueta !== null && trim($etiqueta) !== '') {
+        $conTarjeta = $etiqueta !== null && trim($etiqueta) !== '';
+        $tipoTarjeta = $conTarjeta ? $this->tipoDeTarjeta($c, $tipoTarjeta) : null;
+        if ($conTarjeta) {
             app(Identificacion::class)->asignarEtiqueta($actor, 'colaborador', $c, $etiqueta);
             $c->refresh();
         }
@@ -111,9 +116,12 @@ class AdministradorCredenciales
         }
         // Sin credencial vigente se emite en el mismo paso (como siempre: un solo botón)
         $credencial = $vigente ?? $this->emitir($actor, $c);
-        DB::transaction(function () use ($actor, $c, $credencial) {
+        DB::transaction(function () use ($actor, $c, $credencial, $tipoTarjeta) {
+            $etiquetaActual = $c->fresh()?->etiqueta_nfc;
+            // Sin tarjeta nueva: conserva su tipo solo si sigue siendo la misma tarjeta
+            $tipo = $tipoTarjeta ?? ($etiquetaActual !== null && $etiquetaActual === $credencial->etiqueta_nfc ? $credencial->tipo_tarjeta : null);
             $credencial->forceFill([
-                'sede_id' => $c->sede_id, 'estado' => EstadoActivo::ASIGNADO, 'etiqueta_nfc' => $c->fresh()?->etiqueta_nfc,
+                'sede_id' => $c->sede_id, 'estado' => EstadoActivo::ASIGNADO, 'etiqueta_nfc' => $etiquetaActual, 'tipo_tarjeta' => $tipo,
                 'entregada_en' => now(), 'entregada_por' => $actor->id, 'recibida_en' => null, 'recibida_por' => null,
             ])->save();
         });
@@ -339,6 +347,28 @@ class AdministradorCredenciales
         }
 
         return null;
+    }
+
+    /**
+     * Qué tarjeta lleva el plástico: una de las que la empresa habilitó. Si
+     * solo habilitó una, es esa; si habilitó las dos, hay que elegirla. Sin
+     * ninguna habilitada no se registra tarjeta (solo QR).
+     */
+    private function tipoDeTarjeta(Colaborador $c, ?string $tipo): string
+    {
+        $habilitadas = AjustesCredenciales::de((int) $c->empresa_id)['tarjetas'];
+        if ($habilitadas === []) {
+            throw ValidationException::withMessages(['etiqueta_nfc' => 'Tu empresa usa solo código QR en las credenciales: no se registra número de tarjeta. Si van a usar tarjeta, habilítala en Configuración → Estructura → Credenciales del personal.']);
+        }
+        if ($tipo === null && count($habilitadas) === 1) {
+            return $habilitadas[0];
+        }
+        if ($tipo === null || ! in_array($tipo, $habilitadas, true)) {
+            $nombres = implode(' o ', array_map(fn (string $t) => AjustesCredenciales::nombreTarjeta($t), $habilitadas));
+            throw ValidationException::withMessages(['tipo_tarjeta' => "Elige qué tarjeta es: {$nombres}."]);
+        }
+
+        return $tipo;
     }
 
     private function exigirEmitible(?Colaborador $c): void

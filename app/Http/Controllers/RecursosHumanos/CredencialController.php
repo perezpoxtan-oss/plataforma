@@ -37,11 +37,12 @@ class CredencialController extends Controller
     public function darSalida(Request $request, int $colaborador): RedirectResponse
     {
         abort_unless($request->user()->can(AdministradorCredenciales::PERMISO), 403);
-        $request->validate(['etiqueta_nfc' => ['nullable', 'string', 'max:'.Etiqueta::MAXIMO]]);
+        $request->validate(['etiqueta_nfc' => ['nullable', 'string', 'max:'.Etiqueta::MAXIMO], 'tipo_tarjeta' => ['nullable', 'string', 'max:20']]);
         $credencial = $this->enEmpresa($request, function () use ($request, $colaborador) {
             $c = $this->credenciales->colaborador($request->user(), $colaborador);
 
-            return $this->credenciales->darSalida($request->user(), $c, Entrada::texto($request->input('etiqueta_nfc')) ?: null);
+            return $this->credenciales->darSalida($request->user(), $c, Entrada::texto($request->input('etiqueta_nfc')) ?: null,
+                Entrada::texto($request->input('tipo_tarjeta')) ?: null);
         });
 
         return $this->volver($credencial->colaborador_id)->with('ok', "Credencial {$credencial->folio} entregada.")

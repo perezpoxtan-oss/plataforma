@@ -282,7 +282,7 @@ class EtapaOchoCredencialFaseUnoTest extends TestCase
         $this->actingAs($this->rh)->post(route('credenciales.emitir', $c->id));
         // Solo QR (de fábrica): no pide tarjeta al dar salida
         $this->actingAs($this->rh)->get(route('colaboradores.expediente', $c->id))->assertDontSee('Avanzado: tarjeta NFC / RFID del plástico');
-        $this->ajustes(['tecnologia' => 'qr_tarjeta', 'telefono' => '998 000 0000', 'reverso_texto' => 'Uso obligatorio dentro de las instalaciones.']);
+        $this->ajustes(['tarjetas' => ['', 'proximidad_125', 'mifare_1356'], 'telefono' => '998 000 0000', 'reverso_texto' => 'Uso obligatorio dentro de las instalaciones.']);
         $this->actingAs($this->rh)->get(route('colaboradores.expediente', $c->id))->assertSee('Avanzado: tarjeta NFC / RFID del plástico');
         $this->actingAs($this->rh)->get(route('credenciales.imprimir', ['credenciales' => [$this->vigenteDe($c)->id]]))
             ->assertSee('llama al 998 000 0000')->assertSee('Uso obligatorio dentro de las instalaciones.');

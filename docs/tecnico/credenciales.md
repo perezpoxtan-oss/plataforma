@@ -29,7 +29,7 @@ La credencial **no** es un tipo del lector: su QR y su tarjeta son los del colab
 
 | Método | Ruta | Nombre |
 |---|---|---|
-| `darSalida($actor, $colaborador, ?$etiqueta)` | `POST /colaboradores/{colaborador}/credencial` | `credenciales.salida` |
+| `darSalida($actor, $colaborador, ?$etiqueta, ?$tipoTarjeta)` | `POST /colaboradores/{colaborador}/credencial` | `credenciales.salida` |
 | `recibir($actor, $credencial, ok|danado|no_regreso)` | `PATCH /credenciales/{credencial}/recibir` | `credenciales.recibir` |
 | `darDeBaja($actor, $credencial, $entrada)` | `POST /credenciales/{credencial}/baja` | `credenciales.baja` |
 | `bajaPorColaborador($actor, $colaborador)` | (desde `AntesDeDarDeBaja::aplicar`) | — |
@@ -67,8 +67,18 @@ Pantallas y piezas:
 - **Emitir / Imprimir / Dar salida / Recibir / Reponer / Dar de baja** en la ficha (`ficha/_codigo.blade.php`). «Emitir credencial» y «Reponer credencial» están en la lista de exclusión de `DiezVerbosTest` (acciones de la propuesta aprobada); «Revocar» es **Dar de baja**.
 - **Hoja CR80** (`GET /credenciales/imprimir?credenciales[]=…`, `rh/credenciales/imprimir.blade.php`): `@page 85.6mm 54mm`, frente (logo, foto, nombre, puesto, departamento, número, vigencia, QR de verificación, folio) y reverso (propiedad de la empresa, teléfono, texto adicional, firma del titular). Sigue el enfoque del motor de Etiquetas QR (milímetros en `@page`, QR local con bacon, logo de la identidad); es HTML que se imprime o se guarda como PDF. Audita `colaboradores.credencial_impresa`.
 - **Lista «Credenciales»** (`GET /credenciales`, botón en Colaboradores): filtros Vigentes / Por vencer / Vencidas / No regresó / De baja / Sin credencial, búsqueda por nombre normalizado o número; «Imprimir seleccionadas» (`POST /credenciales/imprimir`) emite la de quien no tiene y abre la hoja.
-- **Ajustes** (`AjustesCredenciales`, Configuración → Estructura → Credenciales del personal, `PUT /configuracion/credenciales`, `configuracion.editar` con alcance de empresa): vigencia `sin` (de fábrica) | `meses` | `anual`, `aviso_dias` (30), `tecnologia` `qr` (de fábrica: no pide tarjeta) | `qr_tarjeta`, teléfono y texto del reverso.
+- **Ajustes** (`AjustesCredenciales`, Configuración → Estructura → Credenciales del personal, `PUT /configuracion/credenciales`, `configuracion.editar` con alcance de empresa): vigencia `sin` (de fábrica) | `meses` | `anual`, `aviso_dias` (30), `tarjetas` (lista; de fábrica `[]` = solo QR) y teléfono y texto del reverso. Ver «Tecnología de tarjeta» abajo.
 - **Fase 2 (lo barato):** la entrada y salida con la credencial ya funcionan con el lector (QR o tarjeta → «Nuevo ingreso» / «Dar salida», y la salida a la vista acepta la credencial); si la credencial ya no es vigente, la pantalla de la caseta lo dice. «Quién está dentro» es **Gente en sitio** de la Bitácora de accesos (tipo Colaborador).
+
+## Tecnología de tarjeta (decisión del dueño, 3 nov)
+
+De fábrica la credencial es **solo QR**. Cada empresa puede habilitar, además, `proximidad_125` (125 kHz) y `mifare_1356` (MIFARE 13.56 MHz); pueden convivir. Se guarda en `empresas.preferencias['credenciales']['tarjetas']` (`AjustesCredenciales::TARJETAS`, con el nombre y el lector de cada una; `LECTOR_QR` para el QR). En Configuración son casillas (`tarjetas[]` con un valor vacío para que desmarcar las dos guarde «ninguna»).
+
+- Las dos guardan el número en la **etiqueta NFC/RFID del colaborador** (`colaboradores.etiqueta_nfc`) y el lector universal las lee igual: los lectores USB de 125 kHz escriben el número como teclado; MIFARE se lee por NFC (Web NFC / app) o USB. No cambia la regla de que una tarjeta no se repite entre tipos (`Identificacion::asignarEtiqueta`).
+- `credenciales.tipo_tarjeta` (migración `2026_11_19_000200_tarjetas_de_credenciales`) guarda qué tarjeta lleva el plástico entregado. La ficha muestra «Tarjeta: <nombre> · <número>» y «Lector que la lee»; el renglón «Se lee con:» lista el QR y las tarjetas habilitadas con su lector.
+- **Dar salida** (`AdministradorCredenciales::tipoDeTarjeta`): sin tarjetas habilitadas no hay campo y un número enviado se rechaza (`etiqueta_nfc`); con una sola, el tipo es esa (campo oculto); con las dos, «¿Qué tarjeta es?» es obligatorio (`tipo_tarjeta`). Al volver a dar salida sin tarjeta nueva, el tipo se conserva solo si sigue siendo la misma tarjeta.
+- Lo guardado antes como `tecnologia = qr_tarjeta` (QR y una tarjeta sin decir cuál) pasa a las dos habilitadas: la migración lo convierte y `AjustesCredenciales::de()` lo entiende si llega de un respaldo anterior. `down()` quita la columna y regresa `tecnologia = qr_tarjeta` a quien tenía alguna habilitada.
+- Pruebas: `tests/Feature/Seguridad/CredencialesTarjetasTest.php`.
 
 ## Lo que quedó para después (y por qué)
 
@@ -78,8 +88,8 @@ Pantallas y piezas:
 - **Vigencia «hasta fin de contrato»**: el colaborador no guarda esa fecha de forma confiable.
 - **Gafetes de visitante en CR80**: ya se imprimen con la plantilla «Gafete» (86 × 54) de Etiquetas QR; la opción por empresa queda pendiente.
 - **Campana del vencimiento** (además de Mis pendientes) y aviso por correo.
-- **Fases 3 y 4** (ZKTeco, Hikvision) y las decisiones de §7 de la propuesta: tecnología de tarjeta (de fábrica, solo QR), marca de equipos, reconocimiento facial, antipassback y relación con asistencia o nómina. No se hicieron.
+- **Fases 3 y 4** (ZKTeco, Hikvision) y las decisiones de §7 de la propuesta: marca de equipos, reconocimiento facial, antipassback y relación con asistencia o nómina. No se hicieron.
 
 ## Pruebas
 
-`tests/Feature/Seguridad/EtapaOchoCredencialesTest.php`, `EtapaOchoCredencialFaseUnoTest.php` y `MigracionEtapa8Test.php`.
+`tests/Feature/Seguridad/EtapaOchoCredencialesTest.php`, `EtapaOchoCredencialFaseUnoTest.php`, `CredencialesTarjetasTest.php` y `MigracionEtapa8Test.php`.

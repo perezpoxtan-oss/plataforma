@@ -83,8 +83,15 @@ class EtapaOchoCredencialesTest extends TestCase
         $this->actingAs($agente)->post(route('credenciales.salida', $c->id))->assertForbidden();
     }
 
+    /** La empresa usa tarjeta MIFARE además del QR (de fábrica solo QR y no se pide tarjeta). */
+    private function conTarjeta(): void
+    {
+        $this->empresa->forceFill(['preferencias' => ['credenciales' => ['tarjetas' => ['mifare_1356']]]])->save();
+    }
+
     public function test_dar_salida_recibir_ok_y_volver_a_darla_conserva_el_folio(): void
     {
+        $this->conTarjeta();
         $c = $this->colaborador();
         $this->actingAs($this->rh)->post(route('credenciales.salida', $c->id), ['etiqueta_nfc' => '04:a2:3b:11'])
             ->assertRedirect(route('colaboradores.expediente', $c->id).'#codigo')->assertSessionHas('ok', 'Credencial CRED-000001 entregada.')
@@ -107,6 +114,7 @@ class EtapaOchoCredencialesTest extends TestCase
 
     public function test_no_regreso_avisa_y_la_baja_con_voucher_apaga_su_codigo(): void
     {
+        $this->conTarjeta();
         $c = $this->colaborador();
         $this->actingAs($this->rh)->post(route('credenciales.salida', $c->id), ['etiqueta_nfc' => 'AABB01']);
         $cred = $this->credencial($c);

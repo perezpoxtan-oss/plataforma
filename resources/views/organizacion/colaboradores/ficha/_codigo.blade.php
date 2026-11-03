@@ -54,6 +54,10 @@
                 </p>
                 <dl class="lista-datos-expediente">
                     <dt>Vigencia</dt><dd>{{ $credencial->vence_en ? 'Vence el '.$credencial->vence_en->format('d/m/Y') : 'Sin vencimiento' }}</dd>
+                    @if ($credencial->etiqueta_nfc)
+                        <dt>Tarjeta</dt><dd>{{ \App\Support\AjustesCredenciales::nombreTarjeta($credencial->tipo_tarjeta) ?? 'Tarjeta NFC / RFID' }} · {{ $credencial->etiqueta_nfc }}</dd>
+                        @if (\App\Support\AjustesCredenciales::lectorTarjeta($credencial->tipo_tarjeta))<dt>Lector que la lee</dt><dd>{{ \App\Support\AjustesCredenciales::lectorTarjeta($credencial->tipo_tarjeta) }}</dd>@endif
+                    @endif
                     @if ($credencial->entregada_en)<dt>Se le dio salida</dt><dd>@fecha($credencial->entregada_en){{ $credencial->entrego ? ' · '.$credencial->entrego->name : '' }}</dd>@endif
                     @if ($credencial->recibida_en)<dt>Se recibió</dt><dd>@fecha($credencial->recibida_en){{ $credencial->recibio ? ' · '.$credencial->recibio->name : '' }}</dd>@endif
                     @if ($estadoCred === 'baja')<dt>Baja</dt><dd>{{ \App\Models\Credencial::MOTIVOS_BAJA[$credencial->baja_motivo] ?? '—' }}</dd>@endif
@@ -64,6 +68,10 @@
             @else
                 <p class="small text-muted">Todavía no tiene credencial. Toma su foto y emítela.</p>
             @endif
+            {{-- Decisión del dueño (3 nov): qué identifica la credencial en esta empresa y qué lector necesita cada cosa --}}
+            <p class="small text-muted mb-0 credencial-tecnologias">
+                <i class="bi bi-upc-scan me-1" aria-hidden="true"></i><strong>Se lee con:</strong> código QR — {{ \App\Support\AjustesCredenciales::LECTOR_QR }}@foreach ($ajustesCredencial['tarjetas'] as $tipoTj); tarjeta {{ \App\Support\AjustesCredenciales::nombreTarjeta($tipoTj) }} — {{ \App\Support\AjustesCredenciales::lectorTarjeta($tipoTj) }}@endforeach.
+            </p>
         </div>
     </div>
 
@@ -101,10 +109,24 @@
             @if ($estadoCred === 'disponible')
                 <form action="{{ route('credenciales.salida', $c->id) }}" method="POST" class="m-0 form-credencial-salida">
                     @csrf
-                    @if ($ajustesCredencial['tecnologia'] === 'qr_tarjeta')
-                        <details class="mb-2">
+                    {{-- Sin tarjetas habilitadas (de fábrica, solo QR) no se pide número de tarjeta --}}
+                    @if ($ajustesCredencial['tarjetas'] !== [])
+                        <details class="mb-2" @if ($errors->has('etiqueta_nfc') || $errors->has('tipo_tarjeta')) open @endif>
                             <summary class="small">Avanzado: tarjeta NFC / RFID del plástico (opcional)</summary>
-                            @include('componentes.lector', ['id' => 'credencial_nfc', 'etiqueta' => 'Tarjeta NFC / RFID', 'modo' => 'capturar', 'nombre' => 'etiqueta_nfc',
+                            @if (count($ajustesCredencial['tarjetas']) === 1)
+                                <input type="hidden" name="tipo_tarjeta" value="{{ $ajustesCredencial['tarjetas'][0] }}">
+                                <p class="campo-ayuda mt-2 mb-1">Tarjeta {{ \App\Support\AjustesCredenciales::nombreTarjeta($ajustesCredencial['tarjetas'][0]) }}: {{ \App\Support\AjustesCredenciales::lectorTarjeta($ajustesCredencial['tarjetas'][0]) }}.</p>
+                            @else
+                                <fieldset class="mt-2">
+                                    <legend class="campo-etiqueta">¿Qué tarjeta es?</legend>
+                                    @foreach ($ajustesCredencial['tarjetas'] as $tipoTj)
+                                        <label class="d-flex align-items-start gap-2 small"><input type="radio" name="tipo_tarjeta" value="{{ $tipoTj }}" @checked(old('tipo_tarjeta') === $tipoTj)>
+                                            <span><strong>{{ \App\Support\AjustesCredenciales::nombreTarjeta($tipoTj) }}</strong> — {{ \App\Support\AjustesCredenciales::lectorTarjeta($tipoTj) }}</span></label>
+                                    @endforeach
+                                </fieldset>
+                                @error('tipo_tarjeta')<p class="texto-error-campo">{{ $message }}</p>@enderror
+                            @endif
+                            @include('componentes.lector', ['id' => 'credencial_nfc', 'etiqueta' => 'Número de la tarjeta', 'modo' => 'capturar', 'nombre' => 'etiqueta_nfc',
                                 'valor' => '', 'duplicado' => route('identificacion.etiqueta-duplicado', ['colaborador', $c->id])])
                         </details>
                     @endif
