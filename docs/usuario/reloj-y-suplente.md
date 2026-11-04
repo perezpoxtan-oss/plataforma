@@ -37,6 +37,7 @@ Algunas cosas tienen su propio reloj:
 | Llaves fuera | 12 h | 24 h |
 | Lost & Found vencido | Cada semana | 72 h después de vencer |
 | Pendiente de turno sin turnos en la sede | De inmediato | A las 8 h |
+| Equipo de acceso sin conexión | Las horas de Equipos de acceso (2 h de fábrica), al jefe de seguridad de la sede | Al doble |
 
 ## Quién es el suplente
 

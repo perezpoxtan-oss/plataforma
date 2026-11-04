@@ -61,7 +61,9 @@ class RecorridoPantallasTest extends TestCase
     use CreaDatosNucleo, RefreshDatabase;
 
     /** Rutas que no son pantallas de la aplicación. */
-    private const OMITIR = ['storage.local', 'login', 'sesion.expirada'];
+    private const OMITIR = ['storage.local', 'login', 'sesion.expirada',
+        // Decisión 10: llamadas de los equipos de acceso (sin número de serie responden 400; sus pruebas están en tests/Feature/EquiposAcceso)
+        'equipos.zkteco.cdata', 'equipos.zkteco.getrequest'];
 
     /** Texto que delata un error de PHP o de base de datos en la página. */
     private const TEXTO_DE_ERROR = [

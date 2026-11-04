@@ -78,6 +78,9 @@ class AdministradorColaboradores
         ['pases_salida', 'colaborador_destino_id'],
         // C-44 (Etapa 8): la credencial pasa al registro correcto al unir duplicados
         ['credenciales', 'colaborador_id'],
+        // Decisión 10: la cola y los marcajes de los equipos de acceso
+        ['equipos_acceso_comandos', 'colaborador_id'],
+        ['equipos_acceso_marcajes', 'colaborador_id'],
         // Asistencia (ADR-0024): sus justificaciones (si el correcto ya tiene una del mismo día y tipo, se queda la suya)
         ['asistencia_justificaciones', 'colaborador_id'],
     ];

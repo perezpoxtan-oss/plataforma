@@ -139,6 +139,9 @@ class CentroNotificaciones
         'novedad_departamento' => ['bi-diagram-2-fill', 'alerta'],
         'novedad_departamento_atendida' => ['bi-check2-circle', 'exito'],
         'reserva_orden_sin_quien' => ['bi-person-exclamation', 'alerta'],
+        // Decisión 10: equipos de acceso (credencial no vigente usada en una puerta; antipassback solo avisa)
+        'equipo_no_vigente' => ['bi-person-x-fill', 'alerta'],
+        'equipo_antipassback' => ['bi-arrow-left-right', 'info'],
     ];
 
     public function __construct(private readonly HoraLocal $hora) {}

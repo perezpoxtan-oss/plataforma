@@ -441,6 +441,46 @@ class RegistroAccesos
         return $acceso;
     }
 
+    /**
+     * Decisión 10: la entrada de un colaborador SIN formulario (un equipo de
+     * acceso, o cualquier origen sin persona en caseta). Es el mismo registro
+     * que deja registrar() para un colaborador «A pie»: mismas reglas de
+     * colaborador (activo, no unido a otro, de la sede, corporativo o con la
+     * sede como adicional), del giro y la misma auditoría `accesos.creado`.
+     * Así la Bitácora de accesos, Gente en sitio y Asistencia lo ven igual.
+     *
+     * @param  array{equipo_entrada_id?: ?int, entrada_at?: ?\DateTimeInterface}  $origen
+     *
+     * @throws ValidationException si el colaborador no puede entrar a esa sede
+     */
+    public function entradaDeColaborador(?User $actor, Colaborador $colaborador, int $sedeId, array $origen = []): Acceso
+    {
+        $colaborador = $this->colaboradorEnSede($colaborador->id, $sedeId);
+        if ($colaborador === null) {
+            throw ValidationException::withMessages(['colaborador_id' => 'El colaborador elegido no existe, está dado de baja o no pertenece a esta sede.']);
+        }
+        if (! Terminos::deEmpresaId((int) Sede::whereKey($sedeId)->value('empresa_id'))->ofreceTipo('colaborador')) {
+            throw ValidationException::withMessages(['tipo' => 'Ese tipo de persona no se registra en esta empresa. Elige uno de la lista.']);
+        }
+
+        $acceso = Acceso::create([
+            'sede_id' => $sedeId,
+            'tipo' => 'colaborador',
+            'movimiento' => 'entrada',
+            'estado' => 'en_sitio',
+            'nombre' => $this->mayusculas($colaborador->nombreCompleto()),
+            'colaborador_id' => $colaborador->id,
+            'modo_arribo' => 'a_pie',
+            'num_acompanantes' => 0,
+            'equipo_entrada_id' => $origen['equipo_entrada_id'] ?? null,
+            'entrada_at' => $origen['entrada_at'] ?? now(),
+        ]);
+        $this->auditoria->auditar($actor, 'accesos.creado', $acceso, null, self::foto($acceso)
+            + (empty($origen['equipo_entrada_id']) ? [] : ['equipo' => (int) $origen['equipo_entrada_id']]));
+
+        return $acceso;
+    }
+
     // --------------------------------------------------------------- Validación
 
     /**
@@ -545,7 +585,7 @@ class RegistroAccesos
     /**
      * Colaborador activo (no unido a otro) de esta sede, corporativo o con la sede como adicional.
      */
-    private function colaboradorEnSede(mixed $id, int $sedeId): ?Colaborador
+    public function colaboradorEnSede(mixed $id, int $sedeId): ?Colaborador
     {
         if (empty($id)) {
             return null;

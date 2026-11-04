@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Collection;
 
 /**
  * Registro de la Bitácora de accesos (SEGCAT: bitacora_accesos).
@@ -150,7 +151,7 @@ class Acceso extends Model
         'gafete_id', 'gafete_texto', 'modo_arribo', 'vehiculo_id', 'placas', 'zona_estacionamiento_id',
         'conductor', 'num_acompanantes', 'tiene_reserva', 'numero_reserva', 'tipo_pase', 'habitacion',
         'tipo_visita', 'departamento_id', 'viene_a', 'area_trabajo', 'actividad', 'tipo_emergencia', 'observaciones',
-        'entrada_at', 'aviso_padron', 'espacio_id',
+        'entrada_at', 'aviso_padron', 'espacio_id', 'equipo_entrada_id',
     ];
 
     protected function casts(): array
@@ -278,6 +279,47 @@ class Acceso extends Model
     public function salidaPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'salida_por');
+    }
+
+    /** Decisión 10: el equipo de acceso que registró la entrada (sin persona en caseta). */
+    public function equipoEntrada(): BelongsTo
+    {
+        return $this->belongsTo(EquipoAcceso::class, 'equipo_entrada_id');
+    }
+
+    /** Decisión 10: el equipo de acceso que registró la salida. */
+    public function equipoSalida(): BelongsTo
+    {
+        return $this->belongsTo(EquipoAcceso::class, 'equipo_salida_id');
+    }
+
+    /**
+     * Carga el equipo de entrada y de salida solo si alguna fila lo tiene
+     * (la pantalla de la caseta no gana consultas cuando no hay equipos).
+     *
+     * @param  Collection<int, self>  $accesos
+     */
+    public static function cargarEquipos($accesos): void
+    {
+        $relaciones = array_keys(array_filter([
+            'equipoEntrada:id,nombre' => $accesos->contains(fn (self $a) => $a->equipo_entrada_id !== null),
+            'equipoSalida:id,nombre' => $accesos->contains(fn (self $a) => $a->equipo_salida_id !== null),
+        ]));
+        if ($relaciones !== [] && $accesos instanceof \Illuminate\Database\Eloquent\Collection) {
+            $accesos->load($relaciones);
+        }
+    }
+
+    /** Quién registró la entrada: la persona o «Equipo: <nombre>». */
+    public function quienRegistro(): string
+    {
+        return $this->registradoPor?->name ?? ($this->equipo_entrada_id !== null && $this->equipoEntrada ? $this->equipoEntrada->origen() : '—');
+    }
+
+    /** Quién registró la salida: la persona o «Equipo: <nombre>». */
+    public function quienDioSalida(): string
+    {
+        return $this->salidaPor?->name ?? ($this->equipo_salida_id !== null && $this->equipoSalida ? $this->equipoSalida->origen() : '—');
     }
 
     // Recepción de candidatos y autorizaciones (ADR-0007)

@@ -176,5 +176,15 @@ class AppServiceProvider extends ServiceProvider
         // C-12 «Delegar mis aprobaciones» en Mi cuenta: cada alta avisa al delegado; contador propio por cuenta (no choca con otras rutas)
         RateLimiter::for('delegar-cuenta', fn (Request $r) => Limit::perMinute(10)->by('delegar-cuenta|'.($r->user()?->getAuthIdentifier() ?? $ip($r))));
         RateLimiter::for('privacidad-confirmar', fn (Request $r) => Limit::perMinute(10)->by('privacidad-confirmar|'.$ip($r)));
+
+        // Decisión 10: equipos de acceso. Por equipo (SN o token) y por IP: varios equipos de un cliente salen por la misma IP.
+        // ZKTeco pregunta cada 30 s y manda sus marcajes en paquetes; Hikvision manda un evento por paso.
+        $equipo = fn (Request $r): string => substr((string) ($r->query('SN') ?? $r->route('token') ?? $r->header('X-Equipo-Token')), 0, 64);
+        foreach (['equipos.zkteco.cdata' => 120, 'equipos.zkteco.getrequest' => 60, 'equipos.zkteco.devicecmd' => 60, 'equipos.hikvision.eventos' => 240] as $nombre => $porMinuto) {
+            RateLimiter::for($nombre, fn (Request $r) => [
+                Limit::perMinute($porMinuto)->by($nombre.'|'.$equipo($r)),
+                Limit::perMinute($porMinuto * 5)->by($nombre.'|ip|'.$ip($r)),
+            ]);
+        }
     }
 }

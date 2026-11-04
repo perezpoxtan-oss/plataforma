@@ -445,7 +445,7 @@ class AccesoController extends Controller
 
         $filas = $this->tenant->conEmpresa($empresaId, fn () => $this->consulta->consultaHistorial($request->user(), $filtros, 'accesos.exportar')
             ->with(['sede:id,nombre', 'zona:id,nombre', 'departamento:id,nombre', 'host:id,nombre,apellido_paterno,apellido_materno',
-                'registradoPor:id,name', 'autorizadoPor:id,name', 'salidaPor:id,name', 'vehiculo:id,marca,modelo,color'])
+                'registradoPor:id,name', 'autorizadoPor:id,name', 'salidaPor:id,name', 'vehiculo:id,marca,modelo,color', 'equipoEntrada:id,nombre', 'equipoSalida:id,nombre'])
             ->limit(10000)->get());
 
         $terminos = Terminos::deEmpresaId($empresaId);
@@ -465,7 +465,7 @@ class AccesoController extends Controller
                     $a->zona?->nombre, $a->conductor, $a->persona_visita ?? $a->host?->nombreCompleto(), $a->departamento?->nombre,
                     $a->habitacion, Acceso::PASES[$a->tipo_pase] ?? null, Acceso::IDENTIFICACIONES[$a->identificacion] ?? null, $a->num_acompanantes,
                     $hora->formatear($a->entrada_at), $hora->formatear($a->autorizado_at), $hora->formatear($a->salida_at),
-                    $a->registradoPor?->name, $a->autorizadoPor?->name, $a->salidaPor?->name,
+                    $a->registradoPor?->name ?? $a->equipoEntrada?->origen(), $a->autorizadoPor?->name, $a->salidaPor?->name ?? $a->equipoSalida?->origen(),
                 ]);
             }
             fclose($salida);

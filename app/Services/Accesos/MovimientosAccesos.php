@@ -70,10 +70,14 @@ class MovimientosAccesos
      * empresa. Sin esos campos (otras pantallas, la app de antes) se da por
      * devuelto, como siempre.
      *
-     * @param  array<string, mixed>  $opciones  gafetes_revisados, devolvio[], identificacion_revisada, identificacion_devuelta
+     * Decisión 10: un equipo de acceso da la salida sin persona en caseta
+     * ($actor null y `equipo_salida_id` en las opciones, con `salida_at` del
+     * marcaje); el resto de la regla es la misma.
+     *
+     * @param  array<string, mixed>  $opciones  gafetes_revisados, devolvio[], identificacion_revisada, identificacion_devuelta, equipo_salida_id, salida_at
      * @return list<string> gafetes que no regresaron
      */
-    public function salida(User $actor, Acceso $acceso, array $opciones = []): array
+    public function salida(?User $actor, Acceso $acceso, array $opciones = []): array
     {
         if ($acceso->estado === 'pendiente') {
             throw new MovimientoNoPermitido('Este acceso sigue pendiente de autorización: confírmalo antes de registrar su salida.');
@@ -86,16 +90,19 @@ class MovimientosAccesos
         $idRevisada = filter_var($opciones['identificacion_revisada'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $idDevuelta = $idRevisada ? filter_var($opciones['identificacion_devuelta'] ?? false, FILTER_VALIDATE_BOOLEAN) : null;
 
-        [$acompanantes, $noRegresaron, $devueltos] = DB::transaction(function () use ($actor, $acceso, $revisados, $devolvio, $idDevuelta) {
+        $equipoId = isset($opciones['equipo_salida_id']) ? (int) $opciones['equipo_salida_id'] : null;
+        $salidaAt = $opciones['salida_at'] ?? null;
+        [$acompanantes, $noRegresaron, $devueltos] = DB::transaction(function () use ($actor, $acceso, $revisados, $devolvio, $idDevuelta, $equipoId, $salidaAt) {
             $ahora = now();
             $cambio = Acceso::whereKey($acceso->id)->where('estado', 'en_sitio')
-                ->update(['estado' => 'finalizado', 'salida_at' => $ahora, 'salida_por' => $actor->id, 'actualizado_por' => $actor->id, 'updated_at' => $ahora]);
+                ->update(['estado' => 'finalizado', 'salida_at' => $salidaAt ?? $ahora, 'salida_por' => $actor?->id, 'actualizado_por' => $actor?->id, 'updated_at' => $ahora]
+                    + ($equipoId ? ['equipo_salida_id' => $equipoId] : []));
             if ($cambio === 0) {
                 throw new MovimientoNoPermitido('A esta persona ya se le dio salida. Revisa el historial.');
             }
             // Si estaba fuera en tour, ese tour también termina aquí
             Acceso::where('acceso_origen_id', $acceso->id)->where('movimiento', 'salida_temporal')->where('estado', 'en_sitio')
-                ->update(['estado' => 'finalizado', 'salida_at' => $ahora, 'salida_por' => $actor->id, 'updated_at' => $ahora]);
+                ->update(['estado' => 'finalizado', 'salida_at' => $salidaAt ?? $ahora, 'salida_por' => $actor?->id, 'updated_at' => $ahora]);
 
             // C-15: los gafetes que no devolvieron quedan NO REGRESÓ
             $noRegresaron = [];
@@ -114,7 +121,7 @@ class MovimientosAccesos
                 foreach ($noRegresaron as $gafeteId) {
                     $gafete = Gafete::whereKey($gafeteId)->lockForUpdate()->first();
                     if ($gafete !== null && $gafete->activo) {
-                        $gafete->forceFill(['estado' => EstadoActivo::NO_REGRESO, 'actualizado_por' => $actor->id])->save();
+                        $gafete->forceFill(['estado' => EstadoActivo::NO_REGRESO, 'actualizado_por' => $actor?->id])->save();
                     }
                 }
             }
@@ -123,7 +130,7 @@ class MovimientosAccesos
             }
 
             $acompanantes = AcompananteAcceso::where('acceso_id', $acceso->id)->whereNull('salida_at')
-                ->update(['salida_at' => $ahora, 'salida_por' => $actor->id, 'actualizado_por' => $actor->id, 'updated_at' => $ahora]);
+                ->update(['salida_at' => $salidaAt ?? $ahora, 'salida_por' => $actor?->id, 'actualizado_por' => $actor?->id, 'updated_at' => $ahora]);
 
             // C-45: los gafetes que sí devolvieron (titular y acompañantes que seguían dentro) se reciben en OK
             $devueltos = array_values(array_diff(array_map('intval', array_filter([$acceso->gafete_id, ...$dentro->pluck('gafete_id')->all()])), $noRegresaron));
@@ -135,13 +142,13 @@ class MovimientosAccesos
         $gafetes = Gafete::whereIn('id', $noRegresaron)->get();
         $this->auditoria->auditar($actor, 'accesos.salida', $acceso, ['estado' => 'en_sitio'], array_filter(
             ['estado' => 'finalizado', 'gafete' => $acceso->gafete_texto, 'acompanantes_con_salida' => $acompanantes,
-                'gafetes_no_regresaron' => $gafetes->pluck('nomenclatura')->all() ?: null, 'identificacion_devuelta' => $idDevuelta],
+                'gafetes_no_regresaron' => $gafetes->pluck('nomenclatura')->all() ?: null, 'identificacion_devuelta' => $idDevuelta, 'equipo' => $equipoId],
             fn ($v) => $v !== null));
         foreach ($gafetes as $gafete) {
             $this->auditoria->auditar($actor, 'gafetes.no_regreso', $gafete, ['estado' => EstadoActivo::DISPONIBLE], ['estado' => EstadoActivo::NO_REGRESO, 'acceso' => $acceso->id]);
             $quien = $acceso->nombre.($acceso->empresa_procedencia ? ' ('.$acceso->empresa_procedencia.')' : '');
             app(CustodiaActivos::class)->avisarNoRegreso($gafete, 'gafete', 'gafete '.$gafete->nomenclatura,
-                "Salió {$quien} y no lo devolvió; registró la salida {$actor->name}.", $actor);
+                "Salió {$quien} y no lo devolvió; registró la salida ".($actor?->name ?? 'un equipo de acceso').'.', $actor);
         }
 
         return $gafetes->pluck('nomenclatura')->all();

@@ -23,11 +23,13 @@
     $verRecepcion = $empresa && $u->can('candidatos.configurar');
     $verBolsa = $empresa && $u->can('vacantes.configurar');
     $verNovedades = $mostrarAvisos && $u->can('novedades.ver');
+    // Decisión 10: Equipos de acceso (ZKTeco, Hikvision) en «Caseta y accesos»
+    $verEquipos = $empresa && $verConfiguracion && $tiene('accesos');
     $plataforma = $esSuperadmin;
     // [ancla, nombre, icono, ¿se muestra?]
     $secciones = [
         ['sec-general', 'General', 'bi-sliders', $mostrarAvisos],
-        ['caseta', 'Caseta y accesos', 'bi-door-open', $mostrarAvisos || isset($enOtras['esperas']) || isset($enOtras['impresion'])],
+        ['caseta', 'Caseta y accesos', 'bi-door-open', $mostrarAvisos || isset($enOtras['esperas']) || isset($enOtras['impresion']) || $verEquipos],
         // C-38: Estructura (avisos de Colaboradores)
         ['sec-estructura', 'Estructura', 'bi-diagram-3', $mostrarAvisos && $tiene('colaboradores')],
         ['sec-rh', 'Recepción y RR. HH.', 'bi-people', (($mostrarAvisos || $verRecepcion || $verBolsa) && $tiene('candidatos', 'recepcion_rh', 'vacantes')) || isset($enOtras['asistencia'])],
@@ -133,6 +135,15 @@
                         <a href="{{ $enOtras['impresion']['url'] }}" class="btn-enlace-config"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Configurar en Etiquetas QR → Plantillas</a>
                     </div>
                 @endisset
+                @if ($verEquipos)
+                    @php $equiposAcceso = \App\Models\EquipoAcceso::where('activo', true)->get(['id', 'ultimo_contacto_at', 'created_at']); @endphp
+                    <div class="tarjeta p-4 tarjeta-enlace-config" id="cfg-equipos-acceso">
+                        <h3 class="h6 fw-bold"><i class="bi bi-router me-2 text-primary" aria-hidden="true"></i>Equipos de acceso</h3>
+                        <p class="small mb-1">Hoy: <strong>{{ $equiposAcceso->isEmpty() ? 'ninguno' : $equiposAcceso->count().' equipo'.($equiposAcceso->count() === 1 ? '' : 's') }}</strong>. Lectores, torniquetes y checadores (ZKTeco, Hikvision) que registran solos la entrada y salida del personal.</p>
+                        <p class="small text-muted mb-2"><span class="valor-original">Valor original: ninguno (la caseta registra a mano).</span></p>
+                        <a href="{{ route('equipos-acceso.index') }}" class="btn-enlace-config"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Configurar en Equipos de acceso</a>
+                    </div>
+                @endif
                 @if ($mostrarAvisos && $tiene('accesos'))
                     {{-- C-04: motivo de visita marcado (de fábrica, ninguno) y «Visita a huésped» --}}
                     @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'motivos'])

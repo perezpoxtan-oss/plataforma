@@ -138,6 +138,13 @@ Si **ya está en sitio**, te ofrece **Dar salida**: se abre su tarjeta en la sal
 
 **Qué debes ver:** el registro ya lleno con lo leído. Nada se guarda hasta que tú lo guardes.
 
+## Entradas y salidas que registra un equipo de acceso
+
+Si tu sede tiene un lector, torniquete o checador conectado (ver [Equipos de acceso](equipos-de-acceso.md)), cuando un colaborador pasa su tarjeta o su huella su entrada o salida aparece sola, con «(por Equipo: nombre del equipo)» en lugar de tu nombre. No tienes que registrarlo tú. Si el equipo no responde, regístralo como siempre.
+
+- **«Credencial no vigente usada en …»** en la campana: alguien pasó una credencial dada de baja (o es un colaborador dado de baja). El equipo no registró su paso: atiéndelo en la puerta.
+- **«… no registró su salida»** (o su entrada): solo es un aviso para el supervisor; su paso sí se registró.
+
 ## Cómo registrar a quien viene a Recursos Humanos
 
 La caseta solo anota **a qué viene** la persona y avisa. Recursos Humanos decide si pasa y se encarga de lo demás (su solicitud, su puesto y su departamento).
@@ -423,6 +430,7 @@ Todo funciona igual en el celular: el botón **Nuevo Ingreso** ocupa todo el anc
 
 ## Relacionado
 
+- [Equipos de acceso](equipos-de-acceso.md)
 - [Reloj y suplente](reloj-y-suplente.md)
 - [Préstamo de llaves](prestamo-llaves.md)
 - [Pases de salida](pases-salida.md)

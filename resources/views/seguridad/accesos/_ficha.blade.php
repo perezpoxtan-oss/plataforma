@@ -95,9 +95,9 @@
 
     @if ($modo === 'historial')
         <div class="ficha-acceso-tiempos">
-            <div><strong>{{ $a->movimiento === 'salida_temporal' ? 'Salió:' : ($a->movimiento === 'regreso' ? 'Regresó:' : 'Ingreso:') }}</strong> @fecha($a->entrada_at)</div>
+            <div><strong>{{ $a->movimiento === 'salida_temporal' ? 'Salió:' : ($a->movimiento === 'regreso' ? 'Regresó:' : 'Ingreso:') }}</strong> @fecha($a->entrada_at)@if ($a->equipo_entrada_id && $a->equipoEntrada) <span class="text-muted">({{ $a->equipoEntrada->origen() }})</span>@endif</div>
             @if ($a->movimiento !== 'regreso')
-                <div><strong>{{ $a->movimiento === 'salida_temporal' ? 'Regresó:' : 'Salida:' }}</strong> {{ $a->salida_at ? $hora->formatear($a->salida_at) : '—' }}</div>
+                <div><strong>{{ $a->movimiento === 'salida_temporal' ? 'Regresó:' : 'Salida:' }}</strong> {{ $a->salida_at ? $hora->formatear($a->salida_at) : '—' }}@if ($a->equipo_salida_id && $a->equipoSalida) <span class="text-muted">({{ $a->equipoSalida->origen() }})</span>@endif</div>
             @endif
             @if ($a->placas)
                 <div><strong>Vehículo:</strong> {{ $a->placas }}@if ($a->conductor) · {{ $a->conductor }}@endif</div>
@@ -219,7 +219,7 @@
                 </div>
             @endif
             <div class="texto-traza mt-1">
-                <strong>{{ $modo === 'pendientes' ? 'Solicitado' : 'Hora Ingreso' }}:</strong> @fecha($a->entrada_at, $formato($a->entrada_at)) (por {{ $a->registradoPor?->name ?? '—' }})
+                <strong>{{ $modo === 'pendientes' ? 'Solicitado' : 'Hora Ingreso' }}:</strong> @fecha($a->entrada_at, $formato($a->entrada_at)) (por {{ $a->quienRegistro() }})
                 @if ($a->autorizado_at)
                     <br><strong>Autorizado:</strong> @fecha($a->autorizado_at, $formato($a->autorizado_at)) (por {{ $a->autorizadoPor?->name ?? '—' }})
                 @endif

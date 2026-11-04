@@ -58,6 +58,8 @@ class DiezVerbosTest extends TestCase
         // Credencialización (C-44, propuesta aprobada por el dueño el 12 oct; docs/tecnico/credenciales.md): emitir crea la credencial
         // que RR. HH. imprime; reponer da de baja la vigente y emite otra en un paso (la anterior deja de valer al instante)
         'Emitir credencial' => 'credencialización (propuesta aprobada)', 'Reponer credencial' => 'credencialización (propuesta aprobada)',
+        // Equipos de acceso (decisión 10, alcance aprobado por el dueño el 3 nov): pone en cola las altas y bajas para el equipo
+        'Sincronizar' => 'equipos de acceso (alcance aprobado)',
         // Estado del candidato (como «No regresó»)
         'No se presentó' => 'estado del candidato (ADR-0009)',
     ];
