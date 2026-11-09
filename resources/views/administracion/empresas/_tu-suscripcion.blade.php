@@ -30,6 +30,22 @@
         @if ($estadoHoy === Suscripcion::EN_GRACIA) Tienes hasta el {{ $s->gracia_hasta?->format('d/m/Y') }} para normalizar el pago; después quedará en solo consulta.@endif
     </p>
 
+    {{-- Lo que el plan incluye apagado de fábrica (Asistencia en Corporativo): la empresa decide cuándo usarlo --}}
+    @foreach ($encendiblesSuscripcion as $m)
+        <form action="{{ route('mi-suscripcion.modulos') }}" method="POST" class="d-flex flex-wrap align-items-center gap-2 small mt-3" id="encender-{{ $m['clave'] }}">
+            @csrf
+            <input type="hidden" name="modulo" value="{{ $m['clave'] }}">
+            <div class="form-check form-switch m-0">
+                <input class="form-check-input" type="checkbox" role="switch" id="usar-{{ $m['clave'] }}" name="encendido" value="1" @checked($m['encendido']) @disabled(! $puedePedirCambio)>
+                <label class="form-check-label fw-bold" for="usar-{{ $m['clave'] }}">Usar {{ $m['nombre'] }} (incluido en tu plan)</label>
+            </div>
+            @if ($puedePedirCambio)
+                <button type="submit" class="btn btn-sm btn-outline-primary fw-bold"><i class="bi bi-save2 me-1" aria-hidden="true"></i>Guardar</button>
+            @endif
+            <span class="text-muted">{{ $m['encendido'] ? 'Encendido: está en el menú.' : 'Apagado: no aparece en el menú hasta que lo enciendas.' }}</span>
+        </form>
+    @endforeach
+
     @if ($puedePedirCambio)
         <details class="mt-3" @if ($abrir) open @endif>
             <summary class="fw-bold">Ampliar o renovar mi plan</summary>

@@ -321,6 +321,8 @@ Route::middleware('auth')->group(function () {
     });
     // Suscripciones: el Administrador del cliente pide ampliar o renovar desde Empresas → Tu suscripción (permitido en solo consulta)
     Route::post('/mi-suscripcion/solicitar', [MiSuscripcionController::class, 'solicitar'])->middleware('throttle:mi-suscripcion.solicitar')->name('mi-suscripcion.solicitar');
+    // Encender o apagar lo que el plan incluye apagado de fábrica (Asistencia en Corporativo)
+    Route::post('/mi-suscripcion/modulos', [MiSuscripcionController::class, 'modulos'])->name('mi-suscripcion.modulos');
     Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
     Route::post('/usuarios', [UsuarioController::class, 'store'])->name('usuarios.store');
     Route::put('/usuarios/{usuario}', [UsuarioController::class, 'update'])->name('usuarios.update');

@@ -21,12 +21,21 @@ use Illuminate\Support\Facades\Schema;
  *
  * Además, siempre los de Dirección (empresa, sedes, usuarios, roles,
  * permisos, configuración, auditoría…) y los submódulos de cada módulo
- * incluido. Se escriben en empresa_modulos, que ya respetan el motor de
+ * incluido.
+ *
+ * Un módulo apagado de fábrica (Modulo::APAGADOS_DE_FABRICA, p. ej.
+ * Asistencia) que viene SOLO en el plan (Corporativo) queda «por encender»:
+ * no se activa hasta que el Administrador de la empresa lo enciende en «Tu
+ * suscripción» (empresas.preferencias['modulos_encendidos']). Si llega por
+ * un paquete o una excepción «módulo agregado», se activa como siempre. Se escriben en empresa_modulos, que ya respetan el motor de
  * permisos y el menú: lo que se quita solo se oculta (activo = 0); sus datos
  * y permisos se conservan.
  */
 class ModulosEfectivos
 {
+    /** empresas.preferencias[...]: claves de módulos apagados de fábrica que la empresa encendió. */
+    public const PREFERENCIA = 'modulos_encendidos';
+
     /** false = como antes de la lista de dependencias (solo la migración que ordena el catálogo, para comparar y revertir). */
     public bool $conDependencias = true;
 
@@ -45,27 +54,40 @@ class ModulosEfectivos
      * (DependenciasModulos, C-02). Lo indispensable gana aunque haya una
      * excepción «módulo quitado»: sin ello el módulo que lo pide no guarda.
      *
-     * @return array{ids: list<int>, agregados: array<string, string>, quitados: list<int>}
+     * «encendibles»: módulos apagados de fábrica que vienen solo en el plan
+     * (la empresa decide si los usa); «por_encender»: los que aún no enciende.
+     *
+     * @return array{ids: list<int>, agregados: array<string, string>, quitados: list<int>, encendibles: list<int>, por_encender: list<int>}
      */
     public function detalle(Suscripcion $suscripcion): array
     {
         $suscripcion->loadMissing(['plan.productos.modulos:id', 'paquetes.productos.modulos:id', 'excepciones']);
-        $ids = collect();
+        $delPlan = collect();
         foreach ($suscripcion->plan?->productos ?? [] as $producto) {
-            $ids = $ids->merge($producto->modulos->pluck('id'));
+            $delPlan = $delPlan->merge($producto->modulos->pluck('id'));
         }
+        $otros = collect();
         foreach ($suscripcion->paquetes as $paquete) {
             foreach ($paquete->productos as $producto) {
-                $ids = $ids->merge($producto->modulos->pluck('id'));
+                $otros = $otros->merge($producto->modulos->pluck('id'));
             }
         }
         $activas = $suscripcion->excepciones->where('activo', true);
-        $ids = $ids->merge($activas->where('tipo', 'modulo_agregado')->pluck('modulo_id'));
+        $otros = $otros->merge($activas->where('tipo', 'modulo_agregado')->pluck('modulo_id'));
         $quitados = $activas->where('tipo', 'modulo_quitado')->pluck('modulo_id')->map(fn ($id) => (int) $id)->all();
 
         $catalogo = $this->catalogo();
         $direccion = (int) Area::where('clave', 'direccion')->value('id');
-        $elegidos = $ids->map(fn ($id) => (int) $id)->unique()->reject(fn ($id) => in_array($id, $quitados, true))->values()->all();
+
+        // Apagados de fábrica que trae solo el plan: la empresa los enciende cuando quiera usarlos
+        $encendidos = self::encendidosPor((int) $suscripcion->empresa_id);
+        $otrosIds = $otros->map(fn ($id) => (int) $id)->all();
+        $encendibles = $catalogo->whereIn('clave', Modulo::APAGADOS_DE_FABRICA)->pluck('id')->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $delPlan->contains($id) && ! in_array($id, $otrosIds, true) && ! in_array($id, $quitados, true))->values()->all();
+        $porEncender = array_values(array_filter($encendibles, fn ($id) => ! in_array($catalogo->firstWhere('id', $id)?->clave, $encendidos, true)));
+
+        $elegidos = $delPlan->merge($otros)->map(fn ($id) => (int) $id)->unique()
+            ->reject(fn ($id) => in_array($id, $quitados, true) || in_array($id, $porEncender, true))->values()->all();
 
         $incluidos = $catalogo->filter(function (Modulo $m) use ($elegidos, $quitados, $direccion, $catalogo) {
             if ((int) $m->area_id === $direccion) {
@@ -98,7 +120,42 @@ class ModulosEfectivos
             }
         }
 
-        return ['ids' => array_values(array_unique($resultado)), 'agregados' => $agregados, 'quitados' => $quitados];
+        return ['ids' => array_values(array_unique($resultado)), 'agregados' => $agregados, 'quitados' => $quitados,
+            'encendibles' => $encendibles, 'por_encender' => $porEncender];
+    }
+
+    /**
+     * Claves de los módulos apagados de fábrica que la empresa encendió en «Tu suscripción».
+     *
+     * @return list<string>
+     */
+    public static function encendidosPor(int $empresaId): array
+    {
+        $preferencias = Empresa::query()->whereKey($empresaId)->value('preferencias');
+        $preferencias = is_string($preferencias) ? (json_decode($preferencias, true) ?: []) : (array) $preferencias;
+        $lista = $preferencias[self::PREFERENCIA] ?? [];
+
+        return is_array($lista) ? array_values(array_intersect(Modulo::APAGADOS_DE_FABRICA, $lista)) : [];
+    }
+
+    /**
+     * La empresa enciende (o apaga) un módulo que su plan incluye apagado de
+     * fábrica y se vuelven a escribir sus módulos. Apagarlo no borra datos.
+     *
+     * @return array{antes: list<string>, despues: list<string>, agregados: array<string, string>, solo_lectura: list<string>}
+     */
+    public function encender(Suscripcion $suscripcion, string $clave, bool $encendido): array
+    {
+        $empresa = Empresa::findOrFail($suscripcion->empresa_id);
+        $preferencias = (array) ($empresa->preferencias ?? []);
+        $lista = array_values(array_diff((array) ($preferencias[self::PREFERENCIA] ?? []), [$clave]));
+        if ($encendido) {
+            $lista[] = $clave;
+        }
+        $preferencias[self::PREFERENCIA] = $lista;
+        $empresa->forceFill(['preferencias' => $preferencias])->save();
+
+        return $this->sincronizar($suscripcion->fresh(), avisar: false);
     }
 
     /**
@@ -116,7 +173,8 @@ class ModulosEfectivos
         $empresaId = (int) $suscripcion->empresa_id;
         $detalle = $this->detalle($suscripcion);
         $efectivos = $detalle['ids'];
-        $quitados = $detalle['quitados'];
+        // Lo que la empresa no ha encendido (o apagó) queda apagado del todo, sin aviso de «tu plan ya no incluye»
+        $quitados = array_merge($detalle['quitados'], $detalle['por_encender']);
         $catalogo = $this->catalogo();
         $filas = DB::table('empresa_modulos')->where('empresa_id', $empresaId)->get()->keyBy('modulo_id');
         $antes = $filas->where('activo', true)->keys()->map(fn ($id) => (int) $id)->all();

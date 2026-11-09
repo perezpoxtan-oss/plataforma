@@ -14,7 +14,7 @@ La plataforma **no calcula la nómina**: entrega el reporte en Excel para que tu
 
 ## Antes de empezar
 
-- Asistencia es un **complemento**: solo aparece si tu empresa lo contrató. Si al abrirla dice **Esto no viene en tu plan**, pide a tu administrador que lo solicite.
+- Asistencia viene incluida en el plan **Corporativo** (llega apagada: tu administrador la enciende en **Estructura → Empresas → Tu suscripción** con **Usar Asistencia**) y es un **complemento** de Esencial y Profesional. Si al abrirla dice **Esto no viene en tu plan**, pide a tu administrador que lo solicite.
 - Para ver la pantalla tu rol debe poder consultar *Asistencia*. Recursos Humanos y el administrador ven a todo el personal; el director consulta y exporta; el **jefe de departamento** ve solo a la gente de los departamentos donde es responsable.
 - Cada colaborador necesita su **turno** (en **Estructura → Colaboradores**, al editarlo). Sin turno no se le calculan retardos ni faltas; la pantalla te avisa cuántos faltan.
 - Los **días de descanso** se marcan en el turno: en **Estructura → Turnos**, al editar el turno, abre **Avanzado · Días que se trabaja (para Asistencia)**. De fábrica se trabajan todos los días.
@@ -97,6 +97,7 @@ Solo quien configura Asistencia en toda la empresa (por ejemplo Recursos Humanos
 | Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
 | **Esto no viene en tu plan** | Tu empresa no tiene el complemento Asistencia. | Pide a tu administrador que lo solicite en **Tu suscripción**. |
+| **Asistencia viene en tu plan y está apagado** | Tu plan (Corporativo) la incluye, pero nadie la ha encendido. | Tu administrador la enciende en **Tu suscripción** con **Usar Asistencia**. |
 | «Hay 3 colaboradores sin turno» | A esas personas no se les calculan retardos ni faltas. | Asígnales su turno en **Estructura → Colaboradores**. |
 | Sale **Falta** en un día que no trabaja | El turno no tiene marcados sus días de descanso. | En **Estructura → Turnos**, edita el turno y en **Avanzado · Días que se trabaja** desmarca los días de descanso. |
 | «Con el motivo «Otro», escribe en la nota qué pasó.» | Elegiste «Otro» sin nota. | Escribe la nota y toca **Guardar**. |
