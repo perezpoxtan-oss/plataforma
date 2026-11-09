@@ -9,7 +9,7 @@ Esencia: el agente de caseta no tiene **ningún paso nuevo**. Con el módulo apa
 | Pieza | Qué hace |
 |---|---|
 | Módulo `asistencia` (área Recursos Humanos; menú **Recursos Humanos → Asistencia**) | Acciones `ver`, `justificar` (acción nueva del catálogo), `exportar`, `configurar`. |
-| `Modulo::APAGADOS_DE_FABRICA` | `['asistencia']`: `ProvisionarEmpresa::crear()` sin lista de módulos no lo enciende, ni la migración. Se enciende al contratar el complemento (suscripción) o en Empresas → Módulos (Super Administrador). |
+| `Modulo::APAGADOS_DE_FABRICA` | `['asistencia']`: `ProvisionarEmpresa::crear()` sin lista de módulos no lo enciende, ni la migración. Se enciende al contratar el complemento (Esencial y Profesional), en «Tu suscripción» con «Usar Asistencia» cuando el plan es Corporativo (la incluye apagada; `ModulosEfectivos::PREFERENCIA`) o en Empresas → Módulos (Super Administrador, empresas sin suscripción). |
 | `DependenciasModulos::REQUIERE['asistencia']` | `colaboradores`, `turnos` (y, por Colaboradores, `departamentos`). |
 | Catálogo comercial | Producto `asistencia` y paquete `asistencia` (suscripción, por sede, `CatalogoComercialSeeder::PRECIO_ASISTENCIA` = 190, **precio de ejemplo**) para Esencial, Profesional y Corporativo. En una base existente el paquete nace **sin publicar**. |
 | `App\Services\Asistencia\MarcajesColaborador` | **Punto de extensión**: de dónde salen las entradas y salidas (abajo). |

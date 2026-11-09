@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Cuenta;
 
 use App\Http\Controllers\Controller;
 use App\Models\Empresa;
+use App\Models\Modulo;
 use App\Models\Suscripcion;
 use App\Services\Comercial\CatalogoPublico;
+use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
+use App\Services\Suscripciones\ModulosEfectivos;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -21,6 +24,39 @@ use Illuminate\Validation\Rule;
  */
 class MiSuscripcionController extends Controller
 {
+    /**
+     * Enciende o apaga un módulo que el plan incluye apagado de fábrica
+     * (Asistencia en Corporativo, decisión 13). Apagarlo no borra datos.
+     */
+    public function modulos(Request $request, ModulosEfectivos $modulos, Autorizador $autorizador, AdministradorRoles $auditoria): RedirectResponse
+    {
+        $actor = $request->user();
+        abort_if($actor->es_superadmin || $actor->empresa_id === null, 404);
+        Gate::authorize('empresas.editar');
+        abort_unless($autorizador->alcanceDeEmpresa($actor, 'empresas.editar'), 403, 'Solo quien administra los datos de la empresa puede cambiar lo que usa de su plan.');
+        $suscripcion = Suscripcion::where('empresa_id', $actor->empresa_id)->firstOrFail();
+
+        $detalle = $modulos->detalle($suscripcion);
+        $encendibles = Modulo::query()->whereIn('id', $detalle['encendibles'])->pluck('nombre', 'clave');
+        $datos = $request->validate([
+            'modulo' => ['required', 'string', Rule::in($encendibles->keys()->all())],
+            'encendido' => ['nullable', 'boolean'],
+        ], ['modulo.in' => 'Ese módulo no viene incluido en tu plan.']);
+        $clave = $datos['modulo'];
+        $encendido = (bool) ($datos['encendido'] ?? false);
+        $antes = ModulosEfectivos::encendidosPor((int) $actor->empresa_id);
+        $modulos->encender($suscripcion, $clave, $encendido);
+        $auditoria->auditar($actor, 'empresas.modulos_encendidos', Empresa::findOrFail($actor->empresa_id),
+            ['modulos_encendidos' => $antes], ['modulos_encendidos' => ModulosEfectivos::encendidosPor((int) $actor->empresa_id)]);
+
+        $nombre = $encendibles[$clave];
+        $menu = Modulo::where('clave', $clave)->with('menu:id,nombre')->first()?->menu?->nombre;
+
+        return redirect()->to(route('empresas.index').'#tu-suscripcion')->with('ok', $encendido
+            ? "{$nombre} quedó encendido. Ábrelo en el menú ".($menu ? "{$menu} → " : '')."{$nombre} y revisa en la Matriz de permisos qué roles lo usan."
+            : "{$nombre} quedó apagado: deja de verse en el menú; lo registrado se conserva y vuelve a verse si lo enciendes.");
+    }
+
     public function solicitar(Request $request, CatalogoPublico $catalogo, Autorizador $autorizador): RedirectResponse
     {
         $actor = $request->user();

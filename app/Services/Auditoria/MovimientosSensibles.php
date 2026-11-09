@@ -35,7 +35,7 @@ class MovimientosSensibles
     /** Eventos exactos que se avisan. */
     public const EVENTOS = [
         'permisos.rol_actualizado', 'roles.creado', 'roles.actualizado', 'roles.eliminado',
-        'empresas.modulos_actualizados', 'configuracion.auditoria',
+        'empresas.modulos_actualizados', 'empresas.modulos_encendidos', 'configuracion.auditoria',
     ];
 
     /** Terminaciones de evento que se avisan (cualquier módulo). */

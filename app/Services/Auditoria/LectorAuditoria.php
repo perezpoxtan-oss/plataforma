@@ -193,7 +193,7 @@ class LectorAuditoria
         'objeto_registrado' => 'Registro de objeto encontrado', 'tiempos_espera' => 'Cambio de tiempos de espera de las firmas',
         // Fin Mejoras Incidentes
         // Mejoras estructura (ADR-0016)
-        'modulos_actualizados' => 'Cambio de módulos contratados', 'auditoria' => 'Cambio de ajustes de la bitácora',
+        'modulos_actualizados' => 'Cambio de módulos contratados', 'modulos_encendidos' => 'Encendió o apagó un módulo incluido en su plan', 'auditoria' => 'Cambio de ajustes de la bitácora',
         // Fin Mejoras estructura
         // Importar desde Excel y «Configura tu empresa»
         'importado' => 'Importación desde archivo', 'configura_tu_empresa' => 'Cambio de «Configura tu empresa»',

@@ -8,7 +8,7 @@ resumen: Ver tu plan, tus sedes y usuarios incluidos, cuándo vence, y pedir ren
 
 # Tu suscripción
 
-**¿Para qué sirve?** Muestra lo que tu empresa tiene contratado: el **plan**, cuántas **sedes** y **usuarios activos** incluye, cuándo **vence** y en qué estado está. Desde aquí pides **renovar** o **ampliar** tu plan.
+**¿Para qué sirve?** Muestra lo que tu empresa tiene contratado: el **plan**, cuántas **sedes** y **usuarios activos** incluye, cuándo **vence** y en qué estado está. Desde aquí pides **renovar** o **ampliar** tu plan y enciendes lo que tu plan incluye apagado, como **Asistencia** en Corporativo.
 
 ## Antes de empezar
 
@@ -34,6 +34,22 @@ resumen: Ver tu plan, tus sedes y usuarios incluidos, cuándo vence, y pedir ren
 
 **Qué debes ver:** «Solicitud SC-… guardada: te contactaremos para confirmar el pago…». En cuanto se registra tu pago, tu suscripción se actualiza sola y te llega un aviso a la campana.
 
+## Cómo encender lo que tu plan incluye (Asistencia)
+
+El plan **Corporativo** incluye **Asistencia**, pero llega apagada: no cambia nada en tu empresa hasta que tú decidas usarla.
+
+1. Entra a **Estructura → Empresas** y busca **Tu suscripción**.
+2. En **Usar Asistencia (incluido en tu plan)** enciende el interruptor.
+3. Toca **Guardar**.
+
+![Usar Asistencia en Tu suscripción](img/suscripciones/usar-asistencia.png)
+
+**Qué debes ver:** «Asistencia quedó encendido. Ábrelo en el menú Recursos Humanos → Asistencia…». Al lado del interruptor dice **Encendido: está en el menú.** Revisa en la **Matriz de permisos** qué roles la usan (Recursos Humanos y el administrador ya pueden).
+
+Para dejar de usarla, apaga el interruptor y toca **Guardar**: deja de verse en el menú y lo que ya estaba registrado se conserva para cuando la vuelvas a encender.
+
+Si tu plan es **Esencial** o **Profesional**, Asistencia es un complemento: pídelo en **Ampliar o renovar mi plan**, en **Paquetes**.
+
 ## Qué pasa cuando vence
 
 1. **Antes de vencer** te llegan avisos por la campana y por correo (7 días y 1 día antes).
@@ -58,6 +74,8 @@ resumen: Ver tu plan, tus sedes y usuarios incluidos, cuándo vence, y pedir ren
 | Franja roja «tienes acceso de solo consulta» y no puedes guardar nada. | Terminó la gracia sin pago (o la suscripción se suspendió). | Pide la renovación en **Tu suscripción** o comunícate con el contacto que dice la franja. |
 | Esa promoción ya venció / no existe. | El código no sirve. | Revisa el código o envía la solicitud sin él. |
 | «Esto no viene en tu plan (…)» al abrir una pantalla | Ese módulo no está en tu plan. | Toca **Ver mi suscripción** y pide el plan o el complemento que lo trae. |
+| «Asistencia viene en tu plan y está apagado» | Tu plan la incluye, pero tu empresa no la ha encendido. | Quien administra la empresa la enciende en **Tu suscripción** con **Usar Asistencia** y **Guardar**. |
+| «Ese módulo no viene incluido en tu plan.» al tocar **Guardar** junto a **Usar …** | Tu plan cambió y ya no lo incluye. | Recarga la página; si lo necesitas, pide el complemento en **Ampliar o renovar mi plan**. |
 
 ## Preguntas frecuentes
 
@@ -67,7 +85,7 @@ resumen: Ver tu plan, tus sedes y usuarios incluidos, cuándo vence, y pedir ren
 
 **¿Puedo pedir la renovación aunque esté en solo consulta?** Sí: **Ampliar o renovar mi plan** funciona siempre.
 
-**¿Qué trae cada plan?** Todos traen la estructura de tu empresa: sedes, zonas, usuarios y roles, y el directorio de **colaboradores**, **departamentos**, **puestos**, **turnos** y **quién autoriza**. **Esencial** suma la caseta y los padrones; **Profesional**, además, incidentes, Protección Civil, procedimientos e informes; **Corporativo**, además, Recursos Humanos. **Reservas y eventos** es un complemento para cualquier plan.
+**¿Qué trae cada plan?** Todos traen la estructura de tu empresa: sedes, zonas, usuarios y roles, y el directorio de **colaboradores**, **departamentos**, **puestos**, **turnos** y **quién autoriza**. **Esencial** suma la caseta y los padrones; **Profesional**, además, incidentes, Protección Civil, procedimientos e informes; **Corporativo**, además, Recursos Humanos y Asistencia (la enciendes tú). En todos los planes vienen las **credenciales de empleado** con QR o tarjeta 125 kHz o MIFARE, el **lector QR/NFC** y los **equipos de acceso** ZKTeco o Hikvision, sin cobro aparte. Complementos: **Reservas y eventos** (cualquier plan), **Recursos Humanos y candidatos** y **Asistencia** (Esencial y Profesional). De pago único puedes pedir la puesta en marcha, el kit de lector, la integración de cada equipo de acceso y tarjetas CR80 para imprimir credenciales.
 
 **¿Qué es el pago anual?** Pagas los 12 meses juntos con un descuento. Se elige en **Forma de pago**.
 

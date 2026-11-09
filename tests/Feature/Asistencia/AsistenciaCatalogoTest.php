@@ -92,11 +92,12 @@ class AsistenciaCatalogoTest extends TestCase
         $paquete = Paquete::where('slug', 'asistencia')->firstOrFail();
         $this->assertSame(Paquete::SUSCRIPCION, $paquete->modalidad);
         $this->assertTrue((bool) $paquete->por_sede);
-        $this->assertEqualsCanonicalizing(['esencial', 'profesional', 'corporativo'], $paquete->planes()->pluck('slug')->all());
-        // Ningún plan lo trae de fábrica: es complemento
-        foreach (['esencial', 'profesional', 'corporativo'] as $plan) {
+        // Complemento de Esencial y Profesional; Corporativo ya la incluye (apagada hasta que la empresa la encienda)
+        $this->assertEqualsCanonicalizing(['esencial', 'profesional'], $paquete->planes()->pluck('slug')->all());
+        foreach (['esencial', 'profesional'] as $plan) {
             $this->assertNotContains('asistencia', Plan::where('slug', $plan)->firstOrFail()->productos()->pluck('clave')->all());
         }
+        $this->assertContains('asistencia', Plan::where('slug', 'corporativo')->firstOrFail()->productos()->pluck('clave')->all());
     }
 
     public function test_migracion_revertir_y_volver_a_migrar(): void
@@ -107,6 +108,8 @@ class AsistenciaCatalogoTest extends TestCase
         $antes = $this->foto();
         $migracion = require database_path('migrations/2026_11_21_000100_modulo_asistencia.php');
 
+        // Catálogo como antes de 2026_11_22_000100 (al revertir, esa migración se deshace primero)
+        DB::table('plan_producto')->where('producto_id', Producto::where('clave', 'asistencia')->value('id'))->delete();
         $migracion->down();
         $this->assertFalse(Schema::hasTable('asistencia_justificaciones'));
         $this->assertFalse(Schema::hasColumn('turnos', 'dias_laborables'));

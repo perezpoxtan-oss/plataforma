@@ -86,7 +86,7 @@ class CatalogoComercialTest extends TestCase
     {
         $this->assertSame(count(CatalogoComercialSeeder::PRODUCTOS), Producto::count());
         $this->assertSame(['esencial', 'profesional', 'corporativo'], Plan::orderBy('orden')->pluck('slug')->all());
-        $this->assertSame(5, Paquete::count()); // RR. HH., Reservas y eventos, Asistencia (ADR-0024), puesta en marcha y kit lector
+        $this->assertSame(7, Paquete::count()); // RR. HH., Reservas y eventos, Asistencia; puesta en marcha, kit lector, integración de equipo y credenciales CR80
         $this->assertFalse(app(AjustesComerciales::class)->landingPublicada());
         $this->assertTrue($this->plan('profesional')->destacado);
         $this->assertTrue($this->plan('corporativo')->cotizar);
