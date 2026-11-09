@@ -1,6 +1,6 @@
 # App móvil (Android) y plataforma instalable (PWA)
 
-Etapa 1, sin pagos: la plataforma se puede **instalar desde el navegador** (PWA) y hay una **app de Android de prueba** que envuelve la plataforma web (Capacitor). iOS se agrega después (ver al final).
+Etapa 1, sin pagos: la plataforma se puede **instalar desde el navegador** (PWA) y hay una **app de Android** que envuelve la plataforma web (Capacitor). La CI la compila sola en cada cambio y se descarga desde **Mi cuenta → App para tu celular** (Parte 3). iOS se agrega después (ver al final).
 
 ## Parte 1 — Plataforma instalable (PWA)
 
@@ -109,13 +109,14 @@ Detalles:
 
 El `intent-filter` usa los marcadores `${servidorHost}` y `${servidorRutaEtiquetas}`. `app/build.gradle` los calcula de `server.url` leyendo `src/main/assets/capacitor.config.json`, el archivo que **`npx cap sync android` escribe** con la dirección que resolvió `capacitor.config.js` (desde `app.config.json` / `SERVIDOR`). Es decir: **la misma dirección de la app, sin escribirla dos veces**. Si la dirección tuviera una carpeta (`https://dominio/plataforma`), la ruta queda `/plataforma/e/`. Sin ese archivo (no se hizo el `sync`) la app compila con un host de relleno (`sin-configurar.invalid`) y avisa en Gradle: las etiquetas con la app cerrada abrirían el navegador. Cada **Run** vuelve a leer el archivo; después de cambiar `servidor` basta `npx cap sync android` y **Run**.
 
-### App Links (preparado, apagado)
+### App Links (se encienden con la llave de firma)
 
 La app también declara un `intent-filter` `VIEW` con `android:autoVerify="true"` para `https://<host>/e/…`. Android solo lo considera **verificado** (abre la app sin preguntar al tocar un enlace `/e/…` en WhatsApp, correo, la cámara…) si el servidor publica `/.well-known/assetlinks.json` con la huella SHA-256 de la llave con la que se firmó la app.
 
 - Ruta `GET /.well-known/assetlinks.json` → `PwaController::assetlinks` (sin el grupo `web`: sin sesión ni cookies). `config/app_movil.php`: `APP_MOVIL_PAQUETE` (por omisión `mx.smartcentinel.app`, el `appId`) y `APP_MOVIL_HUELLAS_SHA256` (**vacía por omisión → 404**; varias separadas por coma; con o sin «:»; las que no miden 32 bytes se ignoran).
 - `public/.htaccess` ya deja pasar `/.well-known/` (no fuerza https para la validación del certificado y no lo bloquea como archivo oculto); como el archivo no existe en disco, lo atiende Laravel.
-- **Cuándo encenderlo:** al tener la llave de firma de publicación. Con Google Play App Signing la huella está en Play Console → **Prueba y lanzamiento → Configuración → Integridad de la app → Firma de apps** («Certificado de la clave de firma de apps», SHA-256). Para la app de prueba (llave de depuración de la computadora): `keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androiddebugkey -storepass android -keypass android` (SHA256). Escríbela en el `.env` del servidor (`APP_MOVIL_HUELLAS_SHA256=AA:BB:…`), limpia la caché de configuración y reinstala la app (Android verifica al instalar). Revisar: `adb shell pm get-app-links mx.smartcentinel.app` debe decir `verified`.
+- **Se enciende solo** cuando la app que trae la versión instalada está firmada con la llave del repositorio (Parte 3: la plataforma toma la `huella_firma` de `app-movil.json`). La variable del `.env` sigue sirviendo para agregar otras huellas (p. ej. la de Google Play).
+- **A mano:** al tener la llave de firma de publicación. Con Google Play App Signing la huella está en Play Console → **Prueba y lanzamiento → Configuración → Integridad de la app → Firma de apps** («Certificado de la clave de firma de apps», SHA-256). Para la app de prueba (llave de depuración de la computadora): `keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androiddebugkey -storepass android -keypass android` (SHA256). Escríbela en el `.env` del servidor (`APP_MOVIL_HUELLAS_SHA256=AA:BB:…`), limpia la caché de configuración y reinstala la app (Android verifica al instalar). Revisar: `adb shell pm get-app-links mx.smartcentinel.app` debe decir `verified`.
 - Mientras no esté verificado: en Android 12+ los enlaces `/e/…` siguen abriendo el navegador (la persona puede activarlo a mano en **Ajustes → Apps → Smart Centinel → Abrir de forma predeterminada**); en Android 11 o anterior, Android puede preguntar con qué abrirlo. **Las etiquetas NFC no dependen de esto** (usan `NDEF_DISCOVERED`).
 
 ### Samsung (y otros teléfonos)
@@ -141,6 +142,105 @@ La app también declara un `intent-filter` `VIEW` con `android:autoVerify="true"
 ### Excepciones de vocabulario (criterios UX, regla 4)
 
 «Reintentar» (pantallas sin conexión) y «Salir» / «Cancelar» (diálogo nativo de Android) no están en los diez verbos: son textos de sistema fuera de las pantallas de la plataforma. «Abrir ajustes de NFC» (aviso del lector universal, solo dentro de la app con el NFC apagado) tampoco: abre los ajustes del teléfono, no es una acción de la plataforma. Anotado aquí conforme al punto 4 de «Cómo se aplica».
+
+## Parte 3 — Compilación automática y descarga desde la plataforma
+
+Pedido del dueño: (1) que el APK se compile solo con cada cambio y (2) un lugar dentro de la plataforma desde donde siempre se baja la versión más reciente. Ya no hace falta Android Studio para repartir la app.
+
+### Compilación automática (GitHub Actions)
+
+```
+PR ──CI──▶ job «App de Android (prueba)» ──▶ artefacto app-movil-prueba (7 días, para probar el PR)
+develop ──CI verde──▶ paquete.yml ─┬─ apk.yml (QA, firmada) ──▶ app-movil/ dentro de paquete.tar.gz ──▶ desplegar.sh qa
+etiqueta vX.Y.Z ──▶ paquete.yml ───┴─ apk.yml (Producción, firmada) ──▶ app-movil/ dentro del paquete ──▶ desplegar.sh prod
+```
+
+| Pieza | Qué hace |
+|---|---|
+| `.github/workflows/apk.yml` | Flujo llamado (`workflow_call`, entradas `destino` = `qa`/`produccion` y `publicar`). En el runner: Java 21 (Temurin), Node 24, `npm install`, `SERVIDOR=<destino> npx cap sync android` (la dirección sale de `APP_URL` de `despliegue/env_qa.txt` o `env_prod.txt`, como en Android Studio), Gradle (`assembleRelease` firmada o `assembleDebug`), `apksigner verify` y el JSON de la versión. Acciones fijadas por SHA. |
+| `.github/workflows/paquete.yml` | Job `apk` (llama a `apk.yml` con `publicar: true`) antes del job `paquete`. El paquete **no depende** de la app: `needs: apk` con `if: !cancelled()`, la descarga del artefacto es `continue-on-error` y, si falta o su sha256 no coincide, sale el aviso «Paquete sin app de Android» y el paquete se publica igual, sin `app-movil/`. |
+| `.github/workflows/ci.yml` | Job `app-android` solo en PR (y a mano): compila la app de QA y la deja como artefacto `app-movil-prueba` (pestaña *Summary* de la corrida → *Artifacts*). No se publica. En `develop` la compila `paquete.yml`. Pasa los cuatro secretos a `paquete.yml` (explícitos, sin `secrets: inherit`). |
+| `movil/android/app/build.gradle` | `versionCode` / `versionName` de `-PcodigoVersion` / `-PnombreVersion` (sin ellos, 1 / «1.0» como en Android Studio). Firma `publicacion` solo si existe `ANDROID_KEYSTORE_FILE` (variables `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`). |
+
+**Versiones:**
+
+| Destino | Cuándo | Servidor de la app | `versionName` | `versionCode` |
+|---|---|---|---|---|
+| QA | cada entrega en `develop` (y cada PR, solo artefacto) | QA | `qa-<sha de 7>` | decenas de segundos desde 2026-01-01 UTC |
+| Producción | etiqueta `vMAYOR.MENOR.PARCHE` (otra forma se rechaza) | Producción | `v1.2.3` | igual |
+
+`versionCode` **siempre crece**, aunque QA y Producción se compilen en flujos distintos (el número de corrida de cada flujo es independiente y no serviría: una app de Producción podría quedar «más vieja» que la de QA). Android solo instala encima una versión con `versionCode` mayor o igual. QA y Producción usan el **mismo appId**: en un mismo teléfono hay una u otra (la que se instaló al último).
+
+**`app-movil.json`** (lo escribe `apk.yml`; viaja junto al APK):
+
+```json
+{"app":"mx.smartcentinel.app","version":"v1.2.3","version_code":2701440,"servidor":"produccion","commit":"<sha>",
+ "fecha":"2026-11-09T15:00:00Z","sha256":"<64 hex>","tamano":5123456,"huella_firma":"AB:CD:…","firma":"publicacion"}
+```
+
+### La llave de firma
+
+- Una sola llave **para siempre** (QA y Producción): Android solo acepta una actualización encima si viene firmada con la misma llave. **Si se pierde, ya no se puede actualizar la app**: cada teléfono tendría que desinstalarla e instalar otra. Guárdala con su contraseña fuera del repositorio y con respaldo (p. ej. en un gestor de contraseñas y en una memoria USB guardada).
+- **Nunca** va en el repositorio (`.gitignore`: `*.jks`, `*.keystore`; la prueba `FlujosAppAndroidTest` revisa que no haya ninguna). En la CI vive solo en la carpeta temporal del runner y se borra al final (`if: always()`).
+- Los secretos solo llegan como variables de entorno a los pasos que los usan (nunca dentro de un comando, nunca por `GITHUB_ENV`); la contraseña va a `keytool` con `-storepass:env`. GitHub además oculta su valor en los registros.
+- **Sin los secretos no falla nada:** `apk.yml` compila una APK de **prueba** (firma de depuración del runner, distinta en cada corrida) con el aviso «App de Android sin firma de publicación»; no entra al paquete y el servidor conserva la app que ya tenía (o dice «La app todavía no está disponible en esta versión»).
+
+#### Crear la llave y cargar los secretos (paso a paso, una sola vez)
+
+Necesitas Java (`keytool`). Si ya instalaste Android Studio, úsalo desde PowerShell:
+
+1. Abre **PowerShell** y entra a una carpeta **fuera** del proyecto, por ejemplo: `mkdir C:\llave-app; cd C:\llave-app`.
+2. Crea la llave (cambia `TuContraseñaLarga` por una contraseña larga que solo tú conozcas; usa la misma en las dos preguntas):
+   ```
+   & "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkeypair -v -keystore smart-centinel.jks -alias smartcentinel -keyalg RSA -keysize 4096 -validity 10000 -storetype PKCS12
+   ```
+   Te pide la contraseña (escríbela dos veces) y unos datos (nombre, organización, ciudad, estado, país `MX`); al final escribe `sí`. En Mac: `keytool -genkeypair …` igual, desde Terminal.
+3. Convierte la llave a texto para GitHub:
+   ```
+   [Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\llave-app\smart-centinel.jks")) | Set-Content llave-base64.txt
+   ```
+   En Mac: `base64 -i smart-centinel.jks -o llave-base64.txt`.
+4. En GitHub abre el repositorio → **Settings → Secrets and variables → Actions → New repository secret** y crea estos cuatro (nombre exacto, valor sin espacios ni saltos de más):
+
+   | Nombre | Valor |
+   |---|---|
+   | `ANDROID_KEYSTORE_BASE64` | todo el contenido de `llave-base64.txt` |
+   | `ANDROID_KEYSTORE_PASSWORD` | la contraseña de la llave |
+   | `ANDROID_KEY_ALIAS` | `smartcentinel` |
+   | `ANDROID_KEY_PASSWORD` | la misma contraseña (con PKCS12 son iguales) |
+
+5. **Borra** `llave-base64.txt` y guarda `smart-centinel.jks` y la contraseña en dos lugares seguros fuera de la computadora.
+6. Comprueba: en GitHub → **Actions → CI → Run workflow** (rama `develop`) o integra cualquier PR. En la corrida, el job **App de Android** debe decir en su resumen «Firma: publicación» y mostrar la **huella de la firma (SHA-256)**. Al instalarse en QA, la plataforma ya la ofrece en **Mi cuenta → App para tu celular**.
+
+Con la línea de comandos de GitHub (opcional): `gh secret set ANDROID_KEYSTORE_BASE64 < llave-base64.txt` y `gh secret set ANDROID_KEYSTORE_PASSWORD` (pregunta el valor), etc.
+
+**Si ya instalaste a mano la app de prueba de Android Studio** (firmada con la llave de depuración de tu computadora), desinstálala una vez antes de instalar la de la plataforma: las firmas son distintas.
+
+**Cambiar la llave** (solo si se filtró): crea otra, reemplaza los cuatro secretos, y avisa que hay que **desinstalar** la app e instalar la nueva (una vez). Si la app ya está en Google Play con *Play App Signing*, esto no aplica a la tienda.
+
+### Descarga desde la plataforma (Mi cuenta → App para tu celular)
+
+| Pieza | Detalle |
+|---|---|
+| Dónde vive el archivo | `storage/app/private/app-movil/` (config `app_movil.carpeta`; en el servidor, `shared/storage/…`, fuera de la carpeta pública). Lo copia `desplegar.sh` desde el paquete (ver [despliegue.md](despliegue.md), paso 6). Archivo de **plataforma**: no lleva datos ni `empresa_id` de ninguna empresa. |
+| `App\Services\AppMovil\ApkInstalada` | Lee y **valida** `app-movil.json` (versión `[A-Za-z0-9._-]{1,40}`, sha256 de 64 hex, tamaño entero) y comprueba que exista `smart-centinel-<sha256>.apk` con ese tamaño; si algo no cuadra, «no hay app» (y lo anota en el log). `historial()` lee `historial.jsonl` (renglones rotos se ignoran). |
+| `GET /mi-cuenta/app` → `Cuenta\AppMovilController::mostrar` (`mi-cuenta.app`) | Con sesión, **sin permiso propio** (como Mi cuenta: la app es igual para todos y no expone datos). Versión, fecha, tamaño, **Descargar app**, QR, instrucciones de Android, «iPhone: próximamente» (con el atajo de Safari → Agregar a inicio) y la huella sha256. El Super Administrador ve además el **historial** (versión, versionCode, compilada, instalada, tamaño, sha256). Sin app: «La app todavía no está disponible en esta versión», sin error. |
+| `GET /mi-cuenta/app/descargar` (`mi-cuenta.app.descargar`) | Con sesión, `throttle:app-movil-descargar` (5 por minuto por cuenta). `Content-Type: application/vnd.android.package-archive`, `attachment; filename=smart-centinel-<versión>.apk`, `Cache-Control: no-store, private`, `Repr-Digest: sha-256=:<base64>:`. 404 si no hay app. Dentro de la app de Android baja con el DownloadManager (con la sesión de la app). |
+| `GET /app-movil/descargar` (`app-movil.enlace`) | El enlace del **QR**: URL firmada temporal de Laravel (`URL::temporarySignedRoute`, `app_movil.minutos_enlace` = 30), generada al abrir la pantalla, para bajar la app en un celular **sin sesión**. Va **sin el grupo `web`** (sin sesión ni cookies), `throttle:app-movil-enlace` (10 por minuto y 60 por hora por IP). Firma vencida o alterada → página «Este enlace ya no sirve» (403, explica volver a abrir la pantalla); sin app → «La app todavía no está disponible» (404). El APK no contiene secretos: quien vea el QR en pantalla puede bajarla durante 30 minutos, igual que si se la pasaran por WhatsApp. |
+| Mi cuenta | Tarjeta **App para tu celular** (versión y fecha, **Descargar app**, «Código QR e instrucciones»). Es el lugar más simple (criterios UX): todos lo tienen sin permiso y ahí está lo «de mi cuenta y mi equipo». Sin cambios en el menú. |
+| App Links (C-46) | `/.well-known/assetlinks.json` suma a `APP_MOVIL_HUELLAS_SHA256` la `huella_firma` de la app instalada **si** su `firma` es `publicacion` y su `app` es `APP_MOVIL_PAQUETE`. Con los secretos cargados, los App Links se encienden solos con la llave de firma; sin app (o con firma de depuración), 404 como antes. |
+
+**Criterios UX:** (2) la versión y la huella las escribe la CI, nadie las captura; (5) no hay formulario; (7) el historial y la huella quedan abajo, el agente solo ve **Descargar app** y el QR; reglas 1, 3, 6 y 8 no aplican (nada espera respuesta, no hay alta). «Descargar app» es un **enlace**, no un botón de enviar (fuera de los diez verbos, como «Abrir ajustes de NFC»; lo pidió el dueño con ese texto).
+
+**Lo que no cambia:** ninguna tabla ni migración, ningún permiso (no hace falta: sin permiso propio), el menú, Accidentes, el catálogo comercial y el resto de Mi cuenta.
+
+### Cómo revertir
+
+- **Código:** «Revert» del PR. Se quitan la pantalla, las rutas, el paso de `desplegar.sh` y los jobs de la CI. No hay migraciones.
+- **Archivos en el servidor:** `shared/storage/app/private/app-movil/` queda sin usarse (no estorba); se puede borrar con el Administrador de archivos.
+- **Solo apagar la compilación:** borrar los cuatro secretos deja de publicar la app (el paquete sale sin ella y el servidor conserva la última). Para que ya no se ofrezca, borra también la carpeta `app-movil/` del servidor.
+- **Regresar a una app anterior:** Producción instala la app que trae la versión autorizada en el archivo de versión; QA, la de la última entrega. Ojo: Android **no instala encima** una app con `versionCode` menor; los teléfonos que ya tienen la nueva deben desinstalarla primero.
+- **App Links:** si se quiere apagar la huella automática, basta con borrar la carpeta `app-movil/` del servidor (y vaciar `APP_MOVIL_HUELLAS_SHA256`).
 
 ## Guía paso a paso para el dueño (Windows primero; Mac al final de cada paso)
 
@@ -255,14 +355,17 @@ Requiere una **Mac con Xcode** y cuenta de **Apple Developer** (pago anual). En 
 
 - `tests/Feature/Nucleo/AppMovilPwaTest.php`: `assetlinks.json` 404 sin huella (o con huellas inválidas) y JSON correcto con huellas normalizadas, sin cookies; `nfc-app.js` solo con el user-agent de la app, sin `defer` y antes de `plataforma.js`; `NDEFReader` de la app ejecutado con Node y el plugin simulado (lectura con la forma de Web NFC, apertura solo de direcciones propias, NFC apagado / sin NFC, `write()` rechaza); manifest con su tipo, íconos con sus medidas, nombre y color de Identidad, sin cookies; service worker en la raíz con `no-cache`, `Service-Worker-Allowed`, versión sustituida, solo GET y sin guardar pantallas, sin cookies aun con sesión; «Sin conexión» sin sesión; CSP sin cambios; cabeceras HTML con manifest, ícono y `pwa.js` sin JS en línea; dentro de la app no se ofrecen los avisos del navegador; la app no cambia el cierre por inactividad.
 - Navegador (Playwright): ver «Verificado en navegador» y «NFC en la app → Verificado aquí».
-- La app de Android no se compila en la integración continua (requiere el SDK de Android).
+- `tests/Feature/Nucleo/AppMovilDescargaTest.php`: pantalla con y sin app, descarga con sesión (tipo, nombre, `no-store`, `Repr-Digest`), sin sesión, enlace firmado válido (sin cookies), vencido y alterado, sin app por el enlace, límites (429), JSON o APK alterados = sin app, historial del Super Administrador y huella de la firma en `assetlinks.json`.
+- `tests/Feature/SeguridadAuditoria/DesplegarScriptTest.php`: el paso que copia la app (storage privado, nombre con sha256, sin repetir el historial, reemplazo de la anterior, paquete sin app, huella distinta y JSON con comandos o rutas).
+- `tests/Feature/SeguridadAuditoria/FlujosAppAndroidTest.php`: los flujos son YAML válido, acciones fijadas por SHA, secretos solo por variables y nunca impresos, la llave se borra y no se sube, el paquete no depende de la app, ningún keystore en el repositorio.
+- La app se **compila de verdad en GitHub Actions** (`apk.yml`) en cada PR, en `develop` y en cada etiqueta (en el equipo de desarrollo no hay SDK de Android).
 
 ## Lista de salida a Producción (plan de correcciones C-46)
 
 Antes de publicar la app y de abrir Producción:
 
-1. Compilar con `SERVIDOR=produccion` (o `"servidor": "produccion"` en `movil/app.config.json`): hoy la app nace apuntando a QA.
-2. Encender los **App Links** con la huella de la llave de firma (`assetlinks.json`, ver «App Links»).
+1. Compilar con `SERVIDOR=produccion`: **automático** al publicar la etiqueta `vX.Y.Z` (Parte 3). Requiere los cuatro secretos de la llave.
+2. **App Links** con la huella de la llave de firma: **automático** con la app firmada instalada (ver «App Links»). Revisar `adb shell pm get-app-links mx.smartcentinel.app` → `verified`.
 3. **Correo de la plataforma configurado** en Producción (Configuración → Plataforma): sin él no salen «Olvidé mi contraseña», las bienvenidas ni los avisos (C-36).
 4. **Tareas «en proceso» y cron comprobados en el hospedaje real**: suscripciones, escalamientos y recordatorios corren con `--si-toca` desde el cron de `desplegar.sh` y, si el cron no corre, al refrescar las pantallas (`escalarSiToca`). Revisar en el archivo de estado que el cron corre y con qué PHP.
 5. **Prueba en un teléfono real** con la app compilada contra Producción: entrar, leer un gafete por NFC, registrar un acceso y dar salida.

@@ -172,6 +172,12 @@ class AppServiceProvider extends ServiceProvider
             Limit::perDay(20)->by('privacidad-enviar-dia|'.$ip($r)),
         ]);
         // Verificación en dos pasos en Mi cuenta: activar, códigos nuevos y quitarla (piden contraseña o código), por cuenta
+        // Mi cuenta → App para tu celular: con sesión, por cuenta; con el enlace firmado del QR (sin sesión), por equipo
+        RateLimiter::for('app-movil-descargar', fn (Request $r) => Limit::perMinute(5)->by('app-movil|'.($r->user()?->getAuthIdentifier() ?? $ip($r))));
+        RateLimiter::for('app-movil-enlace', fn (Request $r) => [
+            Limit::perMinute(10)->by('app-movil-enlace|'.$ip($r)),
+            Limit::perHour(60)->by('app-movil-enlace-hora|'.$ip($r)),
+        ]);
         RateLimiter::for('dos-pasos-cuenta', fn (Request $r) => Limit::perMinute(10)->by('dos-pasos-cuenta|'.($r->user()?->getAuthIdentifier() ?? $ip($r))));
         // C-12 «Delegar mis aprobaciones» en Mi cuenta: cada alta avisa al delegado; contador propio por cuenta (no choca con otras rutas)
         RateLimiter::for('delegar-cuenta', fn (Request $r) => Limit::perMinute(10)->by('delegar-cuenta|'.($r->user()?->getAuthIdentifier() ?? $ip($r))));

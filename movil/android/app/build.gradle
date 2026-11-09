@@ -25,8 +25,30 @@ if (capConfigArchivo.exists()) {
     logger.warn('Falta src/main/assets/capacitor.config.json: ejecuta «npx cap sync android» en la carpeta movil.')
 }
 
+// Versión: la CI la escribe en cada compilación (.github/workflows/apk.yml) con
+// -PcodigoVersion=<número que siempre crece> -PnombreVersion=<v1.2.3 o qa-abc1234>.
+// En Android Studio, sin esos datos, queda 1 / "1.0" como siempre.
+def codigoVersion = (project.findProperty('codigoVersion') ?: '1').toString().toInteger()
+def nombreVersion = (project.findProperty('nombreVersion') ?: '1.0').toString()
+
+// Firma de publicación (docs/tecnico/app-movil.md, «Compilación automática»): solo si
+// existen las variables de entorno; la CI las toma de los secretos del repositorio.
+// La llave NUNCA va en el repositorio. Sin ellas, la versión release queda sin firmar.
+def firmaArchivo = System.getenv('ANDROID_KEYSTORE_FILE')
+def conFirma = firmaArchivo && file(firmaArchivo).exists()
+
 android {
     namespace = "mx.smartcentinel.app"
+    signingConfigs {
+        if (conFirma) {
+            publicacion {
+                storeFile file(firmaArchivo)
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
     compileSdk = rootProject.ext.compileSdkVersion
     buildFeatures {
         resValues = true
@@ -38,8 +60,8 @@ android {
         manifestPlaceholders = [servidorHost: servidorHost, servidorRutaEtiquetas: servidorRutaEtiquetas]
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode codigoVersion
+        versionName nombreVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -51,6 +73,9 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (conFirma) {
+                signingConfig = signingConfigs.publicacion
+            }
         }
     }
 }

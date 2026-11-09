@@ -8,6 +8,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Models\UsuarioRol;
 use App\Rules\ContrasenaSegura;
+use App\Services\AppMovil\ApkInstalada;
 use App\Services\Autorizaciones\Delegaciones;
 use App\Services\Candidatos\CambioNoPermitido;
 use App\Services\Cuenta\CuentaPropia;
@@ -53,6 +54,8 @@ class MiCuentaController extends Controller
             'sedesEmpresa' => $sedes,
             'empresaNombre' => $usuario->empresa?->nombre_comercial,
             'debeCambiar' => (bool) $usuario->debe_cambiar_contrasena,
+            // App para tu celular: la app de Android de esta versión (null si no trae)
+            'appMovil' => app(ApkInstalada::class)->actual(),
             // Mejoras estructura (ADR-0016): «Mis avisos»
             'opcionesAvisos' => $usuario->empresa_id === null ? ['campana' => [], 'correo' => []]
                 : $this->tenant->conEmpresa((int) $usuario->empresa_id, fn () => $this->preferencias->opciones($usuario)),

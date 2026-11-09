@@ -26,3 +26,8 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 .claude/worktrees/
+
+# App de Android: la llave de firma nunca va al repositorio; app-movil/ la arma la CI dentro del paquete
+*.jks
+*.keystore
+/app-movil/

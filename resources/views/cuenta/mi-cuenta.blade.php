@@ -77,6 +77,21 @@
         </div>
     </div>
 
+    {{-- App para tu celular (docs/tecnico/app-movil.md): la app de Android de esta versión de la plataforma --}}
+    <section class="tarjeta p-4 mt-4" id="app-celular" aria-labelledby="t-app-celular">
+        <h2 id="t-app-celular" class="h5 fw-bold mb-1"><i class="bi bi-phone me-2 text-primary" aria-hidden="true"></i>App para tu celular</h2>
+        @if ($appMovil)
+            <p class="small text-muted mb-3">App para Android, versión {{ $appMovil['version'] }}@if ($appMovil['fecha']) del @fecha($appMovil['fecha'], 'd/m/Y')@endif. Entras con tu mismo usuario y contraseña. En iPhone, próximamente.</p>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <a href="{{ route('mi-cuenta.app.descargar') }}" class="btn-azul d-inline-flex align-items-center" style="min-height:44px;border-radius:10px;padding:0 1.25rem;text-decoration:none;"><i class="bi bi-download me-2" aria-hidden="true"></i>Descargar app</a>
+                <a href="{{ route('mi-cuenta.app') }}" class="small">Código QR e instrucciones</a>
+            </div>
+        @else
+            <p class="small text-muted mb-2">La app todavía no está disponible en esta versión. En iPhone, próximamente.</p>
+            <a href="{{ route('mi-cuenta.app') }}" class="small">Ver más</a>
+        @endif
+    </section>
+
     {{-- C-12: «Delegar mis aprobaciones» («No molestar»): a quién y hasta cuándo --}}
     @if ($delegar)
         @php

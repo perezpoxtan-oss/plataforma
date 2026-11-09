@@ -5,10 +5,22 @@ name: Paquete
 #  - Cada entrega que llega a develop y pasa la CI  -> version "qa" (portal de pruebas)
 #  - Cada etiqueta vMAYOR.MENOR.PARCHE              -> version de Produccion
 # El servidor lo descarga con desplegar.sh (ver docs/tecnico/despliegue.md).
+# Antes compila la app de Android (apk.yml) y, si quedo firmada, la mete al
+# paquete en app-movil/ (desplegar.sh la instala en storage; Mi cuenta -> App
+# para tu celular). Si la app no se pudo compilar o firmar, el paquete sale igual.
 
 on:
   # La CI lo llama al terminar en verde sobre develop
   workflow_call:
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        required: false
+      ANDROID_KEYSTORE_PASSWORD:
+        required: false
+      ANDROID_KEY_ALIAS:
+        required: false
+      ANDROID_KEY_PASSWORD:
+        required: false
   push:
     tags: ['v*.*.*']
 
@@ -20,8 +32,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  apk:
+    name: App de Android
+    permissions:
+      contents: read
+    uses: ./.github/workflows/apk.yml
+    with:
+      destino: ${{ github.ref_type == 'tag' && 'produccion' || 'qa' }}
+      publicar: true
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
   paquete:
     name: Armar y publicar paquete
+    # La app de Android no detiene el paquete: si falla o no esta firmada, sale sin ella
+    needs: apk
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     # Seguridad: el token con permiso de escritura solo se entrega a los pasos que publican
     env:
@@ -64,6 +93,24 @@ jobs:
           else
             echo "etiqueta=qa" >> "$GITHUB_OUTPUT"
             echo "nombre=qa-${SHA:0:7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: App de Android (si se compilo y firmo)
+        id: app
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: app-movil
+          path: app-movil
+
+      - name: Revisar la app de Android
+        run: |
+          if [ -f app-movil/smart-centinel.apk ] && [ -f app-movil/app-movil.json ] \
+             && [ "$(sha256sum app-movil/smart-centinel.apk | cut -d' ' -f1)" = "$(jq -r .sha256 app-movil/app-movil.json)" ]; then
+            echo "El paquete lleva la app de Android $(jq -r .version app-movil/app-movil.json)"
+          else
+            rm -rf app-movil
+            echo "::warning title=Paquete sin app de Android::Esta version del paquete no lleva la app de Android (faltan los secretos de firma o fallo su compilacion). El servidor conserva la app que ya tenia."
           fi
 
       - name: Armar paquete

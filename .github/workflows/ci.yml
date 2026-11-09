@@ -132,3 +132,27 @@ jobs:
     permissions:
       contents: write
     uses: ./.github/workflows/paquete.yml
+    # Firma de la app de Android (apk.yml); opcionales: sin ellos el paquete sale sin app
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+  app-android:
+    name: App de Android (prueba)
+    # En cada PR se compila la app (apunta a QA) y queda como artefacto «app-movil-prueba»
+    # para probarla en un telefono; no se publica. En develop y en las etiquetas la
+    # compila paquete.yml. Sin los secretos de firma no falla (APK de depuracion).
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/apk.yml
+    with:
+      destino: qa
+      publicar: false
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}

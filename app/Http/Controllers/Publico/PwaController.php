@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Publico;
 
 use App\Http\Controllers\Controller;
+use App\Services\AppMovil\ApkInstalada;
 use App\Support\AppMovil;
 use App\Support\Identidad;
 use Illuminate\Http\JsonResponse;
@@ -82,7 +83,12 @@ class PwaController extends Controller
      */
     public function assetlinks(): JsonResponse
     {
-        $huellas = self::huellas((string) config('app_movil.huellas_sha256'));
+        // Las del .env y, si la versión instalada trae la app firmada por la CI, la huella de esa
+        // llave (C-46: App Links encendidos con la llave de firma, sin escribirla a mano)
+        $huellas = self::huellas(implode(',', array_filter([
+            (string) config('app_movil.huellas_sha256'),
+            (string) app(ApkInstalada::class)->huellaFirma(),
+        ])));
         $paquete = trim((string) config('app_movil.paquete'));
         abort_if($huellas === [] || $paquete === '', 404);
 

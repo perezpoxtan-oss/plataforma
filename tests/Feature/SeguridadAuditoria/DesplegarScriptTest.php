@@ -475,6 +475,102 @@ class DesplegarScriptTest extends TestCase
         $this->assertStringContainsString('No se encontro PHP 8.4.1+', $this->leer('despliegue_qa_estado.txt'));
     }
 
+    // ------------------------------------------------- app de Android (Mi cuenta → App para tu celular)
+
+    public function test_la_app_de_android_del_paquete_se_instala_en_storage_privado(): void
+    {
+        $apk = 'APK-QA-1';
+        $this->publicar('qa', 1001, $this->paquete('v', $this->appMovil($apk, 'qa-abc1234')));
+        $this->escribir('env_qa.txt', $this->envQa());
+
+        $this->desplegar('qa');
+
+        $dir = $this->home.'/apps/plataforma-qa/shared/storage/app/private/app-movil';
+        $sha = hash('sha256', $apk);
+        $this->assertStringContainsString('OK: instalada qa-1001', $this->leer('despliegue_qa_estado.txt'));
+        $this->assertSame($apk, $this->leer('apps/plataforma-qa/shared/storage/app/private/app-movil/smart-centinel-'.$sha.'.apk'));
+        $json = json_decode($this->leer('apps/plataforma-qa/shared/storage/app/private/app-movil/app-movil.json'), true);
+        $this->assertSame('qa-abc1234', $json['version']);
+        $this->assertSame($sha, $json['sha256']);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/', $json['instalado_en']);
+        $this->assertSame('750', $this->permisos('apps/plataforma-qa/shared/storage/app/private/app-movil'));
+        // No es público: nada de la app en la carpeta del subdominio
+        $this->assertSame([], glob($this->home.'/qa.vdcp.com.mx/*.apk') ?: []);
+        $this->assertStringContainsString('App de Android instalada: qa-abc1234', $this->leer('apps/plataforma-qa/despliegue.log'));
+
+        // Otra revisión sin cambios no la vuelve a anotar en el historial
+        $this->desplegar('qa');
+        $this->assertCount(1, file($dir.'/historial.jsonl'));
+    }
+
+    public function test_una_version_nueva_reemplaza_la_app_y_sin_app_se_conserva_la_anterior(): void
+    {
+        $this->escribir('env_qa.txt', $this->envQa());
+        $this->publicar('qa', 1011, $this->paquete('v', $this->appMovil('APK-UNO', 'qa-1111111')));
+        $this->desplegar('qa');
+        $this->publicar('qa', 1012, $this->paquete('v', $this->appMovil('APK-DOS', 'qa-2222222')));
+        $this->desplegar('qa');
+
+        $dir = $this->home.'/apps/plataforma-qa/shared/storage/app/private/app-movil';
+        $this->assertSame([$dir.'/smart-centinel-'.hash('sha256', 'APK-DOS').'.apk'], glob($dir.'/*.apk'));
+        $this->assertCount(2, file($dir.'/historial.jsonl'));
+
+        // Paquete sin app (p. ej. sin la llave de firma): el despliegue sigue y la app anterior se queda
+        $this->publicar('qa', 1013, $this->paquete('v'));
+        $this->desplegar('qa');
+        $this->assertStringContainsString('OK: instalada qa-1013', $this->leer('despliegue_qa_estado.txt'));
+        $this->assertSame('qa-2222222', json_decode((string) file_get_contents($dir.'/app-movil.json'), true)['version']);
+        $this->assertFileExists($dir.'/smart-centinel-'.hash('sha256', 'APK-DOS').'.apk');
+    }
+
+    public function test_sin_app_en_el_paquete_no_se_crea_nada_y_el_despliegue_funciona(): void
+    {
+        $this->publicar('qa', 1021, $this->paquete());
+        $this->escribir('env_qa.txt', $this->envQa());
+
+        $this->desplegar('qa');
+
+        $this->assertStringContainsString('OK: instalada qa-1021', $this->leer('despliegue_qa_estado.txt'));
+        $this->assertDirectoryDoesNotExist($this->home.'/apps/plataforma-qa/shared/storage/app/private/app-movil');
+    }
+
+    public function test_app_que_no_coincide_con_su_huella_o_json_invalido_no_se_instala(): void
+    {
+        $this->escribir('env_qa.txt', $this->envQa());
+        $app = $this->appMovil('APK-BUENO', 'qa-3333333');
+        $app['smart-centinel.apk'] = 'APK-CAMBIADO';
+        $this->publicar('qa', 1031, $this->paquete('v', $app));
+        $this->desplegar('qa');
+
+        $dir = $this->home.'/apps/plataforma-qa/shared/storage/app/private/app-movil';
+        $this->assertStringContainsString('OK: instalada qa-1031', $this->leer('despliegue_qa_estado.txt'));
+        $this->assertFileDoesNotExist($dir.'/app-movil.json');
+        $this->assertStringContainsString('no coincide con su huella', $this->leer('apps/plataforma-qa/despliegue.log'));
+
+        // Versión que intenta formar rutas o comandos: se rechaza sin ejecutar nada
+        $pwn = $this->home.'/pwn';
+        $app = $this->appMovil('APK-X', 'qa-4444444');
+        $json = json_decode($app['app-movil.json'], true);
+        $json['version'] = '$(touch '.$pwn.')/../x';
+        $app['app-movil.json'] = json_encode($json);
+        $this->publicar('qa', 1032, $this->paquete('v', $app));
+        $this->desplegar('qa');
+        $this->assertFileDoesNotExist($pwn);
+        $this->assertFileDoesNotExist($dir.'/app-movil.json');
+        $this->assertStringContainsString('app-movil.json del paquete no es valido', $this->leer('apps/plataforma-qa/despliegue.log'));
+    }
+
+    /** @return array<string, string> archivos de app-movil/ como los deja la CI (apk.yml) */
+    private function appMovil(string $apk, string $version): array
+    {
+        return [
+            'smart-centinel.apk' => $apk,
+            'app-movil.json' => json_encode(['app' => 'mx.smartcentinel.app', 'version' => $version, 'version_code' => 123, 'servidor' => 'qa',
+                'commit' => str_repeat('a', 40), 'fecha' => '2026-11-09T15:00:00Z', 'sha256' => hash('sha256', $apk), 'tamano' => strlen($apk),
+                'huella_firma' => implode(':', array_fill(0, 32, 'AB')), 'firma' => 'publicacion']),
+        ];
+    }
+
     // ---------------------------------------------------------------- auxiliares
 
     private function desplegar(string $ambiente, ?string $urlSitio = null, array $extra = []): string
@@ -520,10 +616,15 @@ class DesplegarScriptTest extends TestCase
         }
     }
 
-    private function paquete(string $marca = 'v'): string
+    /** @param array<string, string> $appMovil archivos de app-movil/ (la app de Android), si el paquete la trae */
+    private function paquete(string $marca = 'v', array $appMovil = []): string
     {
         $dir = $this->home.'/fuente-'.bin2hex(random_bytes(4));
         mkdir($dir.'/public', 0755, true);
+        foreach ($appMovil as $nombre => $contenido) {
+            @mkdir($dir.'/app-movil', 0755);
+            file_put_contents($dir.'/app-movil/'.$nombre, $contenido);
+        }
         file_put_contents($dir.'/public/.htaccess', "# {$marca}\n");
         file_put_contents($dir.'/public/index.php', "<?php // {$marca}\n");
         file_put_contents($dir.'/VERSION', "{$marca}\n");
