@@ -33,13 +33,14 @@ class SuperficieDeRutasTest extends TestCase
         // Página pública de planes (Catálogo comercial): 404 mientras no esté publicada, límite de peticiones, campo trampa;
         // la ruta de avisos de pago está reservada y apagada (404)
         // Plataforma instalable (app-movil.md): manifest, service worker, «Sin conexión» y App Links (assetlinks.json), sin sesión ni datos de nadie
+        // App para tu celular (app-movil.md): el enlace del QR descarga la app solo con firma vigente (30 min), sin sesión ni cookies, límite por IP
         // Verificación en dos pasos (dos-pasos.md): el código después de la contraseña, solo con una cuenta pendiente en la sesión, límite por equipo y por cuenta;
         // «Perdí mi teléfono» (C-36) también exige la cuenta pendiente. «Pedir a mi administrador» (C-36): respuesta uniforme, límite por equipo y por cuenta
         // Credenciales (credenciales.md, C-44): «Vigente» con foto y nombre o «No vigente» por el código del QR impreso, sin datos personales, 30 por minuto por IP
         // Privacidad (privacidad.md): aviso de cada empresa por su código, formulario ARCO con campo trampa y límites, confirmación con enlace de un solo uso
         // Equipos de acceso (equipos-acceso.md, decisión 10): llamadas de los equipos ZKTeco (número de serie registrado e IP) y Hikvision (token
         // por equipo), con límite por equipo y por IP, tamaño máximo, validación estricta y respuestas sin datos personales
-        $this->assertSame(['GET /.well-known/assetlinks.json', 'GET /aviso-de-privacidad', 'GET /contratar', 'GET /contratar/gracias', 'GET /credencial/{codigo}', 'GET /empleos/{empresa}', 'GET /empleos/{empresa}/gracias', 'GET /empleos/{empresa}/{vacante}', 'GET /empleos/{empresa}/{vacante}/postular',
+        $this->assertSame(['GET /.well-known/assetlinks.json', 'GET /app-movil/descargar', 'GET /aviso-de-privacidad', 'GET /contratar', 'GET /contratar/gracias', 'GET /credencial/{codigo}', 'GET /empleos/{empresa}', 'GET /empleos/{empresa}/gracias', 'GET /empleos/{empresa}/{vacante}', 'GET /empleos/{empresa}/{vacante}/postular',
             'GET /iclock/getrequest', 'GET /k', 'GET /k/{token}', 'GET /login', 'GET /login/verificacion', 'GET /manifest.webmanifest', 'GET /olvide-contrasena', 'GET /planes',
             'GET /privacidad/solicitud', 'GET /privacidad/verificar/{token}', 'GET /privacidad/{codigo}', 'GET /privacidad/{codigo}/solicitud',
             'GET /restablecer-contrasena/{token}', 'GET /sesion/expirada', 'GET /sin-conexion', 'GET /sw.js', 'GET /up', 'GET|POST /iclock/cdata',
