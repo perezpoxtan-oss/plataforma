@@ -3,7 +3,7 @@ titulo: Mi cuenta
 modulos: []
 seccion: Primeros pasos
 orden: 25
-resumen: Ver tus datos de acceso, cambiar tu contraseña sin depender de nadie, activar la verificación en dos pasos, delegar tus aprobaciones («No molestar»), elegir qué avisos recibes y activar los avisos del navegador.
+resumen: Ver tus datos de acceso, cambiar tu contraseña sin depender de nadie, activar la verificación en dos pasos, delegar tus aprobaciones («No molestar»), elegir qué avisos recibes, activar los avisos del navegador y descargar la app para tu celular.
 ---
 # Mi cuenta
 
@@ -141,6 +141,13 @@ Con los avisos activos, tu computadora te muestra un aviso (en la esquina de la 
 
 > Los avisos se activan **en cada navegador por separado**: si usas otra computadora, actívalos también ahí.
 
+## Cómo descargar la app para tu celular
+
+1. Abre **Mi cuenta** y baja a **App para tu celular**.
+2. En el celular toca **Descargar app**. Desde la computadora, toca **Código QR e instrucciones** y escanea el código con la cámara del celular.
+
+**Qué debes ver:** la descarga del archivo de la app. Los pasos para instalarla y actualizarla están en [App para tu celular](app-movil.md). Si dice «La app todavía no está disponible en esta versión», aún no hay app para descargar.
+
 ## Qué puedo cambiar y qué no
 
 - **Sí:** tu contraseña y tu verificación en dos pasos (activarla, códigos de respaldo nuevos y quitarla si tu empresa no la exige).
@@ -193,3 +200,4 @@ Con los avisos activos, tu computadora te muestra un aviso (en la esquina de la 
 - [Menús, Mis pendientes y modos de pantalla](menus.md)
 - [Usuarios](usuarios.md)
 - [Autorizaciones](autorizaciones.md)
+- [App para tu celular](app-movil.md)

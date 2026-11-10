@@ -23,6 +23,7 @@ use App\Http\Controllers\Auth\DosPasosController;
 use App\Http\Controllers\Auth\RecuperacionController;
 use App\Http\Controllers\Auth\SesionController;
 use App\Http\Controllers\BajasController;
+use App\Http\Controllers\Cuenta\AppMovilController;
 use App\Http\Controllers\Cuenta\DosPasosController as CuentaDosPasosController;
 use App\Http\Controllers\Cuenta\MiCuentaController;
 use App\Http\Controllers\Cuenta\MiSuscripcionController;
@@ -109,6 +110,11 @@ Route::withoutMiddleware('web')->controller(PwaController::class)->group(functio
     Route::get('/.well-known/assetlinks.json', 'assetlinks')->name('pwa.assetlinks');
 });
 
+// App para tu celular: el enlace firmado del código QR descarga la app en un celular sin sesión.
+// Sin el grupo «web» (sin sesión ni cookies); la firma la revisa el controlador (enlace vencido = página clara)
+Route::get('/app-movil/descargar', [AppMovilController::class, 'enlace'])->withoutMiddleware('web')
+    ->middleware('throttle:app-movil-enlace')->name('app-movil.enlace');
+
 // Inicio: con sesión, el panel; sin sesión, la página pública de planes si está publicada (si no, al acceso, como siempre)
 Route::get('/', PanelController::class)->middleware([PortadaPublica::class, 'auth'])->name('panel');
 
@@ -129,6 +135,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/mi-cuenta/dos-pasos', [CuentaDosPasosController::class, 'activar'])->middleware('throttle:dos-pasos-cuenta')->name('mi-cuenta.dos-pasos.activar');
     Route::post('/mi-cuenta/dos-pasos/codigos', [CuentaDosPasosController::class, 'codigos'])->middleware('throttle:dos-pasos-cuenta')->name('mi-cuenta.dos-pasos.codigos');
     Route::delete('/mi-cuenta/dos-pasos', [CuentaDosPasosController::class, 'desactivar'])->middleware('throttle:dos-pasos-cuenta')->name('mi-cuenta.dos-pasos.desactivar');
+    // App para tu celular (docs/tecnico/app-movil.md): sin permiso propio, la app es de la plataforma
+    Route::get('/mi-cuenta/app', [AppMovilController::class, 'mostrar'])->name('mi-cuenta.app');
+    Route::get('/mi-cuenta/app/descargar', [AppMovilController::class, 'descargar'])->middleware('throttle:app-movil-descargar')->name('mi-cuenta.app.descargar');
 
     // Administración: roles y permisos (cada pantalla exige su "modulo.accion")
     Route::post('/empresa-activa', EmpresaActivaController::class)->name('empresa-activa');

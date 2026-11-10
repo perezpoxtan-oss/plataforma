@@ -39,7 +39,9 @@ class MatrizDeRutasTest extends TestCase
         // Mis avisos (ADR-0016): las preferencias de la propia cuenta
         'mi-cuenta.avisos',
         // Verificación en dos pasos (dos-pasos.md): activar, códigos y quitarla, de la propia cuenta
-        'mi-cuenta.dos-pasos', 'mi-cuenta.dos-pasos.activar', 'mi-cuenta.dos-pasos.codigos', 'mi-cuenta.dos-pasos.desactivar'];
+        'mi-cuenta.dos-pasos', 'mi-cuenta.dos-pasos.activar', 'mi-cuenta.dos-pasos.codigos', 'mi-cuenta.dos-pasos.desactivar',
+        // App para tu celular (app-movil.md): la app de Android es de la plataforma, igual para todos y sin datos de nadie
+        'mi-cuenta.app', 'mi-cuenta.app.descargar'];
 
     protected function setUp(): void
     {

@@ -1,0 +1,193 @@
+name: App de Android
+
+# Compila la app de Android (carpeta movil/) en el runner de GitHub, con el SDK
+# de Android y Gradle. La llaman:
+#  - paquete.yml (develop -> app de QA; etiqueta vX.Y.Z -> app de Produccion):
+#    el APK firmado viaja DENTRO del paquete del servidor y desplegar.sh lo
+#    instala (pantalla Mi cuenta -> App para tu celular).
+#  - ci.yml en cada PR: APK de prueba como artefacto (no se publica).
+#
+# Firma: secretos ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+# ANDROID_KEY_ALIAS y ANDROID_KEY_PASSWORD (siempre la MISMA llave, para que el
+# telefono acepte cada version encima de la instalada). Sin ellos NO falla: compila
+# una APK de prueba (firma de depuracion) que no entra al paquete, con un aviso.
+# La llave nunca esta en el repositorio. Ver docs/tecnico/app-movil.md.
+
+on:
+  workflow_call:
+    inputs:
+      destino:
+        description: 'qa o produccion (a que servidor apunta la app)'
+        type: string
+        required: true
+      publicar:
+        description: 'true = deja el artefacto app-movil para el paquete del servidor'
+        type: boolean
+        default: false
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        required: false
+      ANDROID_KEYSTORE_PASSWORD:
+        required: false
+      ANDROID_KEY_ALIAS:
+        required: false
+      ANDROID_KEY_PASSWORD:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    name: Compilar APK (${{ inputs.destino }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      SHA: ${{ github.sha }}
+      DESTINO: ${{ inputs.destino }}
+
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ env.SHA }}
+          persist-credentials: false
+
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+          cache-dependency-path: |
+            movil/android/*.gradle
+            movil/android/app/*.gradle
+            movil/android/gradle/wrapper/gradle-wrapper.properties
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '24'
+
+      - name: Version
+        id: version
+        run: |
+          case "$DESTINO" in
+            produccion)
+              # Seguridad: solo etiquetas vMAYOR.MENOR.PARCHE exactas
+              if [ "${GITHUB_REF_TYPE}" != "tag" ] || ! [[ "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                echo "::error::La app de Produccion solo se compila desde una etiqueta vMAYOR.MENOR.PARCHE"
+                exit 1
+              fi
+              NOMBRE="${GITHUB_REF_NAME}" ;;
+            qa)
+              NOMBRE="qa-${SHA:0:7}" ;;
+            *)
+              echo "::error::destino debe ser qa o produccion"
+              exit 1 ;;
+          esac
+          # versionCode SIEMPRE crece, aunque QA y Produccion se compilen en flujos
+          # distintos (el numero de corrida de cada flujo es independiente): decenas
+          # de segundos desde 2026-01-01 UTC. Alcanza para siglos (limite 2,100,000,000).
+          CODIGO=$(( ($(date -u +%s) - 1767225600) / 10 ))
+          echo "nombre=${NOMBRE}" >> "$GITHUB_OUTPUT"
+          echo "codigo=${CODIGO}" >> "$GITHUB_OUTPUT"
+          echo "Version ${NOMBRE} (versionCode ${CODIGO}) para ${DESTINO}"
+
+      - name: Preparar la app (Capacitor)
+        working-directory: movil
+        run: |
+          npm install --no-audit --no-fund
+          # La direccion sale de despliegue/env_qa.txt o env_prod.txt (APP_URL)
+          SERVIDOR="$DESTINO" npx cap sync android
+          node -e 'const c=require("./android/app/src/main/assets/capacitor.config.json"); console.log("Servidor de la app: " + c.server.url)'
+
+      - name: Llave de firma
+        id: firma
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KS_KEYPASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KS_B64" ] || [ -z "$KS_PASS" ] || [ -z "$KS_ALIAS" ] || [ -z "$KS_KEYPASS" ]; then
+            echo "firmada=no" >> "$GITHUB_OUTPUT"
+            echo "::warning title=App de Android sin firma de publicacion::Faltan los secretos ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS o ANDROID_KEY_PASSWORD. Se compila una APK de prueba (firma de depuracion) que NO se incluye en el paquete del servidor. Ver docs/tecnico/app-movil.md, «Crear la llave y cargar los secretos»."
+            exit 0
+          fi
+          # La llave vive solo en la carpeta temporal del runner y se borra al final
+          ( umask 077; printf '%s' "$KS_B64" | base64 -d > "$RUNNER_TEMP/firma.jks" ) || { echo "::error::ANDROID_KEYSTORE_BASE64 no es base64 valido"; exit 1; }
+          if ! keytool -list -keystore "$RUNNER_TEMP/firma.jks" -storepass:env KS_PASS -alias "$KS_ALIAS" >/dev/null 2>&1; then
+            echo "::error::La llave no abre con ANDROID_KEYSTORE_PASSWORD o no tiene el alias ANDROID_KEY_ALIAS"
+            exit 1
+          fi
+          echo "firmada=si" >> "$GITHUB_OUTPUT"
+
+      - name: Compilar con Gradle
+        working-directory: movil/android
+        env:
+          FIRMADA: ${{ steps.firma.outputs.firmada }}
+          CODIGO: ${{ steps.version.outputs.codigo }}
+          NOMBRE: ${{ steps.version.outputs.nombre }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          if [ "$FIRMADA" = "si" ]; then
+            export ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/firma.jks"
+            TAREA=assembleRelease; SALIDA=app/build/outputs/apk/release/app-release.apk
+          else
+            TAREA=assembleDebug; SALIDA=app/build/outputs/apk/debug/app-debug.apk
+          fi
+          ./gradlew --no-daemon --stacktrace "$TAREA" -PcodigoVersion="$CODIGO" -PnombreVersion="$NOMBRE"
+          mkdir -p "$RUNNER_TEMP/app-movil"
+          cp "$SALIDA" "$RUNNER_TEMP/app-movil/smart-centinel.apk"
+
+      - name: Revisar firma y datos de la version
+        env:
+          FIRMADA: ${{ steps.firma.outputs.firmada }}
+          CODIGO: ${{ steps.version.outputs.codigo }}
+          NOMBRE: ${{ steps.version.outputs.nombre }}
+        run: |
+          APK="$RUNNER_TEMP/app-movil/smart-centinel.apk"
+          APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)"
+          "$APKSIGNER" verify "$APK"
+          HUELLA="$("$APKSIGNER" verify --print-certs "$APK" | grep -m1 'certificate SHA-256 digest' | awk '{print $NF}' | tr 'a-f' 'A-F' | sed 's/../&:/g; s/:$//')"
+          [[ "$HUELLA" =~ ^([0-9A-F]{2}:){31}[0-9A-F]{2}$ ]] || { echo "::error::No se pudo leer la huella de la firma"; exit 1; }
+          PAQUETE="$(node -p 'require("./movil/app.config.json").appId')"
+          jq -n \
+            --arg app "$PAQUETE" --arg version "$NOMBRE" --argjson codigo "$CODIGO" \
+            --arg servidor "$DESTINO" --arg commit "$SHA" \
+            --arg fecha "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg sha256 "$(sha256sum "$APK" | cut -d' ' -f1)" --argjson tamano "$(stat -c %s "$APK")" \
+            --arg huella "$HUELLA" --arg firma "$([ "$FIRMADA" = si ] && echo publicacion || echo depuracion)" \
+            '{app: $app, version: $version, version_code: $codigo, servidor: $servidor, commit: $commit, fecha: $fecha, sha256: $sha256, tamano: $tamano, huella_firma: $huella, firma: $firma}' \
+            > "$RUNNER_TEMP/app-movil/app-movil.json"
+          cat "$RUNNER_TEMP/app-movil/app-movil.json"
+          {
+            echo "### App de Android ($DESTINO)"
+            echo "- Version: \`$NOMBRE\` (versionCode $CODIGO)"
+            echo "- Firma: $([ "$FIRMADA" = si ] && echo 'publicacion (se puede actualizar encima)' || echo '**depuracion: solo prueba, no entra al paquete del servidor**')"
+            echo "- Huella de la firma (SHA-256): \`$HUELLA\`"
+            echo "- sha256 del APK: \`$(sha256sum "$APK" | cut -d' ' -f1)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Guardar para el paquete del servidor
+        if: inputs.publicar && steps.firma.outputs.firmada == 'si'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: app-movil
+          path: ${{ runner.temp }}/app-movil/
+          retention-days: 3
+          if-no-files-found: error
+
+      - name: Guardar APK de prueba
+        if: ${{ !(inputs.publicar && steps.firma.outputs.firmada == 'si') }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: app-movil-prueba
+          path: ${{ runner.temp }}/app-movil/
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Borrar la llave del runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firma.jks"

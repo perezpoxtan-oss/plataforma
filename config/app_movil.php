@@ -14,4 +14,14 @@
 return [
     'paquete' => env('APP_MOVIL_PAQUETE', 'mx.smartcentinel.app'),
     'huellas_sha256' => (string) env('APP_MOVIL_HUELLAS_SHA256', ''),
+
+    /*
+    | Mi cuenta → App para tu celular: carpeta NO pública donde desplegar.sh deja
+    | el APK que trae cada versión (smart-centinel-<sha256>.apk), su app-movil.json
+    | y el historial. Ver docs/tecnico/app-movil.md, «Compilación automática».
+    */
+    'carpeta' => storage_path('app/private/app-movil'),
+
+    // Minutos que dura el enlace firmado del código QR (descarga sin sesión en el celular)
+    'minutos_enlace' => 30,
 ];

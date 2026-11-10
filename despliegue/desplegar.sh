@@ -121,6 +121,46 @@ PHPEOF
   ln -sfn "$APP/shared/storage/app/public" "$PUB/storage"
   permisos_publicos
 }
+# --- App de Android (Mi cuenta -> App para tu celular) -------------------------
+# El paquete trae app-movil/smart-centinel.apk y app-movil/app-movil.json (los
+# arma la CI, apk.yml). Se copian a una carpeta NO publica de storage compartido,
+# con el nombre smart-centinel-<sha256>.apk, solo si el APK coincide con la huella
+# de su JSON. Primero el APK y al final el JSON: la plataforma nunca ve un JSON que
+# apunte a un archivo a medias. Si el paquete no trae app (p. ej. sin la llave de
+# firma) no se toca nada y se conserva la que ya habia. Sin descargas extra.
+APP_MOVIL="$APP/shared/storage/app/private/app-movil"
+instalar_app_movil() {  # $1 = carpeta de la version activa
+  local ORIGEN="$1/app-movil" DATOS ESPERADA LINEA
+  [ -f "$ORIGEN/smart-centinel.apk" ] && [ -f "$ORIGEN/app-movil.json" ] || return 0
+  # Ya instalada (se compara con la copia original del JSON del paquete)
+  cmp -s "$ORIGEN/app-movil.json" "$APP_MOVIL/.paquete.json" && [ -f "$APP_MOVIL/app-movil.json" ] && return 0
+  # Seguridad: el JSON se valida con PHP (sin eval); sale "<sha256> <renglon JSON compacto>"
+  DATOS="$("$PHP" -r '
+    $j = json_decode((string) file_get_contents($argv[1]), true);
+    $ok = is_array($j) && is_string($j["sha256"] ?? null) && preg_match("/^[0-9a-f]{64}$/", $j["sha256"])
+      && is_string($j["version"] ?? null) && preg_match("/^[A-Za-z0-9._-]{1,40}$/", $j["version"])
+      && is_int($j["tamano"] ?? null) && $j["tamano"] > 0;
+    if (! $ok) { exit(1); }
+    $j["instalado_en"] = gmdate("Y-m-d\TH:i:s\Z");
+    echo $j["sha256"], " ", json_encode($j, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+  ' "$ORIGEN/app-movil.json" 2>/dev/null)" || { log "ADVERTENCIA: app-movil.json del paquete no es valido; no se instala la app de Android"; return 0; }
+  ESPERADA="${DATOS%% *}"; LINEA="${DATOS#* }"
+  if [ "$(sha256sum "$ORIGEN/smart-centinel.apk" | cut -d' ' -f1)" != "$ESPERADA" ]; then
+    log "ADVERTENCIA: la app de Android del paquete no coincide con su huella (sha256); no se instala"
+    return 0
+  fi
+  mkdir -p "$APP_MOVIL" && chmod 750 "$APP_MOVIL"
+  cp "$ORIGEN/smart-centinel.apk" "$APP_MOVIL/.nuevo.apk" && mv -f "$APP_MOVIL/.nuevo.apk" "$APP_MOVIL/smart-centinel-$ESPERADA.apk" \
+    || { log "ADVERTENCIA: no se pudo copiar la app de Android"; return 0; }
+  printf '%s\n' "$LINEA" > "$APP_MOVIL/.nuevo.json" && mv -f "$APP_MOVIL/.nuevo.json" "$APP_MOVIL/app-movil.json"
+  cp "$ORIGEN/app-movil.json" "$APP_MOVIL/.paquete.json"
+  # Historial (lo ve el Super Administrador): las ultimas 20 versiones instaladas
+  printf '%s\n' "$LINEA" >> "$APP_MOVIL/historial.jsonl"
+  tail -n 20 "$APP_MOVIL/historial.jsonl" > "$APP_MOVIL/.historial" && mv -f "$APP_MOVIL/.historial" "$APP_MOVIL/historial.jsonl"
+  # Solo queda el APK vigente (quien lo descarga en este instante lo termina: Linux no lo corta)
+  find "$APP_MOVIL" -maxdepth 1 -type f -name 'smart-centinel-*.apk' ! -name "smart-centinel-$ESPERADA.apk" -delete
+  log "App de Android instalada: $(printf '%s' "$LINEA" | grep -o '"version":"[^"]*"' | cut -d'"' -f4) (sha256 $ESPERADA)"
+}
 responde() {  # codigo HTTP de /up
   curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$URL/up"
 }
@@ -402,6 +442,10 @@ else
     estado "ADVERTENCIA: el sitio responde $CODIGO (si es 000, revisa el certificado SSL; si es 403/500, avisame)"
   fi
 fi
+
+# App de Android de la version activa (tambien se pone al dia si una corrida anterior
+# no alcanzo a copiarla). Va despues de comprobar que el sitio responde.
+[ -d "$APP/actual" ] && instalar_app_movil "$APP/actual"
 
 # --- QA: limpieza unica de la base (solo QA, una vez por solicitud del dueño) ---
 # El identificador de la solicitud vive en el codigo (LimpiarQa::SOLICITUD) y se
