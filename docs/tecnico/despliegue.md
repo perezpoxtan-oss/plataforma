@@ -51,7 +51,8 @@ Se suben a la carpeta principal (`/home/vdcpcomm`) con el Administrador de archi
 | `github_token.txt` | Token *fine-grained* de GitHub, solo lectura de *Contents* del repositorio `plataforma` |
 | `env_qa.txt` | Configuración de QA (plantilla en `despliegue/env_qa.txt`); la `APP_KEY` se genera sola |
 | `env_prod.txt` | Configuración de Producción (plantilla en `despliegue/env_prod.txt`): debe decir `APP_ENV=production`, `APP_DEBUG=false` y `APP_URL` con `https://`, o el script no instala |
-| `qa_inicial.txt` | Correo, nombre, usuario y contraseña para crear el Super Administrador (y la empresa demo, solo con el interruptor `demo_encendido`; ver «QA: datos demo con interruptor») |
+| `qa_inicial.txt` | Correo, nombre, usuario y contraseña para crear el Super Administrador de QA (y la empresa demo, solo con el interruptor `demo_encendido`; ver «QA: datos demo con interruptor») |
+| `prod_inicial.txt` | Lo mismo para **Producción** (plantilla en `despliegue/prod_inicial.txt`): crea **solo** el Super Administrador, nunca datos demo. Subirlo otra vez con el mismo correo restablece su contraseña (recuperación sin terminal) |
 
 Para cambiar la configuración después, basta con subir otro `env_qa.txt`: se conserva la `APP_KEY` y queda un respaldo del `.env` anterior.
 
@@ -108,6 +109,21 @@ Además crea dos empresas de otros giros para probar cómo se adapta la platafor
 ## Respaldos de la base
 
 `desplegar.sh` respalda la base antes de cada migración (`plataforma:respaldar --motivo=antes-de-actualizar`) y hace el respaldo diario (`--si-toca`, después de las 3:00 hora de Cancún) en cada corrida del cron. No hace falta otro cron. Los archivos quedan en `$APP/shared/storage/app/private/respaldos` (permisos 600) y se conservan 14 días. Ver `docs/tecnico/configuracion.md`. En la misma corrida, `plataforma:traslado --si-toca` termina los paquetes de traslado y exportaciones que quedaron a medias y arranca el semanal si está encendido (ver `docs/tecnico/traslado.md`). Después de las 4:00, `plataforma:revisar-coherencia --si-toca --reparar` (una vez al día, en proceso) corrige desde su fuente los datos que la base guarda dos veces y lo anota en la auditoría (ver `docs/tecnico/integridad-bd.md`).
+
+## Primera instalación de Producción (paso a paso)
+
+Todo se hace desde cPanel, sin terminal. La carpeta principal es `/home/vdcpcomm`.
+
+1. **Subdominio.** cPanel → *Dominios* → crear `app.vdcp.com.mx` con raíz de documentos `/home/vdcpcomm/app.vdcp.com.mx`. Después, cPanel → *SSL/TLS Status* → *Run AutoSSL* hasta que el subdominio tenga candado.
+2. **PHP.** cPanel → *MultiPHP Manager* → `app.vdcp.com.mx` en **PHP 8.4** (o 8.5), igual que QA.
+3. **Base de datos.** cPanel → *Bases de datos MySQL*: crear la base `vdcpcomm_prod` y el usuario `vdcpcomm_prod` con una contraseña nueva (distinta de la de QA), y agregar el usuario a la base con **todos los privilegios**.
+4. **Configuración.** Copia `despliegue/env_prod.txt`, escribe la contraseña de la base en `DB_PASSWORD` y súbelo como `env_prod.txt` a la carpeta principal. No hace falta `APP_KEY`: se genera sola. El correo se configura después en la plataforma.
+5. **Super Administrador.** Copia `despliegue/prod_inicial.txt`, escribe tu correo, nombre, usuario y una **contraseña nueva** y súbelo como `prod_inicial.txt`. El script lo usa una vez y lo borra.
+6. **Versión autorizada.** Crea `desplegar_version.txt` con una sola línea: la etiqueta y su huella, por ejemplo `v0.1.0 sha256:<64 caracteres>`. La huella está en GitHub → *Releases* → `v0.1.0` → `paquete.tar.gz`.
+7. **Cron.** cPanel → *Cron Jobs* → cada 5 minutos: `/bin/bash /home/vdcpcomm/desplegar.sh prod` (además del de QA, que se queda).
+8. **Comprobar.** A los 5–10 minutos abre `despliegue_prod_estado.txt`: debe decir `OK: v0.1.0-…` y «Super Administrador creado o actualizado». Entra a `https://app.vdcp.com.mx`, activa tus dos pasos y sigue la lista de salida.
+
+**Versiones siguientes:** cuando QA esté probado, se abre un PR de `develop` a `main`, se publica la etiqueta nueva (`v0.2.0`, `v0.1.1`…) y se cambia la línea de `desplegar_version.txt`. Para regresar, se escribe la etiqueta anterior.
 
 ## Lista de salida a Producción
 

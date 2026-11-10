@@ -402,6 +402,40 @@ class DesplegarScriptTest extends TestCase
         $this->assertStringContainsString('usuarios de prueba creados (Super Administrador y empresa demo)', $this->leer('despliegue_qa_estado.txt'));
     }
 
+    public function test_produccion_crea_su_superadministrador_inicial_sin_empresa_demo(): void
+    {
+        // Primera instalacion de Produccion: sin terminal, el primer acceso sale de prod_inicial.txt
+        $this->escribir('env_prod.txt', $this->envProd());
+        $this->escribir('desplegar_version.txt', "v0.1.0\n");
+        $this->publicar('v0.1.0', 901, $this->paquete());
+        // Aunque exista el interruptor del demo, en Produccion nunca se siembra
+        $this->escribir('apps/plataforma-produccion/shared/demo_encendido', '');
+        $this->escribir('prod_inicial.txt', "CORREO=ana@ejemplo.com\r\nNOMBRE=Ana\r\nUSUARIO=ana\r\nCONTRASENA=Clave.Segura.2026\r\n");
+
+        $this->desplegar('prod');
+
+        $log = $this->leer('artisan.log');
+        $this->assertStringContainsString('[plataforma:superadmin][--nombre=Ana][--usuario=ana][--][ana@ejemplo.com]', $log);
+        $this->assertStringContainsString('PLATAFORMA_CONTRASENA=[Clave.Segura.2026]', $log);
+        $this->assertStringNotContainsString('[plataforma:demo]', $log);
+        $this->assertStringContainsString('Super Administrador creado o actualizado', $this->leer('despliegue_prod_estado.txt'));
+        $this->assertFileDoesNotExist($this->home.'/prod_inicial.txt');
+        $this->assertFileDoesNotExist($this->home.'/.config/plataforma/prod_inicial');
+    }
+
+    public function test_produccion_rechaza_prod_inicial_con_datos_de_ejemplo(): void
+    {
+        $this->escribir('env_prod.txt', $this->envProd());
+        $this->escribir('desplegar_version.txt', "v0.1.0\n");
+        $this->publicar('v0.1.0', 902, $this->paquete());
+        $this->escribir('prod_inicial.txt', (string) file_get_contents(dirname(__DIR__, 3).'/despliegue/prod_inicial.txt'));
+
+        $this->desplegar('prod');
+
+        $this->assertStringNotContainsString('[plataforma:superadmin]', $this->leer('artisan.log'));
+        $this->assertStringContainsString('prod_inicial.txt todavia tiene los datos de ejemplo', $this->leer('despliegue_prod_estado.txt'));
+    }
+
     public function test_un_regreso_tambien_regresa_los_archivos_publicos(): void
     {
         // INF-10: si la version nueva falla, el .htaccess/css/js nuevos se quedaban
