@@ -17,8 +17,8 @@
 # un lugar privado y los borra):
 #   github_token.txt  token de GitHub de SOLO LECTURA
 #   env_<amb>.txt     configuracion (.env) del ambiente, con la contrasena de la base
-#   <amb>_inicial.txt (solo QA) correo, nombre y contrasena para crear el Super Administrador
-#                     (y la empresa demo, solo si existe $APP/shared/demo_encendido)
+#   <amb>_inicial.txt correo, nombre y contrasena para crear el Super Administrador
+#                     (en QA tambien la empresa demo, solo si existe $APP/shared/demo_encendido)
 # =============================================================================
 set -u
 # Archivos legibles por el servidor web (Apache necesita leer .htaccess, css, js...).
@@ -590,12 +590,15 @@ if [ -d "$APP/actual" ] && (cd "$APP/actual" && "${P[@]}" artisan list --raw 2>/
 fi
 # --- Fin Mantenimiento de la base ---
 
-# --- Usuarios de prueba (solo QA, una vez) ---------------------------------------
-if [ "$AMB" = "qa" ] && [ -f "$HOME/qa_inicial.txt" ] && grep -Eq "EscribeAqui|tu-correo@" "$HOME/qa_inicial.txt"; then
-  estado "ERROR: qa_inicial.txt todavia tiene los datos de ejemplo; escribe tu correo y una contrasena nueva"
-elif [ "$AMB" = "qa" ] && [ -f "$HOME/qa_inicial.txt" ]; then
-  INICIAL="$PRIVADO/qa_inicial"
-  guardar_privado qa_inicial.txt "$INICIAL"
+# --- Super Administrador inicial (una vez): qa_inicial.txt en QA, prod_inicial.txt en Produccion ---
+# En Produccion solo se crea el Super Administrador; nunca la empresa demo.
+# Subir el archivo otra vez con la misma CORREO restablece su contrasena (recuperacion sin terminal).
+INICIAL_TXT="$HOME/${AMB}_inicial.txt"
+if [ -f "$INICIAL_TXT" ] && grep -Eq "EscribeAqui|tu-correo@" "$INICIAL_TXT"; then
+  estado "ERROR: ${AMB}_inicial.txt todavia tiene los datos de ejemplo; escribe tu correo y una contrasena nueva"
+elif [ -f "$INICIAL_TXT" ] && [ -d "$APP/actual" ]; then
+  INICIAL="$PRIVADO/${AMB}_inicial"
+  guardar_privado "${AMB}_inicial.txt" "$INICIAL"
   CORREO="$(grep -E '^CORREO=' "$INICIAL" | cut -d= -f2- | tr -d ' ')"
   NOMBRE_SA="$(grep -E '^NOMBRE=' "$INICIAL" | cut -d= -f2-)"
   USUARIO_SA="$(grep -E '^USUARIO=' "$INICIAL" | cut -d= -f2- | tr -d ' ')"
@@ -604,18 +607,21 @@ elif [ "$AMB" = "qa" ] && [ -f "$HOME/qa_inicial.txt" ]; then
   cd "$APP/actual" || fallo "No hay version instalada para crear usuarios"
   if [ -n "$CORREO" ] && [ -n "$PLATAFORMA_CONTRASENA" ] \
      && "${P[@]}" artisan plataforma:superadmin --nombre="${NOMBRE_SA:-Super Administrador}" --usuario="${USUARIO_SA}" -- "$CORREO" >> "$LOG" 2>&1 \
-     && { [ ! -f "$DEMO_ENCENDIDO" ] || "${P[@]}" artisan plataforma:demo >> "$LOG" 2>&1; }; then
-    # La empresa demo solo con el interruptor encendido ($APP/shared/demo_encendido)
-    if [ -f "$DEMO_ENCENDIDO" ]; then
+     && { [ "$AMB" != "qa" ] || [ ! -f "$DEMO_ENCENDIDO" ] || "${P[@]}" artisan plataforma:demo >> "$LOG" 2>&1; }; then
+    # La empresa demo solo en QA y con el interruptor encendido ($APP/shared/demo_encendido)
+    if [ "$AMB" = "qa" ] && [ -f "$DEMO_ENCENDIDO" ]; then
       log "Usuarios de prueba creados (Super Administrador y empresa demo)"
       estado "OK: $(cat "$APP/.release_actual") · usuarios de prueba creados (Super Administrador y empresa demo)"
-    else
+    elif [ "$AMB" = "qa" ]; then
       log "Super Administrador creado (datos demo apagados)"
       estado "OK: $(cat "$APP/.release_actual") · Super Administrador creado (datos demo apagados)"
+    else
+      log "Super Administrador de Produccion creado o actualizado"
+      estado "OK: $(cat "$APP/.release_actual") · Super Administrador creado o actualizado"
     fi
   else
-    log "ERROR: no se pudieron crear los usuarios de prueba (revisa CORREO y CONTRASENA en qa_inicial.txt)"
-    estado "ERROR: no se pudieron crear los usuarios de prueba"
+    log "ERROR: no se pudo crear el Super Administrador (revisa CORREO y CONTRASENA en ${AMB}_inicial.txt)"
+    estado "ERROR: no se pudo crear el Super Administrador"
   fi
   unset PLATAFORMA_CONTRASENA
   rm -f "$INICIAL"
