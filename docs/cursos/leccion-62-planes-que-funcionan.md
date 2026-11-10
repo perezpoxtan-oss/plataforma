@@ -18,7 +18,7 @@ Usa dos empresas de prueba: una con plan **Esencial** y otra con plan **Profesio
 
 - **Todos los planes** traen la estructura de la empresa y el **directorio**: Colaboradores, Departamentos, Puestos, Turnos y Autorizaciones (quién autoriza y «No molestar»). Están en **Estructura → Organización**. Sin ellos la caseta no puede registrar proveedores, visitas, préstamos, responsivas ni pases.
 - **Recursos Humanos** (plan Corporativo o el complemento) suma Vacantes, Recepción, Candidatos, entrevistas y el **expediente** (CURP, RFC, NSS y documentos).
-- **Esencial:** caseta y padrones. **Profesional:** además incidentes, Protección Civil (equipos y recorridos), procedimientos e informes. **Reservas y eventos** es un complemento para cualquier plan.
+- **Esencial:** caseta y padrones. **Profesional:** además incidentes, Protección Civil (equipos y recorridos), procedimientos e informes. **Corporativo:** además Recursos Humanos y Asistencia (llega apagada; la enciende el administrador en **Tu suscripción**). Credenciales de empleado (QR, 125 kHz o MIFARE), lector QR/NFC y equipos de acceso vienen en todos los planes. **Reservas y eventos** es un complemento para cualquier plan; **Asistencia**, para Esencial y Profesional.
 - Si abres una pantalla que tu plan no trae, la plataforma dice **Esto no viene en tu plan** y te lleva a **Tu suscripción**. Si dice **No tienes permiso para ver esto**, es tu rol.
 
 ## Práctica 1 · El directorio en el plan Esencial (Administrador)

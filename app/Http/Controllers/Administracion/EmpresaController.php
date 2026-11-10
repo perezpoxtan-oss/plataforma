@@ -16,6 +16,7 @@ use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Services\Plataforma\ProvisionarEmpresa;
 use App\Services\Suscripciones\Limites;
+use App\Services\Suscripciones\ModulosEfectivos;
 use App\Support\DependenciasModulos;
 use App\Support\Entrada;
 use App\Support\ImagenSegura;
@@ -69,6 +70,8 @@ class EmpresaController extends Controller
             'suscripcion' => $suscripcion,
             'limitesSuscripcion' => $suscripcion !== null ? app(Limites::class)->de((int) $actor->empresa_id) : null,
             'puedePedirCambio' => $suscripcion !== null && $this->editaEmpresa($actor),
+            // Módulos que el plan incluye apagados de fábrica (Asistencia en Corporativo): la empresa los enciende
+            'encendiblesSuscripcion' => $suscripcion !== null ? $this->encendibles($suscripcion) : collect(),
             'planesSuscripcion' => $suscripcion !== null ? Plan::query()->where('activo', true)->where(fn ($q) => $q->where('publicado', true)->orWhere('id', $suscripcion->plan_id))->orderBy('orden')->get(['id', 'nombre', 'cotizar']) : collect(),
             'paquetesSuscripcion' => $suscripcion !== null ? Paquete::query()->where('activo', true)->where('modalidad', Paquete::SUSCRIPCION)->where(fn ($q) => $q->where('publicado', true)->orWhereIn('id', $suscripcion->paquetes->pluck('id')))->orderBy('orden')->get(['id', 'nombre']) : collect(),
             'suscripciones' => $actor->es_superadmin ? Suscripcion::query()->get()->keyBy('empresa_id') : collect(),
@@ -222,6 +225,19 @@ class EmpresaController extends Controller
         return redirect()->to(route('empresas.index').'#empresa-'.$empresa->id)->with('ok', "Módulos de «{$empresa->nombre_comercial}» actualizados: tiene ".count($activos).' módulos'
             .($quitados > 0 ? " ({$quitados} quitados: dejan de verse en el menú, la matriz y el manual; sus datos y permisos se conservan)" : '')
             .'. '.($avisoDependencias !== '' ? $avisoDependencias.' ' : '').'Revisa sus roles en la Matriz de permisos si hace falta.');
+    }
+
+    /**
+     * Módulos apagados de fábrica que trae el plan del cliente, con su estado.
+     *
+     * @return Collection<int, array{clave: string, nombre: string, encendido: bool}>
+     */
+    private function encendibles(Suscripcion $suscripcion): Collection
+    {
+        $detalle = app(ModulosEfectivos::class)->detalle($suscripcion);
+
+        return Modulo::query()->whereIn('id', $detalle['encendibles'])->orderBy('nombre')->get(['id', 'clave', 'nombre'])
+            ->map(fn (Modulo $m) => ['clave' => $m->clave, 'nombre' => $m->nombre, 'encendido' => ! in_array((int) $m->id, $detalle['por_encender'], true)])->values();
     }
 
     /**

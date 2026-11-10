@@ -7,6 +7,7 @@ use App\Models\Suscripcion;
 use App\Models\User;
 use App\Services\Permisos\Autorizador;
 use App\Services\Suscripciones\EstadoCliente;
+use App\Services\Suscripciones\ModulosEfectivos;
 use Illuminate\Http\Request;
 
 /**
@@ -75,6 +76,17 @@ final class NoVieneEnTuPlan
             return ['titulo' => 'Solo consulta: tu plan ya no incluye este módulo',
                 'mensaje' => "Puedes ver, exportar e imprimir lo que ya está en {$nombre}, pero no registrar ni cambiar nada. Para volver a usarlo, cambia de plan o agrega el complemento.",
                 'url' => $url, 'boton' => $url ? 'Ver mi suscripción' : null];
+        }
+        // Viene en el plan pero apagado de fábrica (Asistencia en Corporativo): la empresa lo enciende
+        if ($suscripcion !== null && in_array($motivo['modulo'], Modulo::APAGADOS_DE_FABRICA, true)) {
+            $detalle = app(ModulosEfectivos::class)->detalle($suscripcion);
+            $id = (int) Modulo::where('clave', $motivo['modulo'])->value('id');
+            if (in_array($id, $detalle['por_encender'], true)) {
+                return ['titulo' => "{$nombre} viene en tu plan y está apagado",
+                    'mensaje' => "Tu plan incluye «{$nombre}», pero tu empresa aún no lo enciende. Quien administra la empresa lo enciende en «Tu suscripción» con «Usar {$nombre}»."
+                        .($url ? '' : ' Pídeselo a tu administrador.'),
+                    'url' => $url, 'boton' => $url ? 'Ver mi suscripción' : null];
+            }
         }
 
         return ['titulo' => 'Esto no viene en tu plan'.($plan ? " ({$plan})" : ''),
