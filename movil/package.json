@@ -1,0 +1,20 @@
+{
+    "name": "smart-centinel-movil",
+    "private": true,
+    "version": "1.0.0",
+    "description": "App de Smart Centinel para Android (envuelve la plataforma web). Ver docs/tecnico/app-movil.md",
+    "scripts": {
+        "sincronizar": "cap sync android",
+        "abrir": "cap open android"
+    },
+    "dependencies": {
+        "@capacitor/android": "8.5.3",
+        "@capacitor/core": "8.5.3"
+    },
+    "devDependencies": {
+        "@capacitor/cli": "8.5.3"
+    },
+    "engines": {
+        "node": ">=22"
+    }
+}

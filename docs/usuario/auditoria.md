@@ -1,0 +1,102 @@
+---
+titulo: Bitácora de auditoría
+modulos: [auditoria]
+seccion: Estructura
+orden: 70
+resumen: Quién hizo qué y cuándo en la plataforma, con el antes y el después de cada cambio.
+---
+
+# Bitácora de auditoría
+
+**¿Para qué sirve?** Aquí ves **quién hizo qué y cuándo** en la plataforma: altas, cambios, bajas, permisos, desbloqueos, validaciones, impresiones, uniones de duplicados… Sirve para aclarar dudas («¿quién cambió este dato?») y para revisiones internas. Las horas están en la hora local de la empresa.
+
+![Bitácora de auditoría](img/auditoria/1-bitacora.png)
+
+## Antes de empezar
+
+- Para ver la bitácora tu rol debe poder consultar *Bitácora de auditoría*. La traen el **Administrador** y el **Director** (toda la empresa) y el **Jefe de seguridad** (su sede). Para descargarla necesitas el permiso **Exportar**.
+- Si tu rol la ve con alcance **Su sede** (como el Jefe de seguridad), ves **los movimientos de tu sede**: lo que se hizo en registros de tu sede y lo que hizo el personal asignado a ella. Tu empresa puede elegir en **Configuración → Cuentas y seguridad** que veas **solo tus propios movimientos**. Arriba dice cuál de los dos ves.
+- Si ves toda la bitácora, te llega a la **campana** un aviso cada vez que alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales. Viene encendido; tu empresa lo puede apagar en [Configuración](configuracion.md).
+
+## Cómo buscar un movimiento
+
+1. Entra a **Estructura → Bitácora de auditoría**.
+2. Usa los filtros:
+   - **Desde** / **Hasta:** el periodo.
+   - **Usuario:** quién lo hizo.
+   - **Módulo:** en qué pantalla se hizo.
+   - **Contiene:** un nombre, un número o una dirección IP.
+3. Toca **Filtrar**. **Limpiar** quita los filtros.
+
+**Qué debes ver:** cuántos movimientos hay y la lista con la fecha y hora, el módulo, qué se hizo, sobre qué registro, qué campos cambiaron y quién lo hizo.
+
+### Qué significa cada acción
+
+La columna de lo que se hizo usa palabras sencillas. Las más comunes:
+
+| Verás | Qué pasó |
+|---|---|
+| Alta / Edición / Desactivación / Reactivación | Se registró, se cambió, se dio de baja o se volvió a activar un registro. |
+| Eliminación definitiva | Se borró para siempre un registro de un catálogo (solo el administrador). |
+| Aprobación / Rechazo / Firma | Alguien aprobó, rechazó o firmó un paso (por ejemplo, de un pase de salida o un procedimiento). |
+| Acuse de recibo | Un colaborador firmó «Leí y entendí» un procedimiento. |
+| Registro de salida / Recepción en destino / Salida de regreso / Regreso | Los pasos de caseta de un pase de salida. |
+| Autorización / Negativa de autorización / Respuesta | La respuesta de un departamento a una visita o a un candidato. |
+| Publicación / Pausa / Reanudación / Cierre / Reapertura | Cambios de estado de una vacante. |
+| Postulación / Captura en el kiosco | Un candidato llenó su solicitud por internet o en la tableta de recepción. |
+| Asignación de etiqueta NFC/RFID / Retiro de etiqueta NFC/RFID | Se le dio o se le quitó un gafete o tarjeta a un registro. |
+| Creación de respaldo / Descarga de respaldo | El Super Administrador respaldó o descargó la información. |
+
+## Cómo ver el historial de un registro
+
+1. En la ficha de un usuario, rol, sede, empresa, zona, piso o habitación, o en la tarjeta de un padrón o catálogo (vehículo, empresa externa, llave, gafete, equipo, equipo de Protección Civil, zona de estacionamiento, ruta, colaborador, departamento, puesto o turno), toca el **reloj** (Ver historial). Solo aparece si tu rol puede ver la Bitácora de auditoría.
+2. Se abre la bitácora con solo los movimientos de ese registro. Arriba dice «Historial de **Rol · Agente**…».
+3. Puedes seguir filtrando por fecha o usuario; **Ver toda la bitácora** quita el filtro del registro.
+
+![Historial de un registro](img/auditoria/4-ver-historial.png)
+
+**Qué debes ver:** todo lo que se le ha hecho a ese registro, del más reciente al más antiguo.
+
+## Cómo ver el detalle de un cambio
+
+1. Toca el **ojo** (Ver detalle) del movimiento.
+2. Se abre una ventana con cada **Campo**, lo que tenía **Antes** y lo que quedó **Después**. Lo que cambió aparece resaltado.
+
+![Detalle de un movimiento](img/auditoria/2-detalle.png)
+
+## Cómo exportar a Excel
+
+Toca **Exportar a Excel**: se descarga un archivo de Excel (CSV) con los mismos movimientos filtrados.
+
+## En el celular
+
+![En el celular](img/auditoria/3-celular.png)
+
+## Si algo sale mal
+
+| Mensaje o síntoma | Qué significa | Qué hacer |
+|---|---|---|
+| No veo los movimientos de otras personas. | Tu rol es de una sola sede y tu empresa eligió «Solo sus propios movimientos». | Pide al administrador que revise el movimiento, o que elija «Los movimientos de su sede» en Configuración. |
+| No aparece el reloj en una ficha. | Tu rol no puede ver la bitácora. | Pídelo a tu administrador. |
+| El CURP, RFC, NSS o teléfono se ven con puntos (••••1234). | Los datos personales se muestran ocultos por privacidad. | Es normal; solo se ven los últimos 4 caracteres. |
+| No aparece **Exportar a Excel**. | Tu rol no tiene el permiso **Exportar**. | Pídelo a tu administrador. |
+| No encuentro un movimiento. | El periodo o los filtros no lo incluyen. | Toca **Limpiar** y amplía las fechas. |
+
+## Preguntas frecuentes
+
+**¿Se puede borrar o modificar la bitácora?** No. Nadie puede cambiarla ni borrarla.
+
+**¿Qué significa «Sistema» en el usuario?** Que el movimiento lo hizo la plataforma sola (por ejemplo, una postulación por internet o un aviso automático).
+
+**¿Por qué algunos movimientos de Candidatos no tienen usuario?** Son los que hizo el propio candidato sin sesión: su postulación por internet o su captura en la tableta de recepción. Aparecen como «Sistema».
+
+**¿Queda registro de las exportaciones con datos personales?** Sí. Cada vez que alguien descarga datos personales queda anotado aquí, y quien ve toda la bitácora recibe un aviso en su campana.
+
+**¿Qué ve el Jefe de seguridad?** La ve con alcance **Su sede**: los movimientos de su sede. Si tu empresa eligió «Solo sus propios movimientos» en [Configuración](configuracion.md), solo ve lo que él hizo.
+
+## Relacionado
+
+- [Usuarios](usuarios.md)
+- [Roles y permisos](roles-y-permisos.md)
+- [Configuración](configuracion.md)
+- [Altas por verificar](altas-por-verificar.md)

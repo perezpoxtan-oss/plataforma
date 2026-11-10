@@ -1,0 +1,171 @@
+# Padrón Vehicular
+
+Réplica de `modules/vehiculos` de SEGCAT (`vehiculo_lista.php`, `vehiculo_modal_editar.php`, `vehiculo_proceso.php`, `vehiculo_ticket.php`). Pantalla `/vehiculos` (área Seguridad → Padrones), calcomanía con QR, búsqueda y registro rápido para los módulos que vienen (Bitácora de accesos, Estacionamientos).
+
+- Controlador: `app/Http/Controllers/Seguridad/VehiculoController.php`
+- Reglas: `app/Services/Vehiculos/AdministradorVehiculos.php` (validación, alcance, búsqueda, resumen JSON, auditoría)
+- Modelo: `app/Models/Vehiculo.php` (migración `2026_10_08_000100_crear_padrones`; `2026_10_29_000310_fundir_categorias_de_vehiculos` agrega `categoria_anterior`, ver «Dos categorías»)
+- Vistas: `resources/views/seguridad/vehiculos/{index,calcomania,_registro-rapido}.blade.php`
+- Pruebas: `tests/Feature/Seguridad/VehiculosTest.php`, `tests/Feature/Seguridad/DosCategoriasVehiculosTest.php`
+
+## Qué se corrigió respecto a SEGCAT
+
+| SEGCAT | Plataforma |
+|---|---|
+| El QR de la calcomanía se pedía a `api.qrserver.com`: el código salía a un tercero y sin internet la calcomanía no tenía QR. | El QR se dibuja en el servidor, en SVG, con `bacon/bacon-qr-code` (PHP puro, sin `exec`, sin Imagick). Funciona en Neubox y sin internet. |
+| El QR contenía `VEH-000123-AB12CD`: consecutivo, adivinable. | `codigo_qr` aleatorio de 24 caracteres; el QR solo lleva la dirección `/vehiculos/qr/{código}`, ningún dato del vehículo ni de personas. |
+| Placas limpiadas solo de espacios (`ABC-123` y `ABC123` eran distintas). | Placas normalizadas (mayúsculas, sin espacios, guiones ni puntos) antes de validar y guardar; la unicidad es real. Mensaje claro con el vehículo que ya las tiene y aviso si está dado de baja. |
+| El mensaje decía "registradas en cualquier empresa" pero la regla era por empresa. | Únicas por empresa (índice `empresa_id + placas`); la misma placa puede existir en otra empresa. |
+| Concatenaba `id_empresa` en SQL y confiaba en `id_empresa` del POST. | Tenant fijo: el filtro de empresa lo pone el modelo; proveedor y colaborador se validan dentro de la empresa. |
+| `id_empresa_ext` ajeno se descartaba en silencio. | Error claro: "La empresa propietaria no existe en esta empresa o está desactivada." |
+| La flotilla de un proveedor podía guardarse sin proveedor. | «De una empresa» (`empresa`) exige empresa propietaria y número económico; «Particular» los guarda vacíos. |
+| El vehículo de un colaborador no se ligaba a él. | `colaborador_id` (opcional, solo con «Particular»), validado en la empresa; registrado en `AdministradorColaboradores::REFERENCIAS` para la unión de duplicados. |
+| Capacidad para cualquier vehículo; descripción "Otro" opcional. | Capacidad (1–99) solo en autobús, camión ligero o vehículos «De una empresa»; "Describe el tipo" obligatorio si el tipo es Otro. Lo que no aplica se guarda vacío aunque llegue forzado. |
+| "Activar" exigía `editar` y "eliminar" `eliminar`; la edición también cambiaba el estatus. | Baja y reactivación con el mismo botón y el permiso `vehiculos.eliminar`; la edición no toca el estado. |
+| Sin bitácora de cambios. | Auditoría `vehiculos.creado`, `vehiculos.actualizado`, `vehiculos.desactivado`, `vehiculos.reactivado`. |
+| La lista solo mostraba los "propios"; flotillas y taxis vivían en la ficha del proveedor. | Una sola lista con píldoras **Particulares / De una empresa** y contadores; la ficha del proveedor abre el alta ya prellenada (ver contrato). |
+| Mensajes en la URL (`?msg=creado`), `onclick` y JS en línea. | Mensajes en sesión; JS en `plataforma.js` con atributos `data-*`. |
+
+## Permisos y alcance
+
+| Acción | Permiso |
+|---|---|
+| Ver lista, buscar (`/vehiculos/buscar`), abrir el QR | `vehiculos.ver` |
+| Alta (pantalla y registro rápido) | `vehiculos.crear` |
+| Editar | `vehiculos.editar` |
+| Dar de baja / reactivar | `vehiculos.eliminar` |
+| Calcomanía | `vehiculos.imprimir` |
+
+Los vehículos son **de la empresa**, no de una sede: quien tiene `vehiculos.ver` ve todo el padrón con cualquier alcance. `crear` funciona con cualquier alcance. En `editar` y `eliminar`, el alcance **propios** limita a los vehículos que el usuario dio de alta (`creado_por`); sede o empresa = todos. Un vehículo fuera del alcance o de otra empresa responde 404. El Agente (plantilla) solo consulta.
+
+> No se usa `Autorizador::dentroDeAlcance()` con el modelo porque el vehículo no tiene `sede_id`: con alcance de sede negaría todo. La regla vive en `AdministradorVehiculos::limitar()`.
+
+## Rutas
+
+| Método | Ruta | Nombre |
+|---|---|---|
+| GET | `/vehiculos` | `vehiculos.index` |
+| POST | `/vehiculos` | `vehiculos.store` |
+| PUT | `/vehiculos/{id}` | `vehiculos.update` |
+| PATCH | `/vehiculos/{id}/estado` | `vehiculos.estado` (`activo=0/1`) |
+| GET | `/vehiculos/{id}/calcomania` | `vehiculos.calcomania` |
+| GET | `/vehiculos/qr/{codigo}` | `vehiculos.qr` → redirige a `/vehiculos#vehiculo-{id}` |
+| GET | `/vehiculos/buscar?q=` | `vehiculos.buscar` |
+| POST | `/vehiculos/rapido` | `vehiculos.rapido` (30 por minuto) |
+
+Cada ficha tiene `id="vehiculo-{id}"`: el enlace `#vehiculo-12` la resalta y, si había un filtro guardado, se muestran todas.
+
+### Calcomanía y QR
+
+La calcomanía es una página propia (sin menús) con empresa, placas, QR, código legible, marca/modelo, color, tipo, categoría, número económico y empresa propietaria. `@media print` oculta los botones. El QR codifica solo `route('vehiculos.qr', $codigo_qr)`; la ruta exige sesión y `vehiculos.ver` y busca el código dentro de la empresa del usuario (el de otra empresa da 404). **Accesos usará el mismo código** para registrar entradas con el lector.
+
+### Búsqueda — `GET /vehiculos/buscar?q=`
+
+Por placas (desde el inicio, sin importar guiones ni espacios: `abc-12` encuentra `ABC123A`) o por marca, modelo y color (todas las palabras). Mínimo 2 caracteres, máximo 15 resultados, solo activos, solo de la empresa.
+
+```json
+{"resultados": [{"id": 12, "placas": "ABC123A", "descripcion": "NISSAN VERSA · BLANCO",
+  "propiedad": "empresa", "propiedad_etiqueta": "De una empresa", "numero_economico": "T-045",
+  "empresa": "Taxis Cancún", "colaborador": null, "codigo_qr": "…", "activo": true}]}
+```
+
+`empresa` es la agencia o empresa propietaria (proveedor), si la hay.
+
+### Registro rápido — `POST /vehiculos/rapido`
+
+Campos: `placas`, `propiedad`, `tipo`, `marca`, `color`, y según el caso `modelo`, `descripcion_otro`, `proveedor_id`, `colaborador_id`, `numero_economico`, `capacidad` (mismas reglas que la pantalla).
+
+- **201** `{"ok": true, "vehiculo": {...}}`
+- **409** placas ya registradas (activas o de baja): `{"ok": false, "mensaje": "...", "vehiculo": {...el existente}}`
+- **422** `{"ok": false, "mensaje": "...", "errores": {...}}`
+
+Ventana lista para incluir en cualquier pantalla:
+
+```blade
+@include('seguridad.vehiculos._registro-rapido')
+<button type="button" data-abrir-dialogo="dialogoRegistroRapidoVehiculo">Registrar vehículo</button>
+```
+
+Al guardar (o al elegir "Usar …" en el 409) `plataforma.js` lanza en `document` el evento **`vehiculo:registrado`** con `detail` = el objeto `vehiculo`. Solo se muestra a quien tiene `vehiculos.crear` y requiere el Tenant activo.
+
+## Ronda 5 (VE-04): QR en un diálogo
+
+El botón QR de la ficha ya no abre la calcomanía en otra página: abre el diálogo común «Código e identificación» (QR, dirección con Copiar, **Imprimir calcomanía** → `vehiculos.calcomania` si hay `vehiculos.imprimir`, y asignar etiqueta NFC/RFID con `vehiculos.editar`). Detalle en [lector.md](lector.md#código-e-identificación-ronda-5).
+
+## Contrato con la ficha de Proveedor
+
+- `/vehiculos?nuevo=1&proveedor={id}` abre sola el **Alta de Vehículo** con ese proveedor elegido y la categoría «De una empresa» (`empresa`). Antes de fundir las categorías se elegía según la categoría del proveedor (`PROPIEDAD_POR_CATEGORIA`, ya retirada). Lleva el campo oculto `volver=proveedor`. Un proveedor inexistente, inactivo o de otra empresa se ignora.
+- `?volver=proveedor` (sin `nuevo`) pone la misma marca en la edición.
+- Tras guardar o editar con `volver=proveedor` y un `proveedor_id` válido, regresa a `route('proveedores.show', $id)` si esa ruta existe; si no, a `/vehiculos#vehiculo-{id}`. Nunca se acepta una URL del cliente.
+
+## Componentes de `public/js/plataforma.js` (bloque "Padrón Vehicular")
+
+- **Campos que dependen de otro (genérico):** `data-mostrar-si='{"propiedad":["a","b"],"tipo":["otro"]}'` en un contenedor (se ve si alguna condición se cumple; oculto, sus campos se vacían y deshabilitan) y `data-requerido-si='{...}'` en un campo. Se sincroniza al cargar, al cambiar, al abrir una edición y al cerrar el diálogo.
+- Filtro de fichas propio (`data-filtro-vehiculos` + píldoras `data-filtro-tipo="vehiculos"`): el texto también se compara sin guiones ni espacios, para buscar placas como se escriban. Se recuerda en la pestaña.
+- Aviso en vivo de placas repetidas (`data-placas-existentes` + `data-aviso-placas`).
+- Registro rápido (`data-registro-rapido-vehiculo`) y botón de imprimir (`data-accion="imprimir"`).
+
+## Dependencia nueva
+
+`bacon/bacon-qr-code` ^3.1 (BSD-2-Clause) y su dependencia `dasprid/enum`. Requiere `ext-iconv` (disponible en Neubox). Tras traer la rama: `composer install`.
+
+## Datos demo
+
+`plataforma:demo` crea 13 vehículos la primera vez (`vehiculosDemo()`, protegido por `Vehiculo::exists()`): huéspedes, visitante, familiar, tres de colaboradores demo (#1003, #1006, #1011), dos taxis, una unidad rentada, un autobús de transporte de personal, un camión ligero de flotilla y un carrito de golf dado de baja. Usa los proveedores demo si ya existen (transporte, taxi, agencia); si no, quedan sin empresa propietaria. Todos usan las dos categorías nuevas (`particular` / `empresa`).
+
+## Altas por verificar
+
+Lo que la caseta registra en este padrón desde Operación (con el registro rápido, o al guardar un ingreso o un movimiento) pasa por dos pasos:
+
+1. Antes de crear, se sugieren los parecidos («¿Es alguno de estos?»).
+2. Si quien lo registra no puede editar el padrón, queda «Pendiente de verificar» hasta que alguien lo acepta, lo rechaza o lo une con el existente.
+
+Ver [altas-por-verificar.md](altas-por-verificar.md) y ADR-0006.
+
+## Ronda 5 de ajustes (parte 2)
+
+### VE-03 · Categoría contra Tipo / Estilo (decisión)
+
+Son **dos preguntas distintas** y por eso van en dos listas:
+
+| Lista | Pregunta | Valores | Qué decide |
+|---|---|---|---|
+| **Categoría** (`propiedad`) | ¿De quién es? | Particular, De una empresa (desde «Dos categorías») | Qué campos se piden (empresa propietaria, número económico, colaborador, capacidad), la píldora (Particulares / De una empresa) y las reglas de Accesos y Transporte |
+| **Tipo / Estilo** (`tipo`) | ¿Qué forma tiene? | Sedán, SUV, Pick-up, Autobús, Camión ligero, Motocicleta, **Otro** | Si se pide la descripción («Otro») y si se pide capacidad (autobús, camión ligero) |
+
+**«Otro» no se agrega a Categoría.** Cada categoría trae reglas; una categoría «Otro» no tendría ninguna y escondería unidades que sí son de alguien. Lo que no encaja en un tipo de vehículo es **Tipo «Otro»** (montacargas, carrito de golf) y quien llega sin relación con el hotel es **Particular**. En el formulario las etiquetas lo dicen: «Categoría (¿de quién es?)» y «Tipo / Estilo (su forma)».
+
+Filtros de la lista, **en la misma línea**: píldoras de **Categoría** (Todos, Particulares, De una empresa, Pendientes de verificar) y la lista **Tipo / Estilo** (`data-filtro-estilo-vehiculo`; cada ficha lleva `data-estilo`). Se combinan con el buscador.
+
+### PV-05 · Alta desde la ficha de la empresa
+
+Con `/vehiculos?nuevo=1&proveedor={id}` la **Agencia o Empresa Propietaria queda fija** (campo oculto + texto con candado, sin lista) y la Categoría solo ofrece las que llevan empresa (`AdministradorVehiculos::CON_PROVEEDOR`). El diálogo lleva `data-al-cerrar-ir` = ficha de la empresa, pestaña Flotilla: **Cerrar o Cancelar regresa a la ficha** (antes dejaba al usuario en el Padrón vehicular). Guardar ya regresaba a la ficha (`volver=proveedor`).
+
+## Ronda 6: aviso de duplicado en vivo
+
+Las placas usan `data-duplicado` → `GET /vehiculos/duplicado` (iguales sin espacios ni guiones = existe; O/0, I/1 o una letra de diferencia = parecido; libre: «Se guardarán como ABC123A.»), con **Reactivar** si el vehículo está de baja. Se quitó `data-placas-existentes` / `data-aviso-placas`; el aviso ocupa toda la fila bajo Placas y Categoría.
+
+## Mejoras padrones (ADR-0015)
+
+Ver [mejoras-padrones.md](mejoras-padrones.md): «¿De quién es?» / «¿Qué forma tiene?», categorías agrupadas (`GRUPOS_PROPIEDAD`), siguiente paso «Imprimir su calcomanía», impresora en la ficha.
+
+## Dos categorías: Particular y De una empresa (mapa de procesos)
+
+Decisión del dueño: las ocho categorías heredadas se funden en dos. Claves en `Vehiculo::PROPIEDADES`:
+
+| Clave | Etiqueta (lista «¿De quién es?») | Pide | No guarda |
+|---|---|---|---|
+| `particular` | Particular (de un colaborador, huésped, visitante, familiar…) | Colaborador dueño **opcional** (`CON_COLABORADOR`) | Empresa propietaria, número económico |
+| `empresa` | De una empresa (flotilla, agencia, taxi, transporte…) | Empresa propietaria (`PROVEEDOR_OBLIGATORIO`) y número económico (`ECONOMICO_OBLIGATORIO`), ambos **obligatorios**; capacidad opcional | Colaborador |
+
+- **Conversión de datos:** migración `2026_10_29_000310_fundir_categorias_de_vehiculos`. Mapa fijo (`Vehiculo::CATEGORIAS_ANTERIORES`): `propio_huesped`, `propio_visitante`, `propio_familiar`, `propio_colaborador` → `particular`; `agencia_renta`, `empresa_proveedor`, `taxi_app`, `transporte_personal` → `empresa`. La original se guarda en `vehiculos.categoria_anterior` (varchar 30, nulo). El valor por omisión de `propiedad` pasa de `propio_visitante` a `particular`. Es idempotente.
+- **`down()`:** regresa `propiedad = categoria_anterior` exacta; los vehículos creados después (sin anterior) van a `propio_colaborador` (particular con colaborador), `propio_visitante` (particular) o `empresa_proveedor` (empresa). Restaura el valor por omisión y borra la columna.
+- **`categoria_anterior` se suelta** (modelo, evento `saving`) si el vehículo cambia a la otra categoría: ya no hay a dónde regresar exacto.
+- **Claves viejas que lleguen** (una pantalla abierta antes de actualizar, una integración) se convierten con `Vehiculo::categoria()` antes de validar.
+- **Registro en la caseta sin pantalla de padrón** (no pasa por la validación; nace «pendiente de verificar» si quien registra no edita el padrón): Accesos — huésped, colaborador, emergencia, personal externo → `particular`; huésped con conductor (taxi) y proveedor/contratista → `empresa` (con la empresa del ingreso en proveedor/contratista). Transporte — unidad de ruta y taxi → `empresa`. Quien verifica completa empresa y número económico en «Verificar Alta Pendiente» (`AltasPorVerificar::CAMPOS_AL_ACEPTAR` ya incluye `proveedor_id` y `numero_economico`).
+- **Sugerencias de la Bitácora de transporte:** «unidades» = `empresa` con empresa propietaria que no es de taxis; «taxis» = `empresa` sin empresa propietaria o con empresa de categoría `taxi` (`AdministradorVehiculos::CATEGORIAS_TAXI`).
+- **Lista:** píldoras `data-grupo="particulares" | "empresas"` (`AdministradorVehiculos::GRUPOS`); insignia `bg-huesped` / `bg-renta`.
+- **Formularios:** alta y edición, registro rápido (`_registro-rapido`, ahora con número económico) y «Verificar Alta Pendiente» usan `OPCIONES_PROPIEDAD`; el diálogo de verificación dispara `change` en `propiedad` al llenarse para mostrar los campos de empresa.
+- Quitados: `GRUPOS_PROPIEDAD` (agrupación en `optgroup`) y `PROPIEDAD_POR_CATEGORIA`.
+
+> **Etapa 2 (bajas y ciclo de vida de los activos):** estados únicos, receptor general, «Antes de dar de baja», «Restringir acceso» y «Liberar lugar» se describen en [bajas-y-activos.md](bajas-y-activos.md).

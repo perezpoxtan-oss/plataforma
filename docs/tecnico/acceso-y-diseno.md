@@ -1,0 +1,188 @@
+# Acceso, menú y diseño base
+
+Réplica en Laravel de `login.php`, `login_proceso.php`, `logout.php`, `includes/header.php` e `includes/footer.php` de SEGCAT.
+
+## Pantallas y rutas
+
+| Ruta | Nombre | Qué hace |
+|---|---|---|
+| `GET /login` | `login` | Pantalla de acceso (solo invitados) |
+| `POST /login` | `login.iniciar` | Valida usuario o correo y contraseña |
+| `POST /logout` | `logout` | Cierra la sesión (antes era un enlace GET) |
+| `GET /sesion/latido` | `sesion.latido` | Mantiene viva la sesión mientras hay actividad |
+| `POST /sesion/expirada` | `sesion.expirada.cerrar` | Aviso de inactividad del navegador (con token CSRF): cierra y avisa |
+| `GET /sesion/expirada` | `sesion.expirada` | Solo muestra el aviso; con sesión viva regresa al panel (un enlace ya no cierra la sesión) |
+| `GET /` | `panel` | Consola de Monitoreo Central |
+| `GET /modulos/{clave}` | `modulos.pendiente` | Pantalla provisional de un módulo aún no migrado (exige `clave.ver`) |
+
+## Reglas de acceso (iguales a SEGCAT)
+
+- Se entra con **usuario o correo**; solo cuentas activas de empresas activas (o el Super Administrador).
+- **5 intentos fallidos** seguidos bloquean la cuenta **15 minutos**; un acceso correcto reinicia el contador.
+- Un usuario o correo que no existe (o una cuenta desactivada) también "se bloquea" a los 5 intentos, con el mismo aviso y el mismo tiempo: el mensaje de bloqueo no revela qué cuentas existen (caché `acceso-cuenta:*`).
+- Cuenta **dada de baja** (`activo = false`) con su **contraseña correcta**: `ResultadoAcceso::inactiva()` → «Tu cuenta no está activa. Consulta a tu administrador.» (`acceso = inactiva`, como el cierre de una sesión abierta en `EstablecerEmpresa`). Con la contraseña incorrecta responde «Datos de acceso incorrectos.» y cuenta el intento igual que un usuario inexistente; el bloqueo se revisa antes de probar la contraseña y se hace una sola comprobación de contraseña por intento (con la huella real o una falsa del mismo costo), así el tiempo no revela si la cuenta existe (`Autenticador::falloSinCuenta`).
+- Las consultas en segundo plano de las pantallas (GET con `X-Requested-With` o `Accept: application/json`: parecidos, sugerencias, Mis pendientes, latido…) **no gastan los avisos de un solo uso** de la sesión (errores, datos capturados, mensajes): `App\Http\Middleware\ConservarAvisos` los conserva para la pantalla que se recarga. Antes, la consulta «¿Es alguno de estos?» al salir del campo Nombre de Nuevo Ingreso llegaba entre el envío y la recarga y la ventana se cerraba sin aviso.
+- Las páginas de error (`errors/plantilla.blade.php`) ofrecen siempre **Ir al inicio** (abre el Inicio o, sin sesión, la pantalla de acceso): una dirección que no existe se pinta antes de leer la sesión y antes decía «Volver a la plataforma».
+- Cabeceras de seguridad en toda respuesta (`App\Http\Middleware\CabecerasSeguridad`): CSP sin JavaScript en línea, no se puede incrustar en otro sitio, cámara solo para el propio sitio, HSTS por HTTPS y `no-store` en pantallas con sesión. Ver `docs/seguridad/auditoria-2026-10-06-autenticacion.md`.
+- **20 minutos** sin actividad cierran la sesión; 2 minutos antes aparece el aviso "¿Sigues aquí?".
+- Mientras hay actividad real (teclado, clic, mouse) un latido cada 3 minutos evita perder formularios largos.
+- Desactivar a un usuario o a su empresa corta su sesión abierta en la siguiente petición.
+
+Valores en `config/plataforma.php` (`sesion.*`). La inactividad se puede cambiar con `PLATAFORMA_INACTIVIDAD_MINUTOS`.
+
+### Aviso de sesión por cerrar (Ronda 5, nota del dueño en LL-02: "me sacó sin avisar")
+
+Causas encontradas y corrección:
+
+| Causa | Corrección |
+|---|---|
+| `SESSION_LIFETIME=20` igual a la inactividad: la fila de la sesión caducaba a la vez que el cierre por inactividad, así que el servidor ya no sabía que había una sesión y mandaba a Entrar **sin** el aviso «Sesión finalizada por seguridad». | `config/session.php`: `lifetime = max(SESSION_LIFETIME, PLATAFORMA_INACTIVIDAD_MINUTOS + 10)`. El cierre lo hace siempre `ControlarInactividad`, que deja el aviso. |
+| El reloj del navegador revisaba cada 30 s y los navegadores lo pausan en segundo plano o con el celular bloqueado: al volver ya era tarde y no hubo aviso. | `vigilarSesion()` revisa cada 5 s y además al volver a la pestaña (`visibilitychange`, `focus`, `pageshow`). |
+| Una pestaña olvidada cerraba la sesión de otra que sí se usaba. | La última actividad se comparte entre pestañas (`localStorage` `plataforma_ultima_actividad`, con `try/catch`); el aviso de una pestaña se quita si otra sigue activa. |
+| El POST de cierre con la sesión ya terminada (token vencido) mostraba «página vencida». | `bootstrap/app.php`: un 419 en `/sesion/expirada` lleva a Entrar con `acceso=expirado`. |
+| El aviso no decía cuánto faltaba. | Cuenta regresiva (`[data-sesion-cuenta]`) y botón **Seguir conectado**; la pantalla de Entrar explica «Se cerró tras N minutos sin actividad». |
+
+## Mejoras respecto a SEGCAT (sin cambio visible)
+
+- Los mensajes ya no viajan en la URL (`?error=bloqueado&minutos=…`), sino en la sesión: nadie puede fabricar un aviso falso.
+- Límite adicional por equipo (IP): 20 intentos por minuto, sin importar la cuenta.
+- Al bloquear una cuenta por intentos fallidos (`Autenticador::registrarFallo`), `AvisosCuenta::bloqueo()` avisa una vez por bloqueo a quien administra usuarios de esa sede (campana y, si la empresa lo tiene encendido, correo) y por correo a la persona afectada; ver [usuarios.md](usuarios.md).
+- «Olvidé mi contraseña» y «Mi cuenta» (criterio 6): documentados en [usuarios.md](usuarios.md), apartado «La cuenta es de su dueño».
+- Cuando la cuenta no existe se hace igualmente una comprobación de contraseña, para que el tiempo de respuesta no revele qué cuentas existen.
+- Al iniciar sesión solo se regresa a una pantalla del mismo sitio (nunca a otro dominio).
+- Un formulario abierto demasiado tiempo (token vencido) regresa a la pantalla de acceso con aviso, en lugar del error 419.
+- Cerrar sesión es un `POST` con token (un enlace `GET` permitía cerrar la sesión de alguien desde otra página).
+- Sin código JavaScript en línea (`onclick`): todo vive en `public/js/plataforma.js`, lo que permite activar una política de seguridad de contenido estricta más adelante.
+- Bootstrap 5.3.3, Bootstrap Icons 1.11.3 y la tipografía Plus Jakarta Sans se sirven desde el propio servidor (`public/vendor/`), sin depender de CDN externos.
+
+## Componentes
+
+- `App\Services\Autenticacion\Autenticador`: reglas de acceso; la reutilizará la API de las apps.
+- `App\Http\Middleware\ControlarInactividad`: cierre por inactividad del lado del servidor.
+- `App\Support\Menu\ConstructorMenu`: arma el menú según configuración y permisos.
+- `resources/views/layouts/app.blade.php`: barra superior (PC), cabecera y barra inferior (celular), menú lateral, pie y aviso de sesión.
+- `public/css/plataforma.css`: hoja de estilos central (los modos Sol y Noche van en `modos-pantalla.css`); colores como variables (`--color-primario`, `--color-acento`) que llegan de *Identidad de la plataforma*.
+
+## Barra superior sin desplazamiento a los lados
+
+La barra superior (PC, 992 px o más) nunca empuja la página a los lados, ni con el chip «Empresa de trabajo» del Super Administrador (`componentes/empresa-de-trabajo.blade.php`). Bloque «Encabezado sin salirse del borde» de `plataforma.css`:
+
+- El nombre y el rol del bloque de usuario se recortan con «…» (`max-width` + `text-overflow`) y el chip se encoge (mínimo 7.5rem, con «…»); los demás botones de la derecha no se encogen. El menú no se encoge (los botones nunca se enciman).
+- Con el chip (`.barra-pc:has(.chip-empresa-trabajo)`): se muestra solo el símbolo de la marca, como en el celular, y el espacio entre botones es menor.
+- Hasta 1499 px: menos relleno y espacio entre botones. Hasta 1299 px: letra del menú un poco menor. Hasta 1199 px: sin texto de la marca ni nombre del usuario (queda la inicial, que sigue abriendo Mi cuenta) y, si aun así no cabe, los botones de la derecha bajan a un segundo renglón.
+- `.tabla-scroll` lleva `position: relative` para que los textos solo para lectores de pantalla (`visually-hidden`) de sus encabezados no ensanchen la página en el celular (pasaba en Catálogo comercial a 390 px).
+- Verificado sin desplazamiento horizontal ni botones encimados a 992, 1100, 1199, 1200, 1250, 1280, 1300, 1366, 1440, 1500, 1920 y 390 px, con Super Administrador y con un administrador de empresa, en Inicio, Empresas, Configuración, Usuarios y Catálogo comercial (y Proveedores, Rutas, Reservas y Etiquetas, que traen el selector «Empresa de trabajo»).
+
+## Modos de pantalla: Normal, Sol y Noche (QA M-03)
+
+El botón junto al nombre del usuario (en celular, junto al avatar y en *Menú → Pantalla*) recorre **Normal → Sol → Noche → Normal**. Ícono, `title` y `aria-label` indican el modo actual (`bi-sun`, `bi-brightness-high-fill`, `bi-moon-stars-fill`), p. ej. "Modo de pantalla: Sol".
+
+- `public/js/modo-pantalla.js` se carga en `<head>` (archivo externo, sin JavaScript en línea) y pone la clase `modo-sol` o `modo-noche` en `<html>` antes de pintar, así no hay destello. También aplica en la pantalla de acceso.
+- Se recuerda por equipo en `localStorage` (`plataforma_modo_pantalla`), siempre dentro de `try/catch`; sin almacenamiento queda Normal. Quien tenía el alto contraste anterior (`plataforma_alto_contraste = 1`) pasa a **Sol** y la clave vieja se borra.
+- `public/css/modos-pantalla.css` (hoja aparte de `plataforma.css`) redefine las variables (`--fondo`, `--texto`, `--texto-suave`, `--borde`…) y ajusta los componentes que tienen colores fijos.
+  - **Sol**: fondo blanco puro, texto `#000`, bordes negros de 2 px, botones y etiquetas de color sólido y oscuro, letra más gruesa, sin vidrio (`backdrop-filter`) ni transparencias.
+  - **Noche**: fondo `#0f172a`, tarjetas `#1e293b`, texto claro, bordes apagados; el color principal se aclara para textos (`--primario-claro`) y la franja de QA pasa a ámbar oscuro. Activa también `data-bs-theme="dark"` de Bootstrap (alertas, ventanas, menú lateral) y `color-scheme: dark`.
+- Para una pantalla nueva: usar las variables y las clases comunes (`.tarjeta`, `.ficha-card`, `.campo`, `.btn-icono`, `.dialogo`…) y no escribir colores fijos en `style="…"`; así hereda los tres modos.
+
+| Normal | Sol | Noche |
+|---|---|---|
+| ![Normal](../usuario/img/ajustes/4-espacios-normal.png) | ![Sol](../usuario/img/ajustes/5-espacios-sol.png) | ![Noche](../usuario/img/ajustes/6-espacios-noche.png) |
+| ![Ventana Normal](../usuario/img/ajustes/7-dialogo-normal.png) | ![Ventana Sol](../usuario/img/ajustes/8-dialogo-sol.png) | ![Ventana Noche](../usuario/img/ajustes/9-dialogo-noche.png) |
+
+## Menú lateral del celular (QA M-04)
+
+Todos los grupos (Operación, Padrones, Recursos Humanos, Estructura, Pantalla) inician **cerrados**: el usuario elige a dónde ir. El grupo que contiene la pantalla actual se resalta (color principal y un punto) pero también inicia cerrado. En PC el menú es distinto (desplegables de la barra superior) y no cambia.
+
+![Menú lateral, grupos cerrados](../usuario/img/ajustes/10-celular-menu-normal.png) ![Menú lateral en Noche](../usuario/img/ajustes/11-celular-menu-noche.png)
+
+## Diálogos: se cierran limpios (QA R-01 / U-01)
+
+Todo `<dialog class="dialogo">` con formulario vuelve a su estado inicial al **cerrarse** (Cancelar, X, `Esc` o `dialog.close()`), para que al abrirlo otra vez no aparezca lo capturado. Es genérico: lo hace `public/js/plataforma.js` escuchando el evento `close` en fase de captura; una pantalla nueva no necesita código.
+
+- **Diálogo normal**: cada campo regresa a lo que el servidor pintó al cargar la página (`defaultValue`, `defaultChecked`, `defaultSelected`). Así, en "Asignar habitaciones a una sección" vuelven las casillas tal como están guardadas.
+- **Diálogo reabierto por un error** (`data-abrir-al-cargar`): lo pintado son los datos rechazados (`old()`). La primera vez se ven para corregirlos; al cerrarlo queda **vacío**: textos en blanco, casillas desmarcadas salvo las que traen `data-por-defecto`, y en las listas la opción con `data-por-defecto` (o la primera).
+- **No se tocan** los campos ocultos (`_token`, `_method`, `_dialogo`, `_form`, `nivel`, `padre_id`, `modo`…). Así siguen funcionando el llenado de "editar" (`data-accion="editar-registro"` y `editar-rol`, que ponen `action`, `_dialogo` y los valores al abrir) y el contenedor de Zonas y áreas (`data-padre` / `data-campo-padre`, que se llena al abrir).
+- También se quitan `is-invalid`, `.invalid-feedback`, `[data-error-campo]` y alertas dentro del diálogo; se oculta el aviso de nombre repetido (`[data-aviso-nombre]`); se limpia el mensaje propio de validación; se vuelve al modo "Rango numérico" del alta por lote (`[data-modo-lote][data-por-defecto]`), y se re-dispara `change` en `[data-oculta-si-marcado]` para que los bloques dependientes ("Todas las sedes") se sincronicen.
+- **`data-por-defecto`**: márquelo en la casilla o la `<option>` que debe quedar elegida en un alta vacía cuando no es la primera ni "desmarcada" (p. ej. *Todas las sedes* en Departamentos, *Operativo* en Puestos, *America/Cancun* en Empresas, *Rellenar con ceros* en el lote, *activo* en las ediciones).
+- **`data-conservar-al-cerrar`** en el `<dialog>`: excepción para un diálogo que deba guardar lo capturado al cerrarse (hoy ninguno).
+
+## Mensaje propio al quedar por debajo del mínimo (`data-mensaje-min`)
+
+`<input type="number" min="11" data-mensaje-min="Tu nivel es 10: …">` sustituye el aviso genérico del navegador ("El valor debe ser mayor o igual a 11") por el texto indicado, con `setCustomValidity` al escribir, al cargar y en el evento `invalid`. El `min` se conserva como validación del navegador; la regla real la vuelve a revisar el servidor. Lo usa el nivel jerárquico de Roles (QA R-02).
+
+## Menú configurable
+
+Tabla `menus` (botones de la barra: Operación, Padrones, Recursos Humanos, Informes, Estructura) y, en `modulos`, las columnas `menu_id`, `seccion_menu`, `nombre_menu`, `orden_menu` y `color_icono`. El acomodo vigente, «Mis pendientes» y las reglas completas están en [menus.md](menus.md) (lección 35).
+
+- Un módulo aparece solo si el usuario puede `modulo.ver` (el motor revisa también que la empresa lo tenga contratado) **y** si ya tiene pantalla (ruta registrada). Los módulos sin pantalla no salen en ningún menú.
+- Un menú o una sección sin módulos visibles se oculta.
+- PC y celular usan el mismo orden (`orden` y `orden_movil`): Operación primero, como en SEGCAT.
+- El nombre visible sale, en este orden, de: el nombre que le dio la empresa (`empresa_modulos.nombre_visible`), la terminología del rubro, el nombre corto del menú (`modulos.nombre_menu`) y el nombre del catálogo.
+- La barra inferior del celular tiene atajos fijos a Accesos y Novedades (en ese orden) si el usuario puede verlos.
+- `MenuSeeder` solo acomoda módulos sin menú; lo que se cambie desde la interfaz se respeta. Los cambios de acomodo para instalaciones existentes van en una migración.
+
+## Pruebas
+
+`tests/Feature/Acceso/InicioSesionTest.php`, `MenuTest.php`, `MenusReorganizadosTest.php` y `PantallaYMenuLateralTest.php`.
+
+
+## Hora local (`App\Support\HoraLocal`)
+
+- **Cómo se guarda:** la base guarda las fechas en UTC (`config/app.php` → `timezone = UTC`).
+- **Cómo se muestra:** en la hora de quien ve la pantalla. La zona se elige así, en este orden:
+  1. la zona de **su sede**, si trabaja en una sola y tiene zona propia;
+  2. la zona de la **empresa de trabajo**;
+  3. la de la plataforma, `America/Cancun` (`HoraLocal::ZONA_PLATAFORMA`).
+- **En las vistas:** `@fecha($registro->created_at)` (formato `d/m/Y H:i`) o `@fecha($valor, 'H:i')`. Nunca `->format()` directo sobre una fecha guardada.
+- **En controladores:** `app(HoraLocal::class)->formatear($fecha, $formato)` y `->zona()`, por ejemplo para convertir los filtros de fecha a UTC.
+
+## Pantallas de error (`resources/views/errors`)
+
+- **Cuáles:** 403, 404, 405, 413, 419, 429, 500 y 503, más `4xx` y `5xx` para cualquier otro código (Ronda 8: antes un 405 mostraba la página genérica en inglés «Oops! An Error Occurred»), en español, con el estilo de la pantalla de acceso y los modos Sol y Noche.
+- **Sin dependencias:** no usan la base de datos ni la identidad, para verse aunque la base esté caída.
+- **Contenido:** cada una explica qué pasó y ofrece una salida: ir al inicio, volver a entrar o intentar de nuevo.
+- **405 al abrir como página una dirección de envío:** no se muestra; `App\Support\RegresoTrasEnvio` regresa a la pantalla de origen con `?envio=incompleto` y el layout muestra la franja «Tu envío no llegó completo y no se guardó…» (`data-envio-incompleto`, estilo `alert alert-danger`). Ver docs/tecnico/firmas.md, «Envío como archivo».
+
+## Avisos en el Inicio
+
+`PanelController` arma la lista `pendientes`. Cada pendiente es una tarjeta con enlace directo. Hoy la usa Recursos Humanos para las altas provisionales por validar (enlace `?registro=provisional`). Los módulos que vengan agregan aquí sus pendientes.
+
+## Filtros recordados: por sesión y por usuario (Ronda 6, LL-08)
+
+Varias pantallas recuerdan en el navegador su búsqueda, filtros y píldoras (`sessionStorage`: `plataforma_filtro_*`, `plataforma:filtro-activo`, `plataforma_areas_abiertas`; `localStorage`: la sede de Accesos `plataforma_accesos_sede`). Para que lo que dejó un usuario no aplique al siguiente en el mismo navegador:
+
+- Cada inicio de sesión guarda una marca nueva en la sesión (`marca_filtros`, `SesionController`); el layout la publica en `<body data-usuario-filtros="ID" data-sesion-filtros="marca">`.
+- El bloque «Ajustes Ronda 6» de `plataforma.js` corre antes que las pantallas restauren sus filtros: si la marca de la pestaña no coincide (nueva sesión u otro usuario), borra esas claves; si cambió el usuario, borra también la sede recordada de Accesos.
+- Dentro de la misma sesión se conserva la comodidad (al guardar y volver, el filtro sigue). Las preferencias del equipo (modo Sol/Noche, tamaño de letra de Procedimientos) no se tocan.
+
+## Secciones plegables (Ronda 8, NV-06)
+
+Componente Blade anónimo `resources/views/components/seccion.blade.php`:
+
+```blade
+<x-seccion clave="robo-2" :abierta="false">
+    <x-slot:titulo><i class="bi bi-person me-2" aria-hidden="true"></i>2. Sospechoso</x-slot:titulo>
+    …campos…
+</x-seccion>
+```
+
+- Es un `<details>`/`<summary>` nativo (funciona sin JavaScript y con teclado) con el estilo de los títulos de sección, flecha y 46 px de alto para el dedo.
+- `abierta`: cómo aparece la primera vez (por costumbre, la primera sección del formulario; en Pases de salida y Procedimientos todas, porque todos sus pasos se llenan).
+- Si un campo de la sección trae error de validación, el servidor la abre y le pone «Revisar» (`data-seccion-con-error`); si el navegador encuentra un campo obligatorio vacío en una sección cerrada, la abre.
+- El navegador recuerda qué secciones quedaron abiertas **por usuario y por formulario** (`localStorage`, clave `plataforma_secciones:<usuario>:<acción del formulario>`; los números de la dirección se cambian por `n`).
+- Dónde se usa: formatos de Novedades (Valores a la Vista, Siniestro PC, Lost & Found, Robo), Robo — Seguimiento, Pases de salida, Procedimientos (editor) y el CV del candidato (en el kiosco público todas abiertas).
+- Dónde **no** (decisión): el formato de Accidente (debe quedar idéntico a SEGCAT), Configuración (tarjetas independientes en rejilla, cada una con su botón), Recorridos PC (pantalla de escaneo de un punto a la vez: plegar haría más lento al guardia), el cierre de Lost & Found y los diálogos cortos.
+
+## Filtros que se aplican solos en todas las listas (Ronda 8, NV-06)
+
+Todas las listas con filtros del servidor usan `<form method="GET" data-autoenviar>` (selects y fechas al cambiar; textos al dejar de teclear 0.7 s). Ronda 8 lo agregó en Lost & Found (archivo y auditoría), Robo — Seguimiento, Procedimientos (lista y acuses), Recorridos PC (reporte) y Métricas de recepción. Las listas que filtran en el navegador (Novedades, Préstamos, Responsivas, Llaves…) ya eran en vivo. El botón Buscar/Filtrar se oculta cuando hay JavaScript (`html.filtros-automaticos`) y queda como respaldo sin él; un botón que deba verse lleva `data-mantener-boton`.
+
+## Diálogos con un solo scroll (Ronda 8, RT-04)
+
+Con validación (varios errores arriba) el diálogo de Rutas mostraba dos barras: la de la página de atrás y la del diálogo. CSS genérico (bloque «Ronda 8» de `plataforma.css`):
+
+- `html:has(dialog.dialogo[open])`: la página de atrás no se desplaza mientras hay un diálogo abierto.
+- `.dialogo[open]:has(> .dialogo-cuerpo)`: columna flexible con `max-height: calc(100dvh - 2rem)` (en celular `100dvh`, el alto visible real con la barra del navegador); la cabecera queda fija y **solo `.dialogo-cuerpo` se desplaza**; los botones (`.dialogo-acciones`, sticky) quedan pegados abajo.
+- Dentro de un diálogo, las listas que tenían su propio scroll (`.lista-casillas-circuito`, `.caja-checks`, `.texto-privacidad`) se muestran completas.
+
+Auditado con Playwright a 1366×768 y 390×844 con errores de validación en Rutas, Accesos, Pases, Llaves, Candidatos, Procedimientos, Novedades y Responsivas: un solo contenedor con scroll en todos.

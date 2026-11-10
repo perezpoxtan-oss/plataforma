@@ -1,0 +1,2 @@
+{"ipAddress": "192.168.1.64", "dateTime": "2026-11-03T08:06:00-06:00", "activePostCount": 1, "eventType": "AccessControllerEvent", "eventState": "active",
+ "AccessControllerEvent": {"majorEventType": 5, "subEventType": 75, "employeeNoString": "1001", "serialNo": 4522, "currentVerifyMode": "face", "attendanceStatus": "checkIn"}}

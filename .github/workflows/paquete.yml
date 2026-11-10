@@ -1,0 +1,165 @@
+name: Paquete
+
+# Arma el paquete listo para el servidor (codigo + librerias, sin pruebas ni
+# documentacion) y lo publica en GitHub:
+#  - Cada entrega que llega a develop y pasa la CI  -> version "qa" (portal de pruebas)
+#  - Cada etiqueta vMAYOR.MENOR.PARCHE              -> version de Produccion
+# El servidor lo descarga con desplegar.sh (ver docs/tecnico/despliegue.md).
+# Antes compila la app de Android (apk.yml) y, si quedo firmada, la mete al
+# paquete en app-movil/ (desplegar.sh la instala en storage; Mi cuenta -> App
+# para tu celular). Si la app no se pudo compilar o firmar, el paquete sale igual.
+
+on:
+  # La CI lo llama al terminar en verde sobre develop
+  workflow_call:
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        required: false
+      ANDROID_KEYSTORE_PASSWORD:
+        required: false
+      ANDROID_KEY_ALIAS:
+        required: false
+      ANDROID_KEY_PASSWORD:
+        required: false
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: paquete-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    name: App de Android
+    permissions:
+      contents: read
+    uses: ./.github/workflows/apk.yml
+    with:
+      destino: ${{ github.ref_type == 'tag' && 'produccion' || 'qa' }}
+      publicar: true
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+  paquete:
+    name: Armar y publicar paquete
+    # La app de Android no detiene el paquete: si falla o no esta firmada, sale sin ella
+    needs: apk
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    # Seguridad: el token con permiso de escritura solo se entrega a los pasos que publican
+    env:
+      SHA: ${{ github.sha }}
+
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ env.SHA }}
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          # Se arma con la version MAS BAJA en uso (8.4): si alguna libreria pidiera una
+          # version mayor, falla aqui y no en el servidor. El paquete sirve igual en 8.4 y
+          # 8.5 (las librerias vienen fijas de composer.lock); la CI prueba ambas.
+          # Cambiar a '8.5' solo cuando QA y Produccion ya esten en 8.5.
+          php-version: '8.4'
+          extensions: bcmath, ctype, curl, dom, exif, fileinfo, gd, intl, mbstring, pdo_mysql, sodium, xml, zip
+          coverage: none
+
+      - name: Librerias de produccion
+        run: composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader --no-scripts
+
+      - name: Descubrir paquetes de Laravel
+        run: php artisan package:discover
+
+      - name: Destino
+        id: destino
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            # Seguridad: solo etiquetas vMAYOR.MENOR.PARCHE exactas (el patron v*.*.* del
+            # disparador acepta cualquier texto, p. ej. con $( ) o comillas)
+            if ! [[ "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Etiqueta no valida: debe ser vMAYOR.MENOR.PARCHE"
+              exit 1
+            fi
+            echo "etiqueta=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            echo "nombre=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            echo "etiqueta=qa" >> "$GITHUB_OUTPUT"
+            echo "nombre=qa-${SHA:0:7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: App de Android (si se compilo y firmo)
+        id: app
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: app-movil
+          path: app-movil
+
+      - name: Revisar la app de Android
+        run: |
+          if [ -f app-movil/smart-centinel.apk ] && [ -f app-movil/app-movil.json ] \
+             && [ "$(sha256sum app-movil/smart-centinel.apk | cut -d' ' -f1)" = "$(jq -r .sha256 app-movil/app-movil.json)" ]; then
+            echo "El paquete lleva la app de Android $(jq -r .version app-movil/app-movil.json)"
+          else
+            rm -rf app-movil
+            echo "::warning title=Paquete sin app de Android::Esta version del paquete no lleva la app de Android (faltan los secretos de firma o fallo su compilacion). El servidor conserva la app que ya tenia."
+          fi
+
+      - name: Armar paquete
+        env:
+          NOMBRE: ${{ steps.destino.outputs.nombre }}
+        run: |
+          printf '%s\n%s\n%s\n' "${NOMBRE}" "${SHA}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > VERSION
+          # Manual (lección 37): de docs/ solo viaja docs/usuario (lo muestra el módulo Manual), sin la guía de redacción
+          FUERA_DOCS=()
+          for d in docs/* docs/.[!.]*; do
+            if [ -e "$d" ] && [ "$d" != "docs/usuario" ]; then FUERA_DOCS+=("--exclude=./$d"); fi
+          done
+          tar -czf "$RUNNER_TEMP/paquete.tar.gz" \
+            --exclude=./.git --exclude=./.github --exclude=./tests "${FUERA_DOCS[@]}" --exclude=./docs/usuario/GUIA.md \
+            --exclude=./storage --exclude=./node_modules --exclude=./.env \
+            --exclude=./database/database.sqlite --exclude=./phpunit.xml --exclude=./junit.xml \
+            --exclude=./movil \
+            .
+          ls -lh "$RUNNER_TEMP/paquete.tar.gz"
+          sha256sum "$RUNNER_TEMP/paquete.tar.gz"
+
+      - name: Publicar en QA
+        if: steps.destino.outputs.etiqueta == 'qa'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          NOTAS="Portal de pruebas · commit ${SHA:0:7} · $(date -u '+%Y-%m-%d %H:%M UTC')"
+          if ! gh release view qa >/dev/null 2>&1; then
+            gh release create qa --prerelease --target "$SHA" --title "QA (develop)" --notes "$NOTAS"
+          else
+            gh release edit qa --notes "$NOTAS"
+          fi
+          gh release upload qa "$RUNNER_TEMP/paquete.tar.gz" --clobber
+
+      - name: Publicar version de Produccion
+        if: steps.destino.outputs.etiqueta != 'qa'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.destino.outputs.etiqueta }}
+        run: |
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --verify-tag --title "$TAG" --generate-notes
+          fi
+          # Seguridad: el paquete de una version de Produccion no se reemplaza nunca
+          # (sin --clobber). desplegar.sh tambien rechaza un paquete con otra huella.
+          if gh release view "$TAG" --json assets --jq '.assets[].name' | grep -qx 'paquete.tar.gz'; then
+            echo "::notice::$TAG ya tiene paquete.tar.gz; no se reemplaza. Para cambios, publica otra version."
+          else
+            gh release upload "$TAG" "$RUNNER_TEMP/paquete.tar.gz"
+          fi

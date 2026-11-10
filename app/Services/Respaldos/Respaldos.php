@@ -1,0 +1,287 @@
+<?php
+
+namespace App\Services\Respaldos;
+
+use App\Support\HoraLocal;
+use Illuminate\Database\Connection;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use RuntimeException;
+
+/**
+ * Respaldos de la base de datos hechos en PHP (sin mysqldump ni exec: Neubox
+ * no los permite desde la web). Cada respaldo es un .sql.gz que se puede
+ * importar tal cual en phpMyAdmin (cPanel) para restaurar.
+ *
+ * Se guardan en storage/app/private/respaldos (fuera de la carpeta pública y
+ * compartida entre versiones). Política:
+ *   - diario: uno por día, después de las 3:00 (hora de la plataforma);
+ *   - antes-de-actualizar: uno antes de cada migración del despliegue;
+ *   - manual: desde Configuración o la consola.
+ * Se conservan 14 días y siempre al menos los 3 más recientes.
+ */
+class Respaldos
+{
+    /** Comentario al inicio del archivo: cómo se restaura (texto neutral, sin nombrar herramientas del hospedaje). */
+    public const COMO_RESTAURAR = "-- Para restaurar: descarga el archivo y pide a tu proveedor de hospedaje o a tu administrador de base de datos que lo importe (.sql.gz)\n";
+
+    public const DIAS = 14;
+
+    public const MINIMO = 3;
+
+    private const FILAS_POR_INSERT = 200;
+
+    /**
+     * Seguridad: tablas que se respaldan sin filas. Son datos temporales que no
+     * hacen falta para restaurar y no deben viajar en un archivo descargable
+     * (sesiones abiertas, caché y fichas para restablecer contraseña).
+     */
+    public const TABLAS_SIN_FILAS = ['sessions', 'cache', 'cache_locks', 'password_reset_tokens'];
+
+    /**
+     * Filas escritas por tabla en el último respaldo (el paquete de traslado
+     * las anota en su manifest para comprobar la restauración).
+     *
+     * @var array<string, int>
+     */
+    private array $conteos = [];
+
+    /**
+     * @return array<string, int>
+     */
+    public function ultimosConteos(): array
+    {
+        return $this->conteos;
+    }
+
+    public function carpeta(): string
+    {
+        $carpeta = storage_path('app/private/respaldos');
+        if (! is_dir($carpeta)) {
+            mkdir($carpeta, 0700, true);
+        }
+        // Seguridad: la carpeta queda privada aunque alguien la haya creado con otros permisos
+        @chmod($carpeta, 0700);
+
+        return $carpeta;
+    }
+
+    /**
+     * @return Collection<int, array{archivo: string, ruta: string, bytes: int, fecha: Carbon, motivo: string}>
+     */
+    public function listar(): Collection
+    {
+        return collect(glob($this->carpeta().'/respaldo_*.sql.gz') ?: [])
+            ->map(function (string $ruta) {
+                $archivo = basename($ruta);
+                preg_match('/^respaldo_\w+?_(\d{8}_\d{6})_([a-z-]+)\.sql\.gz$/', $archivo, $m);
+
+                return [
+                    'archivo' => $archivo,
+                    'ruta' => $ruta,
+                    'bytes' => (int) filesize($ruta),
+                    'fecha' => isset($m[1]) ? Carbon::createFromFormat('Ymd_His', $m[1], 'UTC') : Carbon::createFromTimestamp(filemtime($ruta)),
+                    'motivo' => $m[2] ?? 'manual',
+                ];
+            })
+            ->sortByDesc('fecha')->values();
+    }
+
+    /**
+     * Solo nombres que este servicio genera (nada de rutas ni "..").
+     */
+    public function ruta(string $archivo): ?string
+    {
+        if (! preg_match('/^respaldo_[a-z0-9]+_\d{8}_\d{6}_[a-z-]+\.sql\.gz$/', $archivo)) {
+            return null;
+        }
+        $ruta = $this->carpeta().'/'.$archivo;
+
+        return is_file($ruta) ? $ruta : null;
+    }
+
+    /**
+     * ¿Toca el respaldo diario? Si ya pasaron las 3:00 y no hay uno de hoy.
+     */
+    public function tocaDiario(?Carbon $ahora = null): bool
+    {
+        $local = ($ahora ?? now())->copy()->setTimezone(HoraLocal::ZONA_PLATAFORMA);
+        if ($local->hour < 3) {
+            return false;
+        }
+
+        return ! $this->listar()->contains(fn ($r) => $r['motivo'] === 'diario'
+            && $r['fecha']->copy()->setTimezone(HoraLocal::ZONA_PLATAFORMA)->isSameDay($local));
+    }
+
+    public function crear(string $motivo = 'manual'): array
+    {
+        if (! preg_match('/^[a-z-]{3,30}$/', $motivo)) {
+            throw new RuntimeException('Motivo de respaldo no válido.');
+        }
+
+        $ambiente = preg_replace('/[^a-z0-9]/', '', strtolower((string) config('app.env'))) ?: 'local';
+        // Dos respaldos en el mismo segundo no se pisan: se toma el siguiente segundo libre
+        $momento = now()->utc();
+        do {
+            $archivo = sprintf('respaldo_%s_%s_%s.sql.gz', $ambiente, $momento->format('Ymd_His'), $motivo);
+            $ruta = $this->carpeta().'/'.$archivo;
+            $momento->addSecond();
+        } while (file_exists($ruta));
+        $temporal = $ruta.'.parcial';
+        $this->conteos = [];
+
+        $gz = gzopen($temporal, 'wb6');
+        if ($gz === false) {
+            throw new RuntimeException('No se pudo crear el archivo de respaldo.');
+        }
+        @chmod($temporal, 0600); // Seguridad: privado desde el primer byte
+
+        try {
+            $driver = DB::connection()->getDriverName();
+            match ($driver) {
+                'mysql', 'mariadb' => $this->volcarMysql($gz),
+                'sqlite' => $this->volcarSqlite($gz),
+                default => throw new RuntimeException("Respaldo no disponible para {$driver}."),
+            };
+        } catch (\Throwable $e) {
+            gzclose($gz);
+            @unlink($temporal);
+            throw $e;
+        }
+
+        gzclose($gz);
+        rename($temporal, $ruta);
+        @chmod($ruta, 0600);
+        $this->podar();
+
+        return $this->listar()->firstWhere('archivo', $archivo);
+    }
+
+    /**
+     * Borra los de más de 14 días, conservando siempre los 3 más recientes.
+     */
+    public function podar(): int
+    {
+        $limite = now()->subDays(self::DIAS);
+        $borrados = 0;
+        foreach ($this->listar()->slice(self::MINIMO) as $r) {
+            if ($r['fecha']->lt($limite)) {
+                @unlink($r['ruta']);
+                $borrados++;
+            }
+        }
+
+        return $borrados;
+    }
+
+    /**
+     * @param  resource  $gz
+     */
+    private function volcarMysql($gz): void
+    {
+        $pdo = DB::connection()->getPdo();
+        $base = DB::connection()->getDatabaseName();
+
+        gzwrite($gz, "-- Respaldo de {$base} · ".now()->utc()->toDateTimeString()." UTC\n");
+        gzwrite($gz, self::COMO_RESTAURAR);
+        gzwrite($gz, "SET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\nSET SQL_MODE='NO_AUTO_VALUE_ON_ZERO';\nSET time_zone='+00:00';\n\n");
+
+        $tablas = collect(DB::select("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'"))
+            ->map(fn ($fila) => array_values((array) $fila)[0]);
+
+        foreach ($tablas as $tabla) {
+            $crear = (array) DB::selectOne('SHOW CREATE TABLE `'.str_replace('`', '``', $tabla).'`');
+            gzwrite($gz, "DROP TABLE IF EXISTS `{$tabla}`;\n".array_values($crear)[1].";\n\n");
+            $this->volcarFilas($gz, $tabla, fn ($v) => $pdo->quote((string) $v), '`');
+        }
+
+        gzwrite($gz, "SET FOREIGN_KEY_CHECKS=1;\n");
+    }
+
+    /**
+     * En desarrollo (SQLite) se vuelca el esquema y los datos en SQL estándar.
+     *
+     * @param  resource  $gz
+     */
+    private function volcarSqlite($gz): void
+    {
+        $pdo = DB::connection()->getPdo();
+        gzwrite($gz, '-- Respaldo SQLite · '.now()->utc()->toDateTimeString()." UTC\n".self::COMO_RESTAURAR."PRAGMA foreign_keys=OFF;\nBEGIN TRANSACTION;\n");
+        foreach (DB::select("SELECT name, sql FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'") as $t) {
+            gzwrite($gz, "DROP TABLE IF EXISTS \"{$t->name}\";\n{$t->sql};\n");
+            $this->volcarFilas($gz, $t->name, fn ($v) => $pdo->quote((string) $v), '"');
+        }
+        // Índices (únicos incluidos) después de los datos: sin ellos la base
+        // restaurada perdería reglas como «un préstamo vigente por llave»
+        foreach (DB::select("SELECT sql FROM sqlite_master WHERE type = 'index' AND sql IS NOT NULL AND name NOT LIKE 'sqlite_%'") as $indice) {
+            gzwrite($gz, "{$indice->sql};\n");
+        }
+        gzwrite($gz, "COMMIT;\n");
+    }
+
+    /**
+     * @param  resource  $gz
+     */
+    private function volcarFilas($gz, string $tabla, callable $citar, string $comilla): void
+    {
+        $this->conteos[$tabla] = 0;
+        if (in_array($tabla, self::TABLAS_SIN_FILAS, true)) {
+            gzwrite($gz, "-- {$tabla}: solo estructura (datos temporales)\n\n");
+
+            return;
+        }
+
+        // Las columnas generadas (p. ej. prestamos_llaves.llave_en_uso) no se
+        // escriben en el INSERT: la base las recalcula al importar y tanto
+        // MySQL/MariaDB como SQLite rechazan un valor explícito para ellas.
+        $nombres = self::columnasConDatos($tabla);
+        $columnas = implode(', ', array_map(fn ($c) => $comilla.$c.$comilla, $nombres));
+        $lote = [];
+        foreach (DB::table($tabla)->select($nombres)->cursor() as $fila) {
+            $fila = (array) $fila;
+            $this->conteos[$tabla]++;
+            $lote[] = '('.implode(', ', array_map(fn ($v) => $v === null ? 'NULL' : (is_int($v) || is_float($v) ? (string) $v : $citar($v)), $fila)).')';
+            if (count($lote) >= self::FILAS_POR_INSERT) {
+                gzwrite($gz, "INSERT INTO {$comilla}{$tabla}{$comilla} ({$columnas}) VALUES\n".implode(",\n", $lote).";\n");
+                $lote = [];
+            }
+        }
+        if ($lote !== []) {
+            gzwrite($gz, "INSERT INTO {$comilla}{$tabla}{$comilla} ({$columnas}) VALUES\n".implode(",\n", $lote).";\n");
+        }
+        gzwrite($gz, "\n");
+    }
+
+    /**
+     * Columnas de la tabla que guardan datos (sin las generadas), en su orden.
+     *
+     * @return list<string>
+     */
+    public static function columnasConDatos(string $tabla, ?Connection $conexion = null): array
+    {
+        $esquema = $conexion?->getSchemaBuilder() ?? Schema::getFacadeRoot();
+
+        return array_values(array_map(
+            fn (array $c) => $c['name'],
+            array_filter($esquema->getColumns($tabla), fn (array $c) => empty($c['generation'])),
+        ));
+    }
+
+    /**
+     * Columnas generadas de la tabla (se omiten en el volcado).
+     *
+     * @return list<string>
+     */
+    public static function columnasGeneradas(string $tabla, ?Connection $conexion = null): array
+    {
+        $esquema = $conexion?->getSchemaBuilder() ?? Schema::getFacadeRoot();
+
+        return array_values(array_map(
+            fn (array $c) => $c['name'],
+            array_filter($esquema->getColumns($tabla), fn (array $c) => ! empty($c['generation'])),
+        ));
+    }
+}

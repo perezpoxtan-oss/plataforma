@@ -1,0 +1,449 @@
+<?php
+
+namespace Tests\Feature\Acceso;
+
+use App\Console\Commands\CrearDatosDemo;
+use App\Models\Autorizacion;
+use App\Models\Departamento;
+use App\Models\DepartamentoResponsable;
+use App\Models\Empresa;
+use App\Models\Menu;
+use App\Models\Modulo;
+use App\Models\Sede;
+use App\Models\User;
+use App\Support\Menu\ConstructorMenu;
+use App\Support\Menu\MisPendientes;
+use App\Support\Tenancy\Tenant;
+use Database\Seeders\MenuSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Tests\Feature\Nucleo\CreaDatosNucleo;
+use Tests\TestCase;
+
+/**
+ * Lección 35: menús reorganizados (Operación, Padrones, Recursos Humanos,
+ * Informes, Estructura), módulos sin pantalla ocultos y «Mis pendientes».
+ */
+class MenusReorganizadosTest extends TestCase
+{
+    use CreaDatosNucleo, RefreshDatabase;
+
+    private Empresa $empresa;
+
+    private Sede $sede;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->sembrarCatalogo();
+        $this->empresa = $this->crearEmpresa();
+        $this->sede = $this->crearSede($this->empresa);
+    }
+
+    /**
+     * @return array<string, array<string, list<string>>> menu => sección => claves
+     */
+    private function estructura(User $usuario): array
+    {
+        $this->app->forgetScopedInstances();
+
+        return collect(app(ConstructorMenu::class)->para($usuario))
+            ->mapWithKeys(fn ($m) => [$m['clave'] => collect($m['secciones'])->map(fn ($items) => collect($items)->pluck('clave')->all())->all()])
+            ->all();
+    }
+
+    /** @return array<string, array<string, mixed>> clave => renglón del menú */
+    private function items(User $usuario): array
+    {
+        $this->app->forgetScopedInstances();
+
+        return collect(app(ConstructorMenu::class)->para($usuario))
+            ->flatMap(fn ($m) => collect($m['secciones'])->flatten(1))->keyBy('clave')->all();
+    }
+
+    /** @return list<string> foto del acomodo de menús y módulos */
+    private function acomodo(): array
+    {
+        $menus = DB::table('menus')->orderBy('orden')->get()->map(fn ($m) => "{$m->clave}|{$m->nombre}|{$m->icono}|{$m->orden}|{$m->orden_movil}")->all();
+        // Asistencia (ADR-0024) llegó después de estas migraciones y la acomoda la suya (al final de Recursos Humanos)
+        $modulos = DB::table('modulos as mo')->leftJoin('menus as me', 'me.id', '=', 'mo.menu_id')->whereNotNull('mo.menu_id')->where('mo.clave', '!=', 'asistencia')
+            ->orderBy('me.orden')->orderBy('mo.orden_menu')
+            ->get(['me.clave as menu', 'mo.seccion_menu', 'mo.orden_menu', 'mo.clave', 'mo.nombre_menu'])
+            ->map(fn ($f) => "{$f->menu}|{$f->seccion_menu}|{$f->orden_menu}|{$f->clave}|{$f->nombre_menu}")->all();
+
+        return [...$menus, ...$modulos];
+    }
+
+    public function test_el_administrador_ve_el_orden_y_las_secciones_aprobadas(): void
+    {
+        $menu = $this->estructura($this->crearUsuario($this->empresa, 'Administrador'));
+
+        // Informes (ADR-0017): con sus cuatro pantallas, el menú Informes aparece antes de Estructura
+        $this->assertSame(['operacion', 'padrones', 'recursos_humanos', 'informes', 'estructura'], array_keys($menu));
+        $this->assertSame(['Informes' => ['dashboard', 'bitacora_dia', 'tendencias', 'informe_ejecutivo']], $menu['informes']);
+        $this->assertSame([
+            // Mapa de procesos: Vouchers de reposición junto a lo de la caseta
+            'Caseta' => ['accesos', 'prestamo_llaves', 'vouchers', 'pases_salida', 'transporte'],
+            'Bitácora' => ['novedades', 'lost_found', 'robo'],
+            'Protección civil' => ['recorridos_pc'],
+            'Activos' => ['responsivas'],
+            'Consulta' => ['procedimientos'],
+            // Reservas de áreas (docs/tecnico/reservas.md): sección propia al final de Operación
+            'Reservas' => ['reservas'],
+        ], $menu['operacion']);
+        $this->assertSame([
+            'Personas y vehículos' => ['proveedores', 'visitantes', 'vehiculos', 'altas_por_verificar'], // C-27: bandeja única
+            'Inventarios' => ['llaves', 'gafetes', 'equipos', 'equipos_pc'],
+            'Instalaciones' => ['estacionamientos', 'rutas'],
+            'Herramientas' => ['etiquetas_qr'],
+        ], $menu['padrones']);
+        $this->assertSame([
+            // Vacantes: lección 36 · «Mis entrevistas» (ADR-0010): para quien tiene candidatos.evaluar, sin módulo propio
+            'Recepción y candidatos' => ['vacantes', 'recepcion_rh', 'candidatos', 'entrevistas'],
+        ], $menu['recursos_humanos']);
+        // Identidad de la plataforma es solo del superadministrador · Organización en todos los planes (C-01)
+        $this->assertSame([
+            'Empresa' => ['empresas', 'sedes', 'espacios'],
+            'Organización' => ['colaboradores', 'departamentos', 'puestos', 'turnos', 'autorizaciones'],
+            'Accesos y permisos' => ['usuarios', 'roles', 'permisos'],
+            'Sistema' => ['configuracion', 'auditoria'],
+        ], $menu['estructura']);
+
+        $super = $this->estructura($this->crearSuperadmin());
+        // Mejoras estructura (ADR-0016): lo exclusivo del Super Administrador va en su propia sección
+        $this->assertSame(['configuracion', 'auditoria'], $super['estructura']['Sistema']);
+        $this->assertSame(['identidad', 'catalogo_comercial'], $super['estructura']['Plataforma']);
+        // El celular usa el mismo orden
+        $this->assertSame([1, 2, 3, 4, 5], Menu::orderBy('orden')->pluck('orden_movil')->all());
+    }
+
+    public function test_los_nombres_del_menu_coinciden_con_las_pantallas(): void
+    {
+        $admin = $this->crearUsuario($this->empresa, 'Administrador');
+        $items = $this->items($admin);
+
+        $this->assertSame('Empresas externas', $items['proveedores']['nombre']);
+        $this->assertSame('Novedades', $items['novedades']['nombre']);
+        $this->assertSame('Robo', $items['robo']['nombre']);
+        $this->assertSame('Bitácora de accesos', $items['accesos']['nombre']);
+        $this->assertSame('Padrón de personas', $items['visitantes']['nombre']);
+        // Decisión del dueño (3 nov): la Matriz de permisos dice lo mismo que el menú
+        $this->assertSame('Empresas externas', Modulo::where('clave', 'proveedores')->value('nombre'));
+
+        $this->actingAs($admin)->get('/')->assertOk()
+            ->assertSeeInOrder(['Operación', 'Padrones', 'Recursos Humanos', 'Informes', 'Estructura'])
+            ->assertSee('Empresas externas')->assertSee('Vouchers de reposición')
+            // Informes (ADR-0017): ya tienen pantalla
+            ->assertSee('Informe ejecutivo')->assertSee('Bitácora del día')->assertDontSee('Autorizaciones departamentales');
+    }
+
+    public function test_el_agente_ve_operacion_y_padrones_y_su_barra_inferior_empieza_con_accesos(): void
+    {
+        $agente = $this->crearUsuario($this->empresa, 'Agente', $this->sede);
+        $menu = $this->estructura($agente);
+
+        $this->assertSame(['operacion', 'padrones'], array_slice(array_keys($menu), 0, 2));
+        // C-01: el directorio (para sus altas provisionales) está en Estructura → Organización; nada más de Estructura
+        $this->assertSame(['Organización' => ['colaboradores']], $menu['estructura']);
+        $this->assertArrayNotHasKey('informes', $menu);
+        $this->assertContains('vouchers', $menu['operacion']['Caseta']);
+
+        $html = $this->actingAs($agente)->get('/')->assertOk()->getContent();
+        $barra = substr($html, strpos($html, 'class="barra-inferior"'));
+        $this->assertLessThan(strpos($barra, '<span>Novedades</span>'), strpos($barra, '<span>Accesos</span>'));
+    }
+
+    public function test_vouchers_cambia_de_menu_pero_no_de_permisos(): void
+    {
+        $agente = $this->crearUsuario($this->empresa, 'Agente', $this->sede);
+
+        // En la plantilla del Agente sigue siendo padrón: solo consulta
+        $this->assertTrue($agente->can('vouchers.ver'));
+        $this->assertFalse($agente->can('vouchers.crear'));
+        $this->assertFalse($agente->can('vouchers.editar'));
+    }
+
+    public function test_recursos_humanos_ya_no_lleva_autorizaciones_pero_conserva_la_pantalla(): void
+    {
+        $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
+        $menu = $this->estructura($rh);
+
+        $this->assertSame(['Recepción y candidatos'], array_keys($menu['recursos_humanos']));
+        // C-01: el personal y sus catálogos están en Estructura → Organización; RR. HH. configura quién autoriza, así que ve Autorizaciones ahí
+        $this->assertSame(['colaboradores', 'departamentos', 'puestos', 'turnos', 'autorizaciones'], $menu['estructura']['Organización']);
+        $this->assertNull(Modulo::where('clave', 'autorizaciones')->value('menu_id'));
+        $this->actingAs($rh)->get('/autorizaciones')->assertOk();
+    }
+
+    public function test_el_jefe_de_seguridad_ve_la_operacion_de_su_sede(): void
+    {
+        $jefe = $this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->sede);
+        $menu = $this->estructura($jefe);
+
+        // Informes (ADR-0017): el Jefe de seguridad consulta los informes de su sede
+        $this->assertSame(['operacion', 'padrones', 'recursos_humanos', 'informes', 'estructura'], array_keys($menu));
+        // Lección 36: la caseta consulta las vacantes publicadas de su sede; ADR-0010: entrevista a quien RR. HH. le canaliza
+        $this->assertSame(['Recepción y candidatos' => ['vacantes', 'entrevistas']], $menu['recursos_humanos']);
+        // Decisión del dueño (mapa de procesos): consulta la Bitácora de auditoría de su sede · C-01: el directorio en Organización
+        $this->assertSame(['Organización' => ['colaboradores'], 'Accesos y permisos' => ['usuarios'], 'Sistema' => ['auditoria']], $menu['estructura']);
+    }
+
+    public function test_informes_aparece_solo_con_las_pantallas_que_existen(): void
+    {
+        $super = $this->crearSuperadmin();
+        $items = $this->items($super);
+
+        // Informes (ADR-0017): las cuatro pantallas ya existen
+        $this->assertSame(['Informes' => ['dashboard', 'bitacora_dia', 'tendencias', 'informe_ejecutivo']], $this->estructura($super)['informes']);
+        $this->assertTrue(collect($items)->every(fn ($i) => $i['disponible'] && ! str_contains($i['url'], '/modulos/')));
+
+        // Un módulo cuya ruta todavía no existe no se muestra
+        Modulo::where('clave', 'accesos')->update(['ruta' => 'accesos.no_existe']);
+        $this->assertArrayNotHasKey('accesos', $this->items($super));
+
+        // Y si ningún informe tuviera pantalla, el menú Informes se oculta
+        Modulo::whereIn('clave', ['dashboard', 'bitacora_dia', 'tendencias', 'informe_ejecutivo'])->update(['ruta' => null]);
+        $this->assertArrayNotHasKey('informes', $this->estructura($super));
+        Modulo::where('clave', 'dashboard')->update(['ruta' => 'tablero.index']);
+        $this->assertSame(['Informes' => ['dashboard']], $this->estructura($super)['informes']);
+    }
+
+    public function test_la_migracion_reacomoda_una_instalacion_existente_y_se_puede_repetir(): void
+    {
+        // Etapa 1 (C-01): la foto de hoy es la de una instalación nueva; las migraciones de antes arman el menú de antes
+        $hoy = $this->acomodo();
+        // Etapa 7 (C-39): la sección «Bitácora» de Operación la pone su propia migración, al final
+        $bitacora = require database_path('migrations/2026_11_17_000200_seccion_bitacora_en_operacion.php');
+        $bitacora->down();
+        $hoyAntesDeLaEtapa7 = $this->acomodo();
+        $this->menuDeAntesDeLaEtapa1();
+        // Mapa de procesos: Vouchers de reposición pasa después a la Caseta (su propia migración)
+        $actual = $this->acomodo();
+        $vouchersEnCaseta = require database_path('migrations/2026_10_29_000320_vouchers_en_la_caseta.php');
+        $vouchersEnCaseta->down();
+        $esperado = $this->acomodo();
+        // Lección 36: antes de esta migración Vacantes no existía; su propia migración la acomoda después
+        $vacantes = Modulo::where('clave', 'vacantes')->value('orden_menu');
+        $sinVacantes = collect($esperado)->reject(fn ($l) => str_contains($l, '|vacantes|'))->map(function ($l) use ($vacantes) {
+            $p = explode('|', $l);
+
+            return count($p) === 5 && $p[0] === 'recursos_humanos' && (int) $p[2] > $vacantes ? implode('|', [$p[0], $p[1], (int) $p[2] - 1, $p[3], $p[4]]) : $l;
+        })->values()->all();
+        Modulo::where('clave', 'vacantes')->update(['menu_id' => null, 'seccion_menu' => null, 'orden_menu' => 0]);
+        $esperadoFinal = $esperado;
+        $esperado = $sinVacantes;
+
+        // Como estaba antes (QA/Producción): Estructura primero, vouchers en Padrones, autorizaciones en RH, sin Informes
+        Menu::where('clave', 'informes')->delete();
+        Menu::where('clave', 'estructura')->update(['orden' => 1, 'orden_movil' => 3]);
+        Menu::where('clave', 'operacion')->update(['orden' => 4, 'orden_movil' => 1]);
+        $rh = Menu::where('clave', 'recursos_humanos')->value('id');
+        Modulo::where('clave', 'autorizaciones')->update(['menu_id' => $rh, 'seccion_menu' => 'Recepción y candidatos', 'orden_menu' => 9]);
+        Modulo::where('clave', 'vouchers')->update(['menu_id' => Menu::where('clave', 'padrones')->value('id'), 'seccion_menu' => 'Inventarios de Seguridad']);
+        Modulo::where('clave', 'informe_ejecutivo')->update(['menu_id' => Menu::where('clave', 'estructura')->value('id'), 'seccion_menu' => 'Organización Interna']);
+        Modulo::query()->update(['nombre_menu' => null]);
+        $this->assertNotSame($esperado, $this->acomodo());
+
+        $migracion = require database_path('migrations/2026_10_16_000100_reorganizar_menus.php');
+        // Mejoras padrones: el nombre «Estacionamientos y zonas de descarga» lo pone su propia migración después
+        $nombres = require database_path('migrations/2026_10_26_000100_mejoras_padrones_nombres.php');
+        // Mejoras estructura (ADR-0016): Identidad pasa después a su sección «Plataforma»
+        $estructura = require database_path('migrations/2026_10_27_000100_mejoras_de_estructura.php');
+        $migracion->up();
+        $nombres->up();
+        $estructura->up();
+        $this->assertSame($esperado, $this->acomodo());
+
+        $migracion->up(); // segunda vez: sin cambios ni duplicados
+        $nombres->up();
+        $estructura->up();
+        $this->assertSame($esperado, $this->acomodo());
+        $this->assertSame(1, Menu::where('clave', 'informes')->count());
+        $this->assertNull(Modulo::where('clave', 'autorizaciones')->value('menu_id'));
+
+        // La migración de Vacantes (lección 36) la pone primero en «Recepción y candidatos»
+        $vacantesMigracion = require database_path('migrations/2026_10_17_000200_crear_vacantes.php');
+        (fn () => $this->modulo())->call($vacantesMigracion);
+        $this->assertSame($esperadoFinal, $this->acomodo());
+        $vouchersEnCaseta->up();
+        $this->assertSame($actual, $this->acomodo());
+
+        // El MenuSeeder después de la migración no mueve nada
+        $this->seed(MenuSeeder::class);
+        $this->assertSame($actual, $this->acomodo());
+
+        // Y la migración de la Etapa 1 deja el menú como en una instalación nueva
+        $etapa1 = require database_path('migrations/2026_11_10_000200_organizacion_base_y_paquetes_coherentes.php');
+        $etapa1->up();
+        $this->assertSame($hoyAntesDeLaEtapa7, $this->acomodo());
+        $bitacora->up();
+        $this->assertSame($hoy, $this->acomodo());
+    }
+
+    /** Menú de antes de la Etapa 1: Colaboradores y sus catálogos en Recursos Humanos (MenuSeeder de esa versión). */
+    private function menuDeAntesDeLaEtapa1(): void
+    {
+        $antes = [
+            'recursos_humanos' => ['Personal' => ['colaboradores'], 'Recepción y candidatos' => ['vacantes', 'recepcion_rh', 'candidatos'], 'Catálogos' => ['departamentos', 'puestos', 'turnos']],
+            'estructura' => ['Empresa' => ['empresas', 'sedes', 'espacios'], 'Accesos y permisos' => ['usuarios', 'roles', 'permisos'],
+                'Sistema' => ['configuracion', 'auditoria'], 'Plataforma' => ['identidad', 'catalogo_comercial']],
+        ];
+        foreach ($antes as $menu => $secciones) {
+            $menuId = Menu::where('clave', $menu)->value('id');
+            $orden = 0;
+            foreach ($secciones as $seccion => $claves) {
+                foreach ($claves as $clave) {
+                    Modulo::where('clave', $clave)->update(['menu_id' => $menuId, 'seccion_menu' => $seccion, 'orden_menu' => ++$orden]);
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------ Mis pendientes
+
+    private function autorizacionPendientePara(User $responsable): Autorizacion
+    {
+        return app(Tenant::class)->conEmpresa($this->empresa->id, function () use ($responsable) {
+            $depto = Departamento::create(['nombre' => 'Ama de llaves', 'todas_las_sedes' => true, 'activo' => true]);
+            DepartamentoResponsable::create(['departamento_id' => $depto->id, 'user_id' => $responsable->id, 'sede_id' => $this->sede->id]);
+
+            return Autorizacion::create(['sede_id' => $this->sede->id, 'departamento_id' => $depto->id, 'tipo' => 'visita', 'solicitada_en' => now()]);
+        });
+    }
+
+    public function test_mis_entrevistas_y_autorizaciones_salen_en_el_menu_de_quien_las_usa(): void
+    {
+        // Jefe de departamento (plantilla de solicitudes): entrevista (candidatos.evaluar), pero Autorizaciones solo cuando es responsable
+        $jefe = $this->crearUsuario($this->empresa, 'Jefe de departamento', $this->sede);
+        $this->assertTrue($jefe->can('candidatos.evaluar') && $jefe->can('autorizaciones.responder'));
+        $items = $this->items($jefe);
+        $this->assertSame(['Mis entrevistas', route('entrevistas.index')], [$items['entrevistas']['nombre'], $items['entrevistas']['url']]);
+        $this->assertArrayNotHasKey('autorizaciones', $items);
+
+        $this->autorizacionPendientePara($jefe);
+        $items = $this->items($jefe);
+        $this->assertSame(['Autorizaciones', route('autorizaciones.index')], [$items['autorizaciones']['nombre'], $items['autorizaciones']['url']]);
+        $this->assertSame(['vacantes', 'entrevistas'], $this->estructura($jefe)['recursos_humanos']['Recepción y candidatos']);
+        $this->assertContains('autorizaciones', $this->estructura($jefe)['estructura']['Organización']); // C-01
+        $html = $this->actingAs($jefe)->get('/entrevistas')->assertOk()->getContent();
+        $this->assertStringContainsString('Mis entrevistas', $html);
+        $this->assertStringContainsString(route('autorizaciones.index'), $html);
+
+        // Recursos Humanos configura quién autoriza: la ve en Estructura → Organización (C-01)
+        $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
+        $this->assertArrayHasKey('autorizaciones', $this->items($rh));
+        $this->assertArrayHasKey('entrevistas', $this->items($rh));
+
+        // Sin el permiso de evaluar ni responder: nada
+        $agente = $this->crearUsuario($this->empresa, 'Agente', $this->sede);
+        $this->assertArrayNotHasKey('entrevistas', $this->items($agente));
+        $this->assertArrayNotHasKey('autorizaciones', $this->items($agente));
+    }
+
+    public function test_mis_pendientes_cuenta_las_autorizaciones_del_responsable(): void
+    {
+        $jefe = $this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->sede);
+        $this->autorizacionPendientePara($jefe);
+
+        $pendientes = app(MisPendientes::class)->para($jefe);
+        $this->assertSame(1, $pendientes['total']);
+        $autorizaciones = collect($pendientes['items'])->firstWhere('clave', 'autorizaciones');
+        $this->assertSame(['Autorizaciones por responder', 1, route('autorizaciones.index')], [$autorizaciones['titulo'], $autorizaciones['total'], $autorizaciones['url']]);
+
+        $html = $this->actingAs($jefe)->get('/')->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/data-mis-pendientes\s*>/', $html); // visible (sin «hidden»)
+        $this->assertSame(2, substr_count($html, 'data-mis-pendientes-boton')); // PC y celular
+        $this->assertStringContainsString('Autorizaciones por responder', $html);
+
+        // Viaja en la misma consulta de la campana
+        $this->actingAs($jefe)->getJson('/notificaciones/resumen')->assertOk()
+            ->assertJsonPath('pendientes.total', 1)
+            ->assertJsonPath('pendientes.items.0.clave', 'autorizaciones');
+    }
+
+    public function test_mis_pendientes_se_oculta_en_cero_y_no_existe_si_nada_aplica(): void
+    {
+        // Responsable sin solicitudes: el botón existe pero oculto
+        $jefe = $this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->sede);
+        app(Tenant::class)->conEmpresa($this->empresa->id, function () use ($jefe) {
+            $depto = Departamento::create(['nombre' => 'Mantenimiento', 'todas_las_sedes' => true, 'activo' => true]);
+            DepartamentoResponsable::create(['departamento_id' => $depto->id, 'user_id' => $jefe->id, 'sede_id' => $this->sede->id]);
+        });
+        $html = $this->actingAs($jefe)->get('/')->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/data-mis-pendientes\s+hidden/', $html);
+
+        // Recursos Humanos (candidatos, fases 1 y 2): sus renglones en cero; el botón existe pero oculto
+        $rh = $this->crearUsuario($this->empresa, 'Recursos Humanos');
+        // C-27: los colaboradores por verificar van en el renglón único «Altas por verificar»
+        // C-23 (E-07): «Candidatos sin atender» de días anteriores, junto a «Esperando en Recepción»
+        $this->assertSame(['total' => 0, 'claves' => ['altas', 'recepcion', 'sin_atender', 'solicitudes', 'por_entrevistar', 'evaluaciones_departamento', 'elegidos']],
+            ['total' => app(MisPendientes::class)->para($rh)['total'], 'claves' => array_column(app(MisPendientes::class)->para($rh)['items'], 'clave')]);
+        $this->assertMatchesRegularExpression('/data-mis-pendientes\s+hidden/', $this->actingAs($rh)->get('/')->assertOk()->getContent());
+
+        // Sin nada que le aplique: no aparece
+        $nadie = $this->crearUsuario($this->empresa);
+        $this->assertSame(['total' => 0, 'items' => []], app(MisPendientes::class)->para($nadie));
+        $this->actingAs($nadie)->get('/')->assertOk()->assertDontSee('data-mis-pendientes', false);
+
+        // Superadministrador sin empresa de trabajo
+        $this->actingAs($this->crearSuperadmin())->getJson('/notificaciones/resumen')->assertOk()
+            ->assertJsonPath('pendientes.total', 0);
+    }
+
+    public function test_mis_pendientes_no_cruza_empresas(): void
+    {
+        $jefe = $this->crearUsuario($this->empresa, 'Jefe de seguridad', $this->sede);
+        $this->autorizacionPendientePara($jefe);
+
+        $otra = $this->crearEmpresa('Hotel Dos');
+        $otroJefe = $this->crearUsuario($otra, 'Jefe de seguridad', $this->crearSede($otra, 'S2'));
+
+        $this->assertSame(0, app(MisPendientes::class)->para($otroJefe)['total']);
+    }
+
+    public function test_mis_pendientes_con_los_datos_demo(): void
+    {
+        $this->artisan('plataforma:demo', ['--password' => 'Prueba123!'])->assertSuccessful();
+        $demo = Empresa::where('nombre_comercial', CrearDatosDemo::EMPRESA)->firstOrFail();
+
+        $agente = User::where('username', 'agente.demo')->firstOrFail();
+        $pendientes = collect(app(MisPendientes::class)->para($agente)['items'])->keyBy('clave');
+        // Mejoras Incidentes: la demo tiene un ticket canalizado al agente y uno pendiente de turno sin dueño
+        // Etapa 4: el semáforo de llaves viene encendido de fábrica (DD-10) y Lost & Found vencidos entra a Mis pendientes (C-24)
+        $this->assertSame(['pases_salida', 'procedimientos', 'novedades_mias', 'novedades_turno', 'llaves_fuera', 'lost_found'], $pendientes->keys()->all());
+        $this->assertGreaterThan(0, $pendientes['procedimientos']['total']);
+        $this->assertSame(route('procedimientos.por-leer'), $pendientes['procedimientos']['url']);
+        $this->assertSame(route('pases-salida.pendientes'), $pendientes['pases_salida']['url']);
+
+        // El administrador verifica altas de varios padrones: el enlace lleva a Inicio (desglose por padrón)
+        $admin = User::where('username', 'admin.demo')->where('empresa_id', $demo->id)->firstOrFail();
+        $this->app->forgetScopedInstances();
+        $altas = collect(app(MisPendientes::class)->para($admin)['items'])->firstWhere('clave', 'altas');
+        $this->assertGreaterThan(0, $altas['total']);
+
+        // Un número acotado de consultas (sin N+1): activos dejó 59; los dos renglones de incidentes suman una sola consulta
+        $this->app->forgetScopedInstances();
+        DB::enableQueryLog();
+        app(MisPendientes::class)->para($admin);
+        // Las cuatro mejoras juntas hacen 61 consultas: colaboradores por verificar y procedimientos por aprobar (un
+        // solo renglón cada uno, con el conteo corto de activos), tickets de incidentes en una consulta y los de activos
+        // Reservas de áreas suma 6 sin relaciones ni N+1 (aprobaciones, órdenes, empresa —en la pantalla ya viene cargada—,
+        // responsables de los departamentos involucrados, delegaciones hacia el usuario y cambios pedidos)
+        // El paso «Jefe del departamento del solicitante» de Pases de salida suma 2 fijas (responsables de la empresa
+        // y delegaciones activas, una vez por petición, sin importar cuántos pases o departamentos)
+        // Etapa 1 suma 5 fijas por petición (no por renglón): columna de solo lectura (2 de esquema en SQLite), módulos
+        // activos (acciones que se venden con otro módulo) y si la suscripción está en solo consulta (2)
+        // Etapa 3 (C-08, C-12, C-27) suma fijas por petición, no por renglón: las visitas que esperan al supervisor
+        // (1), los departamentos sin quien autorice (responsables, departamentos y sedes, y el permiso de cada
+        // responsable, que se recuerda en la petición), Reservas con la misma regla de cobertura y «No molestar» (1)
+        // Etapa 4 (C-22 a C-26) suma una consulta por cada reloj que le aplica a la persona (lo que espera de ese módulo,
+        // memorizado en la petición), más la zona de las sedes para la permanencia: unas 28 fijas, nunca una por renglón
+        // DD-17 suma las rutas del día (sedes y horarios con su ruta, y lo registrado en una sola consulta) y los
+        // equipos de Protección Civil (recargas, y equipos con su última revisión): unas 6 fijas, nunca una por renglón
+        // Etapa 5 (C-09, C-28) cabe en el mismo límite: el reloj de «Tickets de tu departamento» suma una consulta y
+        // «visitas propias» solo se consulta para quien no es responsable de ningún departamento
+        // Revisión Etapa 5: a quien le delegan, una fija más (las personas citadas de sus titulares, C-12)
+        // Etapa 6 (C-19) suma una consulta: el reloj «Salidas con algo distinto por revisar» (como cada reloj de la Etapa 4)
+        $this->assertLessThan(137, count(DB::getQueryLog()));
+    }
+}

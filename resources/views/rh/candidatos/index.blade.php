@@ -1,0 +1,225 @@
+@extends('layouts.app')
+@use('App\Models\Candidato')
+
+@section('titulo', 'Candidatos')
+
+@section('contenido')
+<div class="pantalla-candidatos">
+    @include('administracion.partes.avisos')
+    @include('administracion.partes.selector-empresa')
+
+    @if ($sinEmpresa)
+        <div class="encabezado-pantalla mb-4">
+            <div class="icono"><i class="bi bi-person-workspace text-success" aria-hidden="true"></i></div>
+            <div><h1>Candidatos</h1><p>Solicitudes de empleo y su avance.</p></div>
+        </div>
+        <div class="tarjeta estado-vacio">
+            <div class="icono"><i class="bi bi-buildings" aria-hidden="true"></i></div>
+            <p class="text-muted small m-0">Elige arriba la <strong>empresa de trabajo</strong> para ver sus candidatos.</p>
+        </div>
+    @else
+        @php
+            $hayFiltros = $filtros['q'] !== '' || $filtros['etapa'] !== '' || $filtros['sede'] > 0 || $filtros['departamento'] > 0 || $filtros['vacante'] > 0 || $filtros['revisar'] || $filtros['archivadas'] || $filtros['caducar'];
+            $sinEspecial = ! $filtros['revisar'] && ! $filtros['archivadas'] && ! $filtros['caducar'];
+            $enProceso = collect(Candidato::ABIERTAS)->sum(fn ($e) => (int) ($conteos[$e] ?? 0));
+            $base = array_filter(['q' => $filtros['q'], 'sede' => $filtros['sede'] ?: null, 'departamento' => $filtros['departamento'] ?: null, 'vacante' => $filtros['vacante'] ?: null]);
+            $reabrir = old('_dialogo') === 'candidato';
+        @endphp
+
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+            <div class="encabezado-pantalla m-0">
+                <div class="icono"><i class="bi bi-person-workspace text-success" aria-hidden="true"></i></div>
+                <div>
+                    <h1>Candidatos</h1>
+                    <p>Solicitudes de empleo: CV, etapas y contratación.</p>
+                    <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Candidatos de: <strong>{{ $empresaNombre }}</strong></p>
+                </div>
+            </div>
+            {{-- C-35: arriba solo «Nuevo candidato» y la búsqueda; lo demás en «Avanzado» --}}
+            @if ($puede['crear'] && $sedesAlta->isNotEmpty())
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn-verde btn-accion-rh" data-abrir-dialogo="dialogoCandidato"><i class="bi bi-person-plus-fill me-1" aria-hidden="true"></i>Nuevo candidato</button>
+                </div>
+            @endif
+        </div>
+
+        @php $avanzadoAbierto = $filtros['sede'] > 0 || $filtros['departamento'] > 0 || $filtros['vacante'] > 0; @endphp
+        <form method="GET" action="{{ route('candidatos.index') }}" class="filtros-rh" role="search" data-autoenviar id="filtrosCandidatos">
+            <input type="hidden" name="etapa" value="{{ $filtros['etapa'] }}">
+            @if ($filtros['revisar'])<input type="hidden" name="revisar" value="1">@endif
+            @if ($filtros['archivadas'])<input type="hidden" name="archivadas" value="1">@endif
+            @if ($filtros['caducar'])<input type="hidden" name="caducar" value="1">@endif
+            <div class="buscador">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                <input type="search" name="q" value="{{ $filtros['q'] }}" maxlength="100" placeholder="Buscar por nombre o vacante..." aria-label="Buscar candidato">
+            </div>
+            @if ($hayFiltros)
+                <a href="{{ route('candidatos.index') }}" class="btn-limpiar-filtros">Limpiar</a>
+            @endif
+        </form>
+
+        <details class="avanzado-candidatos mb-3" data-avanzado-candidatos @if ($avanzadoAbierto) open @endif>
+            <summary><i class="bi bi-sliders me-1" aria-hidden="true"></i>Avanzado</summary>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                @if ($sedes->count() > 1)
+                    <select name="sede" form="filtrosCandidatos" class="filtro-select" aria-label="Filtrar por sede" data-enviar-al-cambiar>
+                        <option value="">Todas las sedes</option>
+                        @foreach ($sedes as $s)
+                            <option value="{{ $s->id }}" @selected($filtros['sede'] === $s->id)>{{ $s->nombre }}</option>
+                        @endforeach
+                    </select>
+                @endif
+                <select name="departamento" form="filtrosCandidatos" class="filtro-select" aria-label="Filtrar por departamento" data-enviar-al-cambiar>
+                    <option value="">Todos los departamentos</option>
+                    @foreach ($departamentos as $d)
+                        <option value="{{ $d->id }}" @selected($filtros['departamento'] === $d->id)>{{ $d->nombre }}</option>
+                    @endforeach
+                </select>
+                {{-- Vacantes (lección 36) --}}
+                @if ($vacantesFiltro->isNotEmpty())
+                    <select name="vacante" form="filtrosCandidatos" class="filtro-select" aria-label="Filtrar por vacante" data-enviar-al-cambiar>
+                        <option value="">Todas las vacantes</option>
+                        @foreach ($vacantesFiltro as $vf)
+                            <option value="{{ $vf->id }}" @selected($filtros['vacante'] === $vf->id)>{{ $vf->titulo }}{{ $vf->estado !== 'publicada' ? ' ('.\App\Models\Vacante::ESTADOS[$vf->estado].')' : '' }}</option>
+                        @endforeach
+                    </select>
+                @endif
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                <a href="{{ route('recepcion.index') }}" class="btn-secundario-rh"><i class="bi bi-person-check me-1" aria-hidden="true"></i>Recepción</a>
+                {{-- Configuración de Candidatos: criterios de entrevista (ADR-0010) y documentos y plazos (fase 3) --}}
+                @if ($puede['configurar'] ?? false)
+                    <a href="{{ route('candidatos.criterios') }}" class="btn-secundario-rh"><i class="bi bi-star-half me-1" aria-hidden="true"></i>Criterios de entrevista</a>
+                    <a href="{{ route('candidatos.configuracion') }}" class="btn-secundario-rh"><i class="bi bi-folder-check me-1" aria-hidden="true"></i>Documentos y plazos</a>
+                @endif
+                @if ($puede['exportar'] && $lista->total() > 0)
+                    <a href="{{ route('candidatos.exportar', request()->query()) }}" class="btn-secundario-rh"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Exportar a Excel</a>
+                    <form method="GET" action="{{ route('candidatos.exportar') }}" class="m-0" data-confirmar="El archivo llevará CURP, RFC, NSS, domicilio y teléfonos (datos personales). Guárdalo en un lugar seguro y no lo compartas. ¿Continuar?">
+                        @foreach (array_filter(['q' => $filtros['q'], 'etapa' => $filtros['etapa'], 'sede' => $filtros['sede'] ?: null, 'departamento' => $filtros['departamento'] ?: null]) as $campo => $v)
+                            <input type="hidden" name="{{ $campo }}" value="{{ $v }}">
+                        @endforeach
+                        <input type="hidden" name="datos" value="personales">
+                        <button type="submit" class="btn-secundario-rh"><i class="bi bi-file-earmark-lock me-1" aria-hidden="true"></i>Con datos personales</button>
+                    </form>
+                @endif
+            </div>
+        </details>
+
+        <nav class="pildoras-pases" aria-label="Etapas">
+            <a href="{{ route('candidatos.index', $base) }}" class="btn-pill-tipo {{ $filtros['etapa'] === '' && $sinEspecial ? 'active' : '' }}">Todos ({{ $conteos->sum() }})</a>
+            <a href="{{ route('candidatos.index', $base + ['etapa' => 'en_proceso']) }}" class="btn-pill-tipo {{ $filtros['etapa'] === 'en_proceso' && $sinEspecial ? 'active' : '' }}">En proceso ({{ $enProceso }})</a>
+            @php $porEntrevistar = collect(Candidato::POR_ENTREVISTAR)->sum(fn ($e) => (int) ($conteos[$e] ?? 0)); @endphp
+            @if ($porEntrevistar > 0 || $filtros['etapa'] === 'por_entrevistar')
+                <a href="{{ route('candidatos.index', $base + ['etapa' => 'por_entrevistar']) }}" class="btn-pill-tipo {{ $filtros['etapa'] === 'por_entrevistar' ? 'active' : '' }}"><i class="bi bi-chat-square-text me-1" aria-hidden="true"></i>Por entrevistar ({{ $porEntrevistar }})</a>
+            @endif
+            @if ($porRevisar > 0 || $filtros['revisar'])
+                <a href="{{ route('candidatos.index', $base + ['revisar' => 1]) }}" class="btn-pill-tipo {{ $filtros['revisar'] ? 'active' : '' }}"><i class="bi bi-phone me-1" aria-hidden="true"></i>Solicitudes por revisar ({{ $porRevisar }})</a>
+            @endif
+            @foreach (Candidato::ETAPAS as $clave => $texto)
+                <a href="{{ route('candidatos.index', $base + ['etapa' => $clave]) }}" class="btn-pill-tipo {{ $filtros['etapa'] === $clave && $sinEspecial ? 'active' : '' }}">{{ $texto }} ({{ (int) ($conteos[$clave] ?? 0) }})</a>
+            @endforeach
+            {{-- Fase 3: caducidad --}}
+            @if ($porCaducar > 0 || $filtros['caducar'])
+                <a href="{{ route('candidatos.index', $base + ['caducar' => 1]) }}" class="btn-pill-tipo {{ $filtros['caducar'] ? 'active' : '' }}" title="Fichas que se borrarán pronto si nadie las conserva"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Por caducar ({{ $porCaducar }})</a>
+            @endif
+            @if ($archivadas > 0 || $filtros['archivadas'])
+                <a href="{{ route('candidatos.index', $base + ['archivadas' => 1]) }}" class="btn-pill-tipo {{ $filtros['archivadas'] ? 'active' : '' }}" title="Postulaciones en Considerar o Rechazado que ya cumplieron el plazo de archivo"><i class="bi bi-archive me-1" aria-hidden="true"></i>Archivadas ({{ $archivadas }})</a>
+            @endif
+        </nav>
+        @if ($filtros['caducar'])
+            <p class="small text-muted"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Estas fichas se borrarán con sus documentos el día que muestra cada una (no fueron contratadas y llevan mucho tiempo sin movimiento). Abre la ficha y toca <strong>Guardar 6 meses más</strong> si aún la necesitas.</p>
+        @endif
+
+        <div class="fichas-grid fichas-candidatos">
+            @forelse ($lista as $c)
+                <a href="{{ route('candidatos.show', $c->id) }}" class="ficha-card ficha-candidato">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                            <span class="pastilla-etapa etapa-{{ Candidato::COLORES[$c->etapa] ?? 'gris' }}">{{ $c->etiquetaEtapa() }}</span>
+                            {{-- C-23 (E-07): cuánto lleva esperando en su etapa, con el color de su plazo --}}
+                            @php $relojC = $c->postulacionActiva && $empresaPlazos && $c->postulacionActiva->archivada_en === null ? app(\App\Services\Candidatos\PlazosCandidatos::class)->relojDe($empresaPlazos, $c->postulacionActiva, $c) : null; @endphp
+                            @if ($relojC && $relojC['plazo'] !== null)
+                                <span class="pastilla-reloj {{ $relojC['nivel'] ? 'nivel-'.$relojC['nivel'] : '' }}" title="Plazo de {{ $relojC['plazo'] }}"><i class="bi bi-clock" aria-hidden="true"></i>{{ $relojC['texto'] }}</span>
+                            @endif
+                            @if ($c->autocaptura_pendiente)
+                                <span class="pastilla-revisar"><i class="bi bi-phone me-1" aria-hidden="true"></i>Por revisar</span>
+                            @elseif ($c->solicitud_corta)
+                                <span class="pastilla-revisar"><i class="bi bi-file-earmark-text me-1" aria-hidden="true"></i>Solicitud incompleta</span>
+                            @endif
+                            {{-- Fase 3: caducidad --}}
+                            @if ($c->borrar_en && ! $c->contratado())
+                                <span class="pastilla-revisar"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>Se borra el {{ $c->borrar_en->format('d/m/Y') }}</span>
+                            @elseif ($c->archivada_en)
+                                <span class="pastilla-origen"><i class="bi bi-archive me-1" aria-hidden="true"></i>Archivada</span>
+                            @endif
+                        </div>
+                        <h2 class="ficha-title">{{ $c->nombre_completo }}</h2>
+                        <div class="datos-candidato">
+                            <span><i class="bi bi-briefcase" aria-hidden="true"></i> {{ $c->puestoVisible() ?? 'Puesto sin definir' }}</span>
+                            @if ($c->vacantePublicada)<span class="dato-vacante"><i class="bi bi-megaphone" aria-hidden="true"></i> Vacante: {{ $c->vacantePublicada->titulo }}</span>@endif
+                            @if ($c->departamento)<span><i class="bi bi-diagram-2" aria-hidden="true"></i> {{ $c->departamento->nombre }}</span>@endif
+                            @if ($sedes->count() > 1)<span><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ $c->sede?->nombre }}</span>@endif
+                            <span><i class="bi bi-clock" aria-hidden="true"></i> Llegó: @fecha($c->llegada_en ?? $c->created_at) · {{ Candidato::ORIGENES[$c->origen] ?? $c->origen }}</span>
+                        </div>
+                        <div class="texto-traza mt-2"><i class="bi bi-plus-circle" aria-hidden="true"></i> Creado por {{ $c->registradoPor?->name ?? 'el candidato (kiosco)' }} · @fecha($c->created_at)</div>
+                        @if ($c->editadoPor && $c->updated_at?->ne($c->created_at))
+                            <div class="texto-traza"><i class="bi bi-clock-history" aria-hidden="true"></i> Editado por {{ $c->editadoPor->name }} · @fecha($c->updated_at)</div>
+                        @endif
+                    </div>
+                    <span class="ver-ficha-candidato">Abrir ficha <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+                </a>
+            @empty
+                <div class="tarjeta estado-vacio">
+                    <div class="icono"><i class="bi bi-person-workspace" aria-hidden="true"></i></div>
+                    <p class="text-muted small m-0">
+                        @if ($hayFiltros)
+                            Sin candidatos con esos filtros.
+                        @else
+                            Todavía no hay candidatos. Llegan solos cuando la caseta registra a alguien que viene a Recursos Humanos como candidato. @if ($puede['crear'])También puedes capturarlo con <strong>Nuevo candidato</strong>.@endif
+                        @endif
+                    </p>
+                </div>
+            @endforelse
+        </div>
+        <div class="mt-4">{{ $lista->onEachSide(1)->links('pagination::bootstrap-5') }}</div>
+
+        @if ($puede['crear'] && $sedesAlta->isNotEmpty())
+            <dialog id="dialogoCandidato" class="dialogo ancho" aria-labelledby="titulo-candidato" @if ($reabrir) data-abrir-al-cargar @endif>
+                <div class="dialogo-cabecera">
+                    <h2 id="titulo-candidato"><i class="bi bi-person-plus-fill me-2 text-success" aria-hidden="true"></i>Nuevo candidato</h2>
+                    <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                </div>
+                <div class="dialogo-cuerpo">
+                    <form action="{{ route('candidatos.store') }}" method="POST" autocomplete="off" data-form-cv>
+                        @csrf
+                        <input type="hidden" name="_dialogo" value="candidato">
+                        @if ($reabrir && $errors->any())
+                            <div class="alert alert-danger small py-2 px-3" role="alert"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>Revisa los datos:
+                                <ul class="mb-0 ps-3">@foreach ($errors->all() as $m)<li>{{ $m }}</li>@endforeach</ul>
+                            </div>
+                        @endif
+                        <p class="small text-muted">Captura lo esencial; lo demás se completa después en su ficha. Si el candidato está aquí, también puede llenarlo él mismo en el <strong>kiosco</strong>.</p>
+                        @if ($sedesAlta->count() === 1)
+                            <input type="hidden" name="sede_id" value="{{ $sedesAlta->first()->id }}">
+                            <p class="linea-empresa mb-3"><i class="bi bi-geo-alt-fill me-1" aria-hidden="true"></i>Sede: <strong>{{ $sedesAlta->first()->nombre }}</strong></p>
+                        @else
+                            <label class="campo-etiqueta" for="cand_sede">Sede *</label>
+                            <select id="cand_sede" name="sede_id" class="campo" required>
+                                <option value="">-- Seleccionar --</option>
+                                @foreach ($sedesAlta as $s)
+                                    <option value="{{ $s->id }}" @selected((string) old('sede_id') === (string) $s->id)>{{ $s->nombre }}</option>
+                                @endforeach
+                            </select>
+                        @endif
+                        @include('rh.candidatos._cv', ['c' => null, 'id' => 'nuevo_cv', 'kiosco' => false, 'conOld' => $reabrir, 'pidePrivacidad' => true, 'pideFirma' => true, 'duplicado' => route('candidatos.duplicado')])
+                        <div class="dialogo-acciones">
+                            <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
+                            <button type="submit" class="btn-verde">Guardar candidato</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        @endif
+    @endif
+</div>
+@endsection

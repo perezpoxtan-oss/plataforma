@@ -1,0 +1,220 @@
+---
+titulo: Etiquetas QR
+modulos: [etiquetas_qr]
+seccion: Padrones
+orden: 100
+resumen: Imprimir de una sola vez las etiquetas QR de llaves, gafetes, equipos, vehículos, colaboradores y más; ver el historial y configurar los tamaños.
+---
+
+# Etiquetas QR
+
+**¿Para qué sirve?** Aquí imprimes **de una sola vez** las etiquetas con código QR de tus llaves, gafetes, equipos, vehículos, colaboradores, artículos de Lost & Found y procedimientos. Pegas la etiqueta y, desde ese momento, la caseta encuentra el registro **escaneándolo** con la cámara del celular o con el lector. Tiene tres pestañas: **Imprimir**, **Historial** y **Plantillas**.
+
+![Etiquetas QR](img/etiquetas-qr/01-imprimir.png)
+
+> Si solo necesitas **una** etiqueta, ábrela desde la ficha del registro con la **impresora** o con el botón del QR (**Código e identificación** → **Imprimir etiqueta**). Las hojas propias de cada padrón (llavero, gafete doble vista, calcomanía) traen el botón **Imprimir con una plantilla de Etiquetas QR**, que te trae aquí con esos mismos registros.
+
+## Antes de empezar
+
+- Cada tipo de registro aparece solo si puedes **ver** ese módulo y además **imprimir** en él (en Colaboradores y Procedimientos se pide poder **editar**). Si no ves un tipo, pide ese permiso a tu administrador.
+- Si no tienes permiso de imprimir en ningún módulo, verás «No tienes permiso de imprimir etiquetas de ningún módulo.».
+- Solo ves lo de **tus sedes**. Los vehículos y los procedimientos son de toda la empresa: si eliges una sede, no aparecen.
+- La pestaña **Plantillas** solo la ve quien puede configurar las etiquetas (por ejemplo el administrador o el jefe de seguridad).
+
+## Cómo imprimir varias etiquetas
+
+1. Entra a **Padrones → Etiquetas QR**. Se abre la pestaña **Imprimir**.
+2. Arriba toca el **tipo** (por ejemplo **Llaves**; también hay **Personas externas** y **Empresas externas**). El número junto a cada tipo dice cuántos hay.
+3. Si quieres, escribe en **Nombre, placas, serie, número...**, elige la sede, el estatus (**Solo activos**, **Solo de baja** o **Activos y de baja**) y las fechas **Alta desde** / **hasta**. Los filtros se aplican solos al elegir o al dejar de escribir, igual que en los padrones (el botón **Buscar** queda por si lo prefieres). **Quitar filtros** los limpia.
+   La búsqueda revisa todo el padrón: aunque tengas miles de registros, encuentra el que buscas (se muestran hasta 500 por tipo; si son más, acota con la búsqueda o la sede).
+4. Marca las casillas de las etiquetas que quieras, o **Marcar todas**.
+5. Elige la **Plantilla** (el tamaño). Debajo se ve su medida, por ejemplo «40 × 25 mm · rollo térmico, una por página». La plataforma recuerda la última que usaste.
+6. Toca **Imprimir** (muestra cuántas llevas). Se abre otra pestaña: **Etiquetas QR listas**.
+7. Lee el recuadro amarillo **Antes de imprimir** y toca **Imprimir Etiquetas**. En la ventana de la impresora elige **«Tamaño real»** o **«Escala 100 %»** (no «Ajustar a la página»): es la causa más común de etiquetas mal medidas. **Volver a Etiquetas QR** te regresa.
+
+   ![Recordatorio de escala en la hoja](img/etiquetas-qr/10-hoja-padron-recordatorio.png)
+
+![Algunas marcadas](img/etiquetas-qr/02-seleccion.png)
+
+![Hoja lista para imprimir](img/etiquetas-qr/03-hoja.png)
+
+**Qué debes ver:** cada etiqueta con su **QR**, el **nombre** de lo que identifica (por ejemplo `HDC-101`, `ABC123A` o `Serie: RAD-8829`) y un **código** en letras para escribirlo a mano si el QR se daña. La impresión queda guardada en el **Historial**.
+
+Puedes imprimir hasta **200** etiquetas a la vez.
+
+### Qué plantilla usar
+
+- **Llavero pequeño** (40 × 25 mm): llaveros.
+- **Etiqueta 50 × 25 mm**: la de las impresoras de etiquetas más comunes.
+- **Gafete**: tamaño credencial.
+- **Calcomanía vehicular**: para el parabrisas.
+
+Con **rollo térmico** (Zebra, Brother…) cada etiqueta sale en su propia página; con **hoja carta o A4** se acomodan en la planilla (por ejemplo 3 columnas × 10 filas).
+
+## Cómo ver el historial y reimprimir
+
+1. Toca la pestaña **Historial**. Ves cada impresión: número, fecha, quién la hizo, plantilla y qué etiquetas llevaba.
+2. Para encontrar una, escribe en **Buscar una etiqueta (nombre, placas...)** o usa **Todos los usuarios**, **Todas las plantillas**, **Desde** y **Hasta**. Toca **Buscar**.
+3. **Ver hoja** vuelve a abrir esa misma hoja.
+4. **Imprimir otra vez** abre **Imprimir otra vez la impresión núm. …** con sus etiquetas marcadas:
+   - Quita la marca de las que no necesitas (por ejemplo, deja solo la que se dañó).
+   - En **Plantilla** deja **La misma de la impresión original** o elige otra.
+   - Toca **Imprimir otra vez**.
+
+![Historial](img/etiquetas-qr/04-historial.png)
+
+![Reimprimir solo algunas](img/etiquetas-qr/05-reimprimir.png)
+
+**Qué debes ver:** se abre la hoja y se guarda como una impresión nueva, marcada «Reimpresión de la núm. …». Solo ves las impresiones de tus sedes (o las que tú hiciste) y de los tipos que puedes imprimir.
+
+## Cómo hacer que los padrones impriman con estas plantillas
+
+Llaves, Gafetes, Vehículos, Equipos de seguridad y Equipos de Protección Civil tienen su propia hoja de impresión (llavero, gafete doble vista, calcomanía…). Quien configura plantillas para **toda la empresa** puede elegir un solo camino:
+
+1. En la pestaña **Plantillas**, busca el recuadro **¿Cómo imprimen Llaves, Gafetes, Vehículos y Equipos?**.
+2. Elige:
+   - **Hoja propia de cada padrón (como siempre)**: cada padrón imprime su hoja de siempre.
+   - **Plantillas de Etiquetas QR (un solo camino, con historial y reimpresión)**: el botón de imprimir de cada padrón abre aquí la hoja con la plantilla de ese tipo (la última que usaste o la de siempre: llavero para llaves, gafete para gafetes, calcomanía para vehículos) y la impresión queda en el **Historial**.
+3. Toca **Guardar**.
+
+![¿Cómo imprimen los padrones?](img/etiquetas-qr/09-impresion-padrones.png)
+
+**Qué debes ver:** «Listo: los botones de imprimir de Llaves, Gafetes, Vehículos y Equipos usarán estas plantillas y quedarán en el Historial.» (o «…cada padrón vuelve a imprimir su hoja propia.»).
+
+## Cómo crear o ajustar una plantilla
+
+1. Toca la pestaña **Plantillas**. Ya vienen las de siempre; puedes **Editar** cualquiera o tocar **Nueva plantilla**.
+2. **1. Nombre y lugar:** escribe el **Nombre de la plantilla** (por ejemplo «Zebra 2 × 1 pulgadas») y en **¿Quién la usa?** elige **Toda la empresa** o una sede.
+3. **2. Papel:** elige el **Formato**:
+   - **Rollo térmico (una etiqueta por página):** escribe **Ancho** y **Alto de la etiqueta (mm)**.
+   - **Hoja carta o A4 con planilla de etiquetas:** elige la **Hoja** y escribe columnas, filas, márgenes y separación. 1 pulgada = 25.4 mm.
+4. **3. Contenido:** elige la **Orientación** (QR a la izquierda o arriba), el **Tamaño del QR (mm)** (mínimo 8 mm) y los **Datos visibles** (nombre, código legible, tipo, departamento / sede, fecha de impresión, logo).
+5. Revisa la **Vista previa**: se acomoda mientras escribes y te avisa si algo **no cabe**.
+6. Toca **Crear plantilla** (o **Guardar cambios**).
+
+![Nueva plantilla](img/etiquetas-qr/07-plantilla-nueva.png)
+
+**Qué debes ver:** «Plantilla «…» creada. Imprime una hoja de prueba para revisar que las medidas coincidan con tu papel.»
+
+![Plantillas](img/etiquetas-qr/06-plantillas.png)
+
+- **Hoja de prueba** imprime una página con etiquetas de ejemplo (no se guarda en el historial). Úsala antes de imprimir muchas.
+- El texto se acomoda solo: el nombre se imprime en un renglón o, si es largo, en dos sin partir palabras; el código para teclear siempre sale completo. Si una etiqueta es muy chica, el texto se hace más pequeño en lugar de cortarse: si no se lee bien, sube **Ancho** o baja el **Tamaño del QR** en la plantilla.
+- Si eres **jefe de una sede** (por ejemplo, Jefe de seguridad), también ves el botón **Hoja de prueba** en las plantillas de **toda la empresa**, aunque no puedas cambiarlas. Así calibras la impresora de tu sede sin pedir ayuda.
+- **Desactivar** quita la plantilla de la lista al imprimir (se puede volver a **Activar**).
+
+## Cómo imprimir una hoja de prueba
+
+1. Entra a **Padrones → Etiquetas QR** y toca la pestaña **Plantillas**.
+2. Busca la plantilla que vas a usar. Las de toda la empresa dicen «De toda la empresa: solo la cambia quien administra toda la empresa»; las de tu sede traen además **Editar** y **Desactivar**.
+3. Toca **Hoja de prueba**. Se abre una pestaña nueva con etiquetas de ejemplo de distinto largo («EJEMPLO-01», «Llave 101», un nombre de persona, un vehículo…), para que veas cómo se acomoda el texto en cada caso.
+4. Imprime esa página en la impresora de etiquetas, eligiendo **Tamaño real / 100 %**.
+5. Compara con tu papel: si las etiquetas se recorren o no caben, pide a quien administra la plantilla que ajuste las medidas (o ajústala tú si es de tu sede).
+
+![Plantillas](img/etiquetas-qr/06-plantillas.png)
+
+**Qué debes ver:** una página que dice que la hoja de prueba no se guarda en el historial, con una etiqueta de ejemplo en cada lugar de la plantilla.
+
+## Lo que ve el agente de caseta
+
+El agente imprime solo lo que puede imprimir (por ejemplo las etiquetas de Lost & Found) y no ve la pestaña Plantillas.
+
+![Vista del agente](img/etiquetas-qr/11-agente.png)
+
+## Qué pasa al escanear una etiqueta con la cámara del celular
+
+Si escaneas el QR **con la cámara del celular, fuera de la plataforma** (sin abrir antes ninguna pantalla), la plataforma te ofrece **lo que probablemente vas a hacer**:
+
+| Escaneas… | Te ofrece |
+|---|---|
+| Una **llave prestada** | **Recibir** (y te dice quién la tiene y qué garantía devolver). |
+| Una **llave en caseta** | **Prestar**: abre «Prestar Llave» con esa llave ya elegida; solo escaneas el gafete. |
+| Un **equipo en una responsiva** | **Recibir (OK)**, o **Viene dañado o falta: abrir la responsiva**. |
+| Un **gafete en uso** | Te lleva directo a **Dar salida** en la Bitácora de accesos. |
+| Un **colaborador**, un **vehículo**, una **persona** o una **empresa externa** que **está en sitio** | **Dar salida**: abre la Bitácora de accesos con su tarjeta ya buscada; revisas el gafete y la identificación y confirmas. |
+| Un **colaborador**, un **vehículo**, una **persona** o una **empresa externa** que **no está en sitio** | **Nuevo ingreso**: abre el Registro Inteligente de Ingreso con sus datos ya elegidos; revisas y guardas. |
+| Alguien con el **acceso restringido** | Solo el aviso en rojo (con el motivo) y **Solo ver la ficha**. |
+| Cualquier otra cosa | Abre su ficha, como siempre. |
+
+Siempre puedes tocar **Solo ver la ficha**. Si tu rol no puede hacer esa acción (por ejemplo, no recibe llaves en esa sede), se abre la ficha.
+
+![Acción al escanear una llave prestada](img/etiquetas-qr/12-escanear-llave.png)
+
+## Qué celulares leen NFC
+
+- **Android con Chrome:** lee el **QR con la cámara** y también las etiquetas **NFC** (botón de la antena).
+- **App de la plataforma para Android:** lee el **QR** y las etiquetas **NFC** igual que Chrome, **sin pedir permisos del navegador**. Mientras la app está abierta, acercar una etiqueta **no te saca de la app**: la lee la pantalla en la que estás. Ver «Cómo leer una etiqueta NFC con la app de Android».
+- **iPhone:** lee el **QR con la cámara**, pero **no** las etiquetas NFC desde la plataforma. Para NFC en una caseta con iPhone, usa un **lector USB o Bluetooth** que «escribe como teclado».
+- **Recomendación al comprar equipo para la caseta:** si van a usar etiquetas NFC, elige celulares **Android** o un lector USB/Bluetooth; si solo usarán QR, cualquier celular con cámara sirve. Pega en la caseta una nota con lo que usa cada equipo.
+
+## Cómo leer una etiqueta NFC con la app de Android
+
+**Antes de empezar:** el **NFC del teléfono debe estar encendido**. En **Ajustes → Conexiones** (o **Dispositivos conectados**) activa **NFC**. En teléfonos Samsung el interruptor se llama **NFC y pagos sin contacto**.
+
+**Con la app abierta (en una pantalla con lector):**
+
+1. Toca el botón de la antena junto al campo de búsqueda.
+2. Acerca la etiqueta a la **parte trasera** del teléfono, a la altura de la cámara, y no la muevas hasta que se lea.
+
+**Qué debes ver:** el registro de la etiqueta queda elegido en el campo (o se guarda la etiqueta, si la estás asignando). No se abre el navegador ni otra app.
+
+Si acercas una etiqueta de la plataforma **sin tocar la antena**, la app abre la ficha o la acción de ese registro ahí mismo, como si la hubieras escaneado.
+
+**Con la app cerrada o en segundo plano:** acerca la etiqueta al teléfono desbloqueado. Se abre **la app** directamente en la ficha o en la acción de ese registro (si te pide entrar, entra y te lleva ahí).
+
+Mientras la app está abierta, el teléfono no paga con NFC: si necesitas pagar con el celular, sal de la app primero.
+
+## En el celular y en los modos Noche y Sol
+
+![En el celular](img/etiquetas-qr/08-movil.png)
+
+![Historial en modo Noche](img/etiquetas-qr/09-historial-noche.png)
+
+![Modo Sol](img/etiquetas-qr/10-sol.png)
+
+## Si algo sale mal
+
+| Mensaje o síntoma | Qué significa | Qué hacer |
+|---|---|---|
+| Marca al menos un registro para imprimir sus etiquetas. | Tocaste **Imprimir** sin marcar nada. | Marca las casillas. |
+| Marca al menos una etiqueta para reimprimir. | Quitaste todas las marcas al reimprimir. | Deja marcada al menos una. |
+| El botón **Imprimir** está apagado. | No hay nada marcado, o marcaste más de 200. | Marca de 1 a 200 etiquetas. |
+| No tienes permiso de imprimir etiquetas de ningún módulo. | Tu rol no imprime en ningún módulo. | Pide el permiso «Imprimir» del módulo a tu administrador. |
+| No aparecen los vehículos. | Elegiste una sede y los vehículos son de toda la empresa. | Deja **Todas las sedes**. |
+| Escribe un nombre para la plantilla (por ejemplo «Zebra 2 × 1 pulgadas»). | La plantilla no tiene nombre. | Escribe un nombre. |
+| La etiqueta debe medir al menos 15 mm de ancho. / al menos 10 mm de alto. | La medida es muy pequeña. | Corrige la medida. |
+| La vista previa dice que algo no cabe. | Las etiquetas no caben en la hoja con esas medidas. | Reduce columnas, filas, márgenes o separación. |
+| Es la única plantilla activa de toda la empresa: activa otra antes de desactivar esta (sin plantillas no se podría imprimir). | Intentaste desactivar la última plantilla. | Activa otra primero. |
+| No veo el botón **Hoja de prueba**. | Tu rol no puede configurar etiquetas, o la plantilla es de otra sede. | Pide a tu administrador el permiso «Configurar» de Etiquetas QR. |
+| Las etiquetas salen más chicas o más grandes. | La impresora está ajustando el tamaño. | Elige **Tamaño real / 100 %** en la impresora. |
+| Enciende el NFC del teléfono y vuelve a tocar el botón de NFC. | En la app de Android, el NFC está apagado. | Toca **Abrir ajustes de NFC**, enciende **NFC** (en Samsung, **NFC y pagos sin contacto**), regresa a la app y toca otra vez la antena. |
+| Este teléfono no tiene NFC. | El teléfono no puede leer etiquetas NFC. | Usa la cámara (QR) o un lector USB o Bluetooth. |
+| Actualiza la app para leer etiquetas NFC. | Tu app de Android es anterior a la lectura de NFC. | Pide a tu administrador la versión nueva de la app e instálala. |
+| Al acercar una etiqueta con la app cerrada se abre el navegador. | El NFC está apagado o la app no es la más reciente. | Revisa que el NFC esté encendido y que tengas la versión nueva de la app. |
+
+## Preguntas frecuentes
+
+**¿El QR cambia si reimprimo?** No. El QR de cada registro siempre es el mismo; puedes reimprimirlo cuantas veces quieras.
+
+**¿El QR lleva datos personales?** No. Solo abre la ficha, y solo con una sesión de tu empresa.
+
+**¿Por qué no veo algún tipo de registro?** Porque te falta ver o imprimir en ese módulo. Pide el permiso a tu administrador.
+
+**¿Un jefe de sede puede imprimir la hoja de prueba de una plantilla de toda la empresa?** Sí. Puede imprimirla y usar la plantilla, pero no cambiarla ni desactivarla.
+
+**¿Por qué en el iPhone no aparece el botón de la antena?** Porque el iPhone no deja leer NFC desde el navegador. Usa la cámara (QR) o un lector USB o Bluetooth.
+
+**¿La app de Android me pide permiso para usar el NFC?** No. Solo necesita que el NFC del teléfono esté encendido.
+
+**¿Por qué al acercar una etiqueta ya no se abre el navegador?** Porque, con la app abierta, la app lee todas las etiquetas para que no te saque de la pantalla en la que estás.
+
+**¿Qué hago si el QR se daña?** Escribe a mano el código en letras que trae la etiqueta, o reimprímela desde el Historial.
+
+## Relacionado
+
+- [Catálogo de llaves](llaves.md)
+- [Préstamo de llaves](prestamo-llaves.md)
+- [Responsivas](responsivas.md)
+- [Gafetes](gafetes.md)
+- [Padrón vehicular](vehiculos.md)
+- [Equipos de seguridad](equipos.md)

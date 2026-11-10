@@ -1,0 +1,483 @@
+<?php
+
+namespace Tests\Feature\SeguridadAuditoria;
+
+use App\Console\Commands\CrearDatosDemo;
+use App\Models\AccidenteFirma;
+use App\Models\Colaborador;
+use App\Models\Credencial;
+use App\Models\Empresa;
+use App\Models\Equipo;
+use App\Models\EquipoPc;
+use App\Models\Espacio;
+use App\Models\EtiquetaPlantilla;
+use App\Models\Gafete;
+use App\Models\ImpresionEtiquetas;
+use App\Models\Llave;
+use App\Models\LostFoundArticulo;
+use App\Models\LostFoundEntrega;
+use App\Models\Modulo;
+use App\Models\MovimientoTransporte;
+use App\Models\Novedad;
+use App\Models\PaseSalida;
+use App\Models\PaseSalidaFirma;
+use App\Models\Persona;
+use App\Models\Proveedor;
+use App\Models\RecorridoPc;
+use App\Models\Responsiva;
+use App\Models\Ruta;
+use App\Models\Sede;
+use App\Models\User;
+use App\Models\Vehiculo;
+use App\Models\VoucherReposicion;
+use App\Services\Borrado\RegistroBorrado;
+use App\Services\Importacion\AdministradorImportaciones;
+use App\Services\Informes\Tablero;
+use App\Services\Informes\Tendencias;
+use App\Support\Tenancy\EmpresaDeTrabajo;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Log\Events\MessageLogged;
+use Illuminate\Routing\Route;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route as Rutas;
+use Illuminate\Support\Str;
+use Tests\Feature\Nucleo\CreaDatosNucleo;
+use Tests\TestCase;
+use Throwable;
+
+/**
+ * Revisión funcional 2026-10-06: recorre TODAS las rutas GET de la aplicación
+ * con cada usuario demo (y el Super Administrador, con y sin empresa activa)
+ * resolviendo los parámetros con registros reales de la empresa demo.
+ *
+ * Nunca debe haber un 500, un aviso de PHP (Laravel los convierte en
+ * excepción) ni texto de error crudo en la página. Las respuestas válidas son
+ * 200/204, 302 (validación o redirección), 403 (sin permiso), 404 (no es de
+ * su sede o no existe) y 422 (validación JSON).
+ */
+class RecorridoPantallasTest extends TestCase
+{
+    use CreaDatosNucleo, RefreshDatabase;
+
+    /** Rutas que no son pantallas de la aplicación. */
+    private const OMITIR = ['storage.local', 'login', 'sesion.expirada',
+        // Decisión 10: llamadas de los equipos de acceso (sin número de serie responden 400; sus pruebas están en tests/Feature/EquiposAcceso)
+        'equipos.zkteco.cdata', 'equipos.zkteco.getrequest'];
+
+    /** Texto que delata un error de PHP o de base de datos en la página. */
+    private const TEXTO_DE_ERROR = [
+        'Undefined variable', 'Undefined array key', 'Undefined index', 'Undefined property',
+        'Undefined offset', 'SQLSTATE', 'ErrorException', 'Stack trace', 'Call to a member function',
+        'Call to undefined', 'must be of type', 'Attempt to read property', 'Whoops',
+        'htmlspecialchars()', 'Array to string conversion', '[object Object]',
+    ];
+
+    private Empresa $empresa;
+
+    /** @var list<string> */
+    private array $avisos = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->sembrarCatalogo();
+        $this->artisan('plataforma:demo', ['--password' => 'Demo1234!'])->assertSuccessful();
+        $this->empresa = Empresa::where('nombre_comercial', CrearDatosDemo::EMPRESA)->firstOrFail();
+
+        // Cualquier aviso registrado (incluye "deprecated" de PHP) cuenta como falla
+        config(['logging.deprecations' => ['channel' => 'null', 'trace' => false]]);
+        Event::listen(MessageLogged::class, function (MessageLogged $e): void {
+            if (in_array($e->level, ['warning', 'error', 'critical', 'alert', 'emergency'], true)
+                || str_contains(strtolower($e->message), 'deprecated')) {
+                $this->avisos[] = "[{$e->level}] ".Str::limit($e->message, 300);
+            }
+        });
+    }
+
+    public function test_cada_rol_demo_recorre_todas_las_pantallas_sin_errores(): void
+    {
+        $fallas = [];
+        $visitas = 0;
+
+        foreach (array_keys(CrearDatosDemo::USUARIOS) as $usuario) {
+            $actor = User::where('username', $usuario)->firstOrFail();
+            [$f, $v] = $this->recorrer($actor, $usuario);
+            $fallas = array_merge($fallas, $f);
+            $visitas += $v;
+        }
+
+        $this->assertGreaterThan(500, $visitas, 'El recorrido debe cubrir todas las rutas con todos los roles');
+        $this->assertSame([], $fallas, "Fallas del recorrido:\n".implode("\n", $fallas));
+        $this->assertSame([], $this->avisos, "Avisos de PHP o del log:\n".implode("\n", $this->avisos));
+    }
+
+    public function test_super_administrador_recorre_todas_las_pantallas_con_y_sin_empresa_activa(): void
+    {
+        $super = $this->crearSuperadmin();
+
+        [$sinEmpresa] = $this->recorrer($super, 'superadmin (plantillas)');
+        [$conEmpresa] = $this->recorrer($super, 'superadmin (Hotel Demo)', [EmpresaDeTrabajo::SESION => $this->empresa->id]);
+
+        $fallas = array_merge($sinEmpresa, $conEmpresa);
+        $this->assertSame([], $fallas, "Fallas del recorrido:\n".implode("\n", $fallas));
+        $this->assertSame([], $this->avisos, "Avisos de PHP o del log:\n".implode("\n", $this->avisos));
+    }
+
+    /**
+     * Una empresa recién dada de alta (sin sedes ni registros) y un usuario
+     * sin ningún rol: las pantallas vacías no deben romperse, y los registros
+     * de la empresa demo (ids reales) nunca se le muestran (404/403).
+     */
+    public function test_empresa_nueva_sin_datos_y_usuario_sin_rol_no_rompen_ni_ven_lo_ajeno(): void
+    {
+        $nueva = $this->crearEmpresa('Hotel Vacío');
+        $admin = $this->crearUsuario($nueva, 'Administrador');
+        $sinRol = $this->crearUsuario($nueva);
+
+        [$f1] = $this->recorrer($admin, 'admin empresa nueva', [], true);
+        [$f2] = $this->recorrer($sinRol, 'usuario sin rol', [], true);
+
+        $fallas = array_merge($f1, $f2);
+        $this->assertSame([], $fallas, "Fallas del recorrido:\n".implode("\n", $fallas));
+        $this->assertSame([], $this->avisos, "Avisos de PHP o del log:\n".implode("\n", $this->avisos));
+    }
+
+    /**
+     * @param  array<string, mixed>  $sesion
+     * @return array{0: list<string>, 1: int}
+     */
+    private function recorrer(User $actor, string $etiqueta, array $sesion = [], bool $ajena = false): array
+    {
+        $fallas = [];
+        $visitas = 0;
+
+        foreach ($this->rutasGet() as $ruta) {
+            // Lección 36: la bolsa de trabajo (/empleos) es pública a propósito (cualquiera ve las vacantes publicadas)
+            // Lección 37: el Manual (páginas e imágenes de docs/usuario) no es de ninguna empresa
+            // Olvidé mi contraseña: el enlace del correo no abre ningún registro (sin sesión; con sesión rebota al panel)
+            $conRegistro = $ruta->parameterNames() !== [] && $ruta->getName() !== 'modulos.pendiente' && ! str_starts_with((string) $ruta->getName(), 'empleos.')
+                && ! str_starts_with((string) $ruta->getName(), 'manual.') && ! str_starts_with((string) $ruta->getName(), 'contrasena.')
+                // Privacidad: el aviso de cada empresa y su formulario ARCO son públicos a propósito (como la bolsa de trabajo)
+                && ! in_array($ruta->getName(), ['privacidad.aviso', 'privacidad.empresa.solicitud'], true)
+                // Importar desde Excel: {tipo} es el módulo (colaboradores, zonas…), no un registro
+                && ! in_array($ruta->getName(), ['importaciones.create', 'importaciones.plantilla'], true);
+            foreach ($this->urlsDe($ruta) as [$url, $json]) {
+                $visitas++;
+                $this->app['auth']->forgetGuards();
+                $peticion = $this->actingAs($actor)->withSession($sesion);
+                try {
+                    $respuesta = $json ? $peticion->getJson($url) : $peticion->get($url);
+                } catch (Throwable $e) {
+                    $fallas[] = "{$etiqueta} GET {$url} => excepción ".get_class($e).': '.Str::limit($e->getMessage(), 300);
+
+                    continue;
+                }
+
+                $codigo = $respuesta->getStatusCode();
+                if (getenv('RECORRIDO_DEBUG')) {
+                    fwrite(STDERR, "{$etiqueta}\t{$codigo}\t{$url}\t".($respuesta->headers->get('Location') ?? '')."\n");
+                }
+                if (! in_array($codigo, [200, 204, 301, 302, 403, 404, 422], true)) {
+                    $detalle = $respuesta->exception ? get_class($respuesta->exception).': '.Str::limit($respuesta->exception->getMessage(), 400) : '';
+                    $fallas[] = "{$etiqueta} GET {$url} => {$codigo} {$detalle}";
+
+                    continue;
+                }
+
+                if ($ajena && $conRegistro) {
+                    $final = $codigo;
+                    if (in_array($codigo, [301, 302], true)) {
+                        // Sin JavaScript algunas fichas redirigen a la lista con ?id=: el destino tampoco debe abrir el registro ajeno
+                        $this->app['auth']->forgetGuards();
+                        $final = $this->actingAs($actor)->withSession($sesion)->get((string) $respuesta->headers->get('Location'))->getStatusCode();
+                    }
+                    if (in_array($final, [200, 204], true)) {
+                        $fallas[] = "{$etiqueta} GET {$url} => {$codigo}/{$final}: un registro de otra empresa no debe abrirse";
+                    }
+                }
+
+                $tipo = (string) $respuesta->headers->get('Content-Type');
+                if ($codigo === 200 && (str_contains($tipo, 'html') || str_contains($tipo, 'json'))) {
+                    $cuerpo = (string) $respuesta->getContent();
+                    foreach (self::TEXTO_DE_ERROR as $texto) {
+                        if (str_contains($cuerpo, $texto)) {
+                            $fallas[] = "{$etiqueta} GET {$url} => contiene «{$texto}»";
+                        }
+                    }
+                }
+            }
+        }
+
+        return [$fallas, $visitas];
+    }
+
+    /**
+     * @return list<Route>
+     */
+    private function rutasGet(): array
+    {
+        return collect(Rutas::getRoutes()->getRoutes())
+            ->filter(fn (Route $r) => in_array('GET', $r->methods(), true))
+            ->reject(fn (Route $r) => in_array($r->getName(), self::OMITIR, true) || $r->uri() === 'up')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Una o varias URL por ruta: con el primer registro de la empresa demo y,
+     * cuando importa, con uno que sí tenga lo que la pantalla muestra (firma…).
+     *
+     * @return list<array{0: string, 1: bool}>
+     */
+    private function urlsDe(Route $ruta): array
+    {
+        $nombre = (string) $ruta->getName();
+        $parametros = $ruta->parameterNames();
+        $extras = $this->consultaExtra($nombre);
+
+        if ($parametros === []) {
+            $urls = [[route($nombre), false]];
+            foreach ($extras as [$consulta, $json]) {
+                $urls[] = [route($nombre).'?'.http_build_query($consulta), $json];
+            }
+
+            return $urls;
+        }
+
+        $urls = [];
+        foreach ($this->juegosDeParametros($nombre) as $juego) {
+            $urls[] = [route($nombre, $juego), false];
+        }
+        // Un id que no existe: debe ser 404, nunca 500
+        $inexistente = array_map(fn ($p) => match ($p) {
+            'rol' => 'afectado', 'cual' => 'guardia', 'pantalla' => 'qr', 'codigo' => 'noexiste0000', 'clave' => 'no_existe', 'archivo' => 'no-existe.sql.gz',
+            default => 999999,
+        }, array_combine($parametros, $parametros));
+        $urls[] = [route($nombre, $inexistente), false];
+
+        return $urls;
+    }
+
+    /**
+     * @return list<array<string, int|string>>
+     */
+    private function juegosDeParametros(string $nombre): array
+    {
+        $e = $this->empresa->id;
+        $primero = fn (string $modelo, ?callable $filtro = null) => (function () use ($modelo, $filtro, $e) {
+            $q = $modelo::query()->withoutGlobalScopes()->where('empresa_id', $e)->orderBy('id');
+            if ($filtro) {
+                $filtro($q);
+            }
+
+            return $q->value('id');
+        })();
+        $ids = fn (array $valores) => array_values(array_unique(array_filter($valores)));
+
+        $juegos = match ($nombre) {
+            'colaboradores.datos-personales' => array_map(fn ($id) => ['colaborador' => $id], $ids([$primero(Colaborador::class)])),
+            'proveedores.show' => array_map(fn ($id) => ['proveedor' => $id], $ids([$primero(Proveedor::class)])),
+            'vehiculos.calcomania' => array_map(fn ($id) => ['vehiculo' => $id], $ids([$primero(Vehiculo::class)])),
+            'vehiculos.qr' => array_map(fn ($c) => ['codigo' => $c], array_filter([Vehiculo::withoutGlobalScopes()->where('empresa_id', $e)->value('codigo_qr')])),
+            'espacios.show', 'espacios.destinos' => array_map(fn ($id) => ['espacio' => $id], $ids([
+                $primero(Espacio::class),
+                $primero(Espacio::class, fn ($q) => $q->whereNotNull('padre_id')),
+                Espacio::withoutGlobalScopes()->where('empresa_id', $e)->orderByDesc('id')->value('id'),
+            ])),
+            'equipos.etiqueta', 'equipos.qr', 'pases-salida.equipo', 'responsivas.historial' => array_map(fn ($id) => ['equipo' => $id], $ids([$primero(Equipo::class)])),
+            'equipos_pc.etiqueta', 'equipos_pc.qr', 'equipos_pc.ir' => array_map(fn ($id) => ['equipo' => $id], $ids([$primero(EquipoPc::class)])),
+            'equipos_pc.anterior.equipo' => array_map(fn ($id) => ['equipo' => $id, 'pantalla' => 'etiqueta'], $ids([$primero(EquipoPc::class)])),
+            'rutas.sede', 'rutas.dia', 'rutas.semana', 'espacios.sede' => array_map(fn ($id) => ['sede' => $id], $ids([
+                $primero(Sede::class), Sede::withoutGlobalScopes()->where('empresa_id', $e)->orderByDesc('id')->value('id'),
+            ])),
+            'rutas.itinerario' => array_map(fn ($id) => ['ruta' => $id], $ids([$primero(Ruta::class)])),
+            'prestamo_llaves.historial' => array_map(fn ($id) => ['llave' => $id], $ids([$primero(Llave::class)])),
+            // C-20: la revisión «Antes de dar de baja» de un colaborador, una llave, un equipo y una sede
+            'bajas.revisar' => array_merge(
+                array_map(fn ($id) => ['tipo' => 'colaboradores', 'id' => $id], $ids([$primero(Colaborador::class)])),
+                array_map(fn ($id) => ['tipo' => 'llaves', 'id' => $id], $ids([$primero(Llave::class)])),
+                array_map(fn ($id) => ['tipo' => 'equipos', 'id' => $id], $ids([$primero(Equipo::class)])),
+                array_map(fn ($id) => ['tipo' => 'sedes', 'id' => $id], $ids([$primero(Sede::class)])),
+            ),
+            'vouchers.imprimir' => array_map(fn ($id) => ['voucher' => $id], $ids([$primero(VoucherReposicion::class)])),
+            'responsivas.firma', 'responsivas.hoja' => array_map(fn ($id) => ['responsiva' => $id], $ids([$primero(Responsiva::class)])),
+            // C-28: el ticket que ve el departamento (sin canalizar, el recorrido recibe 403 o 404, que es lo esperado)
+            'novedades.departamento.show' => array_map(fn ($id) => ['novedad' => $id], $ids([$primero(Novedad::class)])),
+            'novedades.imprimir', 'novedades.acuse', 'novedades.mostrar' => array_map(fn ($id) => ['novedad' => $id], $ids(
+                collect(array_keys(Novedad::CATEGORIAS))->map(fn ($cat) => $primero(Novedad::class, fn ($q) => $q->where('categoria', $cat)))->all()
+            )),
+            'novedades.firma' => AccidenteFirma::query()->withoutGlobalScopes()->whereIn('novedad_id', Novedad::withoutGlobalScopes()->where('empresa_id', $e)->select('id'))
+                ->limit(3)->get(['novedad_id', 'rol'])->map(fn ($f) => ['novedad' => $f->novedad_id, 'rol' => $f->rol])->all()
+                ?: [['novedad' => (int) $primero(Novedad::class), 'rol' => 'afectado']],
+            'pases-salida.show', 'pases-salida.imprimir' => array_map(fn ($id) => ['pase' => $id], $ids([
+                $primero(PaseSalida::class), PaseSalida::withoutGlobalScopes()->where('empresa_id', $e)->orderByDesc('id')->value('id'),
+            ])),
+            'pases-salida.firma' => PaseSalidaFirma::query()->withoutGlobalScopes()->whereIn('pase_salida_id', PaseSalida::withoutGlobalScopes()->where('empresa_id', $e)->select('id'))
+                ->limit(2)->get(['id', 'pase_salida_id'])->map(fn ($f) => ['pase' => $f->pase_salida_id, 'firma' => $f->id])->all(),
+            'pases-salida.verificar' => array_map(fn ($c) => ['codigo' => $c], array_filter([PaseSalida::withoutGlobalScopes()->where('empresa_id', $e)->value('codigo_verificacion')])),
+            'transporte.show', 'transporte.vale' => array_map(fn ($id) => ['movimiento' => $id], $ids([
+                $primero(MovimientoTransporte::class), MovimientoTransporte::withoutGlobalScopes()->where('empresa_id', $e)->orderByDesc('id')->value('id'),
+            ])),
+            'transporte.firma' => collect([$primero(MovimientoTransporte::class, fn ($q) => $q->whereNotNull('firma_guardia'))])->filter()
+                ->flatMap(fn ($id) => [['movimiento' => $id, 'cual' => 'guardia'], ['movimiento' => $id, 'cual' => 'taxista']])->all(),
+            'lost_found.articulos.show', 'lost_found.articulos.etiqueta' => array_map(fn ($id) => ['articulo' => $id], $ids([
+                $primero(LostFoundArticulo::class), LostFoundArticulo::withoutGlobalScopes()->where('empresa_id', $e)->orderByDesc('id')->value('id'),
+            ])),
+            'lost_found.entregas.firma' => array_map(fn ($id) => ['entrega' => $id], $ids([$primero(LostFoundEntrega::class)])),
+            'recorridos_pc.show' => array_map(fn ($id) => ['recorrido' => $id], $ids([
+                $primero(RecorridoPc::class), RecorridoPc::withoutGlobalScopes()->where('empresa_id', $e)->orderByDesc('id')->value('id'),
+            ])),
+            'modulos.pendiente' => Modulo::query()->where('activo', true)->pluck('clave')->map(fn ($c) => ['clave' => $c])->all(),
+            'lector.ir' => collect([Vehiculo::class, Equipo::class, EquipoPc::class, Llave::class, Gafete::class, Colaborador::class, LostFoundArticulo::class, Persona::class, Proveedor::class])
+                ->map(fn ($m) => $m::withoutGlobalScopes()->where('empresa_id', $e)->value('codigo_qr'))->filter()->map(fn ($c) => ['codigo' => $c])->values()->all(),
+            // Etapa 8 (C-44 y C-45): «Nuevo ingreso» desde el lector y «Entregas y recepciones»
+            'accesos.ingreso-desde-lector' => collect(['colaborador' => Colaborador::class, 'vehiculo' => Vehiculo::class, 'persona' => Persona::class, 'proveedor' => Proveedor::class])
+                ->map(fn ($m, $tipo) => ['tipo' => $tipo, 'id' => $primero($m)])->filter(fn ($j) => $j['id'] !== null)->values()->all(),
+            'credenciales.verificar' => Credencial::withoutGlobalScopes()->where('empresa_id', $e)->whereNotNull('codigo_qr')->limit(3)->pluck('codigo_qr')
+                ->map(fn ($c) => ['codigo' => $c])->all(),
+            'activos.historial' => collect(['llave' => Llave::class, 'gafete' => Gafete::class, 'equipo' => Equipo::class, 'credencial' => Credencial::class])
+                ->map(fn ($m, $tipo) => ['tipo' => $tipo, 'id' => $primero($m)])->filter(fn ($j) => $j['id'] !== null)->values()->all(),
+            'configuracion.respaldos.descargar' => [],
+            'traslado.descargar' => [], // enlace temporal firmado: se prueba en TrasladoTest
+            'empresas.exportaciones' => [['empresa' => $e]],
+            // Ronda 5: QR del diálogo "Código e identificación" (cada tipo del lector) y firmas de vouchers
+            'identificacion.qr', 'identificacion.etiqueta-duplicado' => collect(['vehiculo' => Vehiculo::class, 'equipo' => Equipo::class, 'equipo_pc' => EquipoPc::class, 'llave' => Llave::class,
+                'gafete' => Gafete::class, 'colaborador' => Colaborador::class, 'lost_found' => LostFoundArticulo::class, 'persona' => Persona::class, 'proveedor' => Proveedor::class])
+                ->map(fn ($m, $tipo) => ['tipo' => $tipo, 'id' => $primero($m)])->filter(fn ($j) => $j['id'] !== null)->values()->all(),
+            'vouchers.firma' => collect(['seguridad', 'responsable', 'hoja'])->map(fn ($p) => ['voucher' => $primero(VoucherReposicion::class), 'parte' => $p])
+                ->filter(fn ($j) => $j['voucher'] !== null)->values()->all(),
+            // Procedimientos: todos los de la demo (publicados, en revisión y borrador) y sus firmas y adjuntos
+            'procedimientos.show', 'procedimientos.leer', 'procedimientos.imprimir', 'procedimientos.acuses.exportar' => DB::table('procedimientos')
+                ->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['procedimiento' => $id])->all(),
+            'procedimientos.adjunto' => DB::table('procedimiento_adjuntos as a')->join('procedimiento_versiones as v', 'v.id', '=', 'a.version_id')
+                ->where('a.empresa_id', $e)->limit(2)->get(['v.procedimiento_id', 'a.id'])->map(fn ($f) => ['procedimiento' => $f->procedimiento_id, 'adjunto' => $f->id])->all(),
+            'procedimientos.versiones.firma' => DB::table('procedimiento_versiones')->where('empresa_id', $e)->whereNotNull('firma_ruta')->limit(2)
+                ->get(['procedimiento_id', 'id'])->map(fn ($f) => ['procedimiento' => $f->procedimiento_id, 'version' => $f->id])->all(),
+            'procedimientos.acuses.firma' => DB::table('procedimiento_acuses as a')->join('procedimiento_versiones as v', 'v.id', '=', 'a.version_id')
+                ->where('a.empresa_id', $e)->limit(2)->get(['v.procedimiento_id', 'a.id'])->map(fn ($f) => ['procedimiento' => $f->procedimiento_id, 'acuse' => $f->id])->all(),
+            // Eliminar definitivamente: el primer registro de cada catálogo o padrón registrado
+            'borrar.revisar' => collect(RegistroBorrado::definiciones())
+                ->map(fn ($d, $clave) => ['registro' => $clave, 'id' => $primero($d['modelo'])])->filter(fn ($j) => $j['id'] !== null)->values()->all(),
+            // Recepción de candidatos y autorizaciones (ADR-0007)
+            'candidatos.show' => DB::table('candidatos')->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['candidato' => $id])->all(),
+            'candidatos.documento' => DB::table('candidato_documentos')->where('empresa_id', $e)->limit(2)->get(['candidato_id', 'id'])
+                ->map(fn ($f) => ['candidato' => $f->candidato_id, 'documento' => $f->id])->all() ?: [['candidato' => (int) DB::table('candidatos')->where('empresa_id', $e)->value('id'), 'documento' => 1]],
+            'accesos.foto-persona', 'accesos.foto-identificacion' => array_map(fn ($id) => ['acceso' => $id], $ids([
+                DB::table('accesos')->where('empresa_id', $e)->whereNotNull('foto_persona')->value('id'), DB::table('accesos')->where('empresa_id', $e)->orderBy('id')->value('id'),
+            ])),
+            'autorizaciones.show', 'autorizaciones.confirmar' => DB::table('autorizaciones')->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['autorizacion' => $id])->all(),
+            'kiosco.mostrar' => [['token' => str_repeat('a', 48)]],
+            // Olvidé mi contraseña: enlace sin firma (debe rebotar al formulario, nunca 500)
+            'contrasena.restablecer' => [['token' => str_repeat('a', 64)]],
+            // Ronda 7: gestor de impresión QR (hoja de una impresión y plantillas)
+            'etiquetas.impresion' => array_map(fn ($id) => ['impresion' => $id], $ids([$primero(ImpresionEtiquetas::class)])),
+            'etiquetas.plantillas.edit', 'etiquetas.plantillas.prueba' => array_map(fn ($id) => ['plantilla' => $id], $ids([
+                $primero(EtiquetaPlantilla::class), $primero(EtiquetaPlantilla::class, fn ($q) => $q->whereNotNull('sede_id')),
+            ])),
+            // Solicitud de empleo y Vacantes (lección 36)
+            'candidatos.solicitud' => DB::table('candidatos')->where('empresa_id', $e)->orderBy('id')->limit(4)->pluck('id')->map(fn ($id) => ['candidato' => $id])->all(),
+            'candidatos.firma' => array_map(fn ($id) => ['candidato' => $id], $ids([
+                DB::table('candidatos')->where('empresa_id', $e)->whereNotNull('firma_ruta')->value('id'), DB::table('candidatos')->where('empresa_id', $e)->value('id'),
+            ])),
+            'vacantes.cartel' => DB::table('vacantes')->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['vacante' => $id])->all(),
+            'empleos.index', 'empleos.gracias' => [['empresa' => DB::table('empresas')->where('id', $e)->value('bolsa_slug') ?? 'sin-bolsa-abc123']],
+            'empleos.show', 'empleos.postular' => DB::table('vacantes')->where('empresa_id', $e)->orderBy('id')->limit(3)->pluck('codigo')
+                ->map(fn ($c) => ['empresa' => DB::table('empresas')->where('id', $e)->value('bolsa_slug') ?? 'sin-bolsa-abc123', 'vacante' => $c])->all()
+                ?: [['empresa' => 'sin-bolsa-abc123', 'vacante' => 'abcdefghij']],
+            // Fin Solicitud de empleo y Vacantes
+            // Candidatos, fase 2: candidatos de cada vacante y la pantalla Entrevistar (canalizada, evaluada y en revisión)
+            'vacantes.candidatos' => DB::table('vacantes')->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['vacante' => $id])->all(),
+            'entrevistas.show', 'entrevistas.cv', 'entrevistas.correo' => DB::table('postulaciones')->where('empresa_id', $e)
+                ->whereIn('etapa', ['canalizado', 'evaluado', 'elegido', 'con_rh'])->orderBy('id')->pluck('id')->map(fn ($id) => ['postulacion' => $id])->all(),
+            // Candidatos, fase 3: expediente del colaborador (contratado desde Candidatos y uno cualquiera) y sus documentos
+            'colaboradores.expediente' => array_map(fn ($id) => ['colaborador' => $id], $ids([
+                DB::table('candidatos')->where('empresa_id', $e)->whereNotNull('colaborador_id')->value('colaborador_id'), $primero(Colaborador::class),
+            ])),
+            'colaboradores.expediente.documento' => DB::table('candidato_documentos')->where('empresa_id', $e)->whereNotNull('colaborador_id')->limit(2)->get(['colaborador_id', 'id'])
+                ->map(fn ($f) => ['colaborador' => $f->colaborador_id, 'documento' => $f->id])->all() ?: [['colaborador' => (int) $primero(Colaborador::class), 'documento' => 1]],
+            // Manual (lección 37): páginas generales y de módulo, una imagen real y rutas que intentan salir de docs/usuario/img
+            'manual.ver' => [['pagina' => 'primeros-pasos'], ['pagina' => 'accesos'], ['pagina' => 'usuarios'], ['pagina' => 'guia'], ['pagina' => 'no-existe']],
+            'manual.imagen' => [['carpeta' => 'primeros-pasos', 'archivo' => 'acceso.png'], ['carpeta' => 'primeros-pasos', 'archivo' => '..env'],
+                ['carpeta' => 'img', 'archivo' => 'nada.svg']],
+            // Catálogo comercial (plataforma, sin empresa): cada tipo y su primer registro, y las solicitudes
+            'catalogo-comercial.crear' => [['tipo' => 'productos'], ['tipo' => 'planes'], ['tipo' => 'paquetes']],
+            'catalogo-comercial.editar' => collect(['productos', 'planes', 'paquetes'])->map(fn ($t) => ['tipo' => $t, 'id' => DB::table($t)->orderBy('id')->value('id')])
+                ->filter(fn ($j) => $j['id'] !== null)->values()->all(),
+            'catalogo-comercial.solicitudes.show' => DB::table('solicitudes_compra')->orderBy('id')->limit(2)->pluck('id')->map(fn ($id) => ['id' => $id])->all(),
+            // Suscripciones (plataforma): los clientes de ejemplo y las promociones
+            'catalogo-comercial.clientes.show' => DB::table('suscripciones')->orderBy('id')->limit(3)->pluck('id')->map(fn ($id) => ['id' => $id])->all(),
+            'catalogo-comercial.promociones.editar' => DB::table('promociones')->orderBy('id')->limit(1)->pluck('id')->map(fn ($id) => ['id' => $id])->all(),
+            // Importar desde Excel: cada módulo y las importaciones de la demo (si hay)
+            'importaciones.create', 'importaciones.plantilla' => array_map(fn ($t) => ['tipo' => $t], array_keys(AdministradorImportaciones::TIPOS)),
+            'importaciones.show', 'importaciones.original', 'importaciones.resultado' => DB::table('importaciones')->where('empresa_id', $e)->orderBy('id')->limit(2)
+                ->pluck('id')->map(fn ($id) => ['importacion' => $id])->all(),
+            // Reservas de áreas: cada reserva de la demo (confirmada al momento, por aprobar y con cliente), su hoja, edición y las áreas
+            'reservas.show', 'reservas.edit', 'reservas.imprimir' => DB::table('reservas')->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['reserva' => $id])->all(),
+            'reservas.configuracion.area', 'reservas.foto' => DB::table('reserva_areas')->where('empresa_id', $e)->orderBy('id')->pluck('id')->map(fn ($id) => ['area' => $id])->all(),
+            // Privacidad: la solicitud ARCO de la demo (sin archivo exportado) y las versiones del aviso
+            'arco.show' => DB::table('solicitudes_arco')->where('empresa_id', $e)->orderBy('id')->limit(2)->pluck('id')->map(fn ($id) => ['solicitud' => $id])->all(),
+            'arco.descargar' => [],
+            'privacidad.verificar' => [], // enlace de un solo uso: se prueba en PrivacidadArcoTest
+            'privacidad.aviso', 'privacidad.empresa.solicitud' => array_map(fn ($c) => ['codigo' => $c], array_filter([DB::table('empresas')->where('id', $e)->value('privacidad_codigo')])),
+            'privacidad.aviso.version' => DB::table('avisos_privacidad')->where('empresa_id', $e)->orderBy('id')->limit(2)->pluck('id')->map(fn ($id) => ['version' => $id])->all(),
+            default => null,
+        };
+
+        $this->assertNotNull($juegos, "La ruta {$nombre} tiene parámetros y el recorrido no sabe resolverlos: agrégala a juegosDeParametros()");
+
+        return $juegos;
+    }
+
+    /**
+     * Consultas reales de las búsquedas y filtros (además de la URL sin nada).
+     *
+     * @return list<array{0: array<string, mixed>, 1: bool}>
+     */
+    private function consultaExtra(string $nombre): array
+    {
+        $sede = Sede::withoutGlobalScopes()->where('empresa_id', $this->empresa->id)->orderBy('id')->value('id');
+        $hoy = now()->toDateString();
+
+        return match ($nombre) {
+            'colaboradores.buscar', 'proveedores.buscar', 'personas.buscar', 'vehiculos.buscar' => [[['q' => 'a'], true], [['q' => '%_\''], true]],
+            'accesos.buscar' => collect(['colaborador', 'persona', 'vehiculo', 'proveedor'])->map(fn ($que) => [['que' => $que, 'q' => 'a', 'sede' => $sede], true])->all(),
+            'accesos.gafetes' => [[['sede' => $sede], true]],
+            'accesos.en-sitio' => [[['sede' => $sede], true]],
+            'lector.resolver' => [[['entrada' => 'abc123'], true], [['entrada' => '04:A2:3B:1C'], true]],
+            'novedades.coincidencias' => [[['tipo_valor' => 'otro', 'objeto' => 'cartera', 'fecha' => $hoy], true]],
+            'novedades.ficha-hechos' => [[['habitacion' => 101, 'fecha' => $hoy], false]],
+            'novedades.index' => [[['categoria' => 'accidente_huesped'], false], [['pestana' => 'resueltas', 'q' => 'a'], false], [['sede' => $sede], false]],
+            'novedades.exportar' => [[['pestana' => 'resueltas'], false]],
+            'accesos.index' => [[['pestana' => 'historial', 'sede' => $sede], false], [['pestana' => 'pendientes'], false], [['desde' => $hoy, 'hasta' => $hoy], false]],
+            'candidatos.index', 'candidatos.exportar' => [[['etapa' => 'en_proceso'], false], [['q' => 'a', 'sede' => $sede], false], [['etapa' => 'rechazado'], false], [['caducar' => 1], false], [['archivadas' => 1], false],
+                [['etapa' => 'por_entrevistar'], false], [['etapa' => 'canalizado'], false]],
+            'recepcion.metricas' => [[['desde' => now()->subMonth()->toDateString(), 'hasta' => $hoy, 'sede' => $sede], false], [['desde' => 'x', 'hasta' => '2026-99-99'], false]],
+            'recepcion.datos', 'notificaciones.resumen' => [[[], true]],
+            'recepcion.kiosco' => [[['candidato' => (int) DB::table('candidatos')->where('empresa_id', $this->empresa->id)->value('id')], false]],
+            'accesos.autorizaciones-estado' => [[['ids' => DB::table('accesos')->where('empresa_id', $this->empresa->id)->limit(5)->pluck('id')->join(',')], true]],
+            'autorizaciones.index' => [[['estado' => 'pendiente'], false]],
+            'notificaciones.index' => [[['filtro' => 'no_leidas'], false]],
+            'kiosco.codigo' => [[['codigo' => 'ABC123'], false]],
+            'transporte.index', 'transporte.reportes' => [[['desde' => now()->subMonth()->toDateString(), 'hasta' => $hoy, 'sede' => $sede], false]],
+            'recorridos_pc.reporte' => [[['desde' => now()->subMonth()->toDateString(), 'hasta' => $hoy], false]],
+            'auditoria.index' => [[['q' => 'a'], false], [['modulo' => 'novedades'], false]],
+            'colaboradores.index', 'personas.index', 'vehiculos.index', 'proveedores.index', 'llaves.index', 'gafetes.index', 'equipos.index' => [[['q' => 'a'], false], [['estado' => 'inactivos'], false], [['sede' => $sede], false], [['pagina' => 2, 'page' => 2], false]],
+            'gafetes.imprimir' => [[['gafetes' => Gafete::withoutGlobalScopes()->where('empresa_id', $this->empresa->id)->limit(3)->pluck('id')->all()], false]],
+            'llaves.imprimir' => [[['llaves' => Llave::withoutGlobalScopes()->where('empresa_id', $this->empresa->id)->limit(3)->pluck('id')->all()], false]],
+            'prestamo_llaves.index', 'responsivas.index', 'pases-salida.index', 'lost_found.archivo', 'robo.index', 'recorridos_pc.index' => [[['sede' => $sede], false], [['pestana' => 'historial'], false], [['q' => 'a'], false]],
+            'usuarios.index', 'roles.index', 'permisos.index' => [[['q' => 'a'], false], [['rol' => 1], false]],
+            'manual.index' => [[['q' => 'llave'], false], [['q' => ['x']], false], [['q' => '<script>'], false]],
+            // Informes (ADR-0017): cada ficha (en el diálogo y en su página), cada periodo y sección, otros días y valores inválidos
+            'tablero.detalle' => array_merge(array_map(fn ($f) => [['ficha' => $f, 'parcial' => 1], true], array_keys(Tablero::FICHAS)),
+                [[['ficha' => 'colaboradores', 'sede' => $sede], false], [['ficha' => 'no_existe'], false]]),
+            'tablero.index' => [[['sede' => $sede], false], [['sede' => 'x'], false]],
+            'tendencias.index' => [[['periodo' => 'mes', 'sedes' => [$sede]], false], [['periodo' => 'anio'], false], [['periodo' => 'trimestre', 'seccion' => 'accesos'], false],
+                [['periodo' => 'personalizado', 'desde' => '2026-02-31', 'hasta' => 'x'], false], [['periodo' => 'personalizado', 'desde' => now()->subYears(5)->toDateString(), 'hasta' => $hoy], false]],
+            'tendencias.exportar' => array_map(fn ($s) => [['seccion' => $s, 'periodo' => 'mes'], false], array_keys(Tendencias::SECCIONES)),
+            'bitacora_dia.index', 'bitacora_dia.imprimir', 'bitacora_dia.exportar' => [[['fecha' => now()->subDays(20)->toDateString(), 'sede' => $sede], false], [['tipo' => 'novedades'], false], [['fecha' => '2026-13-45'], false], [['fecha' => '2999-01-01'], false]],
+            'informe_ejecutivo.index', 'informe_ejecutivo.imprimir', 'informe_ejecutivo.exportar' => [[['sedes' => [$sede], 'fresco' => 1], false], [['sedes' => 'x'], false]],
+            default => [],
+        };
+    }
+}

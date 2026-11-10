@@ -1,0 +1,634 @@
+<?php
+
+namespace App\Http\Controllers\Seguridad;
+
+use App\Http\Controllers\Controller;
+use App\Models\Acceso;
+use App\Models\AcompananteAcceso;
+use App\Models\Colaborador;
+use App\Models\Departamento;
+use App\Models\Empresa;
+use App\Models\Persona;
+use App\Models\Proveedor;
+use App\Models\Sede;
+use App\Services\Accesos\ArticulosDelProveedor;
+use App\Services\Accesos\ConsultaAccesos;
+use App\Services\Accesos\MotivosVisita;
+use App\Services\Accesos\MovimientoNoPermitido;
+use App\Services\Accesos\MovimientosAccesos;
+use App\Services\Accesos\NocheSinSupervisor;
+use App\Services\Accesos\RegistroAccesos;
+use App\Services\Autorizaciones\Autorizaciones;
+use App\Services\Autorizaciones\Escalamiento;
+use App\Services\Autorizaciones\Excepciones;
+use App\Services\Recepcion\AjustesRecepcion;
+use App\Services\Reservas\EventosDelDia;
+use App\Support\Csv;
+use App\Support\HoraLocal;
+use App\Support\Tenancy\EmpresaDeTrabajo;
+use App\Support\Tenancy\Tenant;
+use App\Support\Terminos;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+/**
+ * Bitácora de accesos (réplica de modules/accesos de SEGCAT: "Control de
+ * Accesos"): Gente en Sitio, Pendientes de Autorización e Historial
+ * Finalizados; "Registro Inteligente de Ingreso"; autorizar, salida, salida
+ * de acompañantes, cambiar zona, salida a tour y regreso; exportación.
+ *
+ * Las reglas viven en App\Services\Accesos; aquí solo se autoriza, se fija la
+ * empresa de trabajo y se responde.
+ */
+class AccesoController extends Controller
+{
+    public const PESTANAS = ['en_sitio', 'pendientes', 'historial'];
+
+    public function __construct(
+        private readonly EmpresaDeTrabajo $empresa,
+        private readonly Tenant $tenant,
+        private readonly ConsultaAccesos $consulta,
+        private readonly RegistroAccesos $registro,
+        private readonly MovimientosAccesos $movimientos,
+        private readonly Escalamiento $escalamiento,
+    ) {}
+
+    public function index(Request $request): View
+    {
+        Gate::authorize('accesos.ver');
+        $actor = $request->user();
+        $empresaId = $this->empresa->id($actor);
+
+        if ($empresaId === null) {
+            return view('seguridad.accesos.index', ['sinEmpresa' => true]);
+        }
+
+        $filtros = $this->filtros($request);
+        $pestana = in_array($request->query('pestana'), self::PESTANAS, true) ? $request->query('pestana') : 'en_sitio';
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $filtros, $pestana, $empresaId) {
+            // Autorizaciones que ya tardaron: si tocaba recordar o escalar, se hace al refrescar (por si el cron no corre)
+            if ($pestana === 'pendientes') {
+                $this->escalamiento->escalarSiToca($empresaId);
+            }
+            $conteos = $this->consulta->conteos($actor);
+            $lista = match ($pestana) {
+                'pendientes' => $this->consulta->pendientes($actor, $filtros),
+                'historial' => $this->consulta->historial($actor, $filtros),
+                default => $this->consulta->enSitio($actor, $filtros),
+            };
+            $puedeCrear = $actor->can('accesos.crear');
+            $sedesAlta = $puedeCrear ? $this->consulta->sedesParaElegir($actor, 'accesos.crear') : collect();
+            $sedesEdicion = $actor->can('accesos.editar') ? $this->consulta->sedesParaElegir($actor, 'accesos.editar') : collect();
+            $sedesVer = $this->consulta->sedes($actor, 'accesos.ver');
+
+            // Giros (docs/tecnico/giros.md): tipos, motivos y palabras de la empresa
+            $terminos = Terminos::deEmpresaId($empresaId);
+
+            return view('seguridad.accesos.index', [
+                'sinEmpresa' => false,
+                'terminos' => $terminos,
+                // C-04: motivos según el giro y lo contratado, y el que la empresa marcó (de fábrica, ninguno)
+                'motivosVisita' => app(MotivosVisita::class)->para((int) $empresaId),
+                'motivoOmision' => app(MotivosVisita::class)->porOmision((int) $empresaId),
+                'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
+                'pestana' => $pestana,
+                'filtros' => $filtros,
+                'conteos' => $conteos,
+                'lista' => $lista,
+                // Reloj, color y «Espera a» de cada pendiente (una consulta por departamento, no por tarjeta)
+                'esperas' => $pestana === 'pendientes' ? $this->escalamiento->esperasPara($lista) : [],
+                'umbrales' => $this->escalamiento->umbrales(Empresa::find($empresaId)),
+                'sedesFiltro' => Sede::orderBy('nombre')->when($sedesVer !== null, fn ($q) => $q->whereIn('id', $sedesVer))->get(['id', 'nombre']),
+                'sedesAlta' => $sedesAlta,
+                // Zonas de las sedes donde registra o edita, con ocupación en vivo
+                'zonas' => $this->consulta->zonas($sedesAlta->pluck('id')->merge($sedesEdicion->pluck('id'))->unique()->values()->all()),
+                'tiposGafete' => $puedeCrear ? $this->consulta->tiposGafete() : collect(),
+                'departamentos' => $puedeCrear ? Departamento::with('sedes:sedes.id')->where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'todas_las_sedes']) : collect(),
+                // Botón honesto: con qué tipo y motivo el registro nace pendiente (el servidor decide; esto solo anticipa el texto)
+                'anticipo' => $puedeCrear ? $this->anticipo($empresaId, $sedesAlta) : ['rh_espera_en' => [], 'visitas_esperan' => false, 'departamentos' => [], 'esperan_departamento' => []],
+                'previos' => $puedeCrear ? $this->consulta->previos(session()->getOldInput()) : [],
+                'siguiente' => session('siguiente'),
+                // C-31 (D-12): los eventos confirmados de hoy en las sedes que ve la caseta (solo si la empresa tiene Reservas)
+                'eventosHoy' => $pestana === 'historial' ? collect() : app(EventosDelDia::class)->deHoy((int) $empresaId, $sedesVer),
+                'puede' => [
+                    'crear' => $puedeCrear && $sedesAlta->isNotEmpty(),
+                    'editar' => $actor->can('accesos.editar'),
+                    'aprobar' => $actor->can('accesos.aprobar'),
+                    'exportar' => $actor->can('accesos.exportar'),
+                    'provisional' => $actor->can('colaboradores.crear') || $actor->can('colaboradores.provisional'),
+                    'persona' => $actor->can('visitantes.crear') || $actor->can('accesos.crear'), // Altas por verificar (ADR-0006)
+                ],
+            ]);
+        });
+    }
+
+    /**
+     * C-44 (Etapa 8): «Nuevo ingreso» que ofrece el lector universal al
+     * escanear un colaborador, un vehículo, una persona del padrón o una
+     * empresa externa. No guarda nada: abre el Registro Inteligente de Ingreso
+     * con lo leído ya elegido (como cuando vuelve con un aviso), y el agente
+     * revisa y guarda. Todo se vuelve a validar al guardar.
+     */
+    public function ingresoDesdeLector(Request $request, string $tipo, int $id): RedirectResponse
+    {
+        Gate::authorize('accesos.crear');
+        $actor = $request->user();
+        $empresaId = $this->empresa->id($actor);
+        abort_if($empresaId === null, 404);
+
+        $previo = $this->tenant->conEmpresa($empresaId, function () use ($actor, $tipo, $id) {
+            $sedes = $this->consulta->sedesParaElegir($actor, 'accesos.crear');
+            abort_if($sedes->isEmpty(), 403);
+            $clase = config('lector.tipos.'.$tipo);
+            $registro = $clase::query()->find($id);
+            abort_if($registro === null || ! $registro->activo, 404);
+
+            $previo = ['_dialogo' => 'ingreso'];
+            $sedeDe = fn ($sedeId) => $sedeId !== null && $sedes->contains('id', (int) $sedeId) ? (int) $sedeId : null;
+            $proveedor = fn (Proveedor $p) => ['tipo' => $p->categoria === 'contratista' ? 'contratista' : 'proveedor',
+                'proveedor_id' => $p->id, 'empresa_procedencia' => $p->nombre];
+            switch ($tipo) {
+                case 'colaborador':
+                    $previo += ['tipo' => 'colaborador', 'colaborador_id' => $registro->id, 'sede_id' => $sedeDe($registro->sede_id)];
+                    break;
+                case 'persona':
+                    $previo += ['tipo' => $registro->tipo, 'persona_id' => $registro->id, 'nombre' => $registro->nombre_completo];
+                    if ($registro->proveedor !== null) {
+                        $previo = array_merge($previo, $proveedor($registro->proveedor), ['tipo' => $registro->tipo]);
+                    } elseif ($registro->empresa_procedencia) {
+                        $previo['empresa_procedencia'] = $registro->empresa_procedencia;
+                    }
+                    break;
+                case 'proveedor':
+                    $previo += $proveedor($registro);
+                    break;
+                case 'vehiculo':
+                    $previo += ['modo_arribo' => 'auto', 'vehiculo_id' => $registro->id, 'placas' => $registro->placas];
+                    if ($registro->colaborador_id !== null && ($c = Colaborador::find($registro->colaborador_id)) !== null && $c->activo) {
+                        $previo += ['tipo' => 'colaborador', 'colaborador_id' => $c->id, 'sede_id' => $sedeDe($c->sede_id)];
+                    } elseif ($registro->proveedor_id !== null && ($p = Proveedor::find($registro->proveedor_id)) !== null) {
+                        $previo += $proveedor($p);
+                    } else {
+                        $previo += ['tipo' => 'visitante'];
+                    }
+                    break;
+            }
+            if (empty($previo['sede_id']) && $sedes->count() === 1) {
+                $previo['sede_id'] = $sedes->first()->id;
+            }
+
+            return array_filter($previo, fn ($v) => $v !== null);
+        });
+
+        return redirect()->route('accesos.index')->withInput($previo);
+    }
+
+    /**
+     * Registro Inteligente de Ingreso. "Guardar y capturar siguiente" reabre el
+     * formulario con la misma sede y el mismo tipo de persona.
+     */
+    public function store(Request $request): RedirectResponse
+    {
+        Gate::authorize('accesos.crear');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $acceso = $this->tenant->conEmpresa($empresaId, fn () => $this->registro->registrar($request->user(), $request->except(['_token', '_dialogo', 'siguiente'])));
+
+        $mensaje = $this->mensajeDeRegistro($acceso, $request->user()->can('accesos.aprobar'));
+        $redireccion = redirect()->route('accesos.index', $acceso->estado === 'pendiente' ? ['pestana' => 'pendientes'] : [])->with('ok', $mensaje);
+
+        return $request->boolean('siguiente')
+            ? $redireccion->with('siguiente', ['sede_id' => $acceso->sede_id, 'tipo' => $acceso->tipo, 'mensaje' => $mensaje])
+            : $redireccion;
+    }
+
+    public function autorizar(Request $request, int $acceso): RedirectResponse
+    {
+        Gate::authorize('accesos.aprobar');
+
+        return $this->mover($request, $acceso, 'accesos.aprobar', function (Acceso $a) use ($request) {
+            $this->movimientos->autorizar($request->user(), $a);
+
+            return "Acceso autorizado — {$a->nombre} ya puede ingresar.";
+        }, 'pendientes');
+    }
+
+    /**
+     * «Aprobar por excepción»: proveedor o contratista que espera al
+     * departamento y no puede esperar (siempre con motivo; ver Excepciones).
+     */
+    public function excepcion(Request $request, int $acceso): RedirectResponse
+    {
+        Gate::authorize('accesos.aprobar');
+
+        return $this->mover($request, $acceso, 'accesos.aprobar', function (Acceso $a) use ($request) {
+            $excepciones = app(Excepciones::class);
+            $motivo = $excepciones->autorizar($request->user(), $a, $request->input('motivo_excepcion'), $request->input('detalle_excepcion'));
+
+            // Solo si de verdad se avisó a alguien (un departamento sin responsable no tiene a quién)
+            return "Autorizado por excepción — {$a->nombre} ya puede ingresar ({$motivo}).".($excepciones->seAviso ? ' Avisamos al responsable del departamento.' : '');
+        }, 'pendientes');
+    }
+
+    /** C-25: «Canalizar al supervisor» desde la tarjeta pendiente (un toque). */
+    public function pedirSupervisor(Request $request, int $acceso): RedirectResponse
+    {
+        Gate::authorize('accesos.crear');
+
+        return $this->mover($request, $acceso, 'accesos.crear', function (Acceso $a) use ($request) {
+            app(NocheSinSupervisor::class)->pedir($request->user(), $a);
+
+            return "Le avisamos al supervisor: {$a->nombre} espera su autorización. Si nadie responde, pasa al jefe de seguridad.";
+        }, 'pendientes');
+    }
+
+    /** C-25 (DD-13): el agente aprueba por excepción si nadie respondió y la empresa lo permite (motivo y foto). */
+    public function excepcionAgente(Request $request, int $acceso): RedirectResponse
+    {
+        Gate::authorize('accesos.crear');
+
+        return $this->mover($request, $acceso, 'accesos.crear', function (Acceso $a) use ($request) {
+            app(NocheSinSupervisor::class)->aprobarAgente($request->user(), $a, $request->input('motivo_agente'), $request->file('foto_agente'));
+
+            return "Aprobado por excepción — {$a->nombre} ya puede ingresar. Avisamos al supervisor y al jefe de seguridad.";
+        }, 'pendientes');
+    }
+
+    /** C-19: «Atender» la salida con algo distinto que canalizó la caseta (queda revisada). */
+    public function revisarArticulos(Request $request, int $acceso): RedirectResponse
+    {
+        Gate::authorize('accesos.aprobar');
+
+        return $this->mover($request, $acceso, 'accesos.aprobar', function (Acceso $a) use ($request) {
+            app(ArticulosDelProveedor::class)->revisar($request->user(), $a);
+
+            return "Listo: la salida de {$a->nombre} quedó revisada.";
+        }, 'historial');
+    }
+
+    /** C-25: «Atender» la excepción que aprobó el agente (queda revisada). */
+    public function revisarExcepcion(Request $request, int $acceso): RedirectResponse
+    {
+        Gate::authorize('accesos.aprobar');
+
+        return $this->mover($request, $acceso, 'accesos.aprobar', function (Acceso $a) use ($request) {
+            app(NocheSinSupervisor::class)->revisar($request->user(), $a);
+
+            return "Listo: la excepción de {$a->nombre} quedó revisada.";
+        });
+    }
+
+    public function salida(Request $request, int $acceso): RedirectResponse
+    {
+        Gate::authorize('accesos.editar');
+
+        return $this->mover($request, $acceso, 'accesos.editar', function (Acceso $a) use ($request) {
+            // C-15: «¿Devolvió el gafete?» y «Le devolví su identificación» (ya marcadas en el diálogo)
+            $noRegresaron = $this->movimientos->salida($request->user(), $a, $request->only(['gafetes_revisados', 'devolvio', 'identificacion_revisada', 'identificacion_devuelta']));
+            // C-19 (DD-18): «Sale con lo mismo» y el pase de su empresa; si no salió con lo mismo, se canaliza al supervisor
+            $canalizado = app(ArticulosDelProveedor::class)->alDarSalida($request->user(), $a, $request->only(['articulos_revisados', 'sale_con_lo_mismo', 'articulos_nota', 'pase_salida_id']));
+
+            return "Salida de {$a->nombre} registrada correctamente."
+                .($canalizado ? ' No salió con lo mismo que trajo: ya se avisó a tu supervisor para que lo revise.' : '')
+                .($noRegresaron === [] ? '' : ' '.(count($noRegresaron) === 1 ? 'El gafete '.$noRegresaron[0].' quedó' : 'Los gafetes '.implode(', ', $noRegresaron).' quedaron')
+                    .' como «No regresó» y ya no se prestará; se avisó a tu supervisor para darlo de baja con voucher. Si lo devuelven, recíbelo en Gafetes.');
+        });
+    }
+
+    public function zona(Request $request, int $acceso): RedirectResponse
+    {
+        Gate::authorize('accesos.editar');
+
+        return $this->mover($request, $acceso, 'accesos.editar', function (Acceso $a) use ($request) {
+            $this->movimientos->cambiarZona($request->user(), $a, $request->input('zona_estacionamiento_id'), $request->input('zona_llena') === 'si');
+
+            return 'Zona de estacionamiento actualizada.';
+        });
+    }
+
+    public function salidaTemporal(Request $request, int $acceso): RedirectResponse
+    {
+        Gate::authorize('accesos.editar');
+
+        return $this->mover($request, $acceso, 'accesos.editar', function (Acceso $a) use ($request) {
+            $this->movimientos->salidaTemporal($request->user(), $a, $request->all());
+
+            return $a->tipo === 'huesped' ? "Salida a tour de {$a->nombre} registrada." : "Salida temporal de {$a->nombre} registrada.";
+        });
+    }
+
+    public function regreso(Request $request, int $acceso): RedirectResponse
+    {
+        Gate::authorize('accesos.editar');
+
+        return $this->mover($request, $acceso, 'accesos.editar', function (Acceso $a) use ($request) {
+            $this->movimientos->regreso($request->user(), $a, $request->all());
+
+            return $a->tipo === 'huesped' ? "Regreso de tour de {$a->nombre} registrado." : "Regreso de {$a->nombre} registrado.";
+        });
+    }
+
+    public function acompananteSalida(Request $request, int $acompanante): RedirectResponse
+    {
+        Gate::authorize('accesos.editar');
+
+        return $this->moverAcompanante($request, $acompanante, function (AcompananteAcceso $ac) use ($request) {
+            $this->movimientos->salidaAcompanante($request->user(), $ac);
+
+            return "Salida de {$ac->nombreVisible()} registrada — su gafete ya quedó libre.";
+        });
+    }
+
+    public function acompananteSalidaTemporal(Request $request, int $acompanante): RedirectResponse
+    {
+        Gate::authorize('accesos.editar');
+
+        return $this->moverAcompanante($request, $acompanante, function (AcompananteAcceso $ac) use ($request) {
+            $this->movimientos->salidaTemporalAcompanante($request->user(), $ac);
+
+            return "Salida temporal de {$ac->nombreVisible()} registrada — su gafete sigue reservado.";
+        });
+    }
+
+    public function acompananteRegreso(Request $request, int $acompanante): RedirectResponse
+    {
+        Gate::authorize('accesos.editar');
+
+        return $this->moverAcompanante($request, $acompanante, function (AcompananteAcceso $ac) use ($request) {
+            $this->movimientos->regresoAcompanante($request->user(), $ac);
+
+            return "Regreso de {$ac->nombreVisible()} registrado.";
+        });
+    }
+
+    /**
+     * Buscar a alguien en sitio para darle salida (por nombre, placas, gafete o
+     * habitación; o el gafete leído con el lector universal).
+     */
+    public function enSitio(Request $request): JsonResponse
+    {
+        Gate::authorize('accesos.ver');
+        $datos = $request->validate(['q' => ['nullable', 'string', 'max:200'], 'gafete' => ['nullable', 'integer']]);
+        $empresaId = $this->empresa->id($request->user());
+        if ($empresaId === null) {
+            return response()->json(['resultados' => []]);
+        }
+
+        return response()->json(['resultados' => $this->tenant->conEmpresa($empresaId, fn () => $this->consulta->buscarEnSitio(
+            $request->user(), (string) ($datos['q'] ?? ''), isset($datos['gafete']) ? (int) $datos['gafete'] : null,
+        ))]);
+    }
+
+    /**
+     * Autocompletar del formulario: colaboradores de la sede, personas del
+     * padrón, vehículos por placas y empresas externas. Lo usa quien registra
+     * ingresos (accesos.crear) aunque no administre esos padrones: la caseta
+     * consulta, el padrón lo cuida su módulo.
+     */
+    public function buscar(Request $request): JsonResponse
+    {
+        Gate::authorize('accesos.crear');
+        $datos = $request->validate([
+            // C-09: «destino» («¿A quién viene?») · C-30: «lugar» (habitación o área de trabajo del catálogo)
+            'que' => ['required', Rule::in(['colaborador', 'persona', 'vehiculo', 'proveedor', 'destino', 'lugar'])],
+            'q' => ['nullable', 'string', 'max:100'],
+            'sede' => ['nullable', 'integer'],
+            'tipo' => ['nullable', Rule::in(array_keys(Persona::TIPOS))],
+            'contexto' => ['nullable', Rule::in(['visita', 'proveedor', 'huesped'])],
+            'niveles' => ['nullable', Rule::in(['todos', 'especificos'])],
+        ]);
+        $actor = $request->user();
+        $empresaId = $this->empresa->id($actor);
+        if ($empresaId === null) {
+            return response()->json(['resultados' => []]);
+        }
+        $resultados = $this->tenant->conEmpresa($empresaId, fn () => $this->consulta->sugerencias(
+            $actor, $datos['que'], (string) ($datos['q'] ?? ''), isset($datos['sede']) ? (int) $datos['sede'] : null, $datos['tipo'] ?? null,
+            $datos['contexto'] ?? 'visita', $datos['niveles'] ?? 'todos',
+        ));
+
+        return response()->json(['resultados' => $resultados]);
+    }
+
+    /**
+     * Gafetes que se pueden prestar ahora en una sede (para elegir sin escanear).
+     */
+    public function gafetes(Request $request): JsonResponse
+    {
+        Gate::authorize('accesos.crear');
+        $sede = (int) $request->validate(['sede' => ['required', 'integer']])['sede'];
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $sede) {
+            $permitidas = $this->consulta->sedes($request->user(), 'accesos.crear');
+            abort_if($permitidas !== null && ! in_array($sede, $permitidas, true), 404);
+
+            return response()->json(['resultados' => $this->consulta->gafetesDisponibles($sede)]);
+        });
+    }
+
+    /**
+     * CSV del historial con los filtros de la pantalla (BOM para que Excel respete los acentos).
+     */
+    public function exportar(Request $request, HoraLocal $hora): StreamedResponse
+    {
+        Gate::authorize('accesos.exportar');
+        $empresaId = $this->empresaDeTrabajo($request);
+        $filtros = $this->filtros($request);
+
+        $filas = $this->tenant->conEmpresa($empresaId, fn () => $this->consulta->consultaHistorial($request->user(), $filtros, 'accesos.exportar')
+            ->with(['sede:id,nombre', 'zona:id,nombre', 'departamento:id,nombre', 'host:id,nombre,apellido_paterno,apellido_materno',
+                'registradoPor:id,name', 'autorizadoPor:id,name', 'salidaPor:id,name', 'vehiculo:id,marca,modelo,color', 'equipoEntrada:id,nombre', 'equipoSalida:id,nombre'])
+            ->limit(10000)->get());
+
+        $terminos = Terminos::deEmpresaId($empresaId);
+
+        return response()->streamDownload(function () use ($filas, $hora, $terminos) {
+            $salida = fopen('php://output', 'w');
+            fwrite($salida, "\xEF\xBB\xBF");
+            // Giros: «Habitación» se llama como el área específica del giro (Departamento, Casa, Oficina)
+            Csv::fila($salida, array_map(fn (string $t) => $terminos->texto($t), ['Folio', 'Sede', 'Tipo', 'Movimiento', 'Nombre', 'Empresa / Procedencia', 'Gafete', 'Placas', 'Vehículo', 'Zona',
+                'Conductor', 'A quién viene', 'Departamento', 'Habitación', 'Pase', 'ID custodiada', 'Acompañantes',
+                'Entrada', 'Autorizado', 'Salida', 'Registró', 'Autorizó', 'Dio salida']));
+            foreach ($filas as $a) {
+                Csv::fila($salida, [
+                    $a->id, $a->sede?->nombre, $a->etiquetaTipo(), Acceso::MOVIMIENTOS[$a->movimiento] ?? $a->movimiento, $a->nombre,
+                    $a->empresa_procedencia, $a->gafete_texto, $a->placas,
+                    $a->vehiculo ? trim($a->vehiculo->marca.' '.$a->vehiculo->modelo.' '.$a->vehiculo->color) : null,
+                    $a->zona?->nombre, $a->conductor, $a->persona_visita ?? $a->host?->nombreCompleto(), $a->departamento?->nombre,
+                    $a->habitacion, Acceso::PASES[$a->tipo_pase] ?? null, Acceso::IDENTIFICACIONES[$a->identificacion] ?? null, $a->num_acompanantes,
+                    $hora->formatear($a->entrada_at), $hora->formatear($a->autorizado_at), $hora->formatear($a->salida_at),
+                    $a->registradoPor?->name ?? $a->equipoEntrada?->origen(), $a->autorizadoPor?->name, $a->salidaPor?->name ?? $a->equipoSalida?->origen(),
+                ]);
+            }
+            fclose($salida);
+        }, 'bitacora-accesos-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    // ------------------------------------------------------------------ Ayudas
+
+    /**
+     * Mensaje de éxito con el siguiente paso (regla 5): en sitio → «¿Otro
+     * ingreso?»; pendiente → a quién esperar.
+     */
+    private function mensajeDeRegistro(Acceso $acceso, bool $puedeAprobar): string
+    {
+        $autorizacion = $acceso->getAttributes()['autorizacion'] ?? null;
+        // C-09: la caseta llamó al residente o a la habitación
+        // Revisión Etapa 5 (A-4): el área común se nombra «Área común», no «Vivienda»
+        $aQuien = $acceso->persona_visita ?: ($acceso->habitacion ? $acceso->terminos()->nombreLugar($acceso->espacio_id ? $acceso->espacio : null).' '.$acceso->habitacion : 'quien visita');
+        if ($autorizacion === Acceso::LLAMADA_NO) {
+            return "Quedó la constancia: {$aQuien} no autorizó y {$acceso->nombre} no entra. ¿Otro ingreso? Toca Nuevo Ingreso.";
+        }
+        if ($autorizacion === Acceso::POR_LLAMADA) {
+            return "Registrado y en sitio: {$acceso->nombre}. Quedó la constancia de que {$aQuien} autorizó por teléfono. ¿Otro ingreso? Toca Nuevo Ingreso.";
+        }
+        if ($acceso->estado !== 'pendiente') {
+            return "Registrado y en sitio: {$acceso->nombre}. ¿Otro ingreso? Toca Nuevo Ingreso.";
+        }
+        if ($autorizacion === 'esperando' && $acceso->motivo_visita === 'rh') {
+            return "Registrado: {$acceso->nombre} espera a Recursos Humanos. Ya se avisó; aquí verás cuándo puede pasar.";
+        }
+        if ($autorizacion === Acceso::SIN_RESPONSABLE) {
+            $depto = $acceso->departamento?->nombre ?? 'El departamento';
+            // C-08 / DD-11: la visita espera al supervisor o al jefe de seguridad de la sede
+            if (! in_array($acceso->tipo, Acceso::CON_AUTORIZACION, true)) {
+                return "Registrado: {$acceso->nombre} queda pendiente. {$depto} no tiene quien autorice en esta sede: ".($puedeAprobar
+                    ? 'confírmalo con quien lo recibe y toca Aprobar ingreso.'
+                    : 'ya se avisó a tu supervisor; aquí verás cuándo puede pasar.');
+            }
+
+            return "Registrado: {$acceso->nombre} queda pendiente. {$depto} no tiene quien autorice en esta sede: ".($puedeAprobar
+                ? 'confirma con quien lo citó y toca Aprobar por excepción.'
+                : 'confirma con quien lo citó; tu supervisor lo autoriza por excepción (ya se le avisó).');
+        }
+        $persona = $autorizacion === 'esperando' ? $acceso->autorizacionDepartamento()->with('colaborador')->first()?->colaborador : null;
+        if ($persona !== null) {
+            // C-09 (DD-12): espera a la persona citada; su departamento es el suplente
+            return "Registrado: {$acceso->nombre} espera la autorización de {$persona->nombreCompleto()}. Ya se le avisó; esta tarjeta cambia sola con su respuesta.";
+        }
+        if ($autorizacion === 'esperando') {
+            $depto = $acceso->departamento?->nombre;
+            $quien = $acceso->departamento_id
+                ? app(Autorizaciones::class)->aQuienAvisar((int) $acceso->departamento_id, (int) $acceso->sede_id)->pluck('name')->join(', ', ' y ')
+                : '';
+            $quien = $quien !== '' ? $quien.($depto ? " ({$depto})" : '') : ($depto ?? 'su departamento');
+
+            return "Registrado: {$acceso->nombre} espera la autorización de {$quien}. Ya se avisó; esta tarjeta cambia sola con su respuesta.";
+        }
+        $host = $acceso->host?->nombreCompleto();
+        $conHost = 'Confirma con quien lo citó'.($host ? " ({$host})" : '');
+
+        return "Registrado: {$acceso->nombre} queda pendiente de autorización. ".($puedeAprobar
+            ? "{$conHost} y toca Aprobar ingreso."
+            : "{$conHost}; tu supervisor confirma la autorización en el sistema.");
+    }
+
+    /**
+     * Lo que el formulario necesita para que el botón diga la verdad antes de
+     * guardar: en qué sedes RR. HH. autoriza el paso, si las visitas esperan
+     * al departamento y qué departamentos tienen responsable (y en qué sedes).
+     *
+     * @param  Collection<int, Sede>  $sedes
+     * @return array{rh_espera_en: list<int>, visitas_esperan: bool, departamentos: array<int, list<int>|null>, esperan_departamento: list<string>}
+     */
+    private function anticipo(int $empresaId, Collection $sedes): array
+    {
+        $empresa = Empresa::find($empresaId);
+        $ajustes = app(AjustesRecepcion::class);
+        $autorizaciones = app(Autorizaciones::class);
+        $rhEsperaEn = [];
+        if ($empresa !== null && $ajustes->rhAutorizaPaso($empresa)) {
+            $rhEsperaEn = $sedes->filter(fn (Sede $s) => $autorizaciones->destinatariosRecepcion($empresaId, (int) $s->id)->isNotEmpty())
+                ->map(fn (Sede $s) => (int) $s->id)->values()->all();
+        }
+        $visitasEsperan = $empresa !== null && $ajustes->visitasRequierenAutorizacion($empresa);
+
+        return [
+            'rh_espera_en' => $rhEsperaEn,
+            'visitas_esperan' => $visitasEsperan,
+            // C-08 / DD-11: sin quien autorice en la sede, ¿espera al supervisor?
+            'sin_cobertura_espera' => $visitasEsperan && $empresa !== null && $ajustes->sinCoberturaEsperaSupervisor($empresa),
+            'departamentos' => $visitasEsperan ? $autorizaciones->departamentosConResponsable() : [],
+            // Proveedor y contratista: ¿esperan al departamento? («¿A qué departamento viene?» obligatorio)
+            'esperan_departamento' => collect(Acceso::CON_AUTORIZACION)->filter(fn ($t) => $empresa !== null && $ajustes->esperaAlDepartamento($empresa, $t))->values()->all(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function filtros(Request $request): array
+    {
+        return $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+            'tipo' => ['nullable', Rule::in(array_keys(Acceso::TIPOS))],
+            'sede' => ['nullable', 'integer'],
+            'desde' => ['nullable', 'date_format:Y-m-d'],
+            'hasta' => ['nullable', 'date_format:Y-m-d'],
+            // C-25: «Rebasaron su tiempo» y las excepciones del agente por revisar
+            'rebasaron' => ['nullable', 'boolean'],
+            'excepciones' => ['nullable', 'boolean'],
+            'articulos' => ['nullable', 'boolean'], // C-19: salidas con algo distinto por revisar
+        ], [
+            'desde.date_format' => 'Revisa la fecha «Desde».',
+            'hasta.date_format' => 'Revisa la fecha «Hasta».',
+        ]);
+    }
+
+    private function empresaDeTrabajo(Request $request): int
+    {
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        return $empresaId;
+    }
+
+    /**
+     * Busca el acceso dentro del alcance (otra empresa o sede → 404), aplica el
+     * cambio y regresa con el aviso. Un cambio que ya no aplica regresa con su motivo.
+     */
+    private function mover(Request $request, int $id, string $permiso, \Closure $cambio, ?string $pestana = null): RedirectResponse
+    {
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        try {
+            $mensaje = $this->tenant->conEmpresa($empresaId, function () use ($request, $id, $permiso, $cambio) {
+                $acceso = $this->consulta->limitar(Acceso::query(), $request->user(), $permiso)->find($id);
+                abort_if($acceso === null, 404);
+
+                return $cambio($acceso);
+            });
+        } catch (MovimientoNoPermitido $e) {
+            return redirect()->route('accesos.index', $pestana ? ['pestana' => $pestana] : [])->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('accesos.index', $pestana ? ['pestana' => $pestana] : [])->with('ok', $mensaje);
+    }
+
+    private function moverAcompanante(Request $request, int $id, \Closure $cambio): RedirectResponse
+    {
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        try {
+            $mensaje = $this->tenant->conEmpresa($empresaId, function () use ($request, $id, $cambio) {
+                $acompanante = AcompananteAcceso::with('acceso')->find($id);
+                $visible = $acompanante && $this->consulta->limitar(Acceso::query(), $request->user(), 'accesos.editar')->whereKey($acompanante->acceso_id)->exists();
+                abort_unless($visible, 404);
+
+                return $cambio($acompanante);
+            });
+        } catch (MovimientoNoPermitido $e) {
+            return redirect()->route('accesos.index')->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('accesos.index')->with('ok', $mensaje);
+    }
+}

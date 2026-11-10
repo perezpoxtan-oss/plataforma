@@ -1,0 +1,177 @@
+---
+titulo: Equipos de seguridad
+modulos: [equipos]
+seccion: Padrones
+orden: 60
+resumen: Inventario del equipo de guardia (radios, lámparas, chalecos…), con su estado, su etiqueta QR y su baja con voucher.
+---
+
+# Equipos de seguridad
+
+**¿Para qué sirve?** Aquí está el equipo que usa y presta la guardia: radios, lámparas, detectores de metales, chalecos, botiquines… Cada equipo pertenece a una **sede**, tiene un **estado** y su **etiqueta con código QR**.
+
+![Equipos de seguridad](img/equipos/01-lista.png)
+
+## Antes de empezar
+
+- Para ver la pantalla tu rol debe poder consultar *Equipos de seguridad*. Si no aparece en el menú, pide el permiso a tu administrador.
+- Para registrar, editar, imprimir o dar de baja necesitas esos permisos. Si no ves **Nuevo Equipo**, tu rol solo consulta.
+- Solo ves los equipos de **tus sedes**.
+
+## Qué significa cada estado
+
+| Estado | Qué quiere decir |
+|---|---|
+| **DISPONIBLE** (verde) | Está en la caseta, listo para prestarse. |
+| **EN USO** (azul) | Se entregó por turno con una [responsiva](responsivas.md) y regresa al terminar. La ficha dice **A cargo de** quién y trae **Ver responsiva**. |
+| **ASIGNADO** (amarillo) | Se entregó fijo con una [responsiva](responsivas.md): se queda con la persona hasta que lo devuelva. |
+| **FUERA** (gris) | Salió de la sede con un [pase de salida](pases-salida.md) y aún no regresa. |
+| **NO REGRESÓ** (naranja) | Quien lo tenía no lo devolvió (por ejemplo, se dio de baja). Si aparece, recíbelo en Responsivas; si no, dalo de baja. |
+| **EN MANTENIMIENTO** (morado) | En reparación o revisión: no se presta. |
+| **DE BAJA** (rojo) | Se dio de baja con un voucher. La ficha dice el motivo (por ejemplo **DE BAJA · ROBADO**) y trae **Ver su voucher VR-…**. |
+
+## Cómo encontrar un equipo
+
+1. Entra a **Padrones → Equipos de seguridad**.
+2. Escribe en **Buscar por Serie, Tipo, Marca, Sede...**.
+3. Si hay varias, elige en **Todas las sedes** o **Todos los tipos**.
+4. Toca un estado (**DISPONIBLE**, **EN MANTENIMIENTO**…). **Cualquier estado** los vuelve a mostrar. El número dice cuántos hay.
+
+**Qué debes ver:** solo los equipos que coinciden. El número de serie siempre aparece con su rótulo (por ejemplo **Serie: RAD-8829**). Los filtros se recuerdan mientras la pestaña siga abierta.
+
+## Cómo registrar un equipo
+
+1. Toca la tarjeta **Nuevo Equipo**. Se abre **Alta de Equipo**.
+2. Elige la **Sede de instalación** (si solo tienes una, ya viene elegida).
+3. Elige el **Tipo de equipo**. Si no está, elige **+ Nuevo tipo...** y escribe el **Nombre del nuevo tipo** (por ejemplo «Chaleco antibalas»).
+4. Escribe **Marca** y **Modelo** (opcionales). Mientras escribes te sugiere los que ya existen.
+5. Escribe el **Núm. de Serie / ID** (obligatorio). Debajo verás si está disponible.
+6. **Costo:** lo que vale el equipo; sirve para el voucher si algún día se pierde. Si ya registraste otro de la misma marca y modelo, aparece sugerido.
+7. **Observaciones** (opcional): la condición del equipo.
+8. **Etiqueta NFC / RFID (opcional):** acerca al lector la etiqueta pegada al equipo, o escribe su número.
+9. Toca **Guardar**.
+
+![Alta de equipo](img/equipos/02-alta.png)
+
+**Qué debes ver:** «Equipo RAD-8830 registrado correctamente.» y, debajo, **Siguiente paso: Imprimir su etiqueta**. El equipo nace **DISPONIBLE**.
+
+### Avisos mientras escribes
+
+- **Núm. de Serie / ID:** verde «Número de serie disponible.»; rojo si ya está registrado (con **Reactivar** si está de baja); amarillo «Se parece a un número de serie ya registrado (los guiones y espacios no cuentan):».
+- **Etiqueta NFC / RFID:** si ya la tiene otro registro, te dice cuál y no se puede usar.
+
+## Cómo editar un equipo o ponerlo en mantenimiento
+
+1. Toca el **lápiz** (Editar) de la ficha. Se abre **Editar Equipo**.
+2. Corrige lo que necesites.
+3. En **Estado actual** puedes cambiar entre **DISPONIBLE** y **EN MANTENIMIENTO**. Debajo se explica qué puedes hacer según el estado: si está EN USO, ASIGNADO, FUERA, NO REGRESÓ o de BAJA, el estado se muestra pero no se cambia aquí.
+4. Toca **Guardar**.
+
+![Editar equipo](img/equipos/03-editar.png)
+
+**Qué debes ver:** «Equipo … actualizado correctamente.»
+
+Un equipo que lleva más de 24 horas **EN MANTENIMIENTO** aparece en **Mis pendientes → Equipos en mantenimiento** de quien edita equipos en su sede, para que no se quede ahí para siempre. Cuando regrese de reparación, márcalo **DISPONIBLE**; si ya no sirve, dalo de baja.
+
+## Cómo ver el QR, imprimir la etiqueta y asignar NFC
+
+1. Toca el botón del **código QR** de la ficha. Se abre **Código e identificación** con el QR y la dirección (botón **Copiar**).
+2. **Imprimir etiqueta** abre la etiqueta en otra pestaña; ahí toca **Imprimir Etiqueta** (en la impresora elige **«Tamaño real»** o **«Escala 100 %»**, como dice el recuadro amarillo). **Volver al Inventario de Equipos** te regresa. También puedes usar el botón de la **impresora** de la ficha, o **Imprimir con una plantilla de Etiquetas QR** para otra medida.
+3. En **Asignar etiqueta NFC / RFID** acerca la etiqueta al lector y toca **Guardar etiqueta**.
+
+![Código e identificación](img/equipos/05-ver-qr.png)
+
+![Etiqueta para imprimir](img/equipos/07-etiqueta.png)
+
+**Qué debes ver:** al leer el QR con el celular se abre la ficha del equipo (solo con una cuenta de tu empresa).
+
+## Cómo dar de baja un equipo (con voucher)
+
+Cuando un equipo se pierde, se daña o lo roban:
+
+1. Toca el botón rojo **Dar de baja** de la ficha. Se abre **Dar de Baja: …**.
+2. Elige el **Motivo**: Extraviado, Dañado o Robado.
+3. Escribe **¿Cómo pasó?** (ayuda a decidir si se cobra).
+4. Si se le cobra a alguien, marca **Se le cobra al responsable**:
+   - **Monto:** viene con el costo del equipo; puedes ajustarlo.
+   - **Responsable (a quién se le cobra):** elige **Colaborador** (escanea su gafete, acerca su tarjeta o escribe su número de empleado), **Persona externa** o **Empresa externa**. Si el equipo no regresó, ya viene propuesto quien lo tenía.
+5. En **Firmas del voucher** elige **Firma física** o **Firma digital** (firman en la pantalla Seguridad y, si hay responsable, también él), igual que en Llaves y Gafetes.
+6. Toca **Dar de baja**.
+
+![Baja con voucher](img/equipos/04-baja.png)
+
+**Qué debes ver:** «Equipo … dado de baja con el voucher VR-…». El equipo queda **DE BAJA** con su motivo.
+
+## Si el equipo no regresó de un pase
+
+Cuando un pase de salida se cierra con faltantes, el equipo queda **NO REGRESÓ** y su ficha dice «No regresó del pase …». El voucher de baja propone como responsable a quien **pidió el pase**.
+
+- Si el equipo aparece, toca **Recibir** en su ficha y confirma: vuelve a **DISPONIBLE**. El pase también lo refleja: suma lo que regresó y su bitácora dice «Recibido después del cierre por (tu nombre), (fecha)». Si ya tenía voucher, márcalo **Recuperado** en [Vouchers de reposición](vouchers.md).
+- Si no aparecerá, toca **Dar de baja**.
+
+## Si el equipo está apartado para un pase
+
+Mientras un pase que lo lleva está **Pendiente de Aprobación** o **Aprobado, listo para salir**, la ficha dice **Apartado para el pase …**. El equipo sigue **DISPONIBLE**, pero:
+
+- Al entregarlo en una responsiva o darlo de baja, la plataforma avisa «El equipo … está apartado para el pase …» y pide el motivo (**Entregar de todos modos** / **Dar de baja de todos modos**). Queda registrado.
+- Si se entrega o se da de baja, el pase ya no puede salir con él hasta que vuelva a estar disponible: la caseta ve el aviso al registrar la salida.
+
+Si el equipo está **EN USO**, **ASIGNADO** o **FUERA**, alguien lo tiene: **Dar de baja** te lleva a [Antes de dar de baja](antes-de-dar-de-baja.md), donde ves a cargo de quién está. Lo normal es recibirlo en Responsivas (o marcarlo **Faltante** ahí) o esperar su regreso en Pases de salida.
+
+## Cómo reactivar un equipo que apareció
+
+1. Filtra por **De baja**.
+2. Toca el botón verde **Reactivar (se encontró / se recuperó)** y confirma con **Aceptar**. Es lo mismo que marcar **Recuperado** en su voucher.
+
+**Qué debes ver:** sin cobro, «Equipo … reactivado: ya vuelve a estar DISPONIBLE. Su voucher VR-… quedó «Cancelado por recuperación».» Con cobro, pasas a [Vouchers de reposición](vouchers.md) con la ventana **Recuperado** abierta: indica si ya se le cobró y confirma; ahí vuelve a **DISPONIBLE**. El voucher no se borra; queda como historial.
+
+## Lo que ve el agente de caseta
+
+El agente consulta los equipos y su QR, pero no registra, edita ni da de baja.
+
+![Vista del agente](img/equipos/13-agente.png)
+
+## En el celular y en los modos Noche y Sol
+
+![En el celular](img/equipos/08-celular.png)
+
+![Modo Noche](img/equipos/10-noche.png)
+
+![Modo Sol](img/equipos/12-sol.png)
+
+## Si algo sale mal
+
+Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
+
+![Error dentro de la ventana](img/equipos/14-error-en-dialogo.png)
+
+| Mensaje o síntoma | Qué significa | Qué hacer |
+|---|---|---|
+| Falta la firma de Seguridad: firma en el recuadro o elige «Firma física». | Elegiste **Firma digital** y no firmaste (el recuadro se pone rojo). | Firma en el recuadro o cambia a **Firma física**. |
+| Falta la firma del responsable: que firme en el recuadro o elige «Firma física». | Hay responsable y no firmó. | Que firme o cambia a **Firma física**. |
+| Elige la sede donde está el equipo. | No elegiste sede. | Elige la sede. |
+| Elige el tipo de equipo (o «+ Nuevo tipo...»). | No elegiste tipo. | Elige uno o crea uno nuevo. |
+| Escribe el nombre del nuevo tipo de equipo. | Elegiste «+ Nuevo tipo...» sin nombre. | Escribe el nombre. |
+| El número de serie / ID es obligatorio. | Falta el número de serie. | Escríbelo (si no tiene, inventa un ID como `RAD-01`). |
+| El número de serie «…» ya está registrado en esta empresa (…). | Ese equipo ya existe. | Búscalo; si está de baja, reactívalo. |
+| El costo debe ser un número (por ejemplo 4800.00). | Escribiste letras o signos. | Escribe solo la cantidad. |
+| Elige DISPONIBLE o EN MANTENIMIENTO. La baja se hace con el botón «Dar de baja» (genera voucher). | Intentaste dar de baja desde Editar. | Usa el botón **Dar de baja**. |
+| Elige una sede activa de la lista: esa sede no existe, está desactivada o no está a tu cargo. | La sede no es tuya. | Elige una de tus sedes. |
+| Indica el monto a cobrar. / Elige al responsable al que se le cobrará. | Marcaste cobro sin monto o sin responsable. | Complétalos o desmarca la casilla. |
+
+## Preguntas frecuentes
+
+**¿Cómo paso un equipo a ASIGNADO o EN USO?** Con una [responsiva](responsivas.md): si es por turno queda **EN USO**; si es fija, **ASIGNADO**. Puede quedar a cargo de un colaborador, de una persona externa o de una empresa externa.
+
+**¿Por qué no puedo cambiar el estado al editar?** Porque está EN USO, ASIGNADO, FUERA, NO REGRESÓ o de BAJA. El cuadro bajo **Estado actual** te dice qué hacer.
+
+**¿Qué pasa con el voucher si el equipo aparece?** Se conserva como historial; en [Vouchers de reposición](vouchers.md) se puede marcar como recuperado.
+
+**¿Puedo imprimir muchas etiquetas a la vez?** Sí, en [Etiquetas QR](etiquetas-qr.md).
+
+## Relacionado
+
+- [Responsivas](responsivas.md)
+- [Vouchers de reposición](vouchers.md)
+- [Equipos de Protección Civil](equipos-pc.md)
+- [Etiquetas QR](etiquetas-qr.md)

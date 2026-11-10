@@ -1,0 +1,132 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Menu;
+use App\Models\Modulo;
+use Illuminate\Database\Seeder;
+
+/**
+ * Menu principal: Operación, Padrones, Recursos Humanos, Informes y Estructura
+ * (Estructura → Organización: Colaboradores, Departamentos, Puestos y Turnos, C-01).
+ * Solo crea lo que falta y solo acomoda modulos que aun no tienen menu:
+ * lo que se cambie despues desde la interfaz se respeta.
+ */
+class MenuSeeder extends Seeder
+{
+    /** Sección del menú Estructura con el directorio y los catálogos del personal (C-01). */
+    public const SECCION_ORGANIZACION = 'Organización';
+
+    /**
+     * menu => [nombre, icono, orden_movil, secciones[seccion => [modulo => color | [color, nombre en el menú]]]]
+     *
+     * Orden aprobado (PC y celular): Operación, Padrones, Recursos Humanos,
+     * Informes y Estructura. Autorizaciones departamentales no va en ningún
+     * menú (se llega desde «Mis pendientes» y desde la campana).
+     */
+    public static function menus(): array
+    {
+        return [
+            'operacion' => ['Operación', 'bi-shield-shaded', 1, [
+                // Decisión del dueño (mapa de procesos): Vouchers de reposición junto a lo de la caseta
+                'Caseta' => [
+                    'accesos' => 'primary', 'prestamo_llaves' => 'info', 'vouchers' => 'danger', 'pases_salida' => 'primary', 'transporte' => 'warning',
+                ],
+                // C-39: «Bitácora» (antes «Incidentes»: con la bitácora renombrada decía «Incidentes → Incidentes»)
+                'Bitácora' => [
+                    'novedades' => ['danger', 'Novedades'], 'lost_found' => 'warning', 'robo' => ['danger', 'Robo'],
+                ],
+                'Protección civil' => [
+                    'recorridos_pc' => 'success',
+                ],
+                'Activos' => [
+                    'responsivas' => 'success',
+                ],
+                'Consulta' => [
+                    'procedimientos' => 'primary',
+                ],
+                // Reservas de áreas (docs/tecnico/reservas.md): salones y salas de la sede
+                'Reservas' => [
+                    'reservas' => 'success',
+                ],
+            ]],
+            'padrones' => ['Padrones', 'bi-folder2-open', 2, [
+                'Personas y vehículos' => [
+                    'proveedores' => ['success', 'Empresas externas'], 'visitantes' => 'primary', 'vehiculos' => 'secondary',
+                ],
+                'Inventarios' => [
+                    'llaves' => 'primary', 'gafetes' => 'warning', 'equipos' => 'dark', 'equipos_pc' => 'danger',
+                ],
+                'Instalaciones' => [
+                    // Mejoras padrones: el nombre del menú dice que también administra las zonas de descarga
+                    'estacionamientos' => ['primary', 'Estacionamientos y zonas de descarga'], 'rutas' => 'info',
+                ],
+                'Herramientas' => [
+                    'etiquetas_qr' => 'dark',
+                ],
+            ]],
+            // Recursos Humanos: vacantes, recepción, candidatos y entrevistas (el directorio y sus catálogos van en Estructura, C-01)
+            'recursos_humanos' => ['Recursos Humanos', 'bi-people-fill', 3, [
+                'Recepción y candidatos' => [
+                    'vacantes' => 'warning', 'recepcion_rh' => 'primary', 'candidatos' => 'success',
+                ],
+                // Asistencia (ADR-0024): solo se ve con el complemento encendido
+                'Asistencia' => [
+                    'asistencia' => 'primary',
+                ],
+            ]],
+            // Sin pantallas todavía: el menú se oculta solo mientras ningún módulo tenga ruta
+            'informes' => ['Informes', 'bi-graph-up', 4, [
+                'Informes' => [
+                    'dashboard' => 'primary', 'bitacora_dia' => ['info', 'Bitácora del día'], 'tendencias' => 'success', 'informe_ejecutivo' => 'indigo',
+                ],
+            ]],
+            'estructura' => ['Estructura', 'bi-building-gear', 5, [
+                'Empresa' => [
+                    'empresas' => 'primary', 'sedes' => 'success', 'espacios' => 'danger',
+                ],
+                // Organización base en todos los planes (C-01): directorio, catálogos del personal y quién autoriza
+                self::SECCION_ORGANIZACION => [
+                    'colaboradores' => 'success', 'departamentos' => 'warning', 'puestos' => 'info', 'turnos' => 'secondary',
+                ],
+                'Accesos y permisos' => [
+                    'usuarios' => 'danger', 'roles' => 'indigo', 'permisos' => 'warning',
+                ],
+                'Sistema' => [
+                    'configuracion' => 'indigo', 'auditoria' => 'indigo',
+                ],
+                // Mejoras estructura (ADR-0016): lo exclusivo del Super Administrador, aparte
+                'Plataforma' => [
+                    'identidad' => 'primary', 'catalogo_comercial' => 'success',
+                ],
+                // Fin Mejoras estructura
+            ]],
+        ];
+    }
+
+    public function run(): void
+    {
+        $orden = 0;
+        foreach (self::menus() as $clave => [$nombre, $icono, $ordenMovil, $secciones]) {
+            $menu = Menu::firstOrCreate(
+                ['clave' => $clave],
+                ['nombre' => $nombre, 'icono' => $icono, 'orden' => ++$orden, 'orden_movil' => $ordenMovil],
+            );
+
+            $ordenModulo = 0;
+            foreach ($secciones as $seccion => $modulos) {
+                foreach ($modulos as $claveModulo => $definicion) {
+                    [$color, $nombreMenu] = is_array($definicion) ? $definicion : [$definicion, null];
+                    $ordenModulo++;
+                    Modulo::where('clave', $claveModulo)->whereNull('menu_id')->update([
+                        'menu_id' => $menu->id,
+                        'seccion_menu' => $seccion,
+                        'orden_menu' => $ordenModulo,
+                        'color_icono' => $color,
+                        'nombre_menu' => $nombreMenu,
+                    ]);
+                }
+            }
+        }
+    }
+}

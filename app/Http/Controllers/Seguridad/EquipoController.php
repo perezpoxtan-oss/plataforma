@@ -1,0 +1,303 @@
+<?php
+
+namespace App\Http\Controllers\Seguridad;
+
+use App\Http\Controllers\Controller;
+use App\Models\Colaborador;
+use App\Models\Empresa;
+use App\Models\Equipo;
+use App\Models\PaseSalidaArticulo;
+use App\Models\TipoEquipo;
+use App\Models\User;
+use App\Models\VoucherReposicion;
+use App\Services\Activos\CustodiaActivos;
+use App\Services\Equipos\AdministradorEquipos;
+use App\Services\Lector\ImpresionDesdePadron;
+use App\Services\Vouchers\RecuperacionVouchers;
+use App\Support\EstadoActivo;
+use App\Support\Receptor;
+use App\Support\Tenancy\EmpresaDeTrabajo;
+use App\Support\Tenancy\Tenant;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\View\View;
+
+/**
+ * Equipos de seguridad (réplica de modules/equipos de SEGCAT, sin
+ * Responsivas): radios, lámparas, detectores y demás equipo prestable de la
+ * guardia, por sede, con su etiqueta QR / NFC y la baja con voucher.
+ */
+class EquipoController extends Controller
+{
+    public function __construct(
+        private readonly EmpresaDeTrabajo $empresa,
+        private readonly Tenant $tenant,
+        private readonly AdministradorEquipos $equipos,
+    ) {}
+
+    public function index(Request $request): View
+    {
+        Gate::authorize('equipos.ver');
+        $actor = $request->user();
+        $empresaId = $this->empresa->id($actor);
+
+        if ($empresaId === null) {
+            return view('seguridad.equipos.index', ['sinEmpresa' => true]);
+        }
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId) {
+            $lista = $this->equipos->limitar(Equipo::query(), $actor, 'equipos.ver')
+                ->with(['tipo:id,nombre', 'sede:id,nombre',
+                    // Responsivas: quién lo tiene ahora (ver docs/tecnico/responsivas.md)
+                    'resguardoActual:id,responsiva_id,equipo_id,modalidad', 'resguardoActual.responsiva:id,folio,colaborador_id,receptor_tipo,receptor_id,entregado_en',
+                    'resguardoActual.responsiva.colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno'])
+                ->leftJoin('users as uc', 'uc.id', '=', 'equipos.creado_por')
+                ->leftJoin('users as ua', 'ua.id', '=', 'equipos.actualizado_por')
+                ->select(['equipos.*', 'uc.name as creado_por_nombre', 'ua.name as actualizado_por_nombre'])
+                ->orderBy('equipos.numero_serie')
+                ->get()
+                // SEGCAT: ordenado por tipo y número de serie
+                ->sortBy(fn (Equipo $e) => mb_strtolower($e->tipo->nombre ?? ''), SORT_STRING)->values();
+
+            $puede = [
+                'crear' => $actor->can('equipos.crear'),
+                'editar' => $actor->can('equipos.editar'),
+                'baja' => $actor->can('equipos.eliminar'),
+                'imprimir' => $actor->can('equipos.imprimir'),
+            ];
+            $conFormulario = $puede['crear'] || $puede['editar'];
+
+            return view('seguridad.equipos.index', [
+                'sinEmpresa' => false,
+                'equipos' => $lista,
+                'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
+                // Filtro de sede: solo las sedes que tienen equipos visibles
+                'sedesFiltro' => $lista->pluck('sede')->filter()->unique('id')->sortBy('nombre')->values(),
+                'tiposFiltro' => $lista->pluck('tipo')->filter()->unique('id')->sortBy('nombre')->values(),
+                'sedesAlta' => $puede['crear'] ? $this->equipos->sedesParaElegir($actor, 'equipos.crear') : collect(),
+                'sedesEdicion' => $puede['editar'] ? $this->equipos->sedesParaElegir($actor, 'equipos.editar') : collect(),
+                // Activos para elegir; los inactivos solo para conservar el valor de una edición
+                'tipos' => $conFormulario ? TipoEquipo::orderBy('nombre')->get(['id', 'nombre', 'activo']) : collect(),
+                'sugerencias' => $conFormulario ? $this->equipos->sugerencias() : ['marcas' => [], 'modelos' => [], 'costos' => []],
+                // Monto sugerido del voucher de cada equipo (una sola consulta)
+                'costosVoucher' => $puede['baja'] ? $this->equipos->costosDeVouchers() : [],
+                // Tras un error en la baja, el responsable que ya se había elegido
+                // C-16: lo elegido en el selector de responsable antes de que el formulario regresara con errores
+                'responsableBaja' => Receptor::anterior('responsable'),
+                'bajaResponsable' => $this->responsableAnterior(),
+                'editables' => $this->equipos->idsEnAlcance($actor, 'equipos.editar'),
+                'desactivables' => $this->equipos->idsEnAlcance($actor, 'equipos.eliminar'),
+                'puede' => $puede,
+                // Ronda 6 (EQ-04): folio del último voucher de cada equipo de baja (una sola consulta)
+                'vouchersBaja' => VoucherReposicion::where('origen_tipo', 'equipo')
+                    ->whereIn('origen_id', $lista->where('estado', 'baja')->pluck('id'))
+                    ->orderBy('id')->pluck('folio', 'origen_id')->all(),
+                // Mejoras padrones (ADR-0015): motivo y enlace del voucher en la tarjeta; enlace a la responsiva
+                'vouchersInfo' => app(RecuperacionVouchers::class)->ultimosPorOrigen('equipo', $lista->where('estado', 'baja')->pluck('id')),
+                'puedeVerVouchers' => $actor->can('vouchers.ver'),
+                'puedeVerResponsivas' => $actor->can('responsivas.ver'),
+                // C-14: «FUERA en PS-…» (una sola consulta) y a quién proponer en el voucher de lo que no regresó
+                // Revisión Etapa 2 (A-2): apartados para un pase que aún no sale
+                'apartados' => app(CustodiaActivos::class)->apartadosEnLista($lista->where('estado', EstadoActivo::DISPONIBLE)->pluck('id')),
+                'pasesFuera' => PaseSalidaArticulo::query()->with('pase:id,folio')
+                    ->whereIn('equipo_id', $lista->whereIn('estado', [EstadoActivo::FUERA, EstadoActivo::NO_REGRESO])->pluck('id'))
+                    ->whereColumn('cantidad_regresada', '<', 'cantidad')->whereHas('pase', fn ($q) => $q->whereNotNull('salio_en'))
+                    ->orderBy('id')->get()->mapWithKeys(fn ($a) => [(int) $a->equipo_id => $a->pase])->all(),
+                'propuestas' => $puede['baja'] ? $lista->where('estado', EstadoActivo::NO_REGRESO)
+                    ->mapWithKeys(fn (Equipo $e) => [$e->id => app(CustodiaActivos::class)->responsablePropuesto($e)])->all() : [],
+                'puedeVerPases' => $actor->can('pases_salida.ver'),
+            ]);
+        });
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        Gate::authorize('equipos.crear');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $equipo = $this->tenant->conEmpresa($empresaId, fn () => $this->equipos->crear($request->user(), $request->all()));
+
+        $redireccion = redirect()->to(route('equipos.index').'#equipo-'.$equipo->id)
+            ->with('ok', "Equipo {$equipo->numero_serie} registrado correctamente.");
+        // Mejoras padrones (criterio 5): el siguiente paso es su etiqueta
+        if ($request->user()->can('equipos.imprimir')) {
+            $redireccion->with('siguiente_paso', ['texto' => 'Imprimir su etiqueta', 'icono' => 'bi-printer', 'nueva_pestana' => true, 'url' => route('equipos.etiqueta', $equipo->id)]);
+        }
+
+        return $redireccion;
+    }
+
+    public function update(Request $request, int $equipo): RedirectResponse
+    {
+        Gate::authorize('equipos.editar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo) {
+            $modelo = $this->buscarEnAlcance($request->user(), $equipo, 'equipos.editar');
+
+            return $this->equipos->actualizar($request->user(), $modelo, $request->all());
+        });
+
+        return redirect()->to(route('equipos.index').'#equipo-'.$modelo->id)->with('ok', "Equipo {$modelo->numero_serie} actualizado correctamente.");
+    }
+
+    /**
+     * Baja con voucher (Extraviado | Dañado | Robado).
+     */
+    public function baja(Request $request, int $equipo): RedirectResponse
+    {
+        Gate::authorize('equipos.eliminar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        [$modelo, $voucher] = $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo) {
+            $modelo = $this->buscarEnAlcance($request->user(), $equipo, 'equipos.eliminar');
+
+            return [$modelo, $this->equipos->darDeBaja($request->user(), $modelo, $request->all())];
+        });
+
+        return redirect()->to(route('equipos.index').'#equipo-'.$modelo->id)
+            ->with('aviso', "Equipo {$modelo->numero_serie} dado de baja con el voucher {$voucher->folio}"
+                .($voucher->aplica_cobro ? ' (con cobro de $'.number_format((float) $voucher->monto, 2).')' : '')
+                .'. Puedes reactivarlo con un clic si aparece.');
+    }
+
+    /**
+     * Reactivar (se encontró / se recuperó): vuelve a DISPONIBLE; el voucher se conserva.
+     */
+    /** Revisión Etapa 2 (A-1): «Recibir» un equipo que no regresó de un pase ya cerrado. */
+    public function recibir(Request $request, int $equipo): RedirectResponse
+    {
+        Gate::authorize('equipos.editar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo) {
+            $modelo = $this->buscarEnAlcance($request->user(), $equipo, 'equipos.editar');
+            $this->equipos->recibirNoRegreso($request->user(), $modelo);
+
+            return $modelo;
+        });
+
+        return redirect()->to(route('equipos.index').'#equipo-'.$modelo->id)
+            ->with('ok', "Equipo {$modelo->numero_serie} recibido: vuelve a estar DISPONIBLE. Si ya tenía voucher, márcalo «Recuperado» en Vouchers de reposición.");
+    }
+
+    public function reactivar(Request $request, int $equipo): RedirectResponse
+    {
+        Gate::authorize('equipos.eliminar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        [$modelo, $resultado, $voucher] = $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo) {
+            $modelo = $this->buscarEnAlcance($request->user(), $equipo, 'equipos.eliminar');
+            // Mejoras padrones (ADR-0015): reactivar = «Recuperado» de su voucher (un solo camino, mismo resultado)
+            [$resultado, $voucher] = app(RecuperacionVouchers::class)->desdeFicha($request->user(), 'equipo', $modelo);
+            if ($resultado === 'sin_voucher') {
+                $this->equipos->reactivar($request->user(), $modelo);
+            }
+
+            return [$modelo, $resultado, $voucher];
+        });
+        $volver = route('equipos.index').'#equipo-'.$modelo->id;
+
+        return match ($resultado) {
+            'con_cobro' => redirect()->to(route('vouchers.index', ['q' => $voucher->folio, 'recuperar' => $voucher->id]).'#voucher-'.$voucher->id)
+                ->with('aviso', "El equipo {$modelo->numero_serie} tiene el voucher {$voucher->folio} con cobro: confirma aquí si ya se le cobró al responsable y se reactivará al guardar."),
+            'recuperado' => redirect()->to($volver)->with('ok', "Equipo {$modelo->numero_serie} reactivado: ya vuelve a estar DISPONIBLE. Su voucher {$voucher->folio} quedó «Cancelado por recuperación»."),
+            default => redirect()->to($volver)->with('ok', "Equipo {$modelo->numero_serie} reactivado: ya vuelve a estar DISPONIBLE."
+                .($voucher ? " Su voucher {$voucher->folio} sigue vigente: márcalo «Recuperado» en Vouchers de reposición." : '')),
+        };
+    }
+
+    /**
+     * Etiqueta para imprimir (SEGCAT: equipo_ticket.php). El QR se dibuja aquí
+     * mismo y solo lleva la dirección /e/{código}: SEGCAT lo pedía a
+     * api.qrserver.com (un tercero) y sin internet salía sin QR.
+     */
+    public function etiqueta(Request $request, int $equipo): View|RedirectResponse
+    {
+        Gate::authorize('equipos.imprimir');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo, $empresaId) {
+            $modelo = $this->equipos->limitar(Equipo::query(), $request->user(), 'equipos.imprimir')
+                ->with(['tipo:id,nombre', 'sede:id,nombre'])->find($equipo);
+            abort_if($modelo === null, 404);
+            // Mejoras padrones (ADR-0015): si la empresa imprime con plantillas, un solo camino (Etiquetas QR)
+            if ($plantillas = app(ImpresionDesdePadron::class)->redirigir($request->user(), $empresaId, 'equipo', [(int) $modelo->id])) {
+                return $plantillas;
+            }
+
+            return view('seguridad.equipos.etiqueta', [
+                'equipo' => $modelo,
+                'empresaNombre' => Empresa::whereKey($modelo->empresa_id)->value('nombre_comercial'),
+                'qr' => $this->qrSvg($modelo, 200),
+                'url' => route('lector.ir', $modelo->codigo_qr),
+                'codigoLegible' => trim(chunk_split($modelo->codigo_qr, 4, ' ')),
+            ]);
+        });
+    }
+
+    /**
+     * Imagen del QR para el diálogo "Ver QR" (SVG generado localmente).
+     */
+    public function qr(Request $request, int $equipo): Response
+    {
+        Gate::authorize('equipos.ver');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $svg = $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo) {
+            $modelo = $this->equipos->limitar(Equipo::query(), $request->user(), 'equipos.ver')->find($equipo);
+            abort_if($modelo === null, 404);
+
+            return $this->qrSvg($modelo, 220, true);
+        });
+
+        return response($svg, 200, ['Content-Type' => 'image/svg+xml', 'Cache-Control' => 'private, max-age=3600', 'X-Content-Type-Options' => 'nosniff']);
+    }
+
+    private function qrSvg(Equipo $equipo, int $tamano, bool $conDeclaracion = false): string
+    {
+        $svg = (new Writer(new ImageRenderer(new RendererStyle($tamano, 1), new SvgImageBackEnd)))->writeString(route('lector.ir', $equipo->codigo_qr));
+
+        // Incrustado en el HTML va sin la declaración XML
+        return $conDeclaracion ? $svg : (string) preg_replace('/^<\?xml[^>]*>\s*/', '', $svg);
+    }
+
+    /**
+     * Nombre del responsable capturado antes de un error de validación en la baja.
+     */
+    private function responsableAnterior(): ?string
+    {
+        $dialogo = old('_dialogo');
+        $id = old('colaborador_id');
+        if (! is_string($dialogo) || ! str_starts_with($dialogo, 'baja-') || ! is_numeric($id)) {
+            return null;
+        }
+
+        return Colaborador::find((int) $id)?->nombreCompleto();
+    }
+
+    private function empresaDeTrabajo(Request $request): int
+    {
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        return $empresaId;
+    }
+
+    /**
+     * Un equipo de otra empresa o fuera del alcance del permiso responde 404.
+     */
+    private function buscarEnAlcance(User $actor, int $id, string $permiso): Equipo
+    {
+        $modelo = $this->equipos->limitar(Equipo::query(), $actor, $permiso)->find($id);
+        abort_if($modelo === null, 404);
+
+        return $modelo;
+    }
+}

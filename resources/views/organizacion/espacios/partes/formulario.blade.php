@@ -1,0 +1,110 @@
+{{--
+    Diálogo de alta o edición de un espacio.
+    Parámetros: $id, $titulo, $icono, $nivel, $padreId (o $sedes para edificios), $tipos, $conCodigo, $secciones (opcional),
+                $editar (bool), $boton, $claseBoton, $etiquetaNombre, $extra (campos ocultos opcionales),
+                $tipoObligatorio, $nombreOpcional (si va vacío se usa el nombre del tipo), $padreNombre (texto visible del contenedor)
+--}}
+@php
+    $dialogo = old('_dialogo');
+    $reabrir = $editar ? (is_string($dialogo) && str_starts_with($dialogo, 'editar-') && old('_form') === $id) : $dialogo === 'crear-'.$id;
+    $editId = $reabrir && $editar ? (int) substr($dialogo, 7) : null;
+    $v = fn ($c) => $reabrir ? old($c) : '';
+@endphp
+<dialog id="{{ $id }}" class="dialogo" aria-labelledby="titulo-{{ $id }}" @if ($reabrir) data-abrir-al-cargar @endif>
+    <div class="dialogo-cabecera">
+        <h2 id="titulo-{{ $id }}"><i class="bi {{ $icono }} me-2" aria-hidden="true"></i>{{ $titulo }}</h2>
+        <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+    </div>
+    <div class="dialogo-cuerpo">
+        @if (! $editar && $nivel === 'edificio')
+            @include('componentes.ayuda-apartado', ['pagina' => 'zonas-y-areas', 'apartado' => 'Cómo crear una zona o edificio'])
+        @endif
+        <form action="{{ $editar ? ($editId ? route('espacios.update', $editId) : '') : route('espacios.store') }}" method="POST" autocomplete="off">
+            @csrf
+            @if ($editar) @method('PUT') @endif
+            <input type="hidden" name="_form" value="{{ $id }}">
+            <input type="hidden" name="_dialogo" value="{{ $editar ? ($editId ? 'editar-'.$editId : '') : 'crear-'.$id }}" @if ($editar) data-campo-dialogo @endif>
+            @unless ($editar)
+                <input type="hidden" name="nivel" value="{{ $nivel }}">
+                @if (! empty($padreId))
+                    <input type="hidden" name="padre_id" value="{{ $padreId }}" data-campo-padre>
+                @endif
+            @endunless
+            {!! $extra ?? '' !!}
+            @if (isset($padreNombre))
+                <p class="campo-ayuda mb-3"><i class="bi bi-arrow-return-right" aria-hidden="true"></i> Dentro de: <strong data-padre-nombre>{{ $padreNombre }}</strong></p>
+            @endif
+
+            @if (! $editar && isset($sedes))
+                @if ($sedes->count() > 1)
+                    <label class="campo-etiqueta" for="{{ $id }}_sede">Sede</label>
+                    <select id="{{ $id }}_sede" name="sede_id" class="campo" required>
+                        @foreach ($sedes as $sede)
+                            <option value="{{ $sede->id }}" @selected((string) $v('sede_id') === (string) $sede->id)>{{ $sede->nombre }}</option>
+                        @endforeach
+                    </select>
+                @else
+                    <input type="hidden" name="sede_id" value="{{ $sedes->first()?->id }}">
+                @endif
+            @endif
+
+            <div class="campo-grupo">
+                <div style="flex: 3">
+                    <label class="campo-etiqueta" for="{{ $id }}_nombre">{{ $etiquetaNombre ?? 'Nombre' }}</label>
+                    <input type="text" id="{{ $id }}_nombre" name="nombre" class="campo" maxlength="100" value="{{ $v('nombre') }}" @if ($nombreOpcional ?? false) placeholder="Si lo dejas vacío se usa el tipo" @else required @endif
+                           data-duplicado="{{ route('espacios.duplicado') }}" data-duplicado-con="nivel,padre_id,sede_id" data-duplicado-aviso="{{ $id }}_aviso_nombre">
+                </div>
+                @if ($conCodigo ?? false)
+                    <div style="flex: 1">
+                        <label class="campo-etiqueta" for="{{ $id }}_codigo">Código <span class="text-lowercase fw-normal">(opcional)</span></label>
+                        <input type="text" id="{{ $id }}_codigo" name="codigo" class="campo text-uppercase" maxlength="20" pattern="[A-Za-z0-9\-]+" title="Solo letras, números y guiones" value="{{ $v('codigo') }}"
+                               data-duplicado="{{ route('espacios.duplicado') }}" data-duplicado-con="nivel,padre_id,sede_id" data-duplicado-min="1" data-duplicado-aviso="{{ $id }}_aviso_codigo">
+                    </div>
+                @endif
+            </div>
+            {{-- Ronda 5: avisos en vivo de nombre repetido o parecido y de código parecido (TB = T-B) --}}
+            <div class="aviso-duplicado" id="{{ $id }}_aviso_nombre" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
+            @if ($conCodigo ?? false)
+                <div class="aviso-duplicado" id="{{ $id }}_aviso_codigo" data-aviso-duplicado role="status" aria-live="polite" hidden></div>
+            @endif
+
+            @if ($tipos->isNotEmpty())
+                <label class="campo-etiqueta" for="{{ $id }}_tipo">Tipo</label>
+                <select id="{{ $id }}_tipo" name="tipo_espacio_id" class="campo" @if ($tipoObligatorio ?? false) required @endif>
+                    @unless ($tipoObligatorio ?? false)<option value="">— Sin especificar —</option>@endunless
+                    @foreach ($tipos as $tipo)
+                        <option value="{{ $tipo->id }}" @selected((string) $v('tipo_espacio_id') === (string) $tipo->id)>{{ $tipo->nombre }}</option>
+                    @endforeach
+                </select>
+            @endif
+
+            {{-- Revisión Etapa 5: en condominio y fraccionamiento, una alberca o un salón no es una vivienda --}}
+            @if ($nivel === 'area_especifica' && \App\Support\Terminos::actual()->esResidencial())
+                <input type="hidden" name="area_comun" value="0">
+                <label class="d-flex align-items-start gap-2 mb-3 small" for="{{ $id }}_area_comun">
+                    <input type="checkbox" id="{{ $id }}_area_comun" name="area_comun" value="1" class="form-check-input mt-1" @checked((bool) $v('area_comun'))>
+                    <span><strong>Es un área común</strong> (alberca, salón, asador): no es una vivienda y no se le asignan residentes.</span>
+                </label>
+            @endif
+
+            @if (isset($secciones))
+                <label class="campo-etiqueta" for="{{ $id }}_seccion">Sección <span class="text-lowercase fw-normal">(opcional)</span></label>
+                <select id="{{ $id }}_seccion" name="grupo_espacio_id" class="campo">
+                    <option value="">— Sin sección —</option>
+                    @foreach ($secciones as $seccion)
+                        <option value="{{ $seccion->id }}" @selected((string) $v('grupo_espacio_id') === (string) $seccion->id)>{{ $seccion->nombre }}</option>
+                    @endforeach
+                </select>
+                <p class="campo-ayuda mb-3">Las secciones agrupan {{ mb_strtolower($etiquetas['area_especifica']['plural']) }} (Torre Norte, Villas…). La forma principal de armarlas es la pestaña «Secciones» de Zonas y edificios (asignas varias a la vez); aquí solo cambias la de esta.</p>
+            @endif
+
+            <div class="dialogo-acciones">
+                <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
+                <button type="submit" class="{{ $claseBoton }}">{{ $boton }}</button>
+            </div>
+        </form>
+        @if ($editar)
+            @include('componentes.borrar', ['registro' => 'espacios', 'id' => $editId])
+        @endif
+    </div>
+</dialog>

@@ -1,0 +1,205 @@
+# Bitácora de Novedades (despacho de tickets)
+
+Réplica de `modules/bitacora/novedades_*` de SEGCAT (`novedades_lista.php`, `novedades_proceso.php`, `novedades_categoria_ajax.php`, `novedades_detalle_ajax.php`, `ficha_hechos.php`, `lf_buscar_coincidencias.php`, `lf_vincular_perdida.php`, `lf_acuse.php` y los fragmentos `fragmentos/frag_*.php`; inventario §4.23). Pantalla `/novedades` (menú Operación). `/novedades/lost-found` es la misma pantalla filtrada a Lost & Found (ruta del submódulo `lost_found` en el menú).
+
+- Controlador: `app/Http/Controllers/Seguridad/NovedadController.php` (solo arma pantallas y respuestas)
+- Reglas: `app/Services/Novedades/AdministradorNovedades.php` (alcance, alta, expediente, estatus, reapertura, vincular, Minuto a Minuto, auditoría)
+- Formatos por categoría: `app/Services/Novedades/Formatos/*` (`Formato` base + `ReporteGeneral`, `Accidente`, `ValoresVista`, `Siniestro`, `RecorridoPc`, `LostFound`, `Robo`). Cada uno: `relaciones()`, `valores()`, `validar()`, `guardar()`.
+- Buscar coincidencias: `app/Services/Novedades/CoincidenciasLostFound.php`
+- Ficha de Hechos: `app/Services/Novedades/FichaHechos/FichaDeHechos.php` + interfaz `FuenteFichaHechos`
+- Modelos: `Novedad`, `NovedadNota`, `NovedadTestigo`, `NovedadReporteGeneral`, `Accidente{Huesped,Colaborador,Dictamen,Guardavidas,Incapacidad,Firma}`, `ValoresVista{Detalle,Persona,Apertura,Zona}`, `Siniestro{Detalle,Servicio,Equipo,Dano}`, `RecorridoPcPunto`, `LostFound{Detalle,Articulo,ReportePerdida,Umbral,Entrega}`, `RoboDetalle` (todos con `PerteneceAEmpresa` y `RegistraAutor`)
+- Migración: `2026_10_10_000300_crear_bitacora_de_novedades`
+- Vistas: `resources/views/seguridad/novedades/{index,_alta,_expediente,imprimir,acuse,ficha-hechos}.blade.php` y `formatos/*.blade.php` (un parcial por categoría y uno por fila dinámica)
+- JS: bloque "Bitácora de Novedades" al final de `public/js/plataforma.js`; CSS: bloque al final de `public/css/plataforma.css` y `public/css/modos-pantalla.css`
+- Pruebas: `tests/Feature/Seguridad/NovedadesTest.php` (18) y `NovedadesFormatosTest.php` (12), base común `PruebaNovedades.php`
+
+## Tablas
+
+Todas llevan `empresa_id` (scope de tenant) y autoría `creado_por` / `actualizado_por` + timestamps. Las fechas con hora (`ocurrio_en`, `cerrado_en`, `controlado_en`) se guardan en **UTC** y se muestran con `@fecha` en la zona de la sede.
+
+| Tabla | Qué guarda | Notas |
+|---|---|---|
+| `novedades` | El ticket: `sede_id`, `numero` (consecutivo por empresa → `#00012`), `categoria`, `estatus`, `reportado_por` (texto) + `reportado_colaborador_id` (si se escaneó el gafete), `asignado_a` (usuario), `area_id` (edificio o piso de Zonas y áreas), `area_especifica_id` (habitación), `ubicacion`, `involucrados`, `ocurrio_en`, `descripcion`, `como_sucedio`, `resolucion`, `cerrado_en`, `cerrado_por`, `origen_novedad_id` | Único `(empresa_id, numero)`. |
+| `novedad_notas` | Minuto a Minuto: una fila por nota (`tipo` nota / sistema / reapertura, `autor_nombre`, `texto`) | Solo se agrega: no hay ruta para editar ni borrar. |
+| `novedad_testigos` | Testigos de Accidente, Siniestro y Robo (`formato`, `nombre`, `departamento`, `declaracion`) | Antes tres tablas iguales. |
+| `novedad_reportes_generales` | Reporte General: observados, actividad, motivo, acciones inmediatas | Antes columnas `ig_*` y `acciones_inmediatas` en la cabecera. |
+| `accidente_huespedes`, `accidente_colaboradores`, `accidente_dictamenes`, `accidente_guardavidas`, `accidente_incapacidades` | Las 4 secciones del Accidente (1:1) | Heridas y zonas del cuerpo como JSON. |
+| `accidente_firmas` | Una fila por firma (`rol`: afectado, seguridad, medico, jefe, rh, ejecutivo) con la `ruta` en el disco **privado** | Antes 6 columnas base64. Único `(novedad_id, rol)`. |
+| `valores_vista_detalles` + `_personas`, `_aperturas`, `_zonas` | Valores a la Vista (SEGCAT HABITACION) | |
+| `siniestro_detalles` + `siniestro_servicios`, `_equipos`, `_danos` | Siniestro de Protección Civil | `accidente_novedad_id`: ticket de Accidente generado (una vez). |
+| `novedad_recorrido_puntos` | Recorrido PC histórico (identificador, categoría, ubicación, `criterios` JSON, observaciones) | Ya no se crean tickets Recorrido PC aquí. |
+| `lost_found_detalles` | Folio / enlace de plataforma externa | |
+| `lost_found_articulos` | Artículos encontrados: `numero`, `folio` (`LF-000123`), objeto, `tipo_valor`, marca, color, habitación, lugar, ubicación en bodega, `estatus` (nace `EN_RESGUARDO`), `cerrado_en` | Únicos `(empresa_id, numero)` y `(empresa_id, folio)`. |
+| `lost_found_reportes_perdida` | Reportes de pérdida (`RP-000123`), datos del huésped, `estatus` BUSCANDO / VINCULADO / CERRADO_SIN_HALLAZGO, `articulo_vinculado_id`, `vinculado_en/por` | |
+| `lost_found_umbrales` | Días de resguardo por tipo de valor (ALTO_VALOR 180, ELECTRONICO 180, OTRO 90, ROPA 30, PERECEDERO 2) | La migración siembra los de las empresas existentes; las nuevas usan `LostFoundUmbral::POR_OMISION` hasta configurarlos. |
+| `lost_found_entregas` | Cierre / entrega de un artículo (persona, paquetería, donado, destruido, beneficencia, firma privada) | La registra «Cerrar / Entregar» del [archivo de Lost & Found](lost-found-y-robo.md). |
+| `robo_detalles` | Circunstancias, sospechoso, parte policial, canalización, `articulo_vinculado_id` | Se crea al despachar un Robo; se atiende también en [Robo — Seguimiento](lost-found-y-robo.md). |
+
+### Mapeo para el importador de SEGCAT
+
+| SEGCAT | Plataforma |
+|---|---|
+| `bitacora_novedades.id_novedad` | `novedades.numero` (se conserva el número) |
+| `id_hotel` | `sede_id` |
+| `fecha_hora_reporte` / `fecha_hora_suceso` | `created_at` / `ocurrio_en` (convertir de hora local de la sede a UTC) |
+| `ubicacion_hecho`, `reportado_por`, `descripcion`, `como_sucedio`, `personas_areas_involucradas`, `resolucion_final`, `fecha_cierre` | `ubicacion`, `reportado_por`, `descripcion`, `como_sucedio`, `involucrados`, `resolucion`, `cerrado_en` |
+| `area_general` + `id_seccion` | `area_id` (edificio o piso de Zonas y áreas) |
+| `id_area_especifica` | `area_especifica_id` |
+| `categoria` (`INCIDENTE GENERAL`, `HABITACION`…) | `categoria` según `Novedad::CATEGORIAS_SEGCAT` |
+| `estatus_caso` | `estatus` según `Novedad::ESTATUS_SEGCAT` |
+| `notas_seguimiento` (un texto) | `novedad_notas`: partir por línea `[fecha] autor: texto` |
+| `ig_*`, `acciones_inmediatas` | `novedad_reportes_generales` |
+| `registrado_por`, `guardia_asignado`, `actualizado_por` | `creado_por`, `asignado_a`, `actualizado_por` |
+| `requiere_seguimiento` | Se descarta (siempre 1 en SEGCAT) |
+| `accidente_huesped/colaborador/medico/guardavidas/rh` | `accidente_huespedes/colaboradores/dictamenes/guardavidas/incapacidades` |
+| `accidente_firmas` (6 base64) | Guardar cada imagen con `Firmas::guardar()` y una fila en `accidente_firmas` |
+| `accidente_testigos`, `siniestro_pc_testigos`, `robo_testigos` | `novedad_testigos` con `formato` accidente / proteccion_civil / robo |
+| `bitacora_habitaciones_detalles` + `habitacion_personas/aperturas/valores_zona` | `valores_vista_detalles` + `_personas/_aperturas/_zonas` |
+| `siniestro_pc_*` | `siniestro_detalles` + `siniestro_servicios/_equipos/_danos` |
+| `bitacora_recorridos_pc` | `novedad_recorrido_puntos` |
+| `lost_found_detalle/articulos/reportes_perdida/umbrales/entregas` | `lost_found_*` (conservar los folios LF-/RP-) |
+| `robo_detalles` | `robo_detalles` |
+
+## Rutas (endpoints) y permisos
+
+| Método | Ruta | Nombre | Permiso |
+|---|---|---|---|
+| GET | `/novedades` (`?abrir=ID` abre el expediente) | `novedades.index` | `novedades.ver` o `lost_found.ver` |
+| GET | `/novedades/lost-found` | `lost_found.index` | ídem (solo tickets Lost & Found) |
+| POST | `/novedades` | `novedades.store` | `novedades.crear` (o `lost_found.crear`: solo categoría Lost & Found) |
+| PUT | `/novedades/{id}` | `novedades.update` | `editar` sobre el ticket |
+| GET | `/novedades/{id}` (Ronda 8) | `novedades.mostrar` | `ver` sobre el ticket: redirige a `/novedades?abrir={id}` (antes 405) |
+| POST | `/novedades/{id}/reabrir` (`motivo`) | `novedades.reabrir` | `novedades.reabrir` |
+| GET | `/novedades/{id}/imprimir` | `novedades.imprimir` | `imprimir` sobre el ticket |
+| GET | `/novedades/{id}/acuse` | `novedades.acuse` | `imprimir` (solo Lost & Found) |
+| GET | `/novedades/exportar?q=&categoria=&sede=&pestana=` | `novedades.exportar` | `novedades.exportar` (CSV con BOM, mismos filtros que la pantalla) |
+| GET | `/novedades/{id}/firmas/{rol}` | `novedades.firma` | `ver` sobre el ticket (firma desde el disco privado) |
+| GET | `/novedades/ficha-hechos?habitacion=&fecha=&novedad=&origen=&origen_id=` | `novedades.ficha-hechos` | `ver` (habitación de sus sedes) |
+| GET | `/novedades/coincidencias?tipo_valor=&objeto=&marca=&color=&fecha=` | `novedades.coincidencias` | `ver` (JSON) |
+| POST | `/novedades/perdidas/{reporte}/vincular` (`articulo_id`) | `novedades.perdidas.vincular` | `editar` sobre el ticket del reporte |
+| POST | `/novedades/{id}/vincular-hallazgo` (`articulo_id`) | `novedades.robo.vincular` | `novedades.editar` sobre el Robo |
+
+Alcance: con alcance de **sede** se ve y se toca solo lo de sus sedes (otra sede u otra empresa → 404); con **propios**, solo lo que registró. `lost_found.*` (submódulo) deja trabajar **solo** tickets Lost & Found (p. ej. Ama de Llaves), como en SEGCAT; el selector de categoría solo le ofrece esa. El superadministrador elige la empresa de trabajo.
+
+Plantillas de rol: el **Agente** (módulo de Operación) despacha, atiende e imprime tickets de su sede, pero no reabre ni exporta. Supervisor y Jefe de seguridad, todo en su sede.
+
+## Reglas
+
+- **Despachar** (Preguntas Base): sede activa de su alcance, categoría (Ronda 8: obligatoria, sin «Sin clasificar»; quien solo trabaja Lost & Found no elige), ¿quién reporta? (texto, «Fui yo quien lo observó» o gafete escaneado con el lector universal → `reportado_colaborador_id`), ¿a quién se canaliza? (Ronda 8: solo **personal de Seguridad** activo —rol con `novedades.editar`, `reabrir` o `exportar`— en toda la empresa o en esa sede; SEGCAT lo ignoraba), Área General (edificio y piso de la sede, activos; el piso debe ser de ese edificio), ubicación, involucrados, ¿cuándo? (hora local de la sede, no futura), ¿qué sucedió?, ¿cómo sucedió?. Textos clave en mayúsculas.
+- **Expediente**: preguntas base + formato de la categoría (todos los parciales se pintan en el servidor; el JS solo muestra el elegido y deshabilita los demás para que no se envíen) + nota del Minuto a Minuto + estatus.
+- **Estatus**: `abierto` ⇄ `pendiente_turno` → `resuelto`. Resuelto exige **resolución** y fija `cerrado_en`/`cerrado_por`. Cada cambio de estatus deja una nota de sistema. Un caso Resuelto **no se edita** (ni con una nota) hasta **Reabrir Caso** con motivo (mín. 5 letras) → vuelve a `abierto`, borra el cierre y anota «REABRIÓ EL CASO — Motivo: …».
+- **Recorrido PC** ya no se elige al despachar ni al cambiar categoría (tiene su propio módulo); solo se conserva en los tickets que ya la traían.
+- **Accidente**: formulario idéntico a `frag_accidente.php` (secciones, campos, etiquetas, opciones y orden); Ronda 8: los firmantes dependen del Tipo de Afectado (ver abajo). Se guarda huésped **o** colaborador según «Tipo de Afectado»; testigos y RH van con el de colaborador; el dictamen siempre; guardavidas solo si trae nombre; cada firma solo si se capturó (reemplaza y borra el archivo anterior). Departamento y puesto del colaborador se toman de su expediente.
+- **Siniestro PC** con lesionados abre **una sola vez** un ticket de Accidente ligado (`origen_novedad_id`), con nota en ambos.
+- **Lost & Found**: artículos nacen `EN_RESGUARDO`, el folio se asigna una vez (consecutivo por empresa); el estatus no se cambia desde el expediente. Un artículo ya entregado o vinculado, y un reporte ya vinculado, no se pueden quitar. La habitación de cada artículo debe colgar del Área General del ticket. Semáforo de resguardo con los umbrales.
+- **Buscar coincidencias**: artículos en resguardo visibles para el usuario, mismo tipo de valor, objeto/marca/color parecidos, encontrados de 7 días antes a 30 días después de la fecha (máx. 15).
+- **Vincular**: reporte BUSCANDO + artículo en resguardo → VINCULADO (no cierra el artículo). Robo no resuelto ← hallazgo en resguardo.
+- **Ficha de Hechos**: tickets, Valores a la Vista, artículos y reportes de pérdida de la habitación (y de su zona, como contexto) de 7 días antes a 30 después. **Gancho** para otros módulos (préstamos de llaves, accesos): implementar `FuenteFichaHechos` y etiquetarla en su proveedor con `$this->app->tag([MiFuente::class], FichaDeHechos::ETIQUETA)`; `disponible()` debe revisar `Schema::hasTable` y el permiso.
+- Auditoría: `novedades.creado`, `novedades.actualizado`, `novedades.resuelto`, `novedades.reabierto`, `novedades.hallazgo_vinculado`, `lost_found.vinculado`.
+- `AdministradorColaboradores::REFERENCIAS` incluye `novedades.reportado_colaborador_id` y `accidente_colaboradores.colaborador_id` (unir duplicados los mueve).
+
+## Qué se corrigió respecto a SEGCAT
+
+- Formatos por categoría cargados como parciales Blade del servidor (antes HTML inyectado por AJAX con `innerHTML`) y sin `onclick`; CSRF en todo.
+- Validación completa en el servidor con mensajes en español dentro del diálogo (antes casi todo se aceptaba sin revisar).
+- Las 6 firmas del Accidente van al disco privado y se sirven solo con permiso y alcance (antes base64 en la base de datos, visibles para cualquiera con el ID).
+- «Minuto a Minuto» en filas que no se editan ni se borran (antes un solo texto que crecía con `CONCAT`).
+- Tablas normalizadas: lo de cada categoría ya no vive en columnas de la cabecera; tres tablas de testigos iguales pasaron a una.
+- «¿A quién se canaliza?» se valida (usuario activo con acceso a la sede); antes se ignoraba en silencio un id inválido.
+- Área General con edificio y piso de Zonas y áreas (antes `area_general` texto + `id_seccion`), validada contra la sede.
+- Fechas en UTC y mostradas en la zona de la sede; «¿Cuándo sucedió?» no puede ser futura.
+- Reapertura exige motivo y queda en el historial y en la auditoría; un caso Resuelto ya no se puede editar «por debajo».
+- Número de ticket y folios LF-/RP- consecutivos **por empresa** (antes salían del id global de la tabla, compartido entre empresas).
+- Exportación CSV con los mismos filtros y alcance que la pantalla.
+
+## Ronda 8 (QA NV-01, NV-03 y NV-06)
+
+- **NV-03 — «405 Method Not Allowed» al guardar el expediente.** El formulario del expediente es correcto (POST con `@method('PUT')`, sin formularios anidados ni `formaction`; con Playwright, escritorio y celular, «Guardar Esta Firma» + «Guardar Expediente» guarda bien). El 405 aparece cuando la dirección del expediente (`/novedades/{id}`) llega **con GET** o **sin el campo `_method`** (recargar o volver atrás después de guardar, un envío que el servidor o su firewall redirigió o cortó). Se corrigió de tres formas:
+  - `GET /novedades/{id}` (`novedades.mostrar`, permiso `ver` + alcance) **abre el expediente** (`/novedades?abrir={id}`) en lugar de dar 405.
+  - El recuadro de trabajo de la firma (`firma_en_curso`) ya no se envía (pesaba de más en cada guardado) y una firma dibujada sin «Guardar Esta Firma» se guarda para el firmante elegido.
+  - Páginas de error en español para **405**, **413** y cualquier **4xx/5xx** sin vista propia (`resources/views/errors/405.blade.php`, `413`, `4xx`, `5xx`): con `APP_DEBUG=false` ya no sale la página genérica en inglés «Oops! An Error Occurred».
+- **NV-03 — firmantes según el afectado.** `AccidenteFirma::ROLES_POR_TIPO` (claves de SEGCAT + `testigo` y `supervisor`):
+
+  | Huésped / Cliente | Colaborador Interno |
+  |---|---|
+  | Huésped / Afectado (`afectado`) | Colaborador Afectado (`afectado`) |
+  | Testigo (`testigo`) | Jefe Inmediato (Jefe de Área / Departamento) (`jefe`) |
+  | Agente de Seguridad (Atiende) (`seguridad`) | Testigo (`testigo`) |
+  | Supervisor de Seguridad (`supervisor`) | Agente de Seguridad (Atiende) (`seguridad`) |
+  | Médico / Enfermería (Si aplica) (`medico`) | Supervisor de Seguridad (`supervisor`) |
+  | Gerente en Turno / Ejecutivo de Guardia (`ejecutivo`) | Servicio Médico (Si aplica) (`medico`) |
+  |  | Recursos Humanos (Si aplica) (`rh`) |
+
+  Sin «Tipo de Afectado» se ofrecen los 6 de SEGCAT. El selector cambia al elegir el tipo (`data-roles-por-tipo`, bloque «Ronda 8» de `plataforma.js`) y el servidor rechaza, dentro del diálogo, un firmante que no corresponde («La firma de «Recursos Humanos (Si aplica)» no corresponde a un accidente de huésped. Elige otro firmante.»). La impresión muestra las líneas de firma del tipo (y cualquier firma ya guardada). La columna `accidente_firmas.rol` (15 caracteres) ya admitía las claves nuevas: sin migración. El resto del formato de Accidente no cambió.
+- **NV-01 — ¿A quién se canaliza?** `AdministradorNovedades::personalCanalizable($sedes)`: usuarios activos de la empresa con un rol que tenga `novedades.editar`, `novedades.reabrir` o `novedades.exportar` (Agente, Supervisor, Jefe de seguridad, Asistente de seguridad, Director, Administrador) en toda la empresa o en esa sede; una sola consulta. Lo decide el motor de permisos, no el nombre del rol: Recursos Humanos u otros usuarios ya no aparecen. Se valida igual en el servidor (`asignadoValido`): «Solo se canaliza al personal de Seguridad activo de esa sede (agentes, supervisores, jefes o mandos).»
+- **NV-01 — clasificación obligatoria al despachar.** SEGCAT dejaba el ticket «Sin clasificar» por omisión; ahora la Categoría es obligatoria al despachar («Elige la clasificación del ticket (Categoría). Si aún no estás seguro, elige la más cercana: se puede corregir al atenderlo.»), sin la opción «Sin clasificar». Quien solo trabaja Lost & Found no elige (su única categoría). Los tickets que ya estaban «Sin clasificar» (o los que se importen de SEGCAT) se siguen atendiendo y se clasifican en el expediente.
+- **NV-06 — secciones plegables** en los formatos Valores a la Vista, Siniestro PC, Lost & Found y Robo (también en Robo — Seguimiento): cada título numerado es un `<x-seccion>`; ver [acceso-y-diseno.md](acceso-y-diseno.md#secciones-plegables-ronda-8-nv-06). Accidente se queda idéntico.
+
+- **NV-03 — causa en el hospedaje.** El envío con las firmas en texto `data:image/...;base64,...` lo cortaba el firewall del hospedaje; desde `fix/firmas-archivo` las firmas viajan como archivo (`__firmas[]`) y el middleware `FirmasComoArchivo` las regresa a `f_<rol>` antes del controlador. Ver docs/tecnico/firmas.md, «Envío como archivo».
+
+Pruebas: `tests/Feature/Seguridad/AjustesRonda8Test.php` (NV-03 y NV-01) y los ajustes en `NovedadesTest` / `NovedadesFormatosTest`.
+
+## Mejoras de Incidentes (ADR-0013)
+
+Decisión del dueño: lo que una empresa pueda querer distinto es configurable y **por omisión todo se ve y funciona como antes**; lo que solo simplifica (avisos en la campana, atajos, heredar datos) se aplica directo.
+
+### Archivos
+
+- `app/Services/Novedades/AvisosNovedades.php`: campana (siempre) y correo (avisos `novedad_canalizada` y `hallazgo_recorrido_pc`, **apagados por omisión** en `Empresa::AVISOS`).
+- `app/Services/Novedades/TurnosNovedades.php`: siguiente turno de la sede, aviso al iniciar el turno y al jefe al terminar; `revisar()` / `revisarSiToca()`.
+- `app/Services/Novedades/AjustesNovedades.php`: nombre del módulo y categoría del hallazgo de recorrido (ver «Nombre del módulo: Novedades o Incidentes»).
+- `app/Services/Novedades/Formatos/MantenimientoPc.php` + `formatos/mantenimiento-pc.blade.php`: sin campos propios; muestra los equipos con falla de los recorridos ligados (`Novedad::recorridosPc()`).
+- `app/Console/Commands/NovedadesPendientesDeTurno.php` (`plataforma:novedades-pendientes --si-toca`, en `despliegue/desplegar.sh`).
+- Vistas: `_alta` (recuadro «Objeto encontrado»), `_expediente` (área heredada, aviso de pendiente de turno, `_volver=robo`), `index` (reloj y dueño del pendiente de turno, `?mios=1`), `_config` (sección de Configuración), `lost-found/_objeto` y `lost-found/index` («Registrar objeto encontrado», «Agregar el objeto aquí»), `robo/_expediente` (mismo orden y nombres que el expediente de la bitácora).
+- Pruebas: `tests/Feature/Seguridad/MejorasIncidentesTest.php`.
+
+### Tablas (migración `2026_10_24_000100_incidentes_turno_y_espera_de_pases`)
+
+| Tabla | Columna | Para qué |
+|---|---|---|
+| `novedades` | `pendiente_turno_en` | Cuándo se marcó «Pendiente de turno» (reloj y cálculo del turno que lo recibe). Se reinicia cada vez que vuelve a ese estatus. |
+| `novedades` | `turno_avisado_en` | Ya se avisó al turno que lo recibe (una sola vez). |
+| `novedades` | `turno_escalado_en` | Ya se avisó al jefe porque ese turno terminó sin atenderlo (una sola vez). |
+
+Ajustes en `empresas.preferencias['novedades']['categoria_hallazgo_pc']` (`proteccion_civil` por omisión, no se guarda; `mantenimiento_pc`). El nombre del menú vive en `empresa_modulos.nombre_visible` del módulo `novedades` (el dato que ya leía `ConstructorMenu`); vacío = «Novedades».
+
+### Rutas nuevas
+
+| Método | Ruta | Nombre | Permiso |
+|---|---|---|---|
+| POST | `/lost-found/objetos` | `lost_found.objetos.store` | `crear` en novedades o Lost & Found (sin `novedad_id`); `editar` sobre el ticket (con `novedad_id`) |
+| PUT | `/configuracion/novedades` | `configuracion.novedades` | `configuracion.editar` con alcance de empresa |
+| GET | `/novedades?mios=1` | `novedades.index` | Lista abierta solo con los tickets canalizados al usuario |
+| GET | `/novedades?abrir=ID&volver=robo` | `novedades.index` | El expediente regresa a Seguimiento de robos al guardar (`_volver=robo`, si puede `robo.ver`) |
+
+### Reglas
+
+1. **Canalizar avisa** (criterio 1): al despachar o al cambiar «¿A quién se canaliza?», campana `novedad_canalizada` con botón **Atender** para el canalizado (no si se canaliza a sí mismo); el aviso anterior se resuelve. Al cerrar, `novedad_resuelta` a quien lo levantó y al canalizado (menos quien lo cerró). En Mis pendientes: «Tickets canalizados a mí» y «Pendientes de turno sin dueño» (solo con `novedades.editar` y cuando hay alguno).
+2. **Un dato una vez** (criterio 2): el expediente muestra el Área General del ticket («— del reporte inicial») y deja los combos plegados en «Cambiar edificio o piso». Los formatos ya heredaban edificio/piso; el objeto de Lost & Found capturado en el ticket rápido o con «Registrar objeto encontrado» hereda la habitación del ticket.
+3. **Pendiente de turno con dueño, hora y aviso** (criterios 1 y 3): el dueño es la persona canalizada. Con turnos (Estructura → Turnos) se calcula el primer turno de la sede que empieza después de `pendiente_turno_en`: al marcarlo se avisa al dueño; al iniciar ese turno, al dueño o (sin dueño) a `personalCanalizable` de la sede; al terminar, a quien tiene `novedades.reabrir` en la sede (jefe de seguridad o supervisor). Sin turnos se avisa al marcarlo (a todos menos a quien lo marcó) y no hay hora límite. La tarea programada y la lista (`revisarSiToca`, una vez por minuto por empresa) lo disparan. Salir del estatus resuelve los avisos.
+4. **Lost & Found sin ticket a medias** (criterio 8): el ticket rápido de Lost & Found pide opcionalmente el objeto (`lf_objeto`, `lf_tipo_valor`, `lf_ubicacion_bodega`) y lo guarda con el formato de Lost & Found en la misma transacción. «Registrar objeto encontrado» crea el ticket por detrás (`AdministradorNovedades::registrarObjeto`, auditoría `lost_found.objeto_registrado`); con `novedad_id` agrega el objeto a un ticket abierto sin artículos. El mensaje de éxito ofrece **Imprimir etiqueta de la bolsa** y **Registrar otro objeto** (criterio 5).
+5. **Una sola ficha de robo**: en Seguimiento de robos, quien puede editar el ticket en la bitácora (o solo consultarlo en ambos lados) abre el expediente de la bitácora; quien solo tiene el submódulo Robo sigue con su diálogo, ahora con el mismo título, orden (formato → Minuto a Minuto → estatus) y botón **Guardar Expediente**.
+6. **Categoría del hallazgo de recorrido**: `AdministradorNovedades::crear(..., $categoriaAutomatica)` admite `mantenimiento_pc` solo cuando la abre la plataforma (no se elige al despachar; se conserva en el expediente como `recorrido_pc`). Ver [Recorridos de Protección Civil](recorridos-pc.md).
+7. **Nombre del menú**: cambia el menú (`ConstructorMenu`), el atajo del celular (`AppServiceProvider`) y el `<h1>` de la bitácora. Las rutas, las claves de permisos y el nombre del módulo en Roles y permisos no cambian.
+
+### Auditoría
+
+`novedades.configurado`, `novedades.turno_avisado`, `novedades.turno_escalado` (sin usuario: tarea programada), `lost_found.objeto_registrado`. Etiquetas en `LectorAuditoria::ACCIONES`.
+
+### Cómo revertir
+
+Revert del PR. La migración solo agrega columnas vacías (su `down()` las quita). Si una empresa cambió el nombre del menú, al revertir el menú sigue leyendo `empresa_modulos.nombre_visible`: vaciarlo desde la base o antes de revertir dejar el campo vacío en Configuración. Los tickets `mantenimiento_pc` ya creados se ven en la versión anterior con su clave como categoría; si hace falta, cambiarlos a `proteccion_civil`.
+
+## Nombre del módulo: Novedades o Incidentes (decisión del dueño, 2026-10-12)
+
+Cada empresa elige cómo se llama el módulo. **Novedades** es el original y el valor por omisión (es donde va todo lo que acontece en el día, sin importar tipo o naturaleza); **Incidentes** es la alternativa; otro nombre libre queda en «Avanzado».
+
+- **Dato:** el mismo que ya existía, `empresa_modulos.nombre_visible` del módulo `novedades` (nulo = «Novedades»). No hay migración: las empresas que ya lo habían cambiado conservan su nombre; las demás siguen en «Novedades». Elegir «Novedades» guarda nulo.
+- **Configuración** (`_config.blade.php`): selector `nombre_opcion` = `Novedades` | `Incidentes` | `otro` y, plegado en «Avanzado: otro nombre», `nombre_menu` (obligatorio solo con `otro`; máx. 40, letras, números, espacio, punto, guion, «&»). Sin `nombre_opcion` se acepta `nombre_menu` como antes (compatibilidad). Auditoría `novedades.configurado` sin cambios.
+- **API** (`AjustesNovedades`, memoria por petición en `request()->attributes`):
+  - `nombreMenu($empresa)` → «Novedades» | «Incidentes» | otro; `nombrePropio()`; `opcion()`.
+  - `bitacora($empresa)` → «Bitácora de novedades» | «Bitácora de incidentes» | el nombre libre tal cual; `bitacoraConArticulo()` → «la Bitácora de …» | «Despacho» (entre comillas).
+  - Atajos con la empresa de trabajo de la sesión: `nombreActual()`, `bitacoraActual()`, `bitacoraActualConArticulo()`.
+- **Dónde se aplica:** menú y botón inferior del celular (como antes); título de la pestaña y `<h1>` de `/novedades`; textos que remiten a la bitácora en Lost & Found, Robo, Recorridos de PC (vista, aviso al escanear y validación); campana (título con «· Incidentes» solo si la empresa cambió el nombre) y correo («Ábrelo en la Bitácora de incidentes…»); grupos de avisos en Configuración (`GruposAvisos::agrupados($empresaId)`) y en Mi cuenta (`PreferenciasAvisos::opciones()`); Inicio (`PanelController`); informes: Tablero (`Tablero::titulo()`, gráfica y enlace), Tendencias (título de sección y selector), Bitácora del día (`BitacoraDelDia::nombreTipo()` en filtros, conteos, impresión y CSV); manual (`ManualController::ver()`: título de la página `novedades` y nota «En tu empresa la Bitácora de novedades se llama …» en las páginas del módulo).
+- **No cambia:** rutas, permisos (`novedades.*`), claves del catálogo, la sección «Incidentes» del menú Operación ni lo ya capturado.
+- Pruebas: `MejorasIncidentesTest::test_el_nombre_del_menu_es_configurable_sin_cambiar_rutas_ni_permisos` y `test_el_nombre_elegido_llega_a_avisos_informes_pendientes_y_manual`.

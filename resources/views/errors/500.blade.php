@@ -1,0 +1,1 @@
+@include('errors.plantilla', ['codigo' => 500, 'icono' => 'bi-exclamation-octagon', 'color' => '#dc2626', 'titulo' => 'Algo salió mal', 'mensaje' => 'Ocurrió un error inesperado y ya quedó registrado para revisarlo. Intenta de nuevo en un momento.', 'accion' => 'recargar'])

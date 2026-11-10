@@ -1,0 +1,494 @@
+<?php
+
+namespace App\Http\Controllers\Administracion;
+
+use App\Http\Controllers\Controller;
+use App\Models\Colaborador;
+use App\Models\Empresa;
+use App\Models\Rol;
+use App\Models\Sede;
+use App\Models\SolicitudCuenta;
+use App\Models\User;
+use App\Rules\ContrasenaSegura;
+use App\Services\Cuenta\RecuperacionContrasena;
+use App\Services\Cuenta\SolicitudesCuenta;
+use App\Services\DosPasos\VerificacionDosPasos;
+use App\Services\Permisos\Autorizador;
+use App\Services\Usuarios\AdministradorUsuarios;
+use App\Services\Usuarios\HomonimosUsuarios;
+use App\Support\Tenancy\EmpresaDeTrabajo;
+use App\Support\Tenancy\EmpresaScope;
+use App\Support\Tenancy\Tenant;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+
+/**
+ * Usuarios del sistema (réplica de modules/usuarios/usuario_lista.php de SEGCAT).
+ */
+class UsuarioController extends Controller
+{
+    public function __construct(
+        private readonly AdministradorUsuarios $administrador,
+        private readonly EmpresaDeTrabajo $empresa,
+        private readonly Tenant $tenant,
+        private readonly Autorizador $autorizador,
+        private readonly HomonimosUsuarios $homonimos,
+        private readonly RecuperacionContrasena $recuperacion,
+    ) {}
+
+    public function index(Request $request): View
+    {
+        Gate::authorize('usuarios.ver');
+
+        $actor = $request->user();
+        $empresaId = $this->empresa->id($actor);
+
+        // Sin empresa elegida (Super Administrador en plantillas) no hay usuarios que mostrar
+        if ($empresaId === null) {
+            return view('administracion.usuarios.index', ['sinEmpresa' => true]);
+        }
+
+        $usuarios = $this->visibles($actor, $empresaId)
+            ->with(['roles' => fn ($q) => $q->select('roles.id', 'roles.nombre', 'roles.nivel_jerarquia')->orderBy('usuario_roles.id'), 'colaborador:id,activo'])
+            ->leftJoin('users as uc', 'uc.id', '=', 'users.creado_por')
+            ->leftJoin('users as ua', 'ua.id', '=', 'users.actualizado_por')
+            ->select('users.*', 'uc.name as creado_por_nombre', 'ua.name as actualizado_por_nombre')
+            ->orderByDesc('users.id')
+            ->get();
+
+        $sedes = $this->tenant->conEmpresa($empresaId, fn () => Sede::where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'empresa_id']));
+        $nivelPropio = $actor->nivelJerarquia();
+        $puedeDesbloquear = $actor->can('usuarios.desbloquear');
+
+        // Cuentas bloqueadas que este usuario puede desbloquear (según el alcance del permiso)
+        $desbloqueables = ! $puedeDesbloquear ? [] : $this->administrador
+            ->limitarAlcance($this->visibles($actor, $empresaId), $actor, 'usuarios.desbloquear')
+            ->where('users.bloqueado_hasta', '>', now())
+            ->pluck('users.id')
+            ->all();
+        // Verificación en dos pasos: cuentas con ella activa que puede restablecer (mismo permiso y alcance)
+        $restablecibles2p = ! $puedeDesbloquear ? [] : $this->administrador
+            ->limitarAlcance($this->visibles($actor, $empresaId), $actor, 'usuarios.desbloquear')
+            ->whereNotNull('users.two_factor_confirmado_en')
+            ->pluck('users.id')
+            ->all();
+
+        $roles = Rol::where('empresa_id', $empresaId)
+            ->where('activo', true)
+            ->when(! $actor->es_superadmin, fn ($q) => $q->where('nivel_jerarquia', '>', $nivelPropio))
+            ->orderBy('nivel_jerarquia')
+            ->get(['id', 'nombre', 'nivel_jerarquia']);
+
+        // Cuentas por revisar (criterio 1): bloqueadas hoy y desactivadas por baja en los últimos 7 días
+        $porRevisar = ! $actor->can('usuarios.editar') ? collect() : $this->administrador->consultaPorRevisar($actor, $empresaId)
+            ->orderBy('users.name')->get(['users.id', 'users.name', 'users.bloqueado_hasta', 'users.desactivado_por_baja_en', 'users.colaborador_id', 'users.activo']);
+
+        // C-36: peticiones de «Pedir a mi administrador» que este usuario puede atender
+        $solicitudesCuenta = app(SolicitudesCuenta::class)->porAtender($actor, $empresaId);
+
+        // C-41: «Crear su cuenta» desde Colaboradores abre el alta con el colaborador ya vinculado (el dato no se recaptura)
+        $precolaborador = $actor->can('usuarios.crear') && is_numeric($request->query('colaborador'))
+            ? $this->tenant->conEmpresa($empresaId, fn () => Colaborador::query()->personal()->where('activo', true)->whereKey((int) $request->query('colaborador'))
+                ->whereDoesntHave('usuario')->first(['id', 'num_empleado', 'nombre', 'apellido_paterno', 'apellido_materno']))
+            : null;
+
+        return view('administracion.usuarios.index', [
+            'sinEmpresa' => false,
+            'precolaborador' => $precolaborador,
+            'solicitudesCuenta' => $solicitudesCuenta,
+            // C-36 (A-06): cuentas de un rol que administra y que no tienen correo
+            'sinCorreo' => $actor->can('usuarios.editar') ? AdministradorUsuarios::administrativasSinCorreo($empresaId) : collect(),
+            'usuarios' => $usuarios,
+            'sedes' => $sedes->keyBy('id'),
+            'roles' => $roles,
+            'nivelPropio' => $nivelPropio,
+            // Seguridad (AZ-01): sedes a las que puede asignar cuentas (null = todas)
+            'sedesAsignables' => $actor->es_superadmin ? null : $this->autorizador->sedesPermitidas($actor, $actor->can('usuarios.crear') ? 'usuarios.crear' : 'usuarios.editar'),
+            'desbloqueables' => $desbloqueables,
+            'restablecibles2p' => $restablecibles2p,
+            'porRevisar' => $porRevisar,
+            'correoListo' => $this->recuperacion->correoConfigurado(),
+            'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
+            'puede' => [
+                'crear' => $actor->can('usuarios.crear'),
+                'editar' => $actor->can('usuarios.editar'),
+                'eliminar' => $actor->can('usuarios.eliminar'),
+                'desbloquear' => $puedeDesbloquear,
+            ],
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        Gate::authorize('usuarios.crear');
+
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        // Por omisión la persona crea su contraseña con el enlace de bienvenida (criterio 6)
+        $enlace = $this->modoEnlace($request);
+        $datos = $this->vincularColaborador($this->validar($request, $empresaId, null, $enlace), $empresaId);
+        [$rol, $sede, $otras] = $this->rolYSede($datos, $empresaId);
+        $this->exigirConfirmacionHomonimo($request, $empresaId, $datos['name']);
+
+        try {
+            [$usuario, $enviado] = $this->administrador->crear($request->user(), $empresaId, $this->campos($datos), $rol, $sede, $enlace, $otras);
+        } catch (AuthorizationException $e) {
+            return back()->withInput($request->except('password'))->with('error', $e->getMessage());
+        }
+
+        if ($enlace && ! $enviado) {
+            return redirect()->route('usuarios.index')->with('aviso', "Usuario «{$usuario->name}» creado, pero el correo de bienvenida no se pudo enviar. Usa «Restablecer contraseña» en su ficha para intentarlo de nuevo o para escribirle una contraseña.");
+        }
+
+        return redirect()->route('usuarios.index')->with('ok', $enlace
+            ? "Usuario «{$usuario->name}» creado; le enviamos el correo de bienvenida para que cree su contraseña (vale 24 horas). ¿Quieres dar de alta otro? Toca «Nuevo Usuario»."
+            : "Usuario «{$usuario->name}» creado; al entrar tendrá que cambiar la contraseña que escribiste. ¿Quieres dar de alta otro? Toca «Nuevo Usuario».")
+            ->with('siguiente_paso', $this->siguientePaso($request->user(), $usuario));
+    }
+
+    /**
+     * C-41 (regla 5): si la cuenta nueva puede autorizar visitas, el siguiente
+     * paso es nombrarla responsable de su departamento (si su colaborador
+     * tiene uno, esa ventana se abre sola).
+     *
+     * @return list<array{texto: string, url: string, icono: string}>
+     */
+    private function siguientePaso(User $actor, User $usuario): array
+    {
+        if (! $actor->can('autorizaciones.configurar') || ! app(Autorizador::class)->puede($usuario->fresh(), 'autorizaciones.responder')) {
+            return [];
+        }
+        $depto = $usuario->colaborador_id ? Colaborador::query()->withoutGlobalScopes()->whereKey($usuario->colaborador_id)->value('departamento_id') : null;
+
+        return [['texto' => 'Nombrarlo responsable', 'icono' => 'bi-person-check',
+            'url' => route('autorizaciones.responsables', array_filter(['desde' => 'usuarios', 'abrir' => $depto])).($depto ? '#depto-'.$depto : '')]];
+    }
+
+    /**
+     * Restablecer contraseña desde la ficha: enlace por correo (60 min) o una
+     * contraseña escrita que la persona cambia al entrar.
+     */
+    public function restablecer(Request $request, User $usuario): RedirectResponse
+    {
+        $this->exigirDeLaEmpresa($request, $usuario);
+        Gate::authorize('usuarios.editar');
+        $this->exigirVisible($request, $usuario);
+
+        $enlace = $this->modoEnlace($request);
+        $datos = $request->validate([
+            'password' => [$enlace ? 'nullable' : 'required', 'string', Password::min(8)->letters()->numbers(),
+                new ContrasenaSegura((string) $usuario->username, (string) $usuario->email)],
+        ], [], ['password' => 'contraseña']);
+
+        try {
+            $enviado = $this->administrador->restablecer($request->user(), $usuario, $datos['password'] ?? null, $enlace);
+        } catch (AuthorizationException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        if ($enlace && ! $enviado) {
+            return redirect()->route('usuarios.index')->with('aviso', "No se pudo enviar el enlace a «{$usuario->name}» (revisa su correo o el correo de la plataforma). Su contraseña anterior ya no sirve: escríbele una con «Restablecer contraseña».");
+        }
+
+        return redirect()->route('usuarios.index')->with('ok', $enlace
+            ? "Le enviamos a «{$usuario->name}» un enlace para crear su contraseña nueva (vale 60 minutos). Su contraseña anterior ya no sirve y sus sesiones se cerraron."
+            : "Contraseña de «{$usuario->name}» restablecida; tendrá que cambiarla al entrar. Sus sesiones se cerraron.");
+    }
+
+    /**
+     * ¿Enlace por correo (opción por omisión) o contraseña escrita? Sin correo
+     * de la plataforma solo queda escribirla.
+     */
+    private function modoEnlace(Request $request): bool
+    {
+        $modo = $request->input('contrasena_modo') ?? ($request->filled('password') ? 'manual' : 'enlace');
+        // Sin correo en la cuenta (caseta) no hay a dónde mandar el enlace: se escribe una contraseña temporal
+        $correo = $request->routeIs('usuarios.restablecer') ? (string) ($request->route('usuario')?->email ?? '') : (string) $request->input('email', '');
+
+        return $modo === 'enlace' && $this->recuperacion->correoConfigurado() && filter_var($correo, FILTER_VALIDATE_EMAIL) !== false;
+    }
+
+    /** C-36 (DD-21): solo los roles que administran algo exigen correo. */
+    private function correoObligatorio(Request $request, int $empresaId): bool
+    {
+        $rol = is_numeric($request->input('rol_id')) ? Rol::where('empresa_id', $empresaId)->find((int) $request->input('rol_id')) : null;
+
+        return $rol === null || AdministradorUsuarios::rolAdministrativo($rol);
+    }
+
+    /**
+     * C-36: «Rechazar» una petición de «Pedir a mi administrador» (por
+     * ejemplo, no fue la persona). Atenderla es restablecer la contraseña o
+     * los dos pasos desde su ficha: eso la cierra sola.
+     */
+    public function rechazarSolicitud(Request $request, int $solicitud): RedirectResponse
+    {
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+        $s = SolicitudCuenta::query()->withoutGlobalScope(EmpresaScope::class)->where('empresa_id', $empresaId)->findOrFail($solicitud);
+        $usuario = User::where('empresa_id', $empresaId)->findOrFail($s->user_id);
+        Gate::authorize(SolicitudesCuenta::PERMISOS[$s->tipo] ?? 'usuarios.editar');
+        $this->exigirVisible($request, $usuario);
+        $datos = $request->validate(['motivo' => ['nullable', 'string', 'max:255']]);
+
+        try {
+            app(SolicitudesCuenta::class)->rechazar($request->user(), $s, $datos['motivo'] ?? null);
+        } catch (AuthorizationException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('usuarios.index')->with('ok', "Rechazaste la petición de «{$usuario->name}». Le avisamos; si la necesita, te buscará en persona.");
+    }
+
+    public function update(Request $request, User $usuario): RedirectResponse
+    {
+        $this->exigirDeLaEmpresa($request, $usuario);
+        Gate::authorize('usuarios.editar');
+        $empresaId = $this->exigirVisible($request, $usuario);
+
+        $datos = $this->vincularColaborador($this->validar($request, $empresaId, $usuario), $empresaId, $usuario);
+        [$rol, $sede, $otras] = $this->rolYSede($datos, $empresaId);
+        $this->exigirConfirmacionHomonimo($request, $empresaId, $datos['name'], $usuario);
+
+        try {
+            $this->administrador->actualizar($request->user(), $usuario, $this->campos($datos) + [
+                'activo' => $request->boolean('activo'),
+            ], $rol, $sede, $otras);
+        } catch (AuthorizationException $e) {
+            return back()->withInput($request->except('password'))->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('usuarios.index')->with('ok', 'Usuario actualizado correctamente.');
+    }
+
+    public function estado(Request $request, User $usuario): RedirectResponse
+    {
+        $this->exigirDeLaEmpresa($request, $usuario);
+        Gate::authorize('usuarios.eliminar');
+        $this->exigirVisible($request, $usuario);
+
+        $activo = $request->boolean('activo');
+
+        try {
+            $this->administrador->cambiarEstado($request->user(), $usuario, $activo);
+        } catch (AuthorizationException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('usuarios.index')->with($activo ? 'ok' : 'aviso', $activo
+            ? 'Usuario reactivado: ya puede iniciar sesión de nuevo.'
+            : 'Usuario dado de baja: ya no puede iniciar sesión y su sesión abierta se cerró. Puedes reactivarlo con el mismo botón.');
+    }
+
+    public function desbloquear(Request $request, User $usuario): RedirectResponse
+    {
+        $this->exigirDeLaEmpresa($request, $usuario);
+        Gate::authorize('usuarios.desbloquear');
+        $this->exigirVisible($request, $usuario);
+
+        if (! $usuario->estaBloqueado()) {
+            return redirect()->route('usuarios.index')->with('aviso', "«{$usuario->name}» no está bloqueado; ya puede entrar.");
+        }
+
+        try {
+            $this->administrador->desbloquear($request->user(), $usuario);
+        } catch (AuthorizationException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('usuarios.index')->with('ok', "«{$usuario->name}» desbloqueado; ya puede entrar.");
+    }
+
+    /**
+     * Verificación en dos pasos: quien perdió su teléfono pide a su
+     * administrador que la restablezca; al entrar la activa de nuevo. Mismo
+     * permiso, alcance y jerarquía que desbloquear; se audita y se avisa a la persona.
+     */
+    public function restablecerDosPasos(Request $request, User $usuario): RedirectResponse
+    {
+        $this->exigirDeLaEmpresa($request, $usuario);
+        Gate::authorize('usuarios.desbloquear');
+        $this->exigirVisible($request, $usuario);
+
+        try {
+            app(VerificacionDosPasos::class)->restablecer($request->user(), $usuario);
+        } catch (AuthorizationException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return redirect()->route('usuarios.index')->with('ok', "Listo: quitamos la verificación en dos pasos de «{$usuario->name}» y cerramos sus sesiones. Le avisamos; al entrar con su contraseña la activará con su teléfono nuevo.");
+    }
+
+    /**
+     * Un homónimo no impide guardar (hay personas con el mismo nombre), pero
+     * hay que confirmarlo con «Sí, es otra persona con el mismo nombre».
+     */
+    private function exigirConfirmacionHomonimo(Request $request, int $empresaId, string $nombre, ?User $usuario = null): void
+    {
+        if ($request->boolean('confirmar_homonimo') || ! $this->homonimos->requiereConfirmacion($empresaId, $nombre, $usuario)) {
+            return;
+        }
+
+        $iguales = $this->homonimos->usuarios($empresaId, $nombre, $usuario?->id);
+        $ids = $this->visibles($request->user(), $empresaId)->whereIn('users.id', $iguales->pluck('id'))->pluck('users.id')->all();
+        $visibles = $iguales->whereIn('id', $ids)->values();
+
+        throw ValidationException::withMessages(['confirmar_homonimo' => HomonimosUsuarios::mensaje($visibles, $iguales->count() - $visibles->count())
+            .' Si es otra persona con el mismo nombre, marca «Sí, es otra persona con el mismo nombre» y guarda de nuevo.'
+            .' Si es la misma persona, cancela y edita su cuenta en la lista.']);
+    }
+
+    /**
+     * Usuarios de la empresa que el actor puede ver según el alcance de "usuarios.ver":
+     * toda la empresa, los asignados a sus sedes, o solo los que él dio de alta.
+     */
+    private function visibles(User $actor, int $empresaId): Builder
+    {
+        $consulta = User::query()->where('users.empresa_id', $empresaId)->where('users.es_superadmin', false);
+
+        return $this->administrador->limitarAlcance($consulta, $actor, 'usuarios.ver');
+    }
+
+    /**
+     * Seguridad (AZ-03): una cuenta de otra empresa (o el Super Administrador)
+     * responde 404 antes de revisar el permiso, para no revelar que existe.
+     */
+    private function exigirDeLaEmpresa(Request $request, User $usuario): void
+    {
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null || $usuario->es_superadmin || (int) $usuario->empresa_id !== $empresaId, 404);
+    }
+
+    private function exigirVisible(Request $request, User $usuario): int
+    {
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+        abort_unless($this->visibles($request->user(), $empresaId)->whereKey($usuario->id)->exists(), 404);
+
+        return $empresaId;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validar(Request $request, int $empresaId, ?User $usuario = null, bool $sinContrasena = false): array
+    {
+        return $request->validate([
+            'name' => ['required', 'string', 'max:150'],
+            'numero_colaborador' => ['nullable', 'string', 'max:30', Rule::unique('users', 'numero_colaborador')->where('empresa_id', $empresaId)->ignore($usuario?->id)],
+            'colaborador_id' => ['nullable', 'integer'],
+            'username' => ['required', 'string', 'max:60', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('users', 'username')->ignore($usuario?->id)],
+            // C-36 (DD-21): el correo es opcional en las cuentas de caseta (rol sin permisos de administración)
+            'email' => [$this->correoObligatorio($request, $empresaId) ? 'required' : 'nullable', 'email:rfc', 'max:150', Rule::unique('users', 'email')->ignore($usuario?->id)],
+            'password' => [$usuario === null && ! $sinContrasena ? 'required' : 'nullable', 'string', Password::min(8)->letters()->numbers(),
+                new ContrasenaSegura((string) $request->input('username'), (string) $request->input('email'))],
+            'rol_id' => ['required', 'integer'],
+            'sede_id' => ['nullable', 'integer'],
+            // Varias sedes por cuenta (ADR-0016)
+            'sedes_extra' => ['nullable', 'array', 'max:50'],
+            'sedes_extra.*' => ['integer'],
+        ], [
+            'username.unique' => 'Ya existe otro usuario registrado con ese nombre de usuario.',
+            'email.unique' => 'Ya existe otro usuario registrado con ese correo.',
+            'numero_colaborador.unique' => 'Ya existe otro usuario registrado con ese número de colaborador.',
+            'username.regex' => 'El nombre de usuario solo puede tener letras, números, punto, guion y guion bajo (sin espacios).',
+            'email.required' => 'Escribe el correo: este rol administra la plataforma y lo necesita para recuperar su cuenta y recibir avisos. Solo las cuentas de caseta pueden ir sin correo.',
+        ], [
+            'name' => 'nombre completo',
+            'numero_colaborador' => 'número de colaborador',
+            'username' => 'nombre de usuario',
+            'email' => 'correo',
+            'password' => 'contraseña',
+            'rol_id' => 'rol',
+        ]);
+    }
+
+    /**
+     * Vínculo opcional con Colaboradores (SEGCAT: usuarios.id_colaborador): el
+     * colaborador debe ser de la misma empresa y no tener ya otra cuenta. El
+     * número de colaborador de la cuenta se toma del colaborador.
+     *
+     * @param  array<string, mixed>  $datos
+     * @return array<string, mixed>
+     */
+    private function vincularColaborador(array $datos, int $empresaId, ?User $usuario = null): array
+    {
+        if (empty($datos['colaborador_id'])) {
+            $datos['colaborador_id'] = null;
+
+            return $datos;
+        }
+
+        $id = (int) $datos['colaborador_id'];
+        $colaborador = $this->tenant->conEmpresa($empresaId, fn () => Colaborador::find($id));
+        if ($colaborador === null) {
+            throw ValidationException::withMessages(['colaborador_id' => 'El colaborador no existe en esta empresa.']);
+        }
+        // C-10: las cuentas son del personal; un residente no tiene cuenta (su portal llegará después)
+        if ($colaborador->esResidente() && $id !== (int) $usuario?->colaborador_id) {
+            throw ValidationException::withMessages(['colaborador_id' => 'Esa persona es residente: las cuentas se vinculan solo al personal.']);
+        }
+        if (! $colaborador->activo && $id !== (int) $usuario?->colaborador_id) {
+            throw ValidationException::withMessages(['colaborador_id' => 'Ese colaborador está dado de baja.']);
+        }
+        if (User::where('colaborador_id', $id)->when($usuario !== null, fn ($q) => $q->whereKeyNot($usuario->id))->exists()) {
+            throw ValidationException::withMessages(['colaborador_id' => 'Ese colaborador ya tiene una cuenta de usuario: búscala en la lista en vez de crear otra.']);
+        }
+        if (User::where('empresa_id', $empresaId)->where('numero_colaborador', $colaborador->num_empleado)
+            ->when($usuario !== null, fn ($q) => $q->whereKeyNot($usuario->id))->exists()) {
+            throw ValidationException::withMessages(['numero_colaborador' => 'Ya existe otro usuario registrado con ese número de colaborador.']);
+        }
+
+        $datos['colaborador_id'] = $id;
+        $datos['numero_colaborador'] = $colaborador->num_empleado;
+        // C-11 (DD-22): manda el colaborador; el nombre de la cuenta es el suyo (en pantalla, solo lectura)
+        $datos['name'] = $colaborador->nombreCompleto();
+
+        return $datos;
+    }
+
+    /**
+     * @return array{0: Rol, 1: ?Sede, 2: list<Sede>}
+     */
+    private function rolYSede(array $datos, int $empresaId): array
+    {
+        $rol = Rol::where('empresa_id', $empresaId)->find($datos['rol_id']);
+        abort_if($rol === null, 422, 'El rol no existe en esta empresa.');
+
+        $sede = null;
+        if (! empty($datos['sede_id'])) {
+            $sede = $this->tenant->conEmpresa($empresaId, fn () => Sede::find($datos['sede_id']));
+            abort_if($sede === null, 422, 'La sede no existe en esta empresa.');
+        }
+
+        // Otras sedes que también atiende (solo con una sede elegida; «todas» ya las incluye)
+        $ids = $sede === null ? [] : array_values(array_unique(array_map('intval', $datos['sedes_extra'] ?? [])));
+        $otras = $ids === [] ? [] : $this->tenant->conEmpresa($empresaId, fn () => Sede::whereIn('id', $ids)->get()->all());
+        abort_if(count($otras) !== count($ids), 422, 'Una de las sedes no existe en esta empresa.');
+
+        return [$rol, $sede, $otras];
+    }
+
+    /**
+     * @return array{name: string, username: string, numero_colaborador: ?string, colaborador_id: ?int, email: ?string, password: ?string}
+     */
+    private function campos(array $datos): array
+    {
+        return [
+            'name' => trim($datos['name']),
+            'username' => trim($datos['username']),
+            'numero_colaborador' => isset($datos['numero_colaborador']) && trim($datos['numero_colaborador']) !== '' ? trim($datos['numero_colaborador']) : null,
+            'colaborador_id' => $datos['colaborador_id'] ?? null,
+            'email' => isset($datos['email']) && trim((string) $datos['email']) !== '' ? mb_strtolower(trim($datos['email'])) : null,
+            'password' => $datos['password'] ?? null,
+        ];
+    }
+}

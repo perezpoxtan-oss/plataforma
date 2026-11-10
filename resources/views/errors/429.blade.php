@@ -1,0 +1,1 @@
+@include('errors.plantilla', ['codigo' => 429, 'icono' => 'bi-hourglass-split', 'color' => '#d97706', 'titulo' => 'Demasiados intentos', 'mensaje' => 'Hiciste muchas solicitudes en poco tiempo. Espera un minuto y vuelve a intentarlo.', 'accion' => 'recargar'])

@@ -1,0 +1,859 @@
+<?php
+
+namespace App\Services\Accesos;
+
+use App\Models\Acceso;
+use App\Models\AcompananteAcceso;
+use App\Models\ArticuloAcceso;
+use App\Models\Colaborador;
+use App\Models\Departamento;
+use App\Models\Gafete;
+use App\Models\Persona;
+use App\Models\Proveedor;
+use App\Models\Sede;
+use App\Models\User;
+use App\Models\Vehiculo;
+use App\Models\ZonaEstacionamiento;
+use App\Services\Espacios\Lugares;
+use App\Services\Padrones\AdministradorProveedores;
+use App\Services\Padrones\AltasPorVerificar;
+use App\Services\Permisos\AdministradorRoles;
+use App\Services\Personas\AdministradorPersonas;
+use App\Services\Recepcion\RecepcionEnCaseta;
+use App\Services\Vehiculos\AdministradorVehiculos;
+use App\Support\Terminos;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * "Registro Inteligente de Ingreso" (réplica de acceso_proceso.php?accion=entrada
+ * de SEGCAT): un solo formulario que cambia según el tipo de persona.
+ *
+ * Reglas de SEGCAT que se conservan:
+ *  - la sede debe ser de la empresa y estar al alcance de quien registra;
+ *  - colaboradores, huéspedes y emergencias nunca llevan gafete;
+ *  - proveedor y contratista nacen PENDIENTES y necesitan host (colaborador);
+ *  - con reserva, el pase del huésped siempre es Estancia;
+ *  - el conductor del huésped solo se guarda si llegó en vehículo;
+ *  - la zona debe ser de la sede y estar activa;
+ *  - el vehículo, la persona y la empresa externa caen a sus padrones
+ *    (se buscan primero para no duplicar), con la propiedad del vehículo
+ *    derivada del tipo: Colaborador/Emergencia/Personal externo/Huésped →
+ *    Particular; Huésped con conductor (taxi) y Proveedor/Contratista →
+ *    De una empresa (el número económico y la empresa los completa quien
+ *    verifica el padrón);
+ *  - un mismo nombre en el Padrón de personas pregunta "¿Es la misma
+ *    persona?" antes de crear otra (homónimos reales).
+ *
+ * Lo que SEGCAT callaba (un gafete ocupado, una zona inválida, un host de
+ * otra sede) ahora se avisa con un mensaje dentro del formulario.
+ */
+class RegistroAccesos
+{
+    /** Máximo de acompañantes por registro (como SEGCAT). */
+    public const MAX_ACOMPANANTES = 15;
+
+    public function __construct(
+        private readonly ConsultaAccesos $consulta,
+        private readonly AdministradorRoles $auditoria,
+        private readonly AdministradorPersonas $personas,
+        private readonly AdministradorVehiculos $vehiculos,
+        private readonly AdministradorProveedores $proveedores,
+    ) {}
+
+    /**
+     * @param  array<string, mixed>  $entrada
+     */
+    public function registrar(User $actor, array $entrada): Acceso
+    {
+        $d = $this->validar($entrada);
+        $tipo = $d['tipo'];
+        $errores = [];
+
+        // ---------- Sede (al alcance de quien registra) ----------
+        $sedeId = (int) $d['sede_id'];
+        if (! $this->consulta->sedesParaElegir($actor, 'accesos.crear')->contains('id', $sedeId)) {
+            throw ValidationException::withMessages(['sede_id' => 'Elige una sede activa de la lista: esa sede no existe, está desactivada o no está a tu cargo.']);
+        }
+
+        // ---------- Giros: solo los tipos y motivos que se usan en el giro de la empresa (docs/tecnico/giros.md) ----------
+        $terminos = Terminos::deEmpresaId((int) Sede::whereKey($sedeId)->value('empresa_id'));
+        if (! $terminos->ofreceTipo($tipo)) {
+            throw ValidationException::withMessages(['tipo' => 'Ese tipo de persona no se registra en esta empresa. Elige uno de la lista.']);
+        }
+
+        // ---------- C-09 (DD-12): «¿A quién viene?» se traduce a los campos de siempre ----------
+        if ($tipo === 'visitante' && empty($d['motivo_visita'])) {
+            // El motivo marcado (en residenciales, el único) antes de leer a quién viene
+            $d['motivo_visita'] = app(MotivosVisita::class)->porOmision((int) Sede::whereKey($sedeId)->value('empresa_id'));
+        }
+        $destino = app(AQuienViene::class)->aplicar($tipo, $d, $sedeId, $terminos);
+        $llamada = $d['llamada'] ?? null;
+        // La caseta llamó al residente o a la habitación: deja constancia (si no llegó la respuesta, sigue la regla de siempre)
+        $conLlamada = $destino['llamar'] && in_array($llamada, ['autorizo', 'no_autorizo'], true);
+
+        // ---------- Titular ----------
+        $colaborador = null;
+        $nombre = $this->texto($d['nombre'] ?? null);
+        if ($tipo === 'colaborador') {
+            $colaborador = $this->colaboradorEnSede($d['colaborador_id'] ?? null, $sedeId);
+            if ($colaborador === null) {
+                $errores['colaborador_id'] = empty($d['colaborador_id'])
+                    ? 'Escanea o busca al colaborador que ingresa.'
+                    : 'El colaborador elegido no existe, está dado de baja o no pertenece a esta sede.';
+            } else {
+                $nombre = $colaborador->nombreCompleto();
+            }
+        } elseif ($tipo === 'emergencia') {
+            $nombre ??= Acceso::NOMBRE_EMERGENCIA;
+        } elseif ($nombre === null) {
+            $errores['nombre'] = $tipo === 'huesped' ? 'Escribe el nombre del huésped.' : 'El nombre de la persona es obligatorio.';
+        }
+
+        // ---------- Host (proveedor / contratista) y a quién visita (personal externo) ----------
+        $host = null;
+        if (in_array($tipo, Acceso::CON_AUTORIZACION, true)) {
+            $host = $this->colaboradorEnSede($d['host_colaborador_id'] ?? null, $sedeId);
+            // C-09: basta con a quién viene: la persona que lo citó, el área o (residenciales) la vivienda
+            $sinDestino = empty($d['departamento_id']) && empty($d['espacio_id']) && empty($d['habitacion']);
+            if ($host === null && (! empty($d['host_colaborador_id']) || $sinDestino)) {
+                $campo = array_key_exists('a_quien', $d) ? 'a_quien' : 'host_colaborador_id';
+                $errores[$campo] = empty($d['host_colaborador_id'])
+                    ? 'Indica a quién viene: la persona que lo citó o el área.'
+                    : 'La persona elegida no existe, está dada de baja o no pertenece a esta sede.';
+            }
+        }
+        // Motivos según el giro y lo contratado; ninguno viene marcado de fábrica (C-04, DD-23)
+        $motivosVisita = app(MotivosVisita::class);
+        $empresaSede = (int) Sede::whereKey($sedeId)->value('empresa_id');
+        $motivo = $tipo === 'visitante' ? ($d['motivo_visita'] ?? $motivosVisita->porOmision($empresaSede)) : null;
+        if ($tipo === 'visitante' && $motivo === null) {
+            $errores['motivo_visita'] = 'Elige el motivo de la visita.';
+        } elseif ($motivo !== null && ! array_key_exists($motivo, $motivosVisita->para($empresaSede))
+            && ! ($motivo === 'departamento' && array_key_exists('colaborador', $motivosVisita->para($empresaSede)))) { // C-09: «Visita a persona o área»
+            $errores['motivo_visita'] = 'Elige el motivo de la visita de la lista.';
+        }
+        // Visita general: ¿a quién o a qué viene? · Visita a huésped: ¿a quién visita? (texto; la habitación es opcional)
+        $personaVisita = null;
+        if (in_array($motivo, ['general', 'huesped'], true)) {
+            $personaVisita = $this->mayusculas($d['persona_visita'] ?? null);
+            if ($personaVisita === null) {
+                $errores['persona_visita'] = $motivo === 'huesped' ? 'Escribe a qué huésped visita.' : 'Escribe a quién o a qué viene.';
+            }
+        }
+        $visita = null;
+        if ($motivo === 'colaborador') {
+            $visita = $this->colaboradorEnSede($d['visita_colaborador_id'] ?? null, $sedeId);
+            // C-09: a una vivienda (con varios residentes o sin catálogo) se viene sin elegir a una persona
+            $aVivienda = empty($d['visita_colaborador_id']) && $terminos->esResidencial() && (! empty($d['espacio_id']) || ! empty($d['habitacion']));
+            if ($visita === null && ! $aVivienda) {
+                $errores[array_key_exists('a_quien', $d) ? 'a_quien' : 'visita_colaborador_id'] = empty($d['visita_colaborador_id'])
+                    ? 'Indica a quién visita (búscalo en «¿A quién viene?»).'
+                    : 'El colaborador visitado no existe, está dado de baja o no pertenece a esta sede.';
+            }
+        }
+
+        // ---------- Departamento (proveedor / contratista) ----------
+        $departamentoId = null;
+        if (in_array($tipo, Acceso::CON_AUTORIZACION, true) && ! empty($d['departamento_id'])) {
+            $departamentoId = Departamento::where('activo', true)->aplicanEn([$sedeId])->whereKey((int) $d['departamento_id'])->value('id');
+            if ($departamentoId === null) {
+                $errores['departamento_id'] = 'Elige un departamento activo de la lista.';
+            }
+        }
+
+        // ---------- C-30: lugares del catálogo (habitación del huésped y área de trabajo) ----------
+        $lugares = app(Lugares::class);
+        $habitacion = null;
+        if ($tipo === 'huesped' || ($tipo === 'visitante' && ($terminos->visitaLlevaEspacio() || $motivo === 'huesped'))
+            || (in_array($tipo, Acceso::CON_AUTORIZACION, true) && (! empty($d['espacio_id']) || ($terminos->esResidencial() && ! empty($d['habitacion']))))) {
+            $habitacion = $this->mayusculas($d['habitacion'] ?? null);
+        }
+        $espacioId = ! empty($d['espacio_id']) ? $lugares->valido($d['espacio_id'], [$sedeId], Lugares::ESPECIFICOS)?->id : null;
+        if ($tipo === 'huesped' && ! empty($d['habitacion_id'])) {
+            $cuarto = $lugares->valido($d['habitacion_id'], [$sedeId], Lugares::ESPECIFICOS);
+            if ($cuarto === null) {
+                $errores['habitacion_id'] = 'Elige la habitación de la lista (o escríbela si no está en el catálogo).';
+            } else {
+                $espacioId = (int) $cuarto->id;
+                $habitacion = mb_strtoupper(mb_substr((string) $cuarto->nombre, 0, 20));
+            }
+        } elseif ($espacioId === null && $habitacion !== null) {
+            $espacioId = $lugares->porTexto($habitacion, $sedeId)?->id; // texto que coincide con el catálogo
+        }
+        $areaTrabajo = in_array($tipo, Acceso::CON_AUTORIZACION, true) ? $this->mayusculas($d['area_trabajo'] ?? null) : null;
+        if (in_array($tipo, Acceso::CON_AUTORIZACION, true) && ! empty($d['area_espacio_id'])) {
+            $area = $lugares->valido($d['area_espacio_id'], [$sedeId]);
+            if ($area === null) {
+                $errores['area_espacio_id'] = 'Elige el área de trabajo de la lista (o escríbela si no está en el catálogo).';
+            } else {
+                $areaTrabajo = mb_strtoupper(mb_substr($lugares->camino($area), 0, 150));
+                $espacioId ??= (int) $area->id;
+            }
+        }
+
+        // ---------- Vehículo y zona ----------
+        $placas = Vehiculo::normalizarPlacas($d['placas'] ?? null);
+        $modo = $tipo === 'emergencia' ? null : ($d['modo_arribo'] ?? 'a_pie');
+        if ($modo === 'a_pie') {
+            $placas = '';
+        } elseif ($modo !== null && $placas === '') {
+            $errores['placas'] = 'Escribe las placas del vehículo (o elige «A Pie»).';
+        }
+        if ($placas !== '' && ! preg_match('/^[A-Z0-9Ñ]{2,20}$/u', $placas)) {
+            $errores['placas'] = 'Las placas solo llevan letras y números (de 2 a 20).';
+        }
+        $tipoVehiculo = $d['tipo_vehiculo'] ?? ($modo === 'moto' ? 'motocicleta' : 'sedan');
+        if ($placas !== '' && $modo !== null) {
+            $modo = $tipoVehiculo === 'motocicleta' ? 'moto' : 'auto';
+        }
+        if ($tipo === 'emergencia' && $placas !== '') {
+            $modo = $tipoVehiculo === 'motocicleta' ? 'moto' : 'auto';
+        }
+        $zonaId = null;
+        if ($placas !== '' && ! empty($d['zona_estacionamiento_id'])) {
+            $zonaId = ZonaEstacionamiento::where('activo', true)->where('sede_id', $sedeId)->whereKey((int) $d['zona_estacionamiento_id'])->value('id');
+            if ($zonaId === null) {
+                $errores['zona_estacionamiento_id'] = 'Elige una zona activa de esta sede (o déjalo «Sin asignar»).';
+            } elseif (($d['zona_llena'] ?? null) !== 'si' && ($llena = app(MovimientosAccesos::class)->zonaLlena((int) $zonaId)) !== null) {
+                $errores['zona_llena'] = $llena; // C-21: «Zona llena, ¿enviar de todos modos?»
+            }
+        }
+        $conductor = $tipo === 'huesped' && $placas !== '' ? $this->mayusculas($d['conductor'] ?? null) : null;
+
+        // ---------- Gafetes (titular y acompañantes) ----------
+        $gafete = null;
+        if (! in_array($tipo, Acceso::SIN_GAFETE, true) && ! empty($d['gafete_id'])) {
+            [$gafete, $mensaje] = $this->gafeteLibre((int) $d['gafete_id'], $sedeId);
+            if ($mensaje !== null) {
+                $errores['gafete_id'] = $mensaje;
+            }
+        }
+        $acompanantes = [];
+        $usados = $gafete ? [$gafete->id] : [];
+        foreach (array_values($d['acompanantes'] ?? []) as $i => $fila) {
+            $n = $i + 1;
+            $nombreAc = $this->mayusculas($fila['nombre'] ?? null);
+            $idAc = $fila['identificacion'] ?? null;
+            $gafeteAc = null;
+            if (! empty($fila['gafete_id'])) {
+                $gid = (int) $fila['gafete_id'];
+                if (in_array($gid, $usados, true)) {
+                    $errores["acompanantes.$i.gafete_id"] = "El gafete del acompañante $n ya está elegido para otra persona de este registro.";
+                } else {
+                    [$gafeteAc, $mensaje] = $this->gafeteLibre($gid, $sedeId);
+                    if ($mensaje !== null) {
+                        $errores["acompanantes.$i.gafete_id"] = "Acompañante $n: ".$mensaje;
+                    } else {
+                        $usados[] = $gid;
+                    }
+                }
+            }
+            if ($nombreAc === null && $idAc === null && $gafeteAc === null) {
+                continue;
+            }
+            $acompanantes[] = ['nombre' => $nombreAc, 'identificacion' => $idAc, 'gafete' => $gafeteAc];
+        }
+
+        // Recepción de candidatos y autorizaciones (ADR-0007): candidato, visita a departamento y fotos
+        $recepcion = app(RecepcionEnCaseta::class)->preparar($tipo, $motivo, ['departamento_id' => $d['departamento_id'] ?? null] + $entrada, $sedeId, $visita, $errores, $conLlamada, $host);
+        // Fin Recepción de candidatos
+
+        if ($errores !== []) {
+            throw ValidationException::withMessages($errores);
+        }
+
+        // ---------- C-13 (DD-07): acceso restringido y lo dado de baja, revisado al GUARDAR ----------
+        $avisoPadron = $this->revisarPadrones($tipo, $d, $nombre, $acompanantes, $sedeId, $placas);
+
+        // ---------- Padrón de personas: "¿Es la misma persona?" ----------
+        $personaId = null;
+        $personaRepetida = null;
+        if (in_array($tipo, Acceso::AL_PADRON, true)) {
+            if (! empty($d['persona_id'])) {
+                // Altas por verificar: una persona unida a otra se sustituye por la correcta; una rechazada no se usa
+                $elegida = Persona::find((int) $d['persona_id']);
+                $elegida = $elegida === null ? null : app(AltasPorVerificar::class)->paraOperacion('personas', $elegida, 'nombre');
+                $elegida = $elegida?->activo ? $elegida : null;
+                if ($elegida === null) {
+                    throw ValidationException::withMessages(['nombre' => 'La persona elegida ya no está activa en el Padrón de personas. Escribe su nombre de nuevo.']);
+                }
+                if ($elegida->restringido()) {
+                    throw ValidationException::withMessages(['nombre' => "«{$elegida->nombre_completo}» no puede ingresar: {$elegida->textoRestriccion()}. Llama a tu supervisor."]);
+                }
+                $personaId = $elegida->id;
+                $nombre = $elegida->nombre_completo;
+            } elseif (($d['persona_decision'] ?? null) !== 'distinta') {
+                // C-30: la misma persona aunque antes viniera como otro tipo (visita y luego proveedor)
+                $personaRepetida = Persona::where('activo', true)
+                    ->whereRaw('LOWER(nombre_completo) = ?', [mb_strtolower((string) $nombre)])->orderBy('id')->first();
+                // C-13: si ya existía pero está dada de baja, la caseta la reactiva (antes se creaba otra igual)
+                if ($personaRepetida === null) {
+                    $deBaja = Persona::where('activo', false)->whereNull('fusionado_en_id')->where('verificacion', '!=', Persona::RECHAZADO)
+                        ->whereRaw('LOWER(nombre_completo) = ?', [mb_strtolower((string) $nombre)])->orderBy('id')->first();
+                    if ($deBaja !== null && ($d['persona_decision'] ?? null) !== 'misma') {
+                        throw ValidationException::withMessages(['persona_repetida' => '«'.$deBaja->nombre_completo.'» está dada de baja en el Padrón de personas. ¿Es la misma? Si es la misma, se reactiva al guardar.']);
+                    }
+                    $personaRepetida = $deBaja;
+                }
+                if ($personaRepetida !== null && $personaRepetida->restringido() && ($d['persona_decision'] ?? null) === 'misma') {
+                    throw ValidationException::withMessages(['nombre' => "«{$personaRepetida->nombre_completo}» no puede ingresar: {$personaRepetida->textoRestriccion()}. Llama a tu supervisor."]);
+                }
+                if ($personaRepetida !== null && ($d['persona_decision'] ?? null) !== 'misma') {
+                    $empresa = $personaRepetida->empresaQueRepresenta();
+                    throw ValidationException::withMessages(['persona_repetida' => 'Ya existe una persona registrada con este nombre: «'.$personaRepetida->nombre_completo.'»'
+                        .' ('.(Persona::TIPOS[$personaRepetida->tipo] ?? $personaRepetida->tipo).($empresa ? ' · '.$empresa : '').'). ¿Es la misma?']);
+                }
+            }
+        }
+
+        $estado = in_array($tipo, Acceso::CON_AUTORIZACION, true) || $recepcion['esperar'] || $recepcion['sin_responsable'] ? 'pendiente' : 'en_sitio'; // Recepción: visita que espera al departamento
+        // C-09: la caseta llamó al residente o a la habitación
+        if ($conLlamada) {
+            $estado = $llamada === 'autorizo' ? 'en_sitio' : 'finalizado';
+            if ($llamada === 'no_autorizo') {
+                $gafete = null; // no entra: no se le presta nada
+                $acompanantes = array_map(fn ($a) => ['gafete' => null] + $a, $acompanantes);
+                $zonaId = null;
+            }
+        }
+
+        // C-19 (DD-18): lista corta de lo que trae (solo proveedor y contratista; sin artículo, el renglón se ignora)
+        $articulos = [];
+        if (in_array($tipo, Acceso::CON_AUTORIZACION, true)) {
+            foreach ((array) ($d['articulos'] ?? []) as $fila) {
+                $articulo = $this->mayusculas($fila['articulo'] ?? null);
+                if ($articulo === null) {
+                    continue;
+                }
+                $articulos[] = ['articulo' => mb_substr($articulo, 0, 120), 'cantidad' => max(1, (int) ($fila['cantidad'] ?? 1)), 'serie' => $this->mayusculas($fila['serie'] ?? null)];
+            }
+        }
+
+        $acceso = DB::transaction(function () use ($actor, $d, $tipo, $sedeId, $nombre, $colaborador, $host, $visita, $personaVisita, $motivo, $departamentoId,
+            $placas, $modo, $tipoVehiculo, $zonaId, $conductor, $gafete, $acompanantes, $personaId, $personaRepetida, $estado, $avisoPadron, $habitacion, $espacioId, $areaTrabajo, $articulos) {
+            // Gafetes: se revisan otra vez con el registro bloqueado (dos casetas a la vez)
+            foreach (array_filter([$gafete, ...array_column($acompanantes, 'gafete')]) as $g) {
+                Gafete::whereKey($g->id)->lockForUpdate()->first();
+                if (! $g->fresh()->disponibleParaAsignar()) {
+                    throw ValidationException::withMessages(['gafete_id' => "El gafete {$g->nomenclatura} se acaba de prestar a otra persona. Elige otro."]);
+                }
+            }
+
+            // Empresa externa: proveedor/contratista (procedencia) o agencia del huésped
+            [$proveedorId, $procedencia, $avisoEmpresa] = $this->empresaExterna($actor, $tipo, $d, $sedeId);
+            $avisoPadron = implode(' · ', array_filter([$avisoPadron, $avisoEmpresa]));
+
+            if (in_array($tipo, Acceso::AL_PADRON, true) && $personaId === null) {
+                if ($personaRepetida !== null && ! $personaRepetida->activo) {
+                    app(AdministradorPersonas::class)->cambiarEstado($actor, $personaRepetida, true); // C-13: «Reactivar» desde la caseta
+                }
+                $personaId = $personaRepetida?->id ?? $this->nuevaPersona($actor, $tipo, (string) $nombre, $proveedorId, $procedencia, $sedeId);
+            }
+
+            $vehiculoId = null;
+            if ($placas !== '') {
+                // Huésped con conductor (taxi) y proveedor/contratista: «De una empresa»; el resto, «Particular»
+                $propiedad = match (true) {
+                    $tipo === 'huesped' && $conductor !== null => 'empresa',
+                    $tipo === 'huesped' => 'particular',
+                    in_array($tipo, Acceso::CON_AUTORIZACION, true) => 'empresa',
+                    default => 'particular',
+                };
+                $conEmpresa = in_array($tipo, Acceso::CON_AUTORIZACION, true);
+                $vehiculoId = $this->vehiculo($actor, $placas, $tipoVehiculo, $d, $propiedad, $conEmpresa ? $proveedorId : null, $sedeId)->id;
+            }
+
+            $reserva = $tipo === 'huesped' ? (bool) ($d['tiene_reserva'] ?? true) : null;
+            $acceso = Acceso::create([
+                'sede_id' => $sedeId,
+                'tipo' => $tipo,
+                'movimiento' => 'entrada',
+                'estado' => $estado,
+                'nombre' => $this->mayusculas($nombre),
+                'colaborador_id' => $colaborador?->id,
+                'persona_id' => $personaId,
+                'proveedor_id' => $proveedorId,
+                'empresa_procedencia' => $procedencia,
+                'motivo_visita' => $motivo,
+                // C-09: «a quién viene» en una sola columna para todos los tipos (host_colaborador_id se sigue llenando igual)
+                'visita_colaborador_id' => $visita?->id ?? $host?->id,
+                'persona_visita' => $visita ? mb_strtoupper($visita->nombreCompleto())
+                    : ($host ? mb_strtoupper($host->nombreCompleto()) : ($personaVisita ?? $this->mayusculas($d['persona_visita'] ?? null))),
+                'host_colaborador_id' => $host?->id,
+                'identificacion' => in_array($tipo, Acceso::AL_PADRON, true) ? ($d['identificacion'] ?? 'ine') : null,
+                'gafete_id' => $gafete?->id,
+                'gafete_texto' => $gafete?->nomenclatura,
+                'modo_arribo' => $modo,
+                'vehiculo_id' => $vehiculoId,
+                'placas' => $placas === '' ? null : $placas,
+                'zona_estacionamiento_id' => $zonaId,
+                'conductor' => $conductor,
+                'num_acompanantes' => max(count($acompanantes), (int) ($d['num_acompanantes'] ?? 0)),
+                'tiene_reserva' => $reserva,
+                'numero_reserva' => $reserva ? $this->mayusculas($d['numero_reserva'] ?? null) : null,
+                // Con reserva, el pase siempre es Estancia (regla de SEGCAT)
+                'tipo_pase' => $tipo === 'huesped' ? ($reserva ? 'estancia' : ($d['tipo_pase'] ?? 'daypass')) : null,
+                // Huésped: su habitación; en condominios y fraccionamientos, la vivienda a la que va (C-30: y su lugar del catálogo)
+                'habitacion' => $habitacion,
+                'espacio_id' => $espacioId,
+                'tipo_visita' => in_array($tipo, Acceso::CON_AUTORIZACION, true) ? ($d['tipo_visita'] ?? 'cortesia') : null,
+                'departamento_id' => $departamentoId,
+                'area_trabajo' => $areaTrabajo,
+                'actividad' => in_array($tipo, Acceso::CON_AUTORIZACION, true) ? $this->texto($d['actividad'] ?? null) : null,
+                'tipo_emergencia' => $tipo === 'emergencia' ? ($d['tipo_emergencia'] ?? null) : null,
+                'observaciones' => $tipo === 'emergencia' ? $this->texto($d['observaciones'] ?? null, false) : null,
+                'aviso_padron' => $avisoPadron !== '' ? mb_substr($avisoPadron, 0, 255) : null,
+                'entrada_at' => now(),
+            ]);
+
+            // C-19 (DD-18): lo que trae (solo proveedor y contratista; renglones vacíos se ignoran)
+            foreach ($articulos as $art) {
+                ArticuloAcceso::create(['acceso_id' => $acceso->id] + $art);
+            }
+
+            foreach ($acompanantes as $ac) {
+                AcompananteAcceso::create([
+                    'acceso_id' => $acceso->id, 'nombre' => $ac['nombre'], 'identificacion' => $ac['identificacion'],
+                    'gafete_id' => $ac['gafete']?->id, 'gafete_texto' => $ac['gafete']?->nomenclatura,
+                ]);
+            }
+
+            return $acceso;
+        });
+
+        if ($conLlamada) {
+            // Constancia de la llamada: quién llamó y a qué hora (C-09, DD-12)
+            $acceso->forceFill($llamada === 'autorizo'
+                ? ['autorizacion' => Acceso::POR_LLAMADA, 'autorizado_at' => now(), 'autorizado_por' => $actor->id]
+                : ['autorizacion' => Acceso::LLAMADA_NO, 'salida_at' => now(), 'salida_por' => $actor->id])->saveQuietly();
+        }
+        $this->auditoria->auditar($actor, 'accesos.creado', $acceso, null, self::foto($acceso)
+            + ($articulos === [] ? [] : ['trae' => array_map(fn ($a) => ($a['cantidad'] > 1 ? $a['cantidad'].' × ' : '').$a['articulo'].($a['serie'] ? ' ('.$a['serie'].')' : ''), $articulos)]));
+        if ($conLlamada) {
+            $this->auditoria->auditar($actor, $llamada === 'autorizo' ? 'accesos.llamada_autorizo' : 'accesos.llamada_no_autorizo', $acceso, null,
+                ['a_quien' => $acceso->persona_visita ?? $acceso->habitacion]);
+        }
+        app(RecepcionEnCaseta::class)->despues($actor, $acceso, $recepcion); // Recepción de candidatos (ADR-0007)
+
+        return $acceso;
+    }
+
+    /**
+     * Decisión 10: la entrada de un colaborador SIN formulario (un equipo de
+     * acceso, o cualquier origen sin persona en caseta). Es el mismo registro
+     * que deja registrar() para un colaborador «A pie»: mismas reglas de
+     * colaborador (activo, no unido a otro, de la sede, corporativo o con la
+     * sede como adicional), del giro y la misma auditoría `accesos.creado`.
+     * Así la Bitácora de accesos, Gente en sitio y Asistencia lo ven igual.
+     *
+     * @param  array{equipo_entrada_id?: ?int, entrada_at?: ?\DateTimeInterface}  $origen
+     *
+     * @throws ValidationException si el colaborador no puede entrar a esa sede
+     */
+    public function entradaDeColaborador(?User $actor, Colaborador $colaborador, int $sedeId, array $origen = []): Acceso
+    {
+        $colaborador = $this->colaboradorEnSede($colaborador->id, $sedeId);
+        if ($colaborador === null) {
+            throw ValidationException::withMessages(['colaborador_id' => 'El colaborador elegido no existe, está dado de baja o no pertenece a esta sede.']);
+        }
+        if (! Terminos::deEmpresaId((int) Sede::whereKey($sedeId)->value('empresa_id'))->ofreceTipo('colaborador')) {
+            throw ValidationException::withMessages(['tipo' => 'Ese tipo de persona no se registra en esta empresa. Elige uno de la lista.']);
+        }
+
+        $acceso = Acceso::create([
+            'sede_id' => $sedeId,
+            'tipo' => 'colaborador',
+            'movimiento' => 'entrada',
+            'estado' => 'en_sitio',
+            'nombre' => $this->mayusculas($colaborador->nombreCompleto()),
+            'colaborador_id' => $colaborador->id,
+            'modo_arribo' => 'a_pie',
+            'num_acompanantes' => 0,
+            'equipo_entrada_id' => $origen['equipo_entrada_id'] ?? null,
+            'entrada_at' => $origen['entrada_at'] ?? now(),
+        ]);
+        $this->auditoria->auditar($actor, 'accesos.creado', $acceso, null, self::foto($acceso)
+            + (empty($origen['equipo_entrada_id']) ? [] : ['equipo' => (int) $origen['equipo_entrada_id']]));
+
+        return $acceso;
+    }
+
+    // --------------------------------------------------------------- Validación
+
+    /**
+     * Formato de cada campo; las reglas que dependen del tipo van en registrar().
+     *
+     * @param  array<string, mixed>  $entrada
+     * @return array<string, mixed>
+     */
+    private function validar(array $entrada): array
+    {
+        $entrada = array_map(fn ($v) => is_string($v) && trim($v) === '' ? null : $v, $entrada);
+        foreach (['acompanantes', 'articulos'] as $lista) {
+            if (isset($entrada[$lista]) && is_array($entrada[$lista])) {
+                $entrada[$lista] = array_map(fn ($f) => is_array($f) ? array_map(fn ($v) => is_string($v) && trim($v) === '' ? null : $v, $f) : $f, $entrada[$lista]);
+            }
+        }
+
+        return Validator::make($entrada, [
+            'sede_id' => ['required', 'integer'],
+            'tipo' => ['required', Rule::in(array_keys(Acceso::TIPOS))],
+            'nombre' => ['nullable', 'string', 'max:150'],
+            'persona_id' => ['nullable', 'integer'],
+            'persona_decision' => ['nullable', Rule::in(['misma', 'distinta'])],
+            'restriccion_decision' => ['nullable', Rule::in(['misma', 'distinta'])],
+            'reactivar_decision' => ['nullable', Rule::in(['si'])],
+            'zona_llena' => ['nullable', Rule::in(['si'])],
+            'colaborador_id' => ['nullable', 'integer'],
+            'host_colaborador_id' => ['nullable', 'integer'],
+            'visita_colaborador_id' => ['nullable', 'integer'],
+            'persona_visita' => ['nullable', 'string', 'max:150'],
+            'motivo_visita' => ['nullable', Rule::in(array_keys(Acceso::MOTIVOS))],
+            'identificacion' => ['nullable', Rule::in(array_keys(Acceso::IDENTIFICACIONES))],
+            'empresa_procedencia' => ['nullable', 'string', 'max:150'],
+            'proveedor_id' => ['nullable', 'integer'],
+            'tipo_visita' => ['nullable', Rule::in(array_keys(Acceso::TIPOS_VISITA))],
+            'departamento_id' => ['nullable', 'integer'],
+            'area_trabajo' => ['nullable', 'string', 'max:150'],
+            'actividad' => ['nullable', 'string', 'max:500'],
+            'gafete_id' => ['nullable', 'integer'],
+            'modo_arribo' => ['nullable', Rule::in(array_keys(Acceso::MODOS))],
+            'placas' => ['nullable', 'string', 'max:25'],
+            'tipo_vehiculo' => ['nullable', Rule::in(array_keys(Vehiculo::TIPOS))],
+            'marca' => ['nullable', 'string', 'max:50'],
+            'modelo' => ['nullable', 'string', 'max:60'],
+            'color' => ['nullable', 'string', 'max:30'],
+            'zona_estacionamiento_id' => ['nullable', 'integer'],
+            'conductor' => ['nullable', 'string', 'max:150'],
+            'tiene_reserva' => ['nullable', 'boolean'],
+            'numero_reserva' => ['nullable', 'string', 'max:50'],
+            'tipo_pase' => ['nullable', Rule::in(array_keys(Acceso::PASES))],
+            'habitacion' => ['nullable', 'string', 'max:20'],
+            // C-09 y C-30: «¿A quién viene?», la llamada y los lugares del catálogo
+            'a_quien' => ['nullable', 'string', 'max:20'],
+            'a_quien_texto' => ['nullable', 'string', 'max:150'],
+            'llamada' => ['nullable', Rule::in(['autorizo', 'no_autorizo'])],
+            'espacio_id' => ['nullable', 'integer'],
+            'habitacion_id' => ['nullable', 'integer'],
+            'area_espacio_id' => ['nullable', 'integer'],
+            'agencia_id' => ['nullable', 'integer'],
+            'tipo_emergencia' => ['nullable', Rule::in(array_keys(Acceso::TIPOS_EMERGENCIA))],
+            'observaciones' => ['nullable', 'string', 'max:1000'],
+            'num_acompanantes' => ['nullable', 'integer', 'min:0', 'max:'.self::MAX_ACOMPANANTES],
+            'acompanantes' => ['nullable', 'array', 'max:'.self::MAX_ACOMPANANTES],
+            'acompanantes.*.nombre' => ['nullable', 'string', 'max:150'],
+            'acompanantes.*.identificacion' => ['nullable', Rule::in(array_keys(Acceso::IDENTIFICACIONES))],
+            'acompanantes.*.gafete_id' => ['nullable', 'integer'],
+            // C-19 (DD-18): lo que trae el proveedor o contratista (opcional)
+            'articulos' => ['nullable', 'array', 'max:'.ArticuloAcceso::MAXIMO],
+            'articulos.*.articulo' => ['nullable', 'string', 'max:120'],
+            'articulos.*.cantidad' => ['nullable', 'integer', 'min:1', 'max:999'],
+            'articulos.*.serie' => ['nullable', 'string', 'max:80'],
+        ], [
+            'sede_id.required' => 'Elige la sede.',
+            'tipo.required' => 'Elige el tipo de persona que ingresa.',
+            'tipo.in' => 'Elige el tipo de persona de la lista.',
+            'nombre.max' => 'El nombre admite máximo 150 caracteres.',
+            'tipo_vehiculo.in' => 'Elige el tipo de vehículo de la lista.',
+            'placas.max' => 'Revisa las placas: son muy largas.',
+            'num_acompanantes.max' => 'Máximo '.self::MAX_ACOMPANANTES.' acompañantes por registro.',
+            'num_acompanantes.min' => 'El número de acompañantes no puede ser negativo.',
+            'acompanantes.max' => 'Máximo '.self::MAX_ACOMPANANTES.' acompañantes por registro.',
+            'actividad.max' => 'Describe la actividad en máximo 500 caracteres.',
+            'observaciones.max' => 'Las observaciones admiten máximo 1000 caracteres.',
+            'articulos.max' => 'La lista de lo que trae admite máximo '.ArticuloAcceso::MAXIMO.' renglones.',
+            'articulos.*.articulo.max' => 'Escribe el artículo en máximo 120 caracteres.',
+            'articulos.*.serie.max' => 'Escribe el número de serie en máximo 80 caracteres.',
+            'articulos.*.cantidad.min' => 'La cantidad debe ser de 1 a 999.',
+            'articulos.*.cantidad.max' => 'La cantidad debe ser de 1 a 999.',
+            'articulos.*.cantidad.integer' => 'La cantidad debe ser un número entero.',
+            '*.in' => 'Elige una opción de la lista.',
+            '*.integer' => 'Elige una opción de la lista.',
+        ], [
+            'empresa_procedencia' => 'empresa / procedencia',
+            'area_trabajo' => 'área de trabajo',
+            'numero_reserva' => 'número de reserva',
+            'habitacion' => 'número de habitación',
+        ])->validate();
+    }
+
+    // ------------------------------------------------------------------ Ayudas
+
+    /**
+     * Colaborador activo (no unido a otro) de esta sede, corporativo o con la sede como adicional.
+     */
+    public function colaboradorEnSede(mixed $id, int $sedeId): ?Colaborador
+    {
+        if (empty($id)) {
+            return null;
+        }
+
+        return Colaborador::where('colaboradores.activo', true)->whereNull('colaboradores.fusionado_en_id')
+            ->where(fn ($q) => $q->whereNull('colaboradores.sede_id')->orWhere(fn ($s) => $s->enSedes([$sedeId])))
+            ->find((int) $id);
+    }
+
+    /**
+     * El gafete y, si no se puede prestar, por qué.
+     *
+     * @return array{0: ?Gafete, 1: ?string}
+     */
+    private function gafeteLibre(int $id, int $sedeId): array
+    {
+        $gafete = Gafete::find($id);
+        if ($gafete === null || (int) $gafete->sede_id !== $sedeId) {
+            return [null, 'El gafete no existe o no es de esta sede.'];
+        }
+        if (! $gafete->activo) {
+            return [null, "El gafete {$gafete->nomenclatura} está dado de baja."];
+        }
+        if ($gafete->noRegreso()) {
+            return [null, "El gafete {$gafete->nomenclatura} está marcado «No regresó». Si ya lo devolvieron, recíbelo en Gafetes; si no, elige otro."];
+        }
+        if (! $gafete->disponibleParaAsignar()) {
+            return [null, "El gafete {$gafete->nomenclatura} ya está en uso (EN SITIO). Pide que lo devuelvan o elige otro."];
+        }
+
+        return [$gafete, null];
+    }
+
+    /**
+     * Proveedor/contratista: su empresa; huésped: la agencia vinculada. Se busca
+     * por nombre antes de crearla (SEGCAT: upsertEmpresaExt).
+     *
+     * C-13 (DD-07): una empresa con el acceso restringido no puede ingresar
+     * como proveedor o contratista; una dada de baja (ya no se usaba) se
+     * reactiva si la caseta lo confirma. El tercer valor es lo que verá quien
+     * autoriza: «Empresa nueva, pendiente de verificar», «Parecida a una
+     * restringida» o «No está dada de alta en esta sede» (B-16).
+     *
+     * @param  array<string, mixed>  $d
+     * @return array{0: ?int, 1: ?string, 2: ?string}
+     */
+    private function empresaExterna(User $actor, string $tipo, array $d, int $sedeId): array
+    {
+        $esProveedor = in_array($tipo, Acceso::CON_AUTORIZACION, true);
+        if (! $esProveedor && $tipo !== 'huesped') {
+            return [null, null, null];
+        }
+        [$proveedor, $texto] = $this->proveedorCapturado($tipo, $d);
+        if ($proveedor !== null && $esProveedor && $proveedor->restringido()) {
+            throw ValidationException::withMessages(['empresa_procedencia' => "La empresa «{$proveedor->nombre}» no puede ingresar: {$proveedor->textoRestriccion()}. Llama a tu supervisor."]);
+        }
+        if ($proveedor !== null && ! $proveedor->activo) {
+            if (! $esProveedor) {
+                return [null, mb_strtoupper($proveedor->nombre), null];
+            }
+            // Revisado antes (revisarPadrones): la caseta confirmó «Sí, reactivar»
+            app(AdministradorProveedores::class)->cambiarEstado($actor, $proveedor, true);
+        }
+        if ($proveedor === null && $texto === '') {
+            return [null, null, null];
+        }
+
+        $aviso = null;
+        if ($proveedor === null) {
+            $categoria = match ($tipo) {
+                'contratista' => 'contratista',
+                'proveedor' => 'proveedor',
+                default => 'agencia_viajes',
+            };
+            $proveedor = Proveedor::create(['nombre' => $texto, 'categoria' => $categoria, 'todas_las_sedes' => false]);
+            $proveedor->sedes()->sync([$sedeId]);
+            $this->auditoria->auditar($actor, 'proveedores.creado', $proveedor, null, $this->proveedores->foto($proveedor));
+            app(AltasPorVerificar::class)->registrarAlta($actor, 'proveedores', $proveedor, 'accesos', $sedeId);
+            $aviso = $esProveedor ? 'Empresa nueva, pendiente de verificar' : null;
+        } elseif ($esProveedor && ! $proveedor->todas_las_sedes && ! $proveedor->sedes()->whereKey($sedeId)->exists()) {
+            $aviso = 'La empresa no está dada de alta en esta sede';
+        }
+
+        return [$proveedor->id, mb_strtoupper($proveedor->nombre), $aviso];
+    }
+
+    /**
+     * La empresa elegida o escrita (unida a otra = la correcta; rechazada = no se usa).
+     *
+     * @param  array<string, mixed>  $d
+     * @return array{0: ?Proveedor, 1: string}
+     */
+    private function proveedorCapturado(string $tipo, array $d): array
+    {
+        $esProveedor = in_array($tipo, Acceso::CON_AUTORIZACION, true);
+        $idElegido = $esProveedor ? ($d['proveedor_id'] ?? null) : ($d['agencia_id'] ?? null);
+        $texto = AdministradorProveedores::normalizarNombre($d['empresa_procedencia'] ?? null);
+        $proveedor = $idElegido ? Proveedor::find((int) $idElegido) : null;
+        if ($proveedor === null && $texto !== '') {
+            $proveedor = $this->proveedores->buscarPorNombre($texto);
+        }
+
+        return [$proveedor === null ? null : app(AltasPorVerificar::class)->paraOperacion('proveedores', $proveedor, 'empresa_procedencia'), $texto];
+    }
+
+    /**
+     * C-13 (DD-07, B-02, B-10): antes de guardar.
+     *  - Persona, acompañante o empresa parecida a una restringida: se detiene
+     *    con «¿Es la misma?»; si es la misma no pasa, si es otra sigue y quien
+     *    autoriza lo ve («Parecida a una restringida»).
+     *  - Empresa o vehículo dado de baja, o vehículo de un colaborador dado de
+     *    baja: «¿Reactivar y continuar?».
+     *  - Vehículo restringido: no pasa.
+     *
+     * @param  array<string, mixed>  $d
+     * @param  list<array{nombre: ?string}>  $acompanantes
+     */
+    private function revisarPadrones(string $tipo, array $d, ?string $nombre, array $acompanantes, int $sedeId, string $placas): ?string
+    {
+        $revision = app(RevisionPadrones::class);
+        $decision = $d['restriccion_decision'] ?? null;
+        $avisos = [];
+
+        // Personas (titular y acompañantes con nombre) parecidas a una restringida
+        if (in_array($tipo, Acceso::AL_PADRON, true) || $acompanantes !== []) {
+            $nombres = array_filter([in_array($tipo, Acceso::AL_PADRON, true) && empty($d['persona_id']) ? $nombre : null, ...array_column($acompanantes, 'nombre')]);
+            foreach ($nombres as $quien) {
+                $restringida = $revision->personaRestringida($quien);
+                if ($restringida === null) {
+                    continue;
+                }
+                if ($decision === 'misma') {
+                    throw ValidationException::withMessages(['nombre' => "«{$restringida->nombre_completo}» no puede ingresar: {$restringida->textoRestriccion()}. Llama a tu supervisor."]);
+                }
+                if ($decision !== 'distinta') {
+                    throw ValidationException::withMessages(['parecido_restringido' => RevisionPadrones::mensajeParecido('«'.mb_strtoupper($quien).'»', $restringida->nombre_completo, $restringida->textoRestriccion())]);
+                }
+                $avisos[] = 'Parecida a una persona restringida («'.$restringida->nombre_completo.'»)';
+            }
+        }
+
+        // Empresa externa
+        if (in_array($tipo, Acceso::CON_AUTORIZACION, true)) {
+            [$proveedor, $texto] = $this->proveedorCapturado($tipo, $d);
+            if ($proveedor === null && $texto !== '') {
+                $restringida = $revision->proveedorRestringido($texto);
+                if ($restringida !== null && $decision === 'misma') {
+                    throw ValidationException::withMessages(['empresa_procedencia' => "La empresa «{$restringida->nombre}» no puede ingresar: {$restringida->textoRestriccion()}. Llama a tu supervisor."]);
+                }
+                if ($restringida !== null && $decision !== 'distinta') {
+                    throw ValidationException::withMessages(['parecido_restringido' => RevisionPadrones::mensajeParecido('La empresa «'.$texto.'»', $restringida->nombre, $restringida->textoRestriccion())]);
+                }
+                if ($restringida !== null) {
+                    $avisos[] = 'Parecida a una empresa restringida («'.$restringida->nombre.'»)';
+                }
+            }
+            if ($proveedor !== null && ! $proveedor->activo && ! $proveedor->restringido() && ($d['reactivar_decision'] ?? null) !== 'si') {
+                throw ValidationException::withMessages(['reactivar' => "La empresa «{$proveedor->nombre}» está dada de baja en Empresas externas (ya no se usaba). ¿Volvió a trabajar con ustedes? Si continúas, se reactiva."]);
+            }
+        }
+
+        // Vehículo
+        if ($placas !== '') {
+            $vehiculo = $this->vehiculos->conPlacas($placas);
+            $vehiculo = $vehiculo === null ? null : app(AltasPorVerificar::class)->paraOperacion('vehiculos', $vehiculo, 'placas');
+            if ($vehiculo !== null && $vehiculo->restringido()) {
+                throw ValidationException::withMessages(['placas' => "El vehículo {$vehiculo->placas} no puede ingresar: {$vehiculo->textoRestriccion()}. Llama a tu supervisor."]);
+            }
+            $duenoDeBaja = $vehiculo?->colaborador_id !== null && ! (bool) $vehiculo->colaborador?->activo;
+            if ($vehiculo !== null && (! $vehiculo->activo || $duenoDeBaja) && ($d['reactivar_decision'] ?? null) !== 'si') {
+                throw ValidationException::withMessages(['reactivar' => ! $vehiculo->activo
+                    ? "El vehículo {$vehiculo->placas} está dado de baja en el Padrón vehicular. ¿Es el mismo y vuelve a entrar? Si continúas, se reactiva."
+                    : "El vehículo {$vehiculo->placas} es de un colaborador dado de baja ({$vehiculo->colaborador?->nombreCompleto()}). ¿Lo dejas pasar?"]);
+            }
+            if ($duenoDeBaja) {
+                $avisos[] = 'Vehículo de un colaborador dado de baja';
+            }
+        }
+
+        return $avisos === [] ? null : implode(' · ', $avisos);
+    }
+
+    private function nuevaPersona(User $actor, string $tipo, string $nombre, ?int $proveedorId, ?string $procedencia, ?int $sedeId = null): int
+    {
+        $persona = Persona::create([
+            'tipo' => $tipo,
+            'categoria' => 'general',
+            'nombre_completo' => mb_convert_case(mb_strtolower($nombre), MB_CASE_TITLE),
+            'proveedor_id' => $tipo === 'visitante' ? null : $proveedorId,
+            'empresa_procedencia' => $tipo === 'visitante' || $proveedorId !== null ? null : $procedencia,
+        ]);
+        $this->auditoria->auditar($actor, 'visitantes.creado', $persona, null, $this->personas->foto($persona));
+        app(AltasPorVerificar::class)->registrarAlta($actor, 'personas', $persona, 'accesos', $sedeId);
+
+        return $persona->id;
+    }
+
+    /**
+     * Busca las placas en el padrón; si existen se usan (y se completan los
+     * datos que faltaban, sin tocar los que ya tenía); si no, se registran.
+     *
+     * @param  array<string, mixed>  $d
+     */
+    public function vehiculo(User $actor, string $placas, string $tipoVehiculo, array $d, string $propiedad, ?int $proveedorId, ?int $sedeId = null): Vehiculo
+    {
+        $datos = array_filter([
+            'marca' => $this->mayusculas($d['marca'] ?? null),
+            'modelo' => $this->mayusculas($d['modelo'] ?? null),
+            'color' => $this->mayusculas($d['color'] ?? null),
+        ]);
+
+        $existente = $this->vehiculos->conPlacas($placas);
+        if ($existente !== null) {
+            // Altas por verificar: unido a otro = el correcto; rechazado = no se usa
+            $existente = app(AltasPorVerificar::class)->paraOperacion('vehiculos', $existente, 'placas');
+            if (! $existente->activo && ! $existente->restringido()) {
+                $this->vehiculos->cambiarEstado($actor, $existente, true); // C-13: «Reactivar» confirmado en la caseta
+            }
+            $faltantes = array_filter($datos, fn ($v, $campo) => $existente->{$campo} === null || $existente->{$campo} === '', ARRAY_FILTER_USE_BOTH);
+            if ($faltantes !== []) {
+                $antes = $this->vehiculos->foto($existente);
+                $existente->fill($faltantes)->save();
+                $this->auditoria->auditar($actor, 'vehiculos.actualizado', $existente, $antes, $this->vehiculos->foto($existente));
+            }
+
+            return $existente;
+        }
+
+        $vehiculo = Vehiculo::create($datos + [
+            'placas' => $placas,
+            'tipo' => $tipoVehiculo,
+            'propiedad' => $propiedad,
+            'proveedor_id' => $proveedorId,
+        ]);
+        $this->auditoria->auditar($actor, 'vehiculos.creado', $vehiculo, null, $this->vehiculos->foto($vehiculo));
+        app(AltasPorVerificar::class)->registrarAlta($actor, 'vehiculos', $vehiculo, 'accesos', $sedeId);
+
+        return $vehiculo;
+    }
+
+    private function texto(mixed $valor, bool $unaLinea = true): ?string
+    {
+        if (! is_string($valor)) {
+            return null;
+        }
+        $limpio = trim($unaLinea ? (string) preg_replace('/\s+/u', ' ', $valor) : $valor);
+
+        return $limpio === '' ? null : $limpio;
+    }
+
+    private function mayusculas(mixed $valor): ?string
+    {
+        $limpio = $this->texto($valor);
+
+        return $limpio === null ? null : mb_strtoupper($limpio);
+    }
+
+    /**
+     * Foto para la bitácora de auditoría.
+     *
+     * @return array<string, mixed>
+     */
+    public static function foto(Acceso $a): array
+    {
+        return $a->only([
+            'sede_id', 'tipo', 'movimiento', 'estado', 'nombre', 'colaborador_id', 'persona_id', 'proveedor_id', 'host_colaborador_id',
+            'visita_colaborador_id', 'gafete_texto', 'placas', 'zona_estacionamiento_id', 'num_acompanantes', 'tipo_pase', 'habitacion', 'espacio_id',
+        ]);
+    }
+}

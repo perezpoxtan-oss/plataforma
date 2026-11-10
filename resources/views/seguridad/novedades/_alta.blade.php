@@ -1,0 +1,143 @@
+{{--
+    "Generar Ticket Rápido" (SEGCAT: dialogAltaTicket). Mismos campos y
+    textos; la sede del usuario viene elegida, "¿Cuándo sucedió?" trae la
+    hora actual y quien reporta se puede escanear con su gafete.
+--}}
+@php
+    $trasError = old('_dialogo') === 'crear';
+    $val = fn (string $campo, $porDefecto = '') => $trasError ? old($campo, $porDefecto) : $porDefecto;
+    $sedePorDefecto = $sedesAlta->count() === 1 ? (string) $sedesAlta->first()->id : '';
+    $reportadoAnterior = $trasError && old('reportado_colaborador_id') ? \App\Models\Colaborador::find((int) old('reportado_colaborador_id')) : null;
+@endphp
+<dialog id="dialogoAltaTicket" class="dialogo dialogo-novedad" aria-labelledby="titulo-alta-ticket" @if ($trasError) data-abrir-al-cargar @endif>
+    <div class="dialogo-cabecera">
+        <h2 id="titulo-alta-ticket"><i class="bi bi-lightning-fill me-2 text-danger" aria-hidden="true"></i>Generar Ticket Rápido</h2>
+        <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+    </div>
+    <div class="dialogo-cuerpo">
+        <form action="{{ route('novedades.store') }}" method="POST" autocomplete="off" data-form-novedad="alta">
+            @csrf
+            <input type="hidden" name="_dialogo" value="crear">
+            <p class="linea-empresa mb-3"><i class="bi bi-building-check me-1" aria-hidden="true"></i>Bitácora de: <strong>{{ $empresaNombre }}</strong></p>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="campo-etiqueta" for="alta_sede">Sede</label>
+                    <select id="alta_sede" name="sede_id" class="campo" required data-nov-sede>
+                        <option value="">-- Seleccionar --</option>
+                        @foreach ($sedesAlta as $s)
+                            <option value="{{ $s->id }}" @selected((string) $val('sede_id', $sedePorDefecto) === (string) $s->id) @if ($sedePorDefecto === (string) $s->id) data-por-defecto @endif>{{ $s->nombre }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    {{-- Ronda 8 (NV-01): la clasificación es obligatoria (ya no se despacha «Sin clasificar») --}}
+                    @php $clasificaciones = array_values(array_diff($categoriasAlta, ['sin_clasificar'])); @endphp
+                    <label class="campo-etiqueta" for="alta_categoria">Categoría <span class="text-danger" aria-hidden="true">*</span> <span class="text-lowercase fw-normal">(elige la más cercana; se puede corregir al atender)</span></label>
+                    <select id="alta_categoria" name="categoria" class="campo campo-categoria @error('categoria') is-invalid @enderror" required>
+                        @if (count($clasificaciones) !== 1)
+                            <option value="" data-por-defecto>-- Elige la clasificación --</option>
+                        @endif
+                        @foreach ($clasificaciones as $clave)
+                            <option value="{{ $clave }}" @selected($val('categoria', count($clasificaciones) === 1 ? $clave : '') === $clave) @if (count($clasificaciones) === 1) data-por-defecto @endif>{{ \App\Models\Novedad::OPCIONES_CATEGORIA[$clave] }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            {{-- Mejoras Incidentes: el objeto encontrado se captura aquí mismo (el ticket no queda a medias) --}}
+            @if (in_array('lost_found', $clasificaciones, true))
+                @php $esLf = $val('categoria', count($clasificaciones) === 1 ? $clasificaciones[0] : '') === 'lost_found'; @endphp
+                <div class="caja-objeto-alta" data-nov-mostrar-si='{"categoria":["lost_found"]}' @unless ($esLf) hidden @endunless>
+                    <p class="small fw-bold mb-1"><i class="bi bi-bag-fill text-warning me-1" aria-hidden="true"></i>Objeto encontrado <span class="fw-normal text-muted">(opcional: si alguien perdió algo, déjalo vacío y captura el reporte de pérdida en el expediente)</span></p>
+                    <div class="row">
+                        <div class="col-md-5">
+                            <label class="campo-etiqueta" for="alta_lf_objeto">¿Qué se encontró?</label>
+                            <input type="text" id="alta_lf_objeto" name="lf_objeto" class="campo text-uppercase @error('lf_objeto') is-invalid @enderror" maxlength="150" placeholder="Ej: Paraguas negro, cartera café" value="{{ $val('lf_objeto') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="campo-etiqueta" for="alta_lf_tipo">Tipo de valor</label>
+                            <select id="alta_lf_tipo" name="lf_tipo_valor" class="campo">
+                                @foreach (\App\Models\LostFoundArticulo::TIPOS_VALOR as $claveTipo => $textoTipo)
+                                    <option value="{{ $claveTipo }}" @selected($val('lf_tipo_valor', 'OTRO') === $claveTipo)>{{ $textoTipo }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="campo-etiqueta" for="alta_lf_bodega">Ubicación en bodega <span class="text-lowercase fw-normal">(opcional)</span></label>
+                            <input type="text" id="alta_lf_bodega" name="lf_ubicacion_bodega" class="campo text-uppercase" maxlength="100" placeholder="Ej: Anaquel 3, Caja B" value="{{ $val('lf_ubicacion_bodega') }}">
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            <label class="campo-etiqueta" for="alta_reporta">¿Quién reporta? <span class="text-lowercase fw-normal">(buscar colaborador o escribir)</span></label>
+            <div class="campo-con-boton">
+                <input type="text" id="alta_reporta" name="reportado_por" class="campo text-uppercase" maxlength="150" list="novColaboradores" required
+                       placeholder="Nombre de quien reporta" value="{{ $val('reportado_por') }}" data-nov-reporta>
+                <button type="button" class="btn-fui-yo" data-accion="novedad-fui-yo" data-nombre="{{ mb_strtoupper(auth()->user()->name) }}" data-objetivo="alta_reporta">
+                    <i class="bi bi-person-check-fill me-1" aria-hidden="true"></i>Fui yo quien lo observó
+                </button>
+            </div>
+            <div class="lector-compacto" data-nov-lector-reporta>
+                @include('componentes.lector', ['id' => 'alta_reporta_gafete', 'etiqueta' => 'o escanea el gafete de quien reporta (opcional)',
+                    'tipos' => 'colaborador', 'nombre' => 'reportado_colaborador_id', 'valor' => $trasError ? old('reportado_colaborador_id') : null,
+                    'elegido' => $reportadoAnterior ? $reportadoAnterior->nombreCompleto().' · Núm. '.$reportadoAnterior->num_empleado : null])
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="campo-etiqueta" for="alta_asignado">¿A quién se canaliza? <span class="text-lowercase fw-normal">(opcional)</span></label>
+                    <select id="alta_asignado" name="asignado_a" class="campo" data-nov-depende="sede">
+                        <option value="">-- Sin asignar todavía --</option>
+                        @foreach ($catalogos['usuarios'] as $u)
+                            <option value="{{ $u['id'] }}" data-de="{{ $u['sedes'] }}" @selected((string) $val('asignado_a') === (string) $u['id'])>{{ $u['nombre'] }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    {{-- C-28 (DD-15): también a un departamento (Mantenimiento, RR. HH.…): sus responsables ven solo este ticket y atienden su parte --}}
+                    <label class="campo-etiqueta" for="alta_departamento">O a un departamento <span class="text-lowercase fw-normal">(opcional)</span></label>
+                    <select id="alta_departamento" name="departamento_id" class="campo" data-nov-depende="sede">
+                        <option value="">-- Ninguno --</option>
+                        @foreach ($catalogos['departamentos'] ?? [] as $dep)
+                            <option value="{{ $dep->id }}" data-de="{{ $dep->todas_las_sedes ? 'todas' : $dep->sedes->pluck('id')->join(' ') }}" @selected((string) $val('departamento_id') === (string) $dep->id)>{{ $dep->nombre }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    {{-- C-30 (D-15): el lugar se elige del árbol de Zonas y edificios; el detalle escrito es opcional (al menos uno de los dos) --}}
+                    <label class="campo-etiqueta" for="alta_lugar">¿Dónde pasó?</label>
+                    <div class="buscador-acceso" data-sugerir-lugar="todos" data-url-lugares="{{ route('lugares.buscar') }}">
+                        <input type="text" id="alta_lugar" class="campo" maxlength="150" autocomplete="off" placeholder="Busca la zona, el piso o la habitación" value="{{ $val('lugar_texto') }}" name="lugar_texto" data-lugar-texto>
+                        <input type="hidden" name="lugar_id" value="{{ $val('lugar_id') }}" data-lugar-id>
+                        <div class="acceso-sugerencias" data-sugerencias hidden></div>
+                    </div>
+                    <label class="campo-etiqueta" for="alta_ubicacion">Detalle del lugar <span class="text-lowercase fw-normal">(opcional si elegiste el lugar)</span></label>
+                    <input type="text" id="alta_ubicacion" name="ubicacion" class="campo text-uppercase" maxlength="255" placeholder="Ej: cerca del elevador" value="{{ $val('ubicacion') }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="campo-etiqueta" for="alta_involucrados">¿Involucra a más personas o áreas? <span class="text-lowercase fw-normal">(opcional, buscar o escribir)</span></label>
+                    <input type="text" id="alta_involucrados" name="involucrados" class="campo text-uppercase" maxlength="255" list="novColaboradores" placeholder="Nombres o áreas, si aplica" value="{{ $val('involucrados') }}">
+                </div>
+            </div>
+
+            <label class="campo-etiqueta" for="alta_cuando">¿Cuándo sucedió? <span class="text-lowercase fw-normal">(fecha y hora del hecho, no de cuando se reporta)</span></label>
+            <input type="datetime-local" id="alta_cuando" name="ocurrio_en" class="campo" value="{{ $val('ocurrio_en', $ahoraLocal) }}" max="{{ substr($ahoraLocal, 0, 10) }}T23:59">
+
+            <label class="campo-etiqueta" for="alta_que">¿Qué sucedió?</label>
+            <textarea id="alta_que" name="descripcion" class="campo" rows="3" maxlength="5000" required>{{ $val('descripcion') }}</textarea>
+
+            <label class="campo-etiqueta" for="alta_como">¿Cómo sucedió? <span class="text-lowercase fw-normal">(opcional, si ya se sabe)</span></label>
+            <textarea id="alta_como" name="como_sucedio" class="campo" rows="2" maxlength="5000">{{ $val('como_sucedio') }}</textarea>
+
+            <div class="dialogo-acciones">
+                <button type="button" class="btn-cancelar" data-cerrar-dialogo>Cancelar</button>
+                <button type="submit" class="btn-despachar"><i class="bi bi-send-fill me-1" aria-hidden="true"></i>Guardar ticket</button>
+            </div>
+        </form>
+    </div>
+</dialog>

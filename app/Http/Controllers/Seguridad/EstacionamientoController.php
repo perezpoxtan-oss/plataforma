@@ -1,0 +1,183 @@
+<?php
+
+namespace App\Http\Controllers\Seguridad;
+
+use App\Http\Controllers\Controller;
+use App\Models\Acceso;
+use App\Models\Empresa;
+use App\Models\User;
+use App\Models\ZonaEstacionamiento;
+use App\Services\Accesos\ConsultaAccesos;
+use App\Services\Accesos\MovimientoNoPermitido;
+use App\Services\Accesos\MovimientosAccesos;
+use App\Services\Bajas\AntesDeDarDeBaja;
+use App\Services\Estacionamientos\AdministradorEstacionamientos;
+use App\Support\Tenancy\EmpresaDeTrabajo;
+use App\Support\Tenancy\Tenant;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\View\View;
+
+/**
+ * Estacionamientos y zonas (réplica de modules/estacionamientos de SEGCAT):
+ * "Cupos por sede" con la ocupación de cada estacionamiento y las zonas de
+ * descarga. La ocupación la aporta la Bitácora de accesos
+ * (OcupacionEstacionamientos).
+ */
+class EstacionamientoController extends Controller
+{
+    public function __construct(
+        private readonly EmpresaDeTrabajo $empresa,
+        private readonly Tenant $tenant,
+        private readonly AdministradorEstacionamientos $zonas,
+    ) {}
+
+    public function index(Request $request): View
+    {
+        Gate::authorize('estacionamientos.ver');
+        $actor = $request->user();
+        $empresaId = $this->empresa->id($actor);
+
+        if ($empresaId === null) {
+            return view('seguridad.estacionamientos.index', ['sinEmpresa' => true]);
+        }
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId) {
+            $lista = $this->zonas->limitar(ZonaEstacionamiento::query(), $actor, 'estacionamientos.ver')
+                ->with('sede:id,nombre')
+                ->leftJoin('users as uc', 'uc.id', '=', 'zonas_estacionamiento.creado_por')
+                ->leftJoin('users as ua', 'ua.id', '=', 'zonas_estacionamiento.actualizado_por')
+                ->select(['zonas_estacionamiento.*', 'uc.name as creado_por_nombre', 'ua.name as actualizado_por_nombre'])
+                // SEGCAT: por sede, tipo y nombre
+                ->orderBy('zonas_estacionamiento.tipo')->orderBy('zonas_estacionamiento.nombre')
+                ->get();
+
+            $puedeCrear = $actor->can('estacionamientos.crear');
+            $puedeEditar = $actor->can('estacionamientos.editar');
+
+            // Mejoras padrones (ADR-0015): qué vehículos ocupan cada zona, para «Dar salida» al que salió sin registrarla
+            $enZona = ! $actor->can('accesos.editar') ? collect() : app(ConsultaAccesos::class)->limitar(Acceso::query(), $actor, 'accesos.editar')
+                ->where('accesos.estado', 'en_sitio')->where('accesos.movimiento', 'entrada')
+                ->whereIn('accesos.zona_estacionamiento_id', $lista->pluck('id'))->orderBy('accesos.entrada_at')
+                ->get(['accesos.id', 'accesos.zona_estacionamiento_id', 'accesos.placas', 'accesos.nombre', 'accesos.entrada_at'])->groupBy('zona_estacionamiento_id');
+
+            return view('seguridad.estacionamientos.index', [
+                'sinEmpresa' => false,
+                'enZona' => $enZona,
+                'porSede' => $lista->groupBy('sede_id')->sortBy(fn ($zonas) => mb_strtolower($zonas->first()->sede->nombre ?? '')),
+                'total' => $lista->count(),
+                'ocupados' => $this->zonas->ocupados($lista),
+                'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
+                'sedesFiltro' => $lista->pluck('sede')->filter()->unique('id')->sortBy('nombre')->values(),
+                'sedesAlta' => $puedeCrear ? $this->zonas->sedesParaElegir($actor, 'estacionamientos.crear') : collect(),
+                'sedesEdicion' => $puedeEditar ? $this->zonas->sedesParaElegir($actor, 'estacionamientos.editar') : collect(),
+                'editables' => $this->zonas->idsEnAlcance($actor, 'estacionamientos.editar'),
+                'desactivables' => $this->zonas->idsEnAlcance($actor, 'estacionamientos.eliminar'),
+                'puede' => [
+                    'crear' => $puedeCrear,
+                    'editar' => $puedeEditar,
+                    'estado' => $actor->can('estacionamientos.eliminar'),
+                ],
+            ]);
+        });
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        Gate::authorize('estacionamientos.crear');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $zona = $this->tenant->conEmpresa($empresaId, fn () => $this->zonas->crear($request->user(), $request->all()));
+
+        return redirect()->to(route('estacionamientos.index').'#zona-'.$zona->id)->with('ok', "Zona «{$zona->nombre}» creada correctamente.");
+    }
+
+    public function update(Request $request, int $zona): RedirectResponse
+    {
+        Gate::authorize('estacionamientos.editar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $zona) {
+            $modelo = $this->buscarEnAlcance($request->user(), $zona, 'estacionamientos.editar');
+
+            return $this->zonas->actualizar($request->user(), $modelo, $request->all());
+        });
+
+        return redirect()->to(route('estacionamientos.index').'#zona-'.$modelo->id)->with('ok', "Zona «{$modelo->nombre}» actualizada correctamente.");
+    }
+
+    public function estado(Request $request, int $zona): RedirectResponse
+    {
+        Gate::authorize('estacionamientos.eliminar');
+        $empresaId = $this->empresaDeTrabajo($request);
+        $activo = $request->boolean('activo');
+
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $zona, $activo) {
+            $modelo = $this->buscarEnAlcance($request->user(), $zona, 'estacionamientos.eliminar');
+            // C-20: «Antes de dar de baja» si algo vigente depende de él
+            $revision = $activo ? null : app(AntesDeDarDeBaja::class)->exigirRevisado('estacionamientos', $modelo, $request);
+            $this->zonas->cambiarEstado($request->user(), $modelo, $activo);
+            if ($revision !== null && $revision['items'] !== []) {
+                app(AntesDeDarDeBaja::class)->aplicar('estacionamientos', $modelo, $revision, $request->all(), $request->user());
+            }
+
+            return $modelo;
+        });
+
+        return redirect()->to(route('estacionamientos.index').'#zona-'.$modelo->id)->with($activo ? 'ok' : 'aviso', $activo
+            ? "Zona «{$modelo->nombre}» reactivada correctamente."
+            : "Zona «{$modelo->nombre}» dada de baja: ya no se podrá asignar en Accesos, pero puedes reactivarla cuando quieras.");
+    }
+
+    private function empresaDeTrabajo(Request $request): int
+    {
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        return $empresaId;
+    }
+
+    /**
+     * Una zona de otra empresa o fuera del alcance del permiso responde 404.
+     */
+    /**
+     * C-21 (B-04): «Liberar lugar». En la tarjeta de la zona ya no se da
+     * salida a la persona (eso cerraba su visita y liberaba sus gafetes): solo
+     * se libera el lugar del vehículo, como «Cambiar zona → Sin asignar». La
+     * persona sigue en sitio; el mensaje lleva a su tarjeta en la Bitácora por
+     * si de verdad ya se fue. Se necesita ver la zona y editar accesos en esa sede.
+     */
+    public function liberar(Request $request, int $zona, int $acceso): RedirectResponse
+    {
+        Gate::authorize('estacionamientos.ver');
+        Gate::authorize('accesos.editar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        try {
+            [$modelo, $registro] = $this->tenant->conEmpresa($empresaId, function () use ($request, $zona, $acceso) {
+                $modelo = $this->buscarEnAlcance($request->user(), $zona, 'estacionamientos.ver');
+                $registro = app(ConsultaAccesos::class)->limitar(Acceso::query(), $request->user(), 'accesos.editar')
+                    ->where('zona_estacionamiento_id', $modelo->id)->find($acceso);
+                abort_if($registro === null, 404);
+                app(MovimientosAccesos::class)->cambiarZona($request->user(), $registro, null);
+
+                return [$modelo, $registro];
+            });
+        } catch (MovimientoNoPermitido $e) {
+            return redirect()->to(route('estacionamientos.index').'#zona-'.$zona)->with('error', $e->getMessage());
+        }
+
+        return redirect()->to(route('estacionamientos.index').'#zona-'.$modelo->id)
+            ->with('ok', "Lugar liberado: {$registro->placas} ya no ocupa «{$modelo->nombre}». {$registro->nombre} sigue en sitio; si ya se fue, dale salida en la Bitácora de accesos.")
+            ->with('siguientes', [['Ir a su tarjeta en la Bitácora', route('accesos.index', ['salida' => $registro->placas ?: $registro->nombre]), 'bi-box-arrow-right']]);
+    }
+
+    private function buscarEnAlcance(User $actor, int $id, string $permiso): ZonaEstacionamiento
+    {
+        $modelo = $this->zonas->limitar(ZonaEstacionamiento::query(), $actor, $permiso)->find($id);
+        abort_if($modelo === null, 404);
+
+        return $modelo;
+    }
+}

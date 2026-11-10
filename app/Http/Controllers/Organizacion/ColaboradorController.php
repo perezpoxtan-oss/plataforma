@@ -1,0 +1,442 @@
+<?php
+
+namespace App\Http\Controllers\Organizacion;
+
+use App\Http\Controllers\Controller;
+use App\Models\Colaborador;
+use App\Models\Departamento;
+use App\Models\Sede;
+use App\Models\Turno;
+use App\Models\User;
+use App\Services\Bajas\AntesDeDarDeBaja;
+use App\Services\Colaboradores\AdministradorColaboradores;
+use App\Services\Colaboradores\ColaboradorParecido;
+use App\Support\Csv;
+use App\Support\DependenciasModulos;
+use App\Support\Entrada;
+use App\Support\HoraLocal;
+use App\Support\Tenancy\EmpresaDeTrabajo;
+use App\Support\Tenancy\Tenant;
+use App\Support\Terminos;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+/**
+ * Colaboradores (réplica de modules/colaboradores de SEGCAT): directorio de
+ * personal con sede física, sedes adicionales, departamento y puesto, más el
+ * registro rápido y la búsqueda que usan otros módulos (Usuarios, Pases de
+ * salida, Accesos).
+ */
+class ColaboradorController extends Controller
+{
+    /** Columnas de la lista: nunca los datos personales. */
+    private const COLUMNAS_LISTA = [
+        'colaboradores.id', 'colaboradores.empresa_id', 'colaboradores.sede_id', 'colaboradores.departamento_id',
+        'colaboradores.puesto_id', 'colaboradores.turno_id', 'colaboradores.num_empleado', 'colaboradores.nombre', 'colaboradores.apellido_paterno',
+        'colaboradores.apellido_materno', 'colaboradores.telefono', 'colaboradores.activo', 'colaboradores.creado_por',
+        'colaboradores.actualizado_por', 'colaboradores.created_at', 'colaboradores.updated_at',
+        'colaboradores.provisional', 'colaboradores.validado_en', 'colaboradores.fusionado_en_id',
+        // Botón «Código e identificación» (QR y etiqueta NFC/RFID del gafete o tarjeta)
+        'colaboradores.codigo_qr', 'colaboradores.etiqueta_nfc',
+    ];
+
+    public function __construct(
+        private readonly EmpresaDeTrabajo $empresa,
+        private readonly Tenant $tenant,
+        private readonly AdministradorColaboradores $colaboradores,
+    ) {}
+
+    public function index(Request $request): View
+    {
+        Gate::authorize('colaboradores.ver');
+        $actor = $request->user();
+        $empresaId = $this->empresa->id($actor);
+
+        if ($empresaId === null) {
+            return view('organizacion.colaboradores.index', ['sinEmpresa' => true]);
+        }
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($actor) {
+            $lista = $this->colaboradores->limitar(Colaborador::query(), $actor, 'colaboradores.ver')->personal() // C-10: los residentes van en Padrones
+                ->with(['sede:id,nombre', 'sedesAdicionales:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'turno:id,nombre,hora_inicio,hora_fin', 'fusionadoEn:id,num_empleado,nombre,apellido_paterno,apellido_materno'])
+                ->leftJoin('users as uc', 'uc.id', '=', 'colaboradores.creado_por')
+                ->leftJoin('users as ua', 'ua.id', '=', 'colaboradores.actualizado_por')
+                ->select([...self::COLUMNAS_LISTA, 'uc.name as creado_por_nombre', 'ua.name as actualizado_por_nombre'])
+                ->orderByDesc('colaboradores.id')
+                ->get();
+
+            $permitidasVer = $this->colaboradores->sedesPermitidas($actor, 'colaboradores.ver');
+            $sedesActivas = Sede::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
+            $puedeEditar = $actor->can('colaboradores.editar');
+
+            return view('organizacion.colaboradores.index', [
+                'sinEmpresa' => false,
+                'quienVerifica' => DependenciasModulos::quienVerificaAltas(),
+                // Revisión Etapa 5 (A-2): en residenciales, quienes la conversión dejó como Personal «por confirmar»
+                'porConfirmarTipo' => $puedeEditar && Terminos::actual()->esResidencial()
+                    ? $this->colaboradores->limitar(Colaborador::query(), $actor, 'colaboradores.editar')->personal()
+                        ->where('colaboradores.tipo_por_confirmar', true)->where('colaboradores.activo', true)->count()
+                    : 0,
+                'colaboradores' => $lista,
+                'sedesFiltro' => $permitidasVer === null ? $sedesActivas : $sedesActivas->whereIn('id', $permitidasVer)->values(),
+                // C-43 (A-18): los filtros ofrecen solo lo que aplica en las sedes que ve (y lo que ya tiene alguien de su lista)
+                'departamentosFiltro' => Departamento::where(fn ($q) => $q->where(fn ($a) => $a->where('activo', true)
+                    ->when($permitidasVer !== null, fn ($s) => $s->aplicanEn($permitidasVer)))
+                    ->orWhereIn('id', $lista->pluck('departamento_id')->filter()->unique()->values()))
+                    ->orderBy('nombre')->get(['id', 'nombre']),
+                // Mapa de procesos: filtro por turno (los activos y los que ya tiene alguien)
+                'turnosFiltro' => Turno::where(fn ($q) => $q->where(fn ($a) => $a->where('activo', true)
+                    ->when($permitidasVer !== null, fn ($s) => $s->aplicanEn($permitidasVer)))
+                    ->orWhereIn('id', $lista->pluck('turno_id')->filter()->unique()->values()))
+                    ->orderBy('hora_inicio')->orderBy('nombre')->get(['id', 'nombre', 'hora_inicio', 'hora_fin']),
+                'alta' => $actor->can('colaboradores.crear') ? $this->colaboradores->catalogos($actor, 'colaboradores.crear', conTurnos: true) : null,
+                'edicion' => $puedeEditar ? $this->colaboradores->catalogos($actor, 'colaboradores.editar', conTurnos: true) : null,
+                'editables' => $this->colaboradores->idsEnAlcance($actor, 'colaboradores.editar'),
+                'desactivables' => $this->colaboradores->idsEnAlcance($actor, 'colaboradores.eliminar'),
+                'sedesEditables' => $puedeEditar ? $sedesActivas->when(
+                    ($p = $this->colaboradores->sedesPermitidas($actor, 'colaboradores.editar')) !== null,
+                    fn ($c) => $c->whereIn('id', $p)->values(),
+                ) : collect(),
+                // Para "Es duplicado de…": colaboradores ya validados y activos
+                'validados' => $actor->can('colaboradores.aprobar')
+                    ? $lista->where('provisional', false)->where('activo', true)->sortBy(fn ($c) => $c->nombreCompleto())->values()
+                    : collect(),
+                'aprobables' => $this->colaboradores->idsEnAlcance($actor, 'colaboradores.aprobar'),
+                'validacion' => $actor->can('colaboradores.aprobar') ? $this->colaboradores->catalogos($actor, 'colaboradores.aprobar') : null,
+                'puede' => [
+                    'crear' => $actor->can('colaboradores.crear'),
+                    'provisional' => ! $actor->can('colaboradores.crear') && $actor->can('colaboradores.provisional'),
+                    'aprobar' => $actor->can('colaboradores.aprobar'),
+                    'editar' => $puedeEditar,
+                    'estado' => $actor->can('colaboradores.eliminar'),
+                    'datos' => $actor->can('colaboradores.datos_personales'),
+                    'sedesAdicionales' => $puedeEditar && $sedesActivas->count() > 1,
+                ],
+            ]);
+        });
+    }
+
+    /**
+     * C-43 (E-13): «Exportar a Excel» con su permiso (colaboradores.exportar),
+     * en sus sedes y sin datos personales (CURP, RFC, NSS, nacimiento y
+     * domicilio son de Recursos Humanos y no salen aquí).
+     */
+    public function exportar(Request $request, HoraLocal $hora): StreamedResponse
+    {
+        Gate::authorize('colaboradores.exportar');
+        $empresaId = $this->empresaDeTrabajo($request);
+        $lista = $this->tenant->conEmpresa($empresaId, fn () => $this->colaboradores->limitar(Colaborador::query(), $request->user(), 'colaboradores.exportar')->personal()
+            ->with(['sede:id,nombre', 'departamento:id,nombre', 'puesto:id,nombre', 'turno:id,nombre'])->orderBy('colaboradores.apellido_paterno')->orderBy('colaboradores.nombre')
+            ->limit(20000)->get());
+
+        return $this->descargarCsv('colaboradores', ['Número', 'Nombre', 'Apellido paterno', 'Apellido materno', 'Sede', 'Departamento', 'Puesto', 'Turno', 'Estatus', 'Alta'],
+            $lista->map(fn (Colaborador $c) => [$c->num_empleado, $c->nombre, $c->apellido_paterno, $c->apellido_materno, $c->sede?->nombre, $c->departamento?->nombre,
+                $c->puesto?->nombre, $c->turno?->nombre, ! $c->activo ? 'DE BAJA' : ($c->provisional ? 'POR VERIFICAR' : 'ACTIVO'), $hora->formatear($c->created_at, 'd/m/Y')]));
+    }
+
+    /** C-43 (E-13): descarga en Excel (CSV con BOM para que Excel lea los acentos). */
+    private function descargarCsv(string $archivo, array $encabezados, iterable $filas): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($encabezados, $filas) {
+            $salida = fopen('php://output', 'w');
+            fwrite($salida, "\xEF\xBB\xBF");
+            Csv::fila($salida, $encabezados);
+            foreach ($filas as $fila) {
+                Csv::fila($salida, $fila);
+            }
+            fclose($salida);
+        }, $archivo.'-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        Gate::authorize('colaboradores.crear');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $colaborador = $this->tenant->conEmpresa($empresaId, fn () => $this->colaboradores->crear($request->user(), $empresaId, $request));
+
+        // C-41 (regla 5): crear su cuenta (con el colaborador ya vinculado) o imprimir su credencial
+        $actor = $request->user();
+        $pasos = array_values(array_filter([
+            $actor->can('usuarios.crear') && ! $colaborador->esResidente() ? ['texto' => 'Crear su cuenta', 'icono' => 'bi-person-plus', 'url' => route('usuarios.index', ['colaborador' => $colaborador->id])] : null,
+            $actor->can('etiquetas_qr.ver') && $actor->can('colaboradores.editar') && ! $colaborador->provisional
+                ? ['texto' => 'Imprimir credencial', 'icono' => 'bi-printer', 'url' => route('etiquetas.index', ['tipo' => 'colaborador', 'q' => $colaborador->num_empleado ?: $colaborador->nombreCompleto()])] : null,
+        ]));
+
+        return redirect()->route('colaboradores.index')->with('ok', "Colaborador «{$colaborador->nombreCompleto()}» creado correctamente.")
+            ->with('siguiente_paso', $pasos);
+    }
+
+    public function update(Request $request, int $colaborador): RedirectResponse
+    {
+        Gate::authorize('colaboradores.editar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $empresaId, $colaborador) {
+            $modelo = $this->buscarEnAlcance($request->user(), $colaborador, 'colaboradores.editar');
+
+            return $this->colaboradores->actualizar($request->user(), $empresaId, $modelo, $request);
+        });
+
+        return redirect()->route('colaboradores.index')->with('ok', "Colaborador «{$modelo->nombreCompleto()}» actualizado correctamente.");
+    }
+
+    /**
+     * Baja lógica y reingreso (SEGCAT: "eliminar" = estatus 0, nunca se borra:
+     * responsivas, pases y otras bitácoras dependen del colaborador).
+     */
+    public function estado(Request $request, int $colaborador): RedirectResponse
+    {
+        Gate::authorize('colaboradores.eliminar');
+        $empresaId = $this->empresaDeTrabajo($request);
+        $activo = $request->boolean('activo');
+
+        $cuenta = null;
+        $hecho = [];
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $colaborador, $activo, &$cuenta, &$hecho) {
+            $modelo = $this->buscarEnAlcance($request->user(), $colaborador, 'colaboradores.eliminar');
+            // C-20 (DD-06): llaves, equipos, pases, vehículos, responsabilidades… «Antes de dar de baja»
+            $revision = $activo ? null : app(AntesDeDarDeBaja::class)->exigirRevisado('colaboradores', $modelo, $request);
+            $cuenta = $this->colaboradores->cambiarEstado($request->user(), $modelo, $activo);
+            if ($revision !== null && app(AntesDeDarDeBaja::class)->hayPendientes($revision)) {
+                $hecho = app(AntesDeDarDeBaja::class)->aplicar('colaboradores', $modelo, $revision, $request->all(), $request->user());
+            }
+
+            return $modelo;
+        });
+
+        return redirect()->route('colaboradores.index')->with($activo ? 'ok' : 'aviso', $activo
+            ? "Colaborador «{$modelo->nombreCompleto()}» reingresado.".($modelo->usuarioDesactivadoPorBaja() ? ' Su cuenta de usuario sigue dada de baja: reactívala en Usuarios si la necesita.' : '')
+            : "Colaborador «{$modelo->nombreCompleto()}» dado de baja.".($cuenta ? " También se dio de baja su cuenta de usuario «@{$cuenta->username}»; puedes reactivarla en Usuarios." : '')
+                .($hecho !== [] ? ' Además: '.implode('; ', $hecho).'.' : '').' Puedes reactivarlo con el mismo botón cuando quieras.');
+    }
+
+    public function sedes(Request $request, int $colaborador): RedirectResponse
+    {
+        Gate::authorize('colaboradores.editar');
+        $empresaId = $this->empresaDeTrabajo($request);
+        $request->validate(['sedes' => ['nullable', 'array'], 'sedes.*' => ['integer']]);
+
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $colaborador) {
+            $modelo = $this->buscarEnAlcance($request->user(), $colaborador, 'colaboradores.editar');
+            $this->colaboradores->actualizarSedes($request->user(), $modelo, (array) $request->input('sedes', []));
+
+            return $modelo;
+        });
+
+        return redirect()->route('colaboradores.index')->with('ok', "Sedes adicionales de «{$modelo->nombreCompleto()}» actualizadas.");
+    }
+
+    /**
+     * Datos personales para el diálogo de edición: se piden solo al abrirlo,
+     * así la lista nunca lleva CURP, RFC ni NSS en su HTML.
+     */
+    public function datosPersonales(Request $request, int $colaborador): JsonResponse
+    {
+        Gate::authorize('colaboradores.datos_personales');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $modelo = $this->tenant->conEmpresa($empresaId, fn () => $this->buscarEnAlcance($request->user(), $colaborador, 'colaboradores.datos_personales'));
+
+        $datos = $modelo->only(Colaborador::DATOS_PERSONALES);
+        $datos['fecha_nacimiento'] = $modelo->fecha_nacimiento?->format('Y-m-d');
+
+        return response()->json($datos)->header('Cache-Control', 'no-store, private');
+    }
+
+    /**
+     * Registro rápido desde otros módulos (SEGCAT: colaborador_registro_rapido_proceso.php).
+     * 201 con el colaborador; 422 con los errores de captura.
+     */
+    public function rapido(Request $request): JsonResponse
+    {
+        $actor = $request->user();
+        $completo = $actor->can('colaboradores.crear');
+        abort_unless($completo || $actor->can('colaboradores.provisional'), 403);
+
+        $empresaId = $this->empresa->id($actor);
+        if ($empresaId === null) {
+            return response()->json(['ok' => false, 'mensaje' => 'Elige primero la empresa de trabajo.', 'errores' => []], 422);
+        }
+
+        try {
+            $resumen = $this->tenant->conEmpresa($empresaId, fn () => $this->colaboradores->resumen($completo
+                ? $this->colaboradores->crear($actor, $empresaId, $request, rapido: true)
+                : $this->colaboradores->crearProvisional($actor, $empresaId, $request)));
+        } catch (ValidationException $e) {
+            return response()->json(['ok' => false, 'mensaje' => collect($e->errors())->flatten()->first(), 'errores' => $e->errors()], 422);
+        } catch (ColaboradorParecido $e) {
+            return response()->json([
+                'ok' => false,
+                'mensaje' => 'Ya hay alguien registrado con ese nombre. Si es la misma persona, úsala; si no, confirma que es otra.',
+                'parecidos' => $e->parecidos,
+            ], 409);
+        }
+
+        return response()->json(['ok' => true, 'colaborador' => $resumen], 201);
+    }
+
+    /**
+     * Recursos Humanos valida un alta provisional (le asigna su número de empleado).
+     */
+    public function validar(Request $request, int $colaborador): RedirectResponse
+    {
+        Gate::authorize('colaboradores.aprobar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $empresaId, $colaborador) {
+            $modelo = $this->buscarEnAlcance($request->user(), $colaborador, 'colaboradores.aprobar');
+
+            return $this->colaboradores->validarProvisional($request->user(), $empresaId, $modelo, $request);
+        });
+
+        return $this->volver($request)->with('ok', "«{$modelo->nombreCompleto()}» verificado con el número {$modelo->num_empleado}.");
+    }
+
+    /**
+     * El alta provisional era alguien que ya existía: se une con su registro.
+     */
+    public function fusionar(Request $request, int $colaborador): RedirectResponse
+    {
+        Gate::authorize('colaboradores.aprobar');
+        $empresaId = $this->empresaDeTrabajo($request);
+        // Seguridad (AZ-03): primero el registro (404 si es ajeno), luego la captura
+        $this->tenant->conEmpresa($empresaId, fn () => $this->buscarEnAlcance($request->user(), $colaborador, 'colaboradores.aprobar'));
+        $destinoId = (int) $request->validate(['destino_id' => ['required', 'integer']], ['destino_id.required' => 'Elige el colaborador correcto.'])['destino_id'];
+
+        [$provisional, $destino] = $this->tenant->conEmpresa($empresaId, function () use ($request, $colaborador, $destinoId) {
+            $provisional = $this->buscarEnAlcance($request->user(), $colaborador, 'colaboradores.aprobar');
+            $destino = $this->colaboradores->limitar(Colaborador::query(), $request->user(), 'colaboradores.aprobar')->find($destinoId);
+            if ($destino === null) {
+                throw ValidationException::withMessages(['destino_id' => 'Elige un colaborador activo y ya validado.']);
+            }
+            $this->colaboradores->fusionar($request->user(), $provisional, $destino);
+
+            return [$provisional, $destino];
+        });
+
+        return $this->volver($request)->with('ok', "«{$provisional->nombreCompleto()}» se unió con «{$destino->nombreCompleto()}» (#{$destino->num_empleado}).");
+    }
+
+    /**
+     * C-27: «Rechazar» un alta de la caseta (motivo obligatorio; avisa a quien la registró).
+     */
+    public function rechazar(Request $request, int $colaborador): RedirectResponse
+    {
+        Gate::authorize('colaboradores.aprobar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $modelo = $this->tenant->conEmpresa($empresaId, function () use ($request, $colaborador) {
+            $modelo = $this->buscarEnAlcance($request->user(), $colaborador, 'colaboradores.aprobar');
+            $this->colaboradores->rechazarProvisional($request->user(), $modelo, $request->input('motivo_rechazo'));
+
+            return $modelo;
+        });
+
+        return $this->volver($request)->with('ok', "Alta «{$modelo->nombreCompleto()}» rechazada. Avisamos a quien la registró.");
+    }
+
+    /** Después de verificar: a la bandeja «Altas por verificar» si de ahí vino (C-27), o a Colaboradores. */
+    private function volver(Request $request): RedirectResponse
+    {
+        return $request->input('volver') === 'altas'
+            ? redirect()->route('altas_por_verificar.index', ['pestana' => 'colaboradores'])
+            : redirect()->route('colaboradores.index');
+    }
+
+    /**
+     * Aviso en vivo del Alta de Colaborador: ¿ya hay alguien activo con el
+     * mismo nombre (sin importar mayúsculas ni acentos)? Es solo un aviso:
+     * Recursos Humanos decide si es otra persona.
+     * ?nombre=Daniela&apellido_paterno=Canul&apellido_materno=May
+     */
+    public function homonimos(Request $request): JsonResponse
+    {
+        Gate::authorize('colaboradores.crear');
+        $empresaId = $this->empresa->id($request->user());
+        $nombre = trim(Entrada::texto($request->query('nombre')));
+        $paterno = trim(Entrada::texto($request->query('apellido_paterno')));
+        $materno = trim(Entrada::texto($request->query('apellido_materno')));
+        if ($empresaId === null || $nombre === '' || $paterno === '' || mb_strlen($nombre.$paterno.$materno) > 180) {
+            return response()->json(['parecidos' => [], 'mensaje' => null]);
+        }
+
+        $todos = $this->tenant->conEmpresa($empresaId, fn () => $this->colaboradores->parecidos($nombre, $paterno, $materno === '' ? null : $materno));
+        // Con alcance de sede, los de otras sedes solo se cuentan (sin sus datos)
+        $permitidas = $this->colaboradores->sedesPermitidas($request->user(), 'colaboradores.crear');
+        $parecidos = array_values(array_filter($todos, fn (array $c) => $permitidas === null || in_array((int) $c['sede_id'], $permitidas, true)));
+        $otros = count($todos) - count($parecidos);
+
+        return response()->json([
+            'parecidos' => $parecidos,
+            'otros' => $otros,
+            'mensaje' => $todos === [] ? null : (count($todos) === 1
+                ? 'Ya existe un colaborador con ese nombre'.($otros > 0 ? ' en una sede que no tienes a cargo' : '').'. ¿Es la misma persona? Si lo es, no lo des de alta otra vez: búscalo en la lista.'
+                : 'Ya existen colaboradores con ese nombre'.($otros > 0 ? " ({$otros} en sedes que no tienes a cargo)" : '').'. ¿Es alguno de ellos? Si lo es, no lo des de alta otra vez: búscalo en la lista.'),
+        ]);
+    }
+
+    /**
+     * Búsqueda para autocompletar (SEGCAT: usuarios/colaborador_buscar_ajax.php):
+     * por número de empleado o nombre, mínimo 2 letras, máximo 15 resultados,
+     * solo activos, de la empresa y de las sedes del usuario.
+     */
+    public function buscar(Request $request): JsonResponse
+    {
+        $actor = $request->user();
+        $permisos = array_values(array_filter(['colaboradores.ver', 'colaboradores.provisional', 'usuarios.crear', 'usuarios.editar'], fn ($p) => $actor->can($p)));
+        abort_if($permisos === [], 403);
+
+        $empresaId = $this->empresa->id($actor);
+        if ($empresaId === null) {
+            return response()->json(['resultados' => [], 'todas_ya_tienen_usuario' => false]);
+        }
+
+        // La sede más amplia entre los permisos que dan acceso
+        $sedes = [];
+        foreach ($permisos as $permiso) {
+            $permitidas = $this->colaboradores->sedesPermitidas($actor, $permiso);
+            if ($permitidas === null) {
+                $sedes = null;
+                break;
+            }
+            $sedes = array_values(array_unique([...$sedes, ...$permitidas]));
+        }
+
+        $resultado = $this->tenant->conEmpresa($empresaId, fn () => $this->colaboradores->buscar(
+            Entrada::texto($request->query('q', '')),
+            $sedes,
+            $request->boolean('sin_usuario'),
+            $request->filled('usuario') ? (int) $request->query('usuario') : null,
+            // C-10: Usuarios busca solo al personal (las cuentas son del personal). Revisión Etapa 5 (A-3): Pases de salida
+            // pide «residentes=1» y busca también a los residentes, igual que el lector al escanear y el receptor general
+            ! $request->boolean('residentes'),
+        ));
+
+        return response()->json($resultado);
+    }
+
+    private function empresaDeTrabajo(Request $request): int
+    {
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        return $empresaId;
+    }
+
+    /**
+     * Un colaborador de otra empresa o fuera del alcance del permiso responde 404.
+     */
+    private function buscarEnAlcance(User $actor, int $id, string $permiso): Colaborador
+    {
+        $modelo = $this->colaboradores->limitar(Colaborador::query(), $actor, $permiso)->find($id);
+        abort_if($modelo === null, 404);
+
+        return $modelo;
+    }
+}

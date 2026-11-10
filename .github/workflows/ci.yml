@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    name: Pruebas (PHP ${{ matrix.php }} + MariaDB 11.4)
+    runs-on: ubuntu-latest
+
+    # La suite completa (incluido migrar -> revertir -> migrar en MariaDB) corre en
+    # 8.4 (lo que hoy usa el hospedaje) y en 8.5 (a la que se va a cambiar).
+    # Ver docs/tecnico/despliegue.md, «Cambiar la versión de PHP».
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.4', '8.5']
+
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_DATABASE: plataforma_ci
+          MARIADB_USER: ci
+          MARIADB_PASSWORD: ci
+          MARIADB_ROOT_PASSWORD: root
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+        ports:
+          - 3306:3306
+
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: bcmath, ctype, curl, dom, exif, fileinfo, gd, intl, mbstring, pdo_mysql, sodium, xml, zip
+          coverage: none
+
+      - name: Dependencias
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Vulnerabilidades conocidas (composer audit)
+        run: |
+          set +e
+          composer audit --locked --format=plain --abandoned=report > audit.txt 2>&1
+          rc=$?
+          cat audit.txt
+          if [ $rc -ne 0 ]; then
+            echo "::error title=Dependencias con vulnerabilidades conocidas::$(sed 's/%/%25/g' audit.txt | tr '\n' '|' | sed 's/|/%0A/g')"
+            exit 1
+          fi
+          echo "::notice title=composer audit::Sin vulnerabilidades conocidas en las dependencias"
+
+      - name: Estilo de codigo (Pint)
+        run: vendor/bin/pint --test
+
+      - name: Preparar entorno
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Migraciones en MariaDB (motor InnoDB)
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: plataforma_ci
+          DB_USERNAME: ci
+          DB_PASSWORD: ci
+        run: |
+          set -o pipefail
+          exec > >(tee migraciones.log) 2>&1
+          # Igual que en Neubox: si no se indica motor, MariaDB crea MyISAM.
+          # Asi la CI detecta cualquier tabla que no se cree en InnoDB.
+          php -r '$p=new PDO("mysql:host=127.0.0.1","root","root"); $p->exec("SET GLOBAL default_storage_engine=MyISAM");'
+          php artisan migrate --force
+          php artisan migrate:rollback --force
+          php artisan migrate --force
+          # Ninguna tabla debe quedar en un motor distinto de InnoDB
+          php -r '$p=new PDO("mysql:host=127.0.0.1;dbname=plataforma_ci","ci","ci"); $r=$p->query("SELECT table_name, engine FROM information_schema.tables WHERE table_schema=\"plataforma_ci\" AND engine<>\"InnoDB\"")->fetchAll(PDO::FETCH_ASSOC); if($r){print_r($r); exit(1);} echo "Todas las tablas en InnoDB\n";'
+          # Respaldo -> restauracion con columnas generadas (paquete de traslado y respaldos)
+          php .github/scripts/respaldo-mariadb.php
+
+      - name: Integridad de la base en MariaDB (CHECK, llaves restrict, coherencia)
+        # La misma prueba de la suite (que corre en SQLite) contra MariaDB: la base
+        # rechaza estados fuera de catálogo y borrados de historia. Las partes que
+        # revierten migraciones se omiten aquí (las cubre el paso de migraciones).
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: plataforma_ci
+          DB_USERNAME: ci
+          DB_PASSWORD: ci
+        run: php artisan test tests/Feature/Nucleo/IntegridadBaseDatosTest.php
+
+      - name: Pruebas
+        env:
+          # Los avisos de deprecacion (p. ej. de una version nueva de PHP) se anotan en
+          # storage/logs/laravel.log para revisarlos en el paso siguiente
+          LOG_DEPRECATIONS_CHANNEL: single
+        run: |
+          php -v | head -1
+          php artisan test --display-deprecations --log-junit junit.xml
+
+      - name: Avisos de deprecacion en el codigo propio
+        run: php .github/scripts/revisar-deprecaciones.php storage/logs/laravel.log
+
+      - name: Anotar fallas
+        if: failure()
+        run: |
+          if [ -s migraciones.log ] && [ ! -f junit.xml ]; then
+            echo "::error title=Migraciones::$(tail -n 25 migraciones.log | sed 's/%/%25/g' | tr '\n' '|' | sed 's/|/%0A/g')"
+          fi
+          php .github/scripts/anotar-fallas.php junit.xml
+
+  paquete:
+    name: Paquete para QA
+    needs: pruebas
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/paquete.yml
+    # Firma de la app de Android (apk.yml); opcionales: sin ellos el paquete sale sin app
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+  app-android:
+    name: App de Android (prueba)
+    # En cada PR se compila la app (apunta a QA) y queda como artefacto «app-movil-prueba»
+    # para probarla en un telefono; no se publica. En develop y en las etiquetas la
+    # compila paquete.yml. Sin los secretos de firma no falla (APK de depuracion).
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/apk.yml
+    with:
+      destino: qa
+      publicar: false
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}

@@ -1,0 +1,27 @@
+<?php
+
+/*
+|--------------------------------------------------------------------------
+| App de Android (carpeta movil/). Ver docs/tecnico/app-movil.md.
+|--------------------------------------------------------------------------
+| App Links: con la huella SHA-256 de la llave con la que se firma la app,
+| la plataforma publica /.well-known/assetlinks.json y Android abre los
+| enlaces /e/… directamente en la app (sin preguntar). Vacía = no se publica
+| (404) y esos enlaces siguen abriendo el navegador. Varias huellas separadas
+| por coma (p. ej. la de Google Play y la de la llave de subida).
+*/
+
+return [
+    'paquete' => env('APP_MOVIL_PAQUETE', 'mx.smartcentinel.app'),
+    'huellas_sha256' => (string) env('APP_MOVIL_HUELLAS_SHA256', ''),
+
+    /*
+    | Mi cuenta → App para tu celular: carpeta NO pública donde desplegar.sh deja
+    | el APK que trae cada versión (smart-centinel-<sha256>.apk), su app-movil.json
+    | y el historial. Ver docs/tecnico/app-movil.md, «Compilación automática».
+    */
+    'carpeta' => storage_path('app/private/app-movil'),
+
+    // Minutos que dura el enlace firmado del código QR (descarga sin sesión en el celular)
+    'minutos_enlace' => 30,
+];

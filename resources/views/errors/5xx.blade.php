@@ -1,0 +1,2 @@
+{{-- Ronda 8: cualquier otro error 5xx sin vista propia se ve en español (nunca la página genérica en inglés) --}}
+@include('errors.plantilla', ['codigo' => isset($exception) && method_exists($exception, 'getStatusCode') ? $exception->getStatusCode() : 500, 'icono' => 'bi-tools', 'color' => '#dc2626', 'titulo' => 'Algo salió mal', 'mensaje' => 'Ocurrió un problema en el servidor. Ya quedó registrado; intenta de nuevo en unos minutos.', 'accion' => 'inicio'])

@@ -1,0 +1,1 @@
+@include('errors.plantilla', ['codigo' => 419, 'icono' => 'bi-clock-history', 'color' => '#d97706', 'titulo' => 'Tu sesión expiró', 'mensaje' => 'Por seguridad, la página estuvo abierta demasiado tiempo sin actividad. Vuelve a entrar y repite lo que estabas haciendo.', 'accion' => 'acceso'])

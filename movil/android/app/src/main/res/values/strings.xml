@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- app_name y title_activity_main salen de movil/app.config.json (ver app/build.gradle) -->
+    <string name="salir_titulo">¿Salir de la app?</string>
+    <string name="salir_si">Salir</string>
+    <string name="salir_no">Cancelar</string>
+    <string name="descargando">Descargando %1$s… Lo verás en Descargas.</string>
+</resources>

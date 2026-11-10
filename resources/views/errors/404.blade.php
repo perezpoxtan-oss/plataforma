@@ -1,0 +1,1 @@
+@include('errors.plantilla', ['codigo' => 404, 'icono' => 'bi-signpost-split', 'color' => '#2563eb', 'titulo' => 'No encontramos lo que buscas', 'mensaje' => 'La página o el registro no existe, se dio de baja o pertenece a otra empresa o sede.', 'accion' => 'inicio'])

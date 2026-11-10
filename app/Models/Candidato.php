@@ -1,0 +1,379 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\PerteneceAEmpresa;
+use App\Models\Concerns\RegistraAutor;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
+/**
+ * Ficha del candidato (CV digital). Nace cuando la caseta registra a alguien
+ * que viene a Recursos Humanos como candidato (ligado a su acceso y al Padrón
+ * de personas), cuando RR. HH. lo captura o cuando él mismo llena su CV en el
+ * kiosco. Es dato personal: solo lo ven Recursos Humanos y, en resumen, el
+ * responsable del departamento al que aplica.
+ *
+ * Una ficha por persona (fase 1): cada vez que aplica nace una POSTULACIÓN
+ * (App\Models\Postulacion), que es la que avanza por etapas. Las columnas de
+ * etapa, vacante, departamento, puesto y fechas de esta tabla son un ESPEJO
+ * de la postulación activa (manda la postulación; ver
+ * App\Services\Candidatos\Postulaciones).
+ *
+ * Etapas de la postulación (ADR-0009 y ADR-0010, ver TRANSICIONES):
+ *   Por atender → Con RR. HH. (RR. HH. lo recibe, lo entrevista y lo evalúa
+ *   desde ahí) → Entrevista con el departamento (canalizado, con cita y
+ *   entrevistador) → Evaluado por el departamento → Elegido (lo decide el
+ *   jefe) → Contratado
+ *   y a un lado: Considerar, Rechazado (con motivo) y No se presentó.
+ */
+class Candidato extends Model
+{
+    use PerteneceAEmpresa, RegistraAutor;
+
+    public const ETAPAS = [
+        'registrado' => 'Por atender',
+        'con_rh' => 'Con RR. HH.',
+        'canalizado' => 'Entrevista con el departamento',
+        'evaluado' => 'Evaluado por el departamento',
+        'elegido' => 'Elegido',
+        'contratado' => 'Contratado',
+        'considerar' => 'Considerar',
+        'rechazado' => 'Rechazado',
+        'no_se_presento' => 'No se presentó',
+    ];
+
+    /** Color de la pastilla de cada etapa. */
+    public const COLORES = [
+        'registrado' => 'gris', 'con_rh' => 'azul', 'canalizado' => 'indigo', 'evaluado' => 'ambar',
+        'elegido' => 'verde', 'contratado' => 'esmeralda', 'considerar' => 'cian', 'rechazado' => 'rojo', 'no_se_presento' => 'rojo',
+    ];
+
+    /** Avance normal (la línea de la ficha); las demás son laterales. */
+    public const RUTA = ['registrado', 'con_rh', 'canalizado', 'evaluado', 'elegido', 'contratado'];
+
+    /** Etapas laterales: fuera del avance normal. */
+    public const LATERALES = ['considerar', 'rechazado', 'no_se_presento'];
+
+    /**
+     * A qué etapas se puede pasar desde cada una. Cada cambio tiene su botón:
+     *  - Atender, Considerar y Rechazar: Recursos Humanos (cambiarEtapa);
+     *    «Entrevistar» abre la evaluación de RR. HH. sin cambiar de etapa;
+     *  - Canalizar al departamento, Reprogramar y No se presentó: Recursos
+     *    Humanos con cita y entrevistador (Entrevistas);
+     *  - Evaluado, Elegido y Segunda entrevista: solo el entrevistador asignado o su delegado;
+     *  - Contratado: el botón Contratar (crea el colaborador).
+     */
+    public const TRANSICIONES = [
+        'registrado' => ['con_rh', 'considerar', 'rechazado'],
+        'con_rh' => ['canalizado', 'considerar', 'rechazado'],
+        'canalizado' => ['canalizado', 'evaluado', 'elegido', 'no_se_presento', 'considerar', 'rechazado'],
+        'evaluado' => ['canalizado', 'considerar', 'rechazado'],
+        'elegido' => ['contratado', 'rechazado'],
+        'no_se_presento' => ['canalizado', 'considerar', 'rechazado'],
+        'considerar' => ['con_rh', 'rechazado'],
+        'rechazado' => ['con_rh'],
+        'contratado' => [],
+    ];
+
+    /** Cambios que Recursos Humanos hace con el botón de etapa (los demás tienen su propio formulario). */
+    public const MANUALES = ['con_rh', 'considerar', 'rechazado'];
+
+    /** Texto del botón que lleva a cada etapa. */
+    public const BOTONES_ETAPA = [
+        'con_rh' => 'Atender', 'canalizado' => 'Canalizar al departamento',
+        'no_se_presento' => 'No se presentó', 'contratado' => 'Contratar', 'considerar' => 'Considerar', 'rechazado' => 'Rechazar',
+    ];
+
+    /** «Por entrevistar (RR. HH.)» (Mis pendientes): atendidos que esperan su entrevista de filtro o su canalización. */
+    public const POR_ENTREVISTAR = ['con_rh'];
+
+    /** Etapas en las que el candidato sigue «en proceso». */
+    public const ABIERTAS = ['registrado', 'con_rh', 'canalizado', 'evaluado', 'elegido', 'no_se_presento'];
+
+    /** Valores de antes de la fase 2 → etapa nueva (los usa la migración de etapas). */
+    public const ETAPAS_ANTERIORES = [
+        'aprobado_rh' => 'canalizado', 'entrevista' => 'canalizado', 'seleccionado' => 'elegido', 'cartera' => 'considerar', 'descartado' => 'rechazado',
+        // ADR-0010: «En revisión RR. HH.» y «Entrevista RR. HH.» se fundieron en «Con RR. HH.»
+        'revision' => 'con_rh', 'entrevista_rh' => 'con_rh',
+    ];
+
+    public const ESCOLARIDAD = [
+        'primaria' => 'Primaria', 'secundaria' => 'Secundaria', 'bachillerato' => 'Bachillerato / Preparatoria', 'tecnico' => 'Carrera técnica',
+        'licenciatura' => 'Licenciatura', 'posgrado' => 'Maestría / Posgrado',
+    ];
+
+    public const DISPONIBILIDAD = [
+        'inmediata' => 'Inmediata', 'una_semana' => 'En una semana', 'quince_dias' => 'En 15 días', 'un_mes' => 'En un mes o más',
+    ];
+
+    public const ORIGENES = ['caseta' => 'Caseta', 'rh' => 'Recursos Humanos', 'kiosco' => 'Kiosco (él mismo)', 'web' => 'Bolsa de trabajo (internet)'];
+
+    // Solicitud de empleo formal (lección 36)
+
+    public const SEXOS = ['mujer' => 'Mujer', 'hombre' => 'Hombre', 'no_decir' => 'Prefiero no decirlo'];
+
+    public const ESTADOS_CIVILES = [
+        'soltero' => 'Soltero(a)', 'casado' => 'Casado(a)', 'union_libre' => 'Unión libre', 'divorciado' => 'Divorciado(a)', 'viudo' => 'Viudo(a)',
+    ];
+
+    public const LICENCIAS = ['automovilista' => 'Automovilista', 'chofer' => 'Chofer', 'motociclista' => 'Motociclista', 'federal' => 'Federal'];
+
+    /** Documento obtenido en cada renglón de escolaridad. */
+    public const DOCUMENTOS_ESTUDIO = ['certificado' => 'Certificado', 'titulo' => 'Título', 'cedula' => 'Cédula profesional', 'trunco' => 'Trunco (sin terminar)'];
+
+    public const MEDIOS_VACANTE = [
+        'bolsa_web' => 'Página de empleos de la empresa', 'redes' => 'Redes sociales', 'recomendacion' => 'Me lo recomendó un conocido',
+        'cartel' => 'Cartel en la entrada', 'periodico' => 'Periódico o bolsa de trabajo', 'otro' => 'Otro',
+    ];
+
+    public const FIRMAS_MEDIO = ['kiosco' => 'en el kiosco', 'web' => 'en la bolsa de trabajo', 'rh' => 'con Recursos Humanos'];
+
+    /**
+     * Datos personales sensibles: solo los ve quien tiene candidatos.ver (Recursos
+     * Humanos). Nunca van a la auditoría (se enmascaran), al resumen del
+     * departamento, a las notificaciones ni a los correos; en el CSV solo si se
+     * pide expresamente (columnas marcadas).
+     */
+    public const SENSIBLES = ['curp', 'rfc', 'nss', 'calle_numero', 'colonia', 'codigo_postal', 'municipio', 'estado_domicilio', 'tiempo_residencia',
+        'telefono_fijo', 'emergencia_nombre', 'emergencia_parentesco', 'emergencia_telefono'];
+    // Fin Solicitud de empleo formal
+
+    protected $table = 'candidatos';
+
+    protected $attributes = ['etapa' => 'registrado', 'origen' => 'caseta', 'autocaptura_pendiente' => false];
+
+    protected $fillable = [
+        'empresa_id', 'sede_id', 'persona_id', 'acceso_id', 'departamento_id', 'puesto_id', 'vacante',
+        'nombre_completo', 'telefono', 'correo', 'fecha_nacimiento', 'ciudad',
+        'escolaridad', 'experiencia', 'habilidades', 'idiomas', 'disponibilidad', 'disponibilidad_notas', 'pretension', 'referencias',
+        'notas_rh', 'origen', 'llegada_en',
+        // Solicitud de empleo formal (lección 36)
+        'nombre', 'apellido_paterno', 'apellido_materno', 'sexo', 'lugar_nacimiento', 'nacionalidad', 'estado_civil', 'dependientes',
+        'curp', 'rfc', 'nss', 'licencia_tipo', 'licencia_vigencia',
+        'calle_numero', 'colonia', 'codigo_postal', 'municipio', 'estado_domicilio', 'tiempo_residencia', 'telefono_fijo',
+        'emergencia_nombre', 'emergencia_parentesco', 'emergencia_telefono', 'referencias_laborales',
+        'medio_vacante', 'tiene_familiares', 'familiares_nombre', 'trabajo_antes_aqui', 'rolar_turnos', 'puede_viajar', 'cambiar_residencia',
+        'fecha_inicio_posible',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'escolaridad' => 'array', 'experiencia' => 'array', 'referencias' => 'array', 'pretension' => 'decimal:2',
+            'fecha_nacimiento' => 'date', 'autocaptura_pendiente' => 'boolean', 'autocaptura_en' => 'datetime', 'solicitud_corta' => 'boolean',
+            'privacidad_aceptada_en' => 'datetime', 'llegada_en' => 'datetime', 'avisado_rh_en' => 'datetime', 'revision_en' => 'datetime',
+            'aprobado_rh_en' => 'datetime', 'enviado_departamento_en' => 'datetime', 'respuesta_departamento_en' => 'datetime',
+            'entrevista_en' => 'datetime', 'decision_en' => 'datetime', 'contratado_en' => 'datetime',
+            // Solicitud de empleo formal
+            'referencias_laborales' => 'array', 'licencia_vigencia' => 'date', 'fecha_inicio_posible' => 'date', 'dependientes' => 'integer',
+            'tiene_familiares' => 'boolean', 'trabajo_antes_aqui' => 'boolean', 'rolar_turnos' => 'boolean', 'puede_viajar' => 'boolean',
+            'cambiar_residencia' => 'boolean', 'declaracion_aceptada_en' => 'datetime', 'firma_en' => 'datetime',
+            // Fase 3: caducidad y recordatorio de solicitud sin revisar
+            'archivada_en' => 'datetime', 'aviso_solicitud_en' => 'datetime', 'aviso_borrado_en' => 'datetime', 'borrar_en' => 'date', 'conservar_hasta' => 'date',
+        ];
+    }
+
+    // -------------------------------------------------------------- Relaciones
+
+    public function sede(): BelongsTo
+    {
+        return $this->belongsTo(Sede::class)->withTrashed();
+    }
+
+    public function persona(): BelongsTo
+    {
+        return $this->belongsTo(Persona::class);
+    }
+
+    public function acceso(): BelongsTo
+    {
+        return $this->belongsTo(Acceso::class);
+    }
+
+    public function departamento(): BelongsTo
+    {
+        return $this->belongsTo(Departamento::class);
+    }
+
+    public function puesto(): BelongsTo
+    {
+        return $this->belongsTo(Puesto::class);
+    }
+
+    public function colaborador(): BelongsTo
+    {
+        return $this->belongsTo(Colaborador::class);
+    }
+
+    /** Todas sus postulaciones, la más reciente primero. */
+    public function postulaciones(): HasMany
+    {
+        return $this->hasMany(Postulacion::class)->orderByDesc('id');
+    }
+
+    /** La postulación activa (la más reciente): la que refleja esta ficha. */
+    public function postulacionActiva(): HasOne
+    {
+        return $this->hasOne(Postulacion::class)->latestOfMany();
+    }
+
+    /** Versión del aviso de privacidad que aceptó (docs/tecnico/privacidad.md). */
+    public function avisoPrivacidad(): BelongsTo
+    {
+        return $this->belongsTo(AvisoPrivacidad::class, 'aviso_privacidad_id');
+    }
+
+    public function documentos(): HasMany
+    {
+        return $this->hasMany(CandidatoDocumento::class)->orderBy('id');
+    }
+
+    public function eventos(): HasMany
+    {
+        return $this->hasMany(CandidatoEvento::class)->orderByDesc('id');
+    }
+
+    public function autorizaciones(): HasMany
+    {
+        return $this->hasMany(Autorizacion::class)->orderByDesc('id');
+    }
+
+    public function enlaces(): HasMany
+    {
+        return $this->hasMany(EnlaceKiosco::class)->orderByDesc('id');
+    }
+
+    public function registradoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'creado_por');
+    }
+
+    public function editadoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'actualizado_por');
+    }
+
+    public function decisionPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'decision_por');
+    }
+
+    /** Vacante de la bolsa de trabajo a la que aplica (la columna «vacante» es el texto libre de antes). */
+    public function vacantePublicada(): BelongsTo
+    {
+        return $this->belongsTo(Vacante::class, 'vacante_id');
+    }
+
+    /** Quién de RR. HH. capturó la firma por el candidato (null = firmó él mismo). */
+    public function firmaCapturadaPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'firma_capturada_por');
+    }
+
+    // ------------------------------------------------------------------ Ayudas
+
+    public function etiquetaEtapa(): string
+    {
+        return self::ETAPAS[$this->etapa] ?? $this->etapa;
+    }
+
+    /** Puesto al que aplica: el del catálogo o el texto libre. */
+    public function puestoVisible(): ?string
+    {
+        return $this->puesto?->nombre ?? $this->vacante;
+    }
+
+    public function puedePasarA(string $etapa): bool
+    {
+        return in_array($etapa, self::TRANSICIONES[$this->etapa] ?? [], true);
+    }
+
+    public function enProceso(): bool
+    {
+        return in_array($this->etapa, self::ABIERTAS, true);
+    }
+
+    /** Escolaridad más alta capturada (para el resumen). */
+    public function escolaridadMaxima(): ?string
+    {
+        $niveles = array_keys(self::ESCOLARIDAD);
+        $mejor = null;
+        foreach ((array) $this->escolaridad as $fila) {
+            $nivel = is_array($fila) ? ($fila['nivel'] ?? null) : null;
+            if ($nivel !== null && in_array($nivel, $niveles, true) && ($mejor === null || array_search($nivel, $niveles, true) > array_search($mejor, $niveles, true))) {
+                $mejor = $nivel;
+            }
+        }
+
+        return $mejor === null ? null : self::ESCOLARIDAD[$mejor];
+    }
+
+    /** Años de experiencia sumados (aproximado, para el resumen). */
+    public function anosExperiencia(): int
+    {
+        return (int) array_sum(array_map(fn ($f) => is_array($f) ? (int) ($f['anos'] ?? 0) : 0, (array) $this->experiencia));
+    }
+
+    /** Domicilio en una línea (para la hoja impresa y el alta como colaborador). */
+    public function domicilioCompleto(): ?string
+    {
+        $partes = array_filter([
+            $this->calle_numero, $this->colonia ? 'Col. '.$this->colonia : null, $this->codigo_postal ? 'C.P. '.$this->codigo_postal : null,
+            $this->municipio, $this->estado_domicilio,
+        ], fn ($p) => is_string($p) && trim($p) !== '');
+
+        return $partes === [] ? null : implode(', ', $partes);
+    }
+
+    /**
+     * Nombre y apellidos: los capturados por separado o, si solo hay nombre
+     * completo (caseta), una sugerencia partiéndolo (RR. HH. lo confirma).
+     *
+     * @return array{nombre: string, paterno: string, materno: string}
+     */
+    public function partesNombre(): array
+    {
+        if ($this->nombre !== null && $this->nombre !== '') {
+            return ['nombre' => $this->nombre, 'paterno' => (string) $this->apellido_paterno, 'materno' => (string) $this->apellido_materno];
+        }
+        $p = preg_split('/\s+/u', trim((string) $this->nombre_completo)) ?: [];
+        if (count($p) >= 3) {
+            $materno = array_pop($p);
+            $paterno = array_pop($p);
+
+            return ['nombre' => implode(' ', $p), 'paterno' => $paterno, 'materno' => $materno];
+        }
+
+        return ['nombre' => $p[0] ?? '', 'paterno' => $p[1] ?? '', 'materno' => ''];
+    }
+
+    /** ¿Ya firmó la solicitud (declaración aceptada y firma guardada)? */
+    public function solicitudFirmada(): bool
+    {
+        return $this->firma_ruta !== null && $this->declaracion_aceptada_en !== null;
+    }
+
+    // Fase 3: caducidad
+
+    /** ¿Ya es colaborador (alguna postulación contratada)? Su expediente ya es del colaborador: la ficha no caduca. */
+    public function contratado(): bool
+    {
+        return $this->colaborador_id !== null || $this->etapa === 'contratado';
+    }
+
+    /** ¿Tiene fecha de borrado avisada y todavía vigente? */
+    public function porBorrar(): bool
+    {
+        return $this->borrar_en !== null && $this->aviso_borrado_en !== null;
+    }
+    // Fin Fase 3
+
+    /** Minutos desde que llegó (o se registró) hasta ahora. */
+    public function minutosEsperando(): int
+    {
+        return (int) max(0, ($this->llegada_en ?? $this->created_at ?? now())->diffInMinutes(now()));
+    }
+}

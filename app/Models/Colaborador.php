@@ -1,0 +1,225 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\PerteneceAEmpresa;
+use App\Models\Concerns\RegistraAutor;
+use App\Models\Concerns\TieneIdentificador;
+use App\Support\Lector\Identificable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Route;
+
+/**
+ * Persona que trabaja para la empresa (réplica de la tabla colaboradores de
+ * SEGCAT). Tiene una sede física (o ninguna = corporativo), sedes
+ * adicionales donde también tiene presencia, un departamento (área), un
+ * puesto (rango) y, opcional, el turno que trabaja; se eligen por separado.
+ */
+class Colaborador extends Model implements Identificable
+{
+    use PerteneceAEmpresa, RegistraAutor, TieneIdentificador;
+
+    /** Se encuentra también tecleando su número de empleado. */
+    protected string $columnaLegible = 'num_empleado';
+
+    protected $table = 'colaboradores';
+
+    /** Datos personales: solo con el permiso colaboradores.datos_personales. */
+    public const DATOS_PERSONALES = [
+        'curp', 'rfc', 'nss', 'fecha_nacimiento', 'lugar_nacimiento', 'nacionalidad', 'correo_personal', 'direccion_completa',
+    ];
+
+    /** Estado de nacimiento: las 32 entidades federativas y "Extranjero". */
+    public const ESTADOS_NACIMIENTO = [
+        'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas', 'Chihuahua',
+        'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Estado de México', 'Guanajuato', 'Guerrero',
+        'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 'Nayarit', 'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro',
+        'Quintana Roo', 'San Luis Potosí', 'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz',
+        'Yucatán', 'Zacatecas', 'Extranjero',
+    ];
+
+    public const CURP = '/^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/';
+
+    public const RFC = '/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/u';
+
+    public const NSS = '/^\d{11}$/';
+
+    /** C-10 (DD-14): tipo de persona del directorio. */
+    public const PERSONAL = 'personal';
+
+    public const RESIDENTE = 'residente';
+
+    public const TIPOS = [self::PERSONAL => 'Personal', self::RESIDENTE => 'Residente'];
+
+    protected $attributes = ['activo' => true, 'provisional' => false, 'nacionalidad' => 'Mexicana', 'tipo' => self::PERSONAL];
+
+    protected $fillable = [
+        'empresa_id', 'tipo', 'sede_id', 'espacio_id', 'departamento_id', 'puesto_id', 'turno_id', 'num_empleado', 'nombre', 'apellido_paterno',
+        'apellido_materno', 'telefono', 'fecha_nacimiento', 'lugar_nacimiento', 'nacionalidad', 'curp', 'rfc',
+        'nss', 'correo_personal', 'direccion_completa', 'etiqueta_nfc', 'activo',
+    ];
+
+    protected function casts(): array
+    {
+        return ['activo' => 'boolean', 'provisional' => 'boolean', 'tipo_por_confirmar' => 'boolean', 'fecha_nacimiento' => 'date:Y-m-d', 'validado_en' => 'datetime'];
+    }
+
+    /** Registro que lo sustituyó cuando se unió como duplicado. */
+    public function fusionadoEn(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'fusionado_en_id');
+    }
+
+    public function sede(): BelongsTo
+    {
+        return $this->belongsTo(Sede::class);
+    }
+
+    /** C-10: la vivienda del residente (nivel «área específica» del árbol). */
+    public function vivienda(): BelongsTo
+    {
+        return $this->belongsTo(Espacio::class, 'espacio_id');
+    }
+
+    public function esResidente(): bool
+    {
+        return ($this->getAttributes()['tipo'] ?? self::PERSONAL) === self::RESIDENTE;
+    }
+
+    /** Solo el personal (en giros residenciales, sin los residentes). */
+    public function scopePersonal(Builder $consulta): Builder
+    {
+        return $consulta->where('colaboradores.tipo', self::PERSONAL);
+    }
+
+    public function scopeResidentes(Builder $consulta): Builder
+    {
+        return $consulta->where('colaboradores.tipo', self::RESIDENTE);
+    }
+
+    public function sedesAdicionales(): BelongsToMany
+    {
+        return $this->belongsToMany(Sede::class, 'colaborador_sede');
+    }
+
+    public function departamento(): BelongsTo
+    {
+        return $this->belongsTo(Departamento::class);
+    }
+
+    public function puesto(): BelongsTo
+    {
+        return $this->belongsTo(Puesto::class);
+    }
+
+    /** Turno (horario) que trabaja; opcional. */
+    public function turno(): BelongsTo
+    {
+        return $this->belongsTo(Turno::class);
+    }
+
+    public function usuario(): HasOne
+    {
+        return $this->hasOne(User::class);
+    }
+
+    /**
+     * ¿Su cuenta de usuario sigue desactivada por una baja anterior?
+     */
+    public function usuarioDesactivadoPorBaja(): bool
+    {
+        return User::where('colaborador_id', $this->id)->where('activo', false)->whereNotNull('desactivado_por_baja_en')->exists();
+    }
+
+    /** Acentos que no distinguen un nombre de otro (homónimos e importación). */
+    private const SIN_ACENTOS = ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u', 'Ü' => 'u'];
+
+    /**
+     * Revisión Etapa 3a: «nombre + apellido paterno» sin mayúsculas, acentos ni
+     * espacios de más. Se guarda en colaboradores.nombre_normalizado (con
+     * índice) para encontrar homónimos sin recorrer ni recortar la lista.
+     */
+    public static function normalizarNombre(?string $nombre, ?string $paterno): string
+    {
+        $t = fn (?string $x) => mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', strtr((string) $x, self::SIN_ACENTOS))));
+
+        return mb_substr(trim($t($nombre).' '.$t($paterno)), 0, 190);
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Colaborador $c) {
+            $c->nombre_normalizado = self::normalizarNombre($c->nombre, $c->apellido_paterno);
+        });
+    }
+
+    public function nombreCompleto(): string
+    {
+        return trim(preg_replace('/\s+/u', ' ', $this->nombre.' '.$this->apellido_paterno.' '.($this->apellido_materno ?? '')));
+    }
+
+    public function iniciales(): string
+    {
+        return mb_strtoupper(mb_substr((string) $this->nombre, 0, 1).mb_substr((string) $this->apellido_paterno, 0, 1));
+    }
+
+    /**
+     * Colaboradores con presencia en alguna de estas sedes (física o adicional).
+     *
+     * @param  array<int>  $sedeIds
+     */
+    public function scopeEnSedes(Builder $consulta, array $sedeIds): Builder
+    {
+        return $consulta->where(fn ($q) => $q->whereIn('colaboradores.sede_id', $sedeIds)
+            ->orWhereHas('sedesAdicionales', fn ($s) => $s->whereIn('sedes.id', $sedeIds)));
+    }
+
+    /**
+     * Últimos 4 caracteres, para la bitácora (nunca el dato completo).
+     */
+    public static function enmascarar(?string $valor): ?string
+    {
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+
+        return str_repeat('*', max(0, mb_strlen($valor) - 4)).mb_substr($valor, -4);
+    }
+
+    public static function tipoLector(): string
+    {
+        return 'colaborador';
+    }
+
+    public static function permisoLector(): string
+    {
+        return 'colaboradores.ver';
+    }
+
+    public function resumenLector(): array
+    {
+        return [
+            'titulo' => $this->nombreCompleto(),
+            'detalle' => $this->esResidente()
+                ? 'Residente'.($this->vivienda ? ' · '.$this->vivienda->nombre : '')
+                : 'Núm. '.$this->num_empleado.($this->puesto ? ' · '.$this->puesto->nombre : ''),
+            'activo' => (bool) $this->activo && $this->fusionado_en_id === null,
+            'sede_id' => $this->sede_id,
+            // Bitácora de accesos: el botón «Registrar…» anticipa si la visita a este colaborador esperará a su departamento
+            'departamento_id' => $this->departamento_id,
+        ];
+    }
+
+    public function urlLector(): string
+    {
+        if ($this->esResidente() && Route::has('residentes.index')) {
+            return route('residentes.index').'#residente-'.$this->id;
+        }
+
+        return route('colaboradores.index').'#colaborador-'.$this->id;
+    }
+}

@@ -1,0 +1,307 @@
+<?php
+
+namespace App\Http\Controllers\Operacion;
+
+use App\Http\Controllers\Controller;
+use App\Models\Colaborador;
+use App\Models\Empresa;
+use App\Models\Equipo;
+use App\Models\EquipoResponsiva;
+use App\Models\Responsiva;
+use App\Models\Sede;
+use App\Models\User;
+use App\Services\Equipos\AdministradorEquipos;
+use App\Services\Firmas\Firmas;
+use App\Services\Responsivas\AdministradorResponsivas;
+use App\Support\AjustesCaseta;
+use App\Support\Csv;
+use App\Support\HoraLocal;
+use App\Support\Receptor;
+use App\Support\Tenancy\EmpresaDeTrabajo;
+use App\Support\Tenancy\Tenant;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+/**
+ * Responsivas y firmas (réplica de modules/equipos/responsivas_lista.php de
+ * SEGCAT, "Control de Resguardos"): pestañas Equipos en Campo / Historial
+ * Devueltos por lote, "Nuevo Resguardo (Lote)" con firma del colaborador,
+ * "Recibir Lote Completo (OK)", ver la firma, la hoja "RESGUARDO MÚLTIPLE DE
+ * ACTIVOS DE SEGURIDAD" y el historial de cada equipo.
+ *
+ * Permisos: responsivas.ver | crear + firmar (nuevo resguardo: la firma es
+ * obligatoria) | editar (recibir el lote) | imprimir (hoja). SEGCAT usaba
+ * los de equipos.*.
+ */
+class ResponsivaController extends Controller
+{
+    /** Lotes del Historial Devueltos en pantalla (SEGCAT: 300 renglones). */
+    public const HISTORIAL = 200;
+
+    public function __construct(
+        private readonly EmpresaDeTrabajo $empresa,
+        private readonly Tenant $tenant,
+        private readonly AdministradorResponsivas $responsivas,
+        private readonly AdministradorEquipos $equipos,
+        private readonly Firmas $firmas,
+    ) {}
+
+    public function index(Request $request): View
+    {
+        Gate::authorize('responsivas.ver');
+        $actor = $request->user();
+        $empresaId = $this->empresa->id($actor);
+
+        if ($empresaId === null) {
+            return view('operacion.responsivas.index', ['sinEmpresa' => true]);
+        }
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId) {
+            $enCampo = $this->consulta($actor, 'responsivas.ver')->where('responsivas.estado', Responsiva::EN_CAMPO)
+                ->orderByDesc('responsivas.entregado_en')->orderByDesc('responsivas.id')->get();
+            $devueltas = $this->consulta($actor, 'responsivas.ver')->where('responsivas.estado', Responsiva::DEVUELTA)
+                ->orderByDesc('responsivas.devuelto_en')->orderByDesc('responsivas.id')->limit(self::HISTORIAL)->get();
+            $todas = $enCampo->concat($devueltas);
+
+            $puedeCrear = $actor->can('responsivas.crear') && $actor->can('responsivas.firmar');
+            $sedesCrear = $puedeCrear ? $this->responsivas->sedesParaCrear($actor) : collect();
+
+            // ADR-0014: hora de regreso de los equipos «Turno» (sin horas configuradas, nada cambia)
+            $ajustes = AjustesCaseta::de($empresaId);
+            $turnos = $enCampo->mapWithKeys(fn (Responsiva $r) => [$r->id => $this->responsivas->regresoTurno($r, $ajustes)])->filter()->all();
+
+            return view('operacion.responsivas.index', [
+                'sinEmpresa' => false,
+                'turnos' => $turnos,
+                // C-45 (DD-19): la empresa firma a mano en la hoja impresa (no se pide en pantalla)
+                'firmaEnPapel' => $ajustes['responsivas_firma'] === 'papel',
+                'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
+                'enCampo' => $enCampo,
+                'devueltas' => $devueltas,
+                'sedesFiltro' => $todas->pluck('sede')->filter()->unique('id')->sortBy('nombre')->values(),
+                'sedesCrear' => $sedesCrear,
+                'sedeSugerida' => $this->sedeSugerida($actor, $sedesCrear),
+                // Equipos DISPONIBLES de las sedes del formulario, para elegir de la lista
+                'disponibles' => $sedesCrear->isEmpty() ? collect() : $this->equipos->limitar(Equipo::query(), $actor, 'equipos.ver')
+                    ->with('tipo:id,nombre')->where('estado', 'disponible')->whereIn('sede_id', $sedesCrear->pluck('id'))
+                    ->orderBy('numero_serie')->get(['id', 'sede_id', 'tipo_equipo_id', 'marca', 'modelo', 'numero_serie']),
+                'recibibles' => $this->responsivas->idsEnAlcance($actor, 'responsivas.editar', $enCampo),
+                'imprimibles' => $this->responsivas->idsEnAlcance($actor, 'responsivas.imprimir', $todas),
+                // C-16: lo elegido en el selector de responsable antes de que el formulario regresara con errores
+                'receptorAnterior' => Receptor::anterior('receptor'),
+                'colaboradorAnterior' => old('colaborador_id') ? Colaborador::whereKey((int) old('colaborador_id'))->first(['id', 'num_empleado', 'nombre', 'apellido_paterno', 'apellido_materno']) : null,
+                'puede' => [
+                    'crear' => $puedeCrear && $sedesCrear->isNotEmpty(),
+                    'recibir' => $actor->can('responsivas.editar'),
+                    'imprimir' => $actor->can('responsivas.imprimir'),
+                    // Ronda 8 (RS-04): un equipo dañado o faltante se da de baja con voucher (como en Equipos)
+                    'voucher' => $actor->can('equipos.eliminar'),
+                ],
+            ]);
+        });
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        Gate::authorize('responsivas.crear');
+        Gate::authorize('responsivas.firmar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        $responsiva = $this->tenant->conEmpresa($empresaId, fn () => $this->responsivas->crear($request->user(), $request->all()));
+        $total = $responsiva->equipos()->count();
+
+        return redirect()->to(route('responsivas.index').'#responsiva-'.$responsiva->id)
+            ->with('ok', "Responsiva {$responsiva->folio} guardada con {$total} ".($total === 1 ? 'equipo' : 'equipos').'. Ya puedes imprimir la hoja.');
+    }
+
+    /**
+     * «Recibir» en estado OK. ADR-0014: con «equipos[]» (las casillas del
+     * formulario) solo los marcados; sin ellas, todos los que siguen en campo.
+     */
+    public function recibir(Request $request, int $responsiva): RedirectResponse
+    {
+        Gate::authorize('responsivas.editar');
+        $empresaId = $this->empresaDeTrabajo($request);
+        $filas = $request->has('equipos') ? (array) $request->input('equipos', []) : null;
+
+        [$modelo, $regresaron, $total, $faltan] = $this->tenant->conEmpresa($empresaId, function () use ($request, $responsiva, $filas) {
+            $modelo = $this->buscarEnAlcance($request->user(), $responsiva, 'responsivas.editar');
+            // Ronda 8: solo los que siguen en campo
+            $total = $filas === null ? $modelo->equipos()->whereNull('devuelto_en')->count() : count(array_unique(array_filter($filas, 'is_numeric')));
+            $regresaron = $this->responsivas->recibir($request->user(), $modelo, $filas);
+
+            return [$modelo, $regresaron, $total, $modelo->equipos()->whereNull('devuelto_en')->count()];
+        });
+
+        $nota = $regresaron < $total ? ' '.($total - $regresaron).' ya estaba(n) dado(s) de baja y se quedan así.' : '';
+        $inicio = $faltan === 0 ? "Responsiva {$modelo->folio} recibida: " : "Responsiva {$modelo->folio}: ";
+        $sigue = $faltan === 0 ? '' : ' '.($faltan === 1 ? 'Falta 1 equipo' : "Faltan {$faltan} equipos").' por regresar.';
+
+        return redirect()->to(route('responsivas.index').'#responsiva-'.$modelo->id)
+            ->with('ok', $inicio.$regresaron.' '.($regresaron === 1 ? 'equipo vuelve' : 'equipos vuelven').' a DISPONIBLE.'.$nota.$sigue);
+    }
+
+    /**
+     * Ronda 8 (RS-04): «Recibir» un solo equipo del lote (OK, Dañado o Faltante).
+     * Dañado/Faltante pueden generar el voucher de reposición (equipos.eliminar).
+     */
+    public function recibirEquipo(Request $request, int $responsiva, int $equipo): RedirectResponse
+    {
+        Gate::authorize('responsivas.editar');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        [$modelo, $r] = $this->tenant->conEmpresa($empresaId, function () use ($request, $responsiva, $equipo) {
+            $modelo = $this->buscarEnAlcance($request->user(), $responsiva, 'responsivas.editar');
+            $fila = $modelo->equipos()->whereKey($equipo)->first();
+            abort_if($fila === null, 404);
+
+            // C-45 (DD-19): la recepción común (resultado ok | danado | no_regreso) es la misma que OK / Dañado / Faltante
+            $entrada = $request->all();
+            if (! isset($entrada['estado_recepcion']) && isset($entrada['resultado']) && is_string($entrada['resultado'])) {
+                $entrada['estado_recepcion'] = ['ok' => 'ok', 'danado' => 'danado', 'no_regreso' => 'faltante'][$entrada['resultado']] ?? $entrada['resultado'];
+            }
+
+            return [$modelo, $this->responsivas->recibirEquipo($request->user(), $modelo, $fila, $entrada, $request->user()->can('equipos.eliminar'))];
+        });
+
+        $texto = 'Equipo '.($r['serie'] ?? '').' recibido ('.mb_strtoupper(EquipoResponsiva::ESTADOS_DEVOLUCION[$r['estado']]).')'
+            .($r['voucher'] ? ' y dado de baja con el voucher '.$r['voucher']->folio.($r['voucher']->aplica_cobro ? ' (con cobro de $'.number_format((float) $r['voucher']->monto, 2).')' : '') : '')
+            .'. '.($r['cerrado'] ? "La responsiva {$modelo->folio} quedó completa y pasa a Historial Devueltos." : "De la responsiva {$modelo->folio} ".($r['faltan'] === 1 ? 'falta 1 equipo' : "faltan {$r['faltan']} equipos").' por regresar.');
+
+        return redirect()->to(route('responsivas.index').'#responsiva-'.$modelo->id)->with($r['estado'] === 'ok' ? 'ok' : 'aviso', $texto);
+    }
+
+    /**
+     * Imagen de la firma (disco privado). Solo con permiso y dentro de las
+     * sedes del usuario; nunca desde una dirección pública.
+     */
+    public function firma(Request $request, int $responsiva): StreamedResponse
+    {
+        Gate::authorize('responsivas.ver');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $responsiva) {
+            $modelo = $this->buscarEnAlcance($request->user(), $responsiva, 'responsivas.ver');
+
+            return $this->firmas->respuesta($modelo->firma_ruta);
+        });
+    }
+
+    /**
+     * Hoja "RESGUARDO MÚLTIPLE DE ACTIVOS DE SEGURIDAD" (SEGCAT:
+     * ticket_responsiva.php), con folio y firma.
+     */
+    public function hoja(Request $request, int $responsiva): View
+    {
+        Gate::authorize('responsivas.imprimir');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $responsiva, $empresaId) {
+            $modelo = $this->buscarEnAlcance($request->user(), $responsiva, 'responsivas.imprimir');
+            $modelo->load(['sede:id,nombre', 'colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno,puesto_id', 'colaborador.puesto:id,nombre',
+                'entrego:id,name', 'recibio:id,name', 'equipos.equipo:id,tipo_equipo_id,marca,modelo,numero_serie', 'equipos.equipo.tipo:id,nombre',
+                'equipos.recibio:id,name', 'equipos.voucher:id,folio']);
+
+            return view('operacion.responsivas.hoja', [
+                'responsiva' => $modelo,
+                'empresaNombre' => Empresa::whereKey($empresaId)->value('nombre_comercial'),
+            ]);
+        });
+    }
+
+    /**
+     * Historial de resguardos de un equipo (SEGCAT: equipo_historial_ajax.php).
+     */
+    public function historial(Request $request, int $equipo): View
+    {
+        Gate::authorize('responsivas.ver');
+        $empresaId = $this->empresaDeTrabajo($request);
+
+        return $this->tenant->conEmpresa($empresaId, function () use ($request, $equipo) {
+            $sedes = $this->responsivas->sedes($request->user(), 'responsivas.ver');
+            $modelo = Equipo::with('tipo:id,nombre')->when($sedes !== null, fn ($q) => $q->whereIn('sede_id', $sedes))->find($equipo);
+            abort_if($modelo === null, 404);
+
+            return view('operacion.responsivas._historial', ['equipo' => $modelo, 'movimientos' => $this->responsivas->historialDe($modelo, $request->user())]);
+        });
+    }
+
+    /**
+     * @return Builder<Responsiva>
+     */
+    /** C-43 (E-13): «Exportar a Excel» con su permiso (responsivas.exportar): las que están en campo y el historial. */
+    public function exportar(Request $request, HoraLocal $hora): StreamedResponse
+    {
+        Gate::authorize('responsivas.exportar');
+        $empresaId = $this->empresaDeTrabajo($request);
+        $lista = $this->tenant->conEmpresa($empresaId, fn () => $this->consulta($request->user(), 'responsivas.exportar')
+            ->orderByDesc('responsivas.entregado_en')->orderByDesc('responsivas.id')->limit(20000)->get());
+
+        return $this->descargarCsv('responsivas', ['Folio', 'Sede', 'A cargo de', 'Equipos', 'Estado', 'Entregó', 'Entregada', 'Recibió', 'Devuelta'],
+            $lista->map(fn (Responsiva $r) => [$r->folio, $r->sede?->nombre, $r->nombreReceptor(),
+                $r->equipos->map(fn ($e) => trim(($e->equipo?->tipo?->nombre ?? '').' '.($e->equipo?->numero_serie ?? '')))->join(', '),
+                $r->enCampo() ? 'EN CAMPO' : 'DEVUELTA', $r->entrego?->name, $hora->formatear($r->entregado_en, 'd/m/Y H:i'), $r->recibio?->name, $hora->formatear($r->devuelto_en, 'd/m/Y H:i')]));
+    }
+
+    /** C-43 (E-13): descarga en Excel (CSV con BOM para que Excel lea los acentos). */
+    private function descargarCsv(string $archivo, array $encabezados, iterable $filas): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($encabezados, $filas) {
+            $salida = fopen('php://output', 'w');
+            fwrite($salida, "\xEF\xBB\xBF");
+            Csv::fila($salida, $encabezados);
+            foreach ($filas as $fila) {
+                Csv::fila($salida, $fila);
+            }
+            fclose($salida);
+        }, $archivo.'-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    private function consulta(User $actor, string $permiso): Builder
+    {
+        return $this->responsivas->limitar(Responsiva::query(), $actor, $permiso)->with([
+            'sede:id,nombre', 'colaborador:id,num_empleado,nombre,apellido_paterno,apellido_materno',
+            'entrego:id,name', 'recibio:id,name',
+            'equipos:id,responsiva_id,equipo_id,modalidad,estado_devolucion,nota_devolucion,devuelto_en,recibido_por,voucher_id', 'equipos.recibio:id,name', 'equipos.voucher:id,folio',
+            'equipos.equipo:id,tipo_equipo_id,marca,modelo,numero_serie,estado', 'equipos.equipo.tipo:id,nombre',
+        ]);
+    }
+
+    /**
+     * @param  Collection<int, Sede>  $sedes
+     */
+    private function sedeSugerida(User $actor, Collection $sedes): ?int
+    {
+        if ($sedes->count() === 1) {
+            return (int) $sedes->first()->id;
+        }
+        $colaboradorId = User::whereKey($actor->id)->value('colaborador_id');
+        $propia = $colaboradorId ? Colaborador::whereKey($colaboradorId)->value('sede_id') : null;
+
+        return $propia !== null && $sedes->contains('id', (int) $propia) ? (int) $propia : null;
+    }
+
+    /**
+     * Un resguardo de otra empresa o fuera del alcance del permiso responde 404.
+     */
+    private function buscarEnAlcance(User $actor, int $id, string $permiso): Responsiva
+    {
+        $modelo = $this->responsivas->limitar(Responsiva::query(), $actor, $permiso)->find($id);
+        abort_if($modelo === null, 404);
+
+        return $modelo;
+    }
+
+    private function empresaDeTrabajo(Request $request): int
+    {
+        $empresaId = $this->empresa->id($request->user());
+        abort_if($empresaId === null, 404);
+
+        return $empresaId;
+    }
+}

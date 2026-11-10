@@ -1,0 +1,1673 @@
+<?php
+
+namespace App\Services\PasesSalida;
+
+use App\Mail\AvisoPaseSalida;
+use App\Models\Colaborador;
+use App\Models\Empresa;
+use App\Models\Equipo;
+use App\Models\FirmaUsuario;
+use App\Models\PaseSalida;
+use App\Models\PaseSalidaAprobacion;
+use App\Models\PaseSalidaArticulo;
+use App\Models\PaseSalidaBitacora;
+use App\Models\PaseSalidaFirma;
+use App\Models\Proveedor;
+use App\Models\Sede;
+use App\Models\User;
+use App\Services\Activos\CustodiaActivos;
+use App\Services\Avisos\AvisosCorreo;
+use App\Services\Firmas\Firmas;
+use App\Services\Permisos\AdministradorRoles;
+use App\Services\Permisos\Alcance;
+use App\Services\Permisos\Autorizador;
+use App\Support\EstadoActivo;
+use App\Support\HoraLocal;
+use App\Support\Tenancy\Tenant;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * Reglas de los Pases de salida (réplica de pases_salida_proceso.php,
+ * pases_salida_firmar.php y pases_salida_rechazar.php de SEGCAT, con el
+ * circuito de aprobación profesional v2).
+ *
+ * Alcance: con alcance de empresa se ve todo; con alcance de sede, los
+ * pases que SALEN de sus sedes o que VAN a ellas (la sede destino recibe y
+ * autoriza la salida de regreso); con alcance "propios", además, solo los que
+ * él registró. Todo corre con la empresa de trabajo fijada en el Tenant.
+ *
+ * Permisos:
+ *   - Aprobar, rechazar y omitir un paso opcional: pases_salida.aprobar (ver CircuitoPasesSalida)
+ *   - Salida, recepción en destino, salida de regreso y regreso: pases_salida.firmar
+ *   - Registrar, corregir y reenviar, cancelar: pases_salida.crear (su dueño)
+ *   - Configurar el circuito: pases_salida.configurar con alcance de empresa
+ */
+class AdministradorPasesSalida
+{
+    public const POR_PAGINA = 20;
+
+    public const MAX_ARTICULOS = 50;
+
+    /** Filtros de la lista (SEGCAT: ?filtro=), con sus píldoras. */
+    public const FILTROS = [
+        'todos' => 'Todos',
+        'mi_firma' => 'Pendientes de mi firma',
+        'pendientes' => 'Pendientes de Aprobación',
+        'aprobados' => 'Aprobados, listos para salir',
+        'fuera' => 'Fuera de la propiedad',
+        'espera_regreso' => 'Esperando Regreso',
+        'vencidos' => 'Vencidos',
+        'cerrados' => 'Cerrados',
+        'rechazados' => 'Rechazados',
+        'llegan' => 'Llegan a mi sede',
+    ];
+
+    /** paso físico => [estado nuevo, columna de fecha, evento de auditoría, texto de la bitácora] */
+    private const AVANCE = [
+        'salida' => [PaseSalida::SALIO, 'salio_en', 'pases_salida.salida_registrada', 'Registró la salida'],
+        'recepcion' => [PaseSalida::EN_DESTINO, 'recibido_destino_en', 'pases_salida.recibido_en_destino', 'Confirmó la llegada a destino'],
+        'salida_regreso' => [PaseSalida::EN_TRANSITO_REGRESO, 'salio_regreso_en', 'pases_salida.salida_de_regreso', 'Autorizó la salida de regreso'],
+        'regreso' => [PaseSalida::REGRESADO, 'regreso_en', 'pases_salida.regresado', 'Registró el regreso'],
+    ];
+
+    private const TELEFONO = '/^\+?[0-9][0-9 ()\-]{6,19}$/';
+
+    /** @var array<int, string>|null fecha local "Y-m-d" de cada sede */
+    private ?array $hoy = null;
+
+    private ?string $hoyClave = null;
+
+    /** @var array<string, list<int>> */
+    private array $porFirmar = [];
+
+    /** C-18: equipos que quedaron NO REGRESÓ en el último registrarPaso() (para el mensaje y el voucher). */
+    public array $equiposNoRegresaron = [];
+
+    public function __construct(
+        private readonly Autorizador $autorizador,
+        private readonly AdministradorRoles $auditoria,
+        private readonly Firmas $firmas,
+        private readonly CircuitoPasesSalida $circuito,
+        private readonly AvisosCorreo $avisos,
+        private readonly CampanaPasesSalida $campana,
+    ) {}
+
+    public function circuito(): CircuitoPasesSalida
+    {
+        return $this->circuito;
+    }
+
+    // ------------------------------------------------------------------ Alcance
+
+    /**
+     * Sedes en las que el usuario usa el permiso: null = todas; [] = ninguna.
+     *
+     * @return list<int>|null
+     */
+    public function sedes(User $actor, string $permiso): ?array
+    {
+        return $actor->can($permiso) ? $this->autorizador->sedesPermitidas($actor, $permiso) : [];
+    }
+
+    /**
+     * Limita una consulta a los pases que el actor puede ver con un permiso:
+     * los que salen de sus sedes o van a ellas.
+     *
+     * @param  Builder<PaseSalida>  $consulta
+     * @return Builder<PaseSalida>
+     */
+    public function limitar(Builder $consulta, User $actor, string $permiso): Builder
+    {
+        if ($actor->es_superadmin) {
+            return $consulta;
+        }
+
+        $efectivo = $this->autorizador->permisosEfectivos($actor)[$permiso] ?? null;
+        if ($efectivo === null) {
+            return $consulta->whereRaw('1 = 0');
+        }
+
+        $sedes = $this->autorizador->sedesPermitidas($actor, $permiso);
+
+        return $consulta
+            ->when($sedes !== null, fn ($q) => $q->where(fn ($s) => $s->whereIn('pases_salida.sede_id', $sedes)
+                ->orWhereIn('pases_salida.sede_destino_id', $sedes)))
+            ->when($efectivo->alcance === Alcance::Propios, fn ($q) => $q->where('pases_salida.creado_por', $actor->id));
+    }
+
+    /** ¿Puede firmar el paso físico (salida, recepción, salida de regreso, regreso) en la sede que le toca? */
+    public function puedeFirmarPaso(User $actor, PaseSalida $pase, string $paso): bool
+    {
+        return isset(PaseSalida::PASOS_FISICOS[$paso])
+            && $this->circuito->tienePermisoEnSede($actor, 'pases_salida.firmar', $pase, $pase->sedeDelPaso($paso));
+    }
+
+    /**
+     * ¿Solo puede pedir pases a su nombre? Quien no consulta colaboradores ni
+     * da altas provisionales (rol Solicitante): el solicitante es el
+     * colaborador vinculado a su usuario.
+     */
+    public function soloASuNombre(User $actor): bool
+    {
+        return ! $actor->es_superadmin && ! $actor->can('colaboradores.ver') && ! $actor->can('colaboradores.provisional');
+    }
+
+    /** Quien registró el pase o el propio solicitante (si tiene usuario). */
+    public function esDueno(User $actor, PaseSalida $pase): bool
+    {
+        return (int) $pase->creado_por === (int) $actor->id
+            || (($actor->getAttributes()['colaborador_id'] ?? null) !== null && (int) $actor->getAttributes()['colaborador_id'] === (int) $pase->colaborador_id);
+    }
+
+    /**
+     * Corregir y reenviar, o cancelar: su dueño con "crear" en la sede de
+     * origen, o quien edita pases de toda la empresa.
+     */
+    public function puedeGestionar(User $actor, PaseSalida $pase): bool
+    {
+        if (! in_array($pase->estado, [PaseSalida::PENDIENTE, PaseSalida::RECHAZADO], true)) {
+            return false;
+        }
+
+        return ($this->esDueno($actor, $pase) && $this->circuito->tienePermisoEnSede($actor, 'pases_salida.crear', $pase, $pase->sede_id))
+            || ($actor->can('pases_salida.editar') && $this->autorizador->alcanceDeEmpresa($actor, 'pases_salida.editar'));
+    }
+
+    // ------------------------------------------------------------------- Fechas
+
+    /**
+     * "Hoy" en cada sede (su zona horaria o la de la empresa).
+     *
+     * @return array<int, string>
+     */
+    public function hoyPorSede(): array
+    {
+        // La memoria vale por hora (un proceso largo, como la tarea programada, no se queda con el día anterior)
+        $clave = now()->format('Y-m-d H');
+        if ($this->hoyClave !== $clave) {
+            [$this->hoy, $this->hoyClave] = [null, $clave];
+        }
+
+        return $this->hoy ??= Sede::withTrashed()->with('empresa:id,zona_horaria')->get(['id', 'empresa_id', 'zona_horaria'])
+            ->mapWithKeys(fn (Sede $s) => [(int) $s->id => now($s->zonaHoraria())->format('Y-m-d')])->all();
+    }
+
+    public function hoyDe(PaseSalida $pase): string
+    {
+        return $this->hoyPorSede()[(int) $pase->sede_id] ?? now()->format('Y-m-d');
+    }
+
+    public function vencido(PaseSalida $pase): bool
+    {
+        return $pase->vencido($this->hoyDe($pase));
+    }
+
+    /**
+     * Espera regreso y su regreso programado ya pasó en la fecha local de su
+     * sede de origen (esté o no fuera de la propiedad).
+     */
+    public function regresoProgramadoPasado(PaseSalida $pase): bool
+    {
+        return $pase->requiere_regreso && $pase->fecha_tentativa_regreso !== null
+            && $pase->fecha_tentativa_regreso->format('Y-m-d') < $this->hoyDe($pase);
+    }
+
+    /**
+     * Al dar salida en caseta, ¿hay que capturar un nuevo regreso programado?
+     * Sí cuando el pase espera regreso y el que tiene ya pasó: no puede salir
+     * algo que «ya debió regresar».
+     */
+    public function pideNuevoRegreso(PaseSalida $pase): bool
+    {
+        return $pase->pasoFisico() === 'salida' && $this->regresoProgramadoPasado($pase);
+    }
+
+    /**
+     * Nuevo regreso programado ("Y-m-d", hoy o después) cuando la salida lo
+     * pide; null cuando no hace falta.
+     *
+     * @param  array<string, mixed>  $entrada
+     */
+    private function validarNuevoRegreso(PaseSalida $pase, array $entrada): ?string
+    {
+        if (! $this->pideNuevoRegreso($pase)) {
+            return null;
+        }
+        $hoy = $this->hoyDe($pase);
+        $formato = fn (string $f) => Carbon::createFromFormat('Y-m-d', $f)->format('d/m/Y');
+        $texto = is_string($entrada['nuevo_regreso'] ?? null) ? trim($entrada['nuevo_regreso']) : '';
+        if ($texto === '') {
+            throw ValidationException::withMessages(['nuevo_regreso' => 'El regreso programado ('.$formato($pase->fecha_tentativa_regreso->format('Y-m-d'))
+                .') ya pasó: escribe el nuevo regreso programado antes de dar salida.']);
+        }
+        $fecha = \DateTime::createFromFormat('!Y-m-d', $texto);
+        if ($fecha === false || $fecha->format('Y-m-d') !== $texto) {
+            throw ValidationException::withMessages(['nuevo_regreso' => 'El nuevo regreso programado no es una fecha válida.']);
+        }
+        if ($texto < $hoy) {
+            throw ValidationException::withMessages(['nuevo_regreso' => 'El nuevo regreso programado no puede ser antes de hoy ('.$formato($hoy).').']);
+        }
+
+        return $texto;
+    }
+
+    // ------------------------------------------------------------------- Lista
+
+    /**
+     * Aplica un filtro de la lista. "Vencidos" compara contra la fecha local
+     * de la sede de origen de cada pase; "Pendientes de mi firma", contra lo
+     * que el actor puede firmar ahora.
+     *
+     * @param  Builder<PaseSalida>  $consulta
+     * @return Builder<PaseSalida>
+     */
+    public function filtrar(Builder $consulta, string $filtro, ?User $actor = null): Builder
+    {
+        $fuera = fn ($q) => $q->whereIn('pases_salida.estado', PaseSalida::FUERA);
+
+        return match ($filtro) {
+            'mi_firma' => $consulta->whereIn('pases_salida.id', $actor === null ? [] : $this->idsPorFirmar($actor)),
+            'pendientes' => $consulta->where('pases_salida.estado', PaseSalida::PENDIENTE),
+            'aprobados' => $consulta->where('pases_salida.estado', PaseSalida::APROBADO),
+            'fuera' => $fuera($consulta),
+            'espera_regreso' => $fuera($consulta)->where('pases_salida.requiere_regreso', true),
+            'vencidos' => $fuera($consulta)->where('pases_salida.requiere_regreso', true)->whereNotNull('pases_salida.fecha_tentativa_regreso')
+                ->where(function ($q) {
+                    $q->whereRaw('1 = 0');
+                    foreach ($this->hoyPorSede() as $sede => $hoy) {
+                        $q->orWhere(fn ($s) => $s->where('pases_salida.sede_id', $sede)->where('pases_salida.fecha_tentativa_regreso', '<', $hoy));
+                    }
+                }),
+            'cerrados' => $consulta->where(fn ($q) => $q->where('pases_salida.estado', PaseSalida::REGRESADO)
+                ->orWhere(fn ($s) => $s->where('pases_salida.estado', PaseSalida::SALIO)->where('pases_salida.requiere_regreso', false))),
+            'rechazados' => $consulta->where('pases_salida.estado', PaseSalida::RECHAZADO),
+            'llegan' => $this->llegan($consulta, $actor),
+            default => $consulta,
+        };
+    }
+
+    /**
+     * «Llegan a mi sede»: pases aprobados o ya en camino hacia una sede donde
+     * el actor firma la caseta (la que confirmará la llegada).
+     *
+     * @param  Builder<PaseSalida>  $consulta
+     * @return Builder<PaseSalida>
+     */
+    private function llegan(Builder $consulta, ?User $actor): Builder
+    {
+        $sedes = $actor === null ? [] : $this->sedes($actor, 'pases_salida.firmar');
+
+        return $consulta->where('pases_salida.destino_tipo', 'sede')
+            ->where(fn ($q) => $q->where('pases_salida.estado', PaseSalida::APROBADO)
+                ->orWhere(fn ($s) => $s->where('pases_salida.estado', PaseSalida::SALIO)->where('pases_salida.requiere_regreso', true)))
+            ->when($sedes !== null, fn ($q) => $q->whereIn('pases_salida.sede_destino_id', $sedes));
+    }
+
+    /**
+     * Ids de «Llegan a mi sede» (para señalarlos en la lista).
+     *
+     * @return list<int>
+     */
+    public function idsLlegan(User $actor): array
+    {
+        if (! $actor->can('pases_salida.firmar')) {
+            return [];
+        }
+
+        return $this->porFirmar['llegan-'.$actor->id] ??= $this->filtrar($this->limitar(PaseSalida::query(), $actor, 'pases_salida.ver'), 'llegan', $actor)
+            ->pluck('pases_salida.id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    /**
+     * Búsqueda por folio, solicitante, lo que sale o el código del QR de la
+     * hoja (se puede escanear la hoja con un lector USB en el buscador).
+     *
+     * @param  Builder<PaseSalida>  $consulta
+     * @return Builder<PaseSalida>
+     */
+    public function buscar(Builder $consulta, string $texto): Builder
+    {
+        $texto = trim((string) preg_replace('/\s+/u', ' ', $texto));
+        if ($texto === '') {
+            return $consulta;
+        }
+        $codigo = preg_match('#verificar/([A-Za-z0-9]{8,32})#', $texto, $m) ? $m[1] : $texto;
+        $comodin = fn (string $t) => '%'.addcslashes(mb_strtolower($t), '%_\\').'%';
+
+        return $consulta->where(function ($q) use ($texto, $comodin, $codigo) {
+            $q->whereRaw('LOWER(pases_salida.folio) LIKE ?', [$comodin($texto)])
+                ->orWhere('pases_salida.codigo_verificacion', mb_strtoupper($codigo))
+                ->orWhereHas('solicitante', function ($c) use ($texto, $comodin) {
+                    $c->whereRaw('LOWER(colaboradores.num_empleado) LIKE ?', [$comodin($texto)])
+                        ->orWhere(function ($n) use ($texto, $comodin) {
+                            foreach (explode(' ', $texto) as $palabra) {
+                                $n->where(fn ($p) => $p->whereRaw('LOWER(colaboradores.nombre) LIKE ?', [$comodin($palabra)])
+                                    ->orWhereRaw('LOWER(colaboradores.apellido_paterno) LIKE ?', [$comodin($palabra)])
+                                    ->orWhereRaw('LOWER(colaboradores.apellido_materno) LIKE ?', [$comodin($palabra)]));
+                            }
+                        });
+                })
+                ->orWhereHas('articulos', fn ($a) => $a->whereRaw('LOWER(pases_salida_articulos.equipo) LIKE ?', [$comodin($texto)])
+                    ->orWhereRaw('LOWER(pases_salida_articulos.serie) LIKE ?', [$comodin($texto)]));
+        });
+    }
+
+    /**
+     * Pases que esperan una APROBACIÓN del actor (bandeja de firmas y aviso en Inicio).
+     *
+     * @return list<int>
+     */
+    public function idsPorAprobar(User $actor): array
+    {
+        if (! $actor->can('pases_salida.aprobar')) {
+            return [];
+        }
+
+        return $this->porFirmar['aprobar-'.$actor->id] ??= $this->limitar(PaseSalida::query(), $actor, 'pases_salida.ver')
+            ->where('pases_salida.estado', PaseSalida::PENDIENTE)
+            ->with(['aprobaciones.rol:id,nombre', 'aprobaciones.departamento:id,nombre', 'sede:id,nombre'])->get()
+            ->filter(fn (PaseSalida $p) => $this->circuito->puedeAprobar($actor, $p))
+            ->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
+    }
+
+    /**
+     * Pases donde el actor puede firmar AHORA: una aprobación o un paso de caseta.
+     *
+     * @return list<int>
+     */
+    public function idsPorFirmar(User $actor): array
+    {
+        return $this->porFirmar['firmar-'.$actor->id] ??= (function () use ($actor) {
+            $fisicos = ! $actor->can('pases_salida.firmar') ? [] : $this->limitar(PaseSalida::query(), $actor, 'pases_salida.ver')
+                ->whereIn('pases_salida.estado', [PaseSalida::APROBADO, ...PaseSalida::FUERA])
+                ->get(['id', 'empresa_id', 'sede_id', 'sede_destino_id', 'estado', 'requiere_regreso', 'destino_tipo', 'creado_por'])
+                ->filter(fn (PaseSalida $p) => ($paso = $p->pasoFisico()) !== null && $this->puedeFirmarPaso($actor, $p, $paso))
+                ->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+            return array_values(array_unique([...$this->idsPorAprobar($actor), ...$fisicos]));
+        })();
+    }
+
+    // ---------------------------------------------------------------- Escritura
+
+    /**
+     * Alta del pase: folio PS-000123 consecutivo por empresa, copia del
+     * circuito de aprobación vigente y aviso al primer aprobador.
+     *
+     * @param  array<string, mixed>  $entrada
+     */
+    public function crear(User $actor, array $entrada): PaseSalida
+    {
+        [$datos, $articulos] = $this->validar($actor, $entrada);
+
+        for ($intento = 1; ; $intento++) {
+            try {
+                $pase = DB::transaction(function () use ($datos, $articulos, $actor) {
+                    $numero = (int) PaseSalida::query()->lockForUpdate()->max('folio_numero') + 1;
+                    $pase = new PaseSalida($datos);
+                    $pase->forceFill([
+                        'folio_numero' => $numero,
+                        'folio' => PaseSalida::folioDe($numero),
+                        'codigo_verificacion' => $this->codigoNuevo(),
+                        'requiere_regreso' => PaseSalida::requiereRegreso($datos['motivo']),
+                        'estado' => PaseSalida::PENDIENTE,
+                        'ronda' => 1,
+                        // Las firmas de caseta que pedirá, copiadas hoy: un cambio de configuración no lo altera
+                        'firmas_caseta' => $this->circuito->firmasCasetaPara($datos['motivo']),
+                    ])->save();
+                    foreach ($articulos as $articulo) {
+                        $pase->articulos()->create($articulo + ['empresa_id' => $pase->empresa_id]);
+                    }
+                    $this->anotar($pase, $actor, 'creado', 'Solicitud registrada y enviada a aprobación');
+                    $this->iniciarRonda($pase);
+
+                    return $pase;
+                });
+                break;
+            } catch (UniqueConstraintViolationException $e) {
+                // Dos altas al mismo tiempo tomaron el mismo folio: se intenta con el siguiente
+                if ($intento >= 3) {
+                    throw $e;
+                }
+            }
+        }
+
+        $this->auditoria->auditar($actor, 'pases_salida.creado', $pase, null, $this->foto($pase->load('articulos')));
+        $this->avisarSiguiente($pase);
+
+        return $pase;
+    }
+
+    /**
+     * Corregir y reenviar un pase rechazado: se guardan los cambios, empieza
+     * una ronda nueva de aprobaciones y se avisa. Por omisión, desde el primer
+     * paso; si la empresa configuró «Retomar desde el paso que rechazó», las
+     * firmas de la ronda anterior que siguen aplicando se conservan (ver
+     * CircuitoPasesSalida::instanciar). Los pasos se recalculan con el motivo
+     * y el valor corregidos: si ahora aplica uno que nadie había firmado, se pide.
+     *
+     * @param  array<string, mixed>  $entrada
+     */
+    public function reenviar(User $actor, PaseSalida $pase, array $entrada): void
+    {
+        if ($pase->estado !== PaseSalida::RECHAZADO) {
+            throw ValidationException::withMessages(['estado' => 'Solo un pase rechazado se corrige y se reenvía.']);
+        }
+        if (! $this->puedeGestionar($actor, $pase)) {
+            throw new AuthorizationException('Solo quien registró el pase o el solicitante pueden corregirlo y reenviarlo.');
+        }
+        [$datos, $articulos] = $this->validar($actor, $entrada, $pase);
+        $respuesta = $this->comentario($entrada['comentario'] ?? null);
+        $antes = $this->foto($pase->load('articulos'));
+        $retomar = $this->circuito->rechazo() === 'retomar';
+
+        DB::transaction(function () use ($pase, $datos, $articulos, $actor, $respuesta, $retomar) {
+            $actual = PaseSalida::query()->lockForUpdate()->findOrFail($pase->id);
+            if ($actual->estado !== PaseSalida::RECHAZADO) {
+                throw ValidationException::withMessages(['estado' => 'Este pase ya no está rechazado: recarga la pantalla.']);
+            }
+            $actual->fill($datos)->forceFill([
+                'requiere_regreso' => PaseSalida::requiereRegreso($datos['motivo']),
+                'estado' => PaseSalida::PENDIENTE,
+                'ronda' => $actual->ronda + 1,
+                'firmas_caseta' => $this->circuito->firmasCasetaPara($datos['motivo']),
+            ])->save();
+            $actual->articulos()->delete();
+            foreach ($articulos as $articulo) {
+                $actual->articulos()->create($articulo + ['empresa_id' => $actual->empresa_id]);
+            }
+            $actual->unsetRelation('articulos');
+            $bitacora = $this->anotar($actual, $actor, 'reenviado', 'Corrigió y reenvió el pase a aprobación (ronda '.$actual->ronda.')', $respuesta,
+                $retomar ? ['retoma' => true] : null);
+            $this->iniciarRonda($actual, $retomar, $bitacora);
+        });
+
+        $pase->refresh();
+        $this->auditoria->auditar($actor, 'pases_salida.reenviado', $pase, $antes, $this->foto($pase->load('articulos'))
+            + ['al_reenviar' => CircuitoPasesSalida::RECHAZO[$retomar ? 'retomar' : 'inicio']]);
+        if ($pase->estado === PaseSalida::APROBADO) {
+            $this->auditoria->auditar($actor, 'pases_salida.aprobado', $pase, ['estado' => PaseSalida::ESTADOS[PaseSalida::RECHAZADO][0]],
+                ['folio' => $pase->folio, 'estado' => PaseSalida::ESTADOS[PaseSalida::APROBADO][0]]);
+            $this->avisarResultado($pase, 'aprobado', null, null, $actor);
+        } else {
+            $this->avisarSiguiente($pase);
+        }
+    }
+
+    /**
+     * Aprobar el paso que toca (con firma). Si era el último, el pase queda
+     * "Aprobado, listo para salir". Devuelve el estado nuevo si avanzó.
+     *
+     * @param  array<string, mixed>  $entrada  aprobacion_id, comentario, firma_modo (guardada|nueva), firma, guardar_firma
+     */
+    public function aprobar(User $actor, PaseSalida $pase, array $entrada): ?string
+    {
+        $aprobacion = $this->aprobacionEsperada($pase, $entrada);
+        if (($motivo = $this->circuito->motivoNoPuede($actor, $pase, $aprobacion)) !== null) {
+            throw new AuthorizationException($motivo);
+        }
+        $comentario = $this->comentario($entrada['comentario'] ?? null);
+        [$ruta, $guardar] = $this->firmaDelActor($actor, $entrada);
+
+        try {
+            $completo = DB::transaction(function () use ($pase, $aprobacion, $actor, $comentario, $ruta) {
+                $actual = $this->bloquearEnPaso($pase, $aprobacion);
+                $total = $this->circuito->rondaActual($actual)->count();
+                $bitacora = $this->anotar($actual, $actor, 'aprobado', "Aprobó: {$aprobacion->nombre} (paso {$aprobacion->orden} de {$total})", $comentario);
+                $firma = $this->crearFirma($actual, $bitacora, 'aprobacion', 'aprobacion', $actor->name, $actor->id, $aprobacion->nombre, $ruta);
+                $aprobacion->forceFill([
+                    'estado' => PaseSalidaAprobacion::APROBADO, 'resuelto_por' => $actor->id, 'resuelto_en' => now(),
+                    'comentario' => $comentario, 'firma_id' => $firma->id,
+                ])->save();
+
+                return $this->avanzarSiCompleto($actual);
+            });
+        } catch (\Throwable $e) {
+            $this->firmas->borrar($ruta);
+            throw $e;
+        }
+
+        $this->guardarFirmaUsuario($actor, $guardar);
+        $this->campana->resolverAprobacion((int) $aprobacion->id);
+        $pase->refresh();
+        $this->auditoria->auditar($actor, 'pases_salida.firmado', $pase, null, [
+            'folio' => $pase->folio, 'paso' => $aprobacion->nombre, 'orden' => $aprobacion->orden, 'ronda' => $pase->ronda, 'comentario' => $comentario,
+        ]);
+        $this->despuesDeResolver($actor, $pase, $completo);
+
+        return $completo ? PaseSalida::APROBADO : null;
+    }
+
+    /**
+     * Omitir un paso OPCIONAL (con comentario). Lo hace quien podría firmarlo.
+     *
+     * @param  array<string, mixed>  $entrada  aprobacion_id, comentario
+     */
+    public function omitir(User $actor, PaseSalida $pase, array $entrada): ?string
+    {
+        $aprobacion = $this->aprobacionEsperada($pase, $entrada);
+        if ($aprobacion->obligatorio) {
+            throw ValidationException::withMessages(['comentario' => 'Este paso es obligatorio: no se puede omitir.']);
+        }
+        if (($motivo = $this->circuito->motivoNoPuede($actor, $pase, $aprobacion)) !== null) {
+            throw new AuthorizationException($motivo);
+        }
+        $comentario = $this->comentario($entrada['comentario'] ?? null);
+        if ($comentario === null) {
+            throw ValidationException::withMessages(['comentario' => 'Escribe por qué se omite este paso.']);
+        }
+
+        $completo = DB::transaction(function () use ($pase, $aprobacion, $actor, $comentario) {
+            $actual = $this->bloquearEnPaso($pase, $aprobacion);
+            $this->anotar($actual, $actor, 'omitido', "Omitió el paso opcional: {$aprobacion->nombre}", $comentario);
+            $aprobacion->forceFill([
+                'estado' => PaseSalidaAprobacion::OMITIDO, 'resuelto_por' => $actor->id, 'resuelto_en' => now(), 'comentario' => $comentario,
+            ])->save();
+
+            return $this->avanzarSiCompleto($actual);
+        });
+
+        $this->campana->resolverAprobacion((int) $aprobacion->id);
+        $pase->refresh();
+        $this->auditoria->auditar($actor, 'pases_salida.paso_omitido', $pase, null, ['folio' => $pase->folio, 'paso' => $aprobacion->nombre, 'comentario' => $comentario]);
+        $this->despuesDeResolver($actor, $pase, $completo);
+
+        return $completo ? PaseSalida::APROBADO : null;
+    }
+
+    /**
+     * Rechazo con motivo obligatorio: el pase vuelve al solicitante, que lo
+     * corrige y reenvía o lo cancela (SEGCAT: pases_salida_rechazar.php).
+     *
+     * @param  array<string, mixed>  $entrada  aprobacion_id, motivo_rechazo
+     */
+    public function rechazar(User $actor, PaseSalida $pase, array $entrada): void
+    {
+        $motivo = $this->comentario($entrada['motivo_rechazo'] ?? null);
+        if ($motivo === null) {
+            throw ValidationException::withMessages(['motivo_rechazo' => 'Escribe el motivo del rechazo: el solicitante lo verá para corregir su pase.']);
+        }
+        if ($pase->estado !== PaseSalida::PENDIENTE) {
+            throw ValidationException::withMessages(['motivo_rechazo' => 'Este pase ya no está pendiente de aprobación.']);
+        }
+        $aprobacion = $this->aprobacionEsperada($pase, $entrada, 'motivo_rechazo');
+        if (($razon = $this->circuito->motivoNoPuede($actor, $pase, $aprobacion)) !== null) {
+            throw new AuthorizationException($razon);
+        }
+
+        DB::transaction(function () use ($pase, $aprobacion, $actor, $motivo) {
+            $actual = $this->bloquearEnPaso($pase, $aprobacion, 'motivo_rechazo');
+            $this->anotar($actual, $actor, 'rechazado', "Rechazó en el paso «{$aprobacion->nombre}» y lo devolvió al solicitante", $motivo);
+            $aprobacion->forceFill([
+                'estado' => PaseSalidaAprobacion::RECHAZADO, 'resuelto_por' => $actor->id, 'resuelto_en' => now(), 'comentario' => $motivo,
+            ])->save();
+            $actual->forceFill([
+                'estado' => PaseSalida::RECHAZADO, 'motivo_rechazo' => $motivo, 'rechazado_en' => now(), 'rechazado_por' => $actor->id,
+            ])->save();
+        });
+
+        $this->campana->resolverAprobacion((int) $aprobacion->id);
+        $pase->refresh();
+        $this->auditoria->auditar($actor, 'pases_salida.rechazado', $pase, ['estado' => PaseSalida::ESTADOS[PaseSalida::PENDIENTE][0]],
+            ['folio' => $pase->folio, 'estado' => PaseSalida::ESTADOS[PaseSalida::RECHAZADO][0], 'paso' => $aprobacion->nombre, 'motivo_rechazo' => $motivo]);
+        $this->avisarResultado($pase, 'rechazado', $aprobacion->nombre, $motivo, $actor);
+    }
+
+    /**
+     * Cancelar: solo antes de aprobarse (pendiente o rechazado), su dueño.
+     *
+     * @param  array<string, mixed>  $entrada  motivo_cancelacion (opcional)
+     */
+    public function cancelar(User $actor, PaseSalida $pase, array $entrada): void
+    {
+        if (! in_array($pase->estado, [PaseSalida::PENDIENTE, PaseSalida::RECHAZADO], true)) {
+            throw ValidationException::withMessages(['motivo_cancelacion' => 'Solo se cancela un pase que aún no se aprueba.']);
+        }
+        if (! $this->puedeGestionar($actor, $pase)) {
+            throw new AuthorizationException('Solo quien registró el pase o el solicitante pueden cancelarlo.');
+        }
+        $motivo = $this->comentario($entrada['motivo_cancelacion'] ?? null);
+        $anterior = $pase->estado;
+
+        $pendientes = DB::transaction(function () use ($pase, $actor, $motivo) {
+            $actual = PaseSalida::query()->lockForUpdate()->findOrFail($pase->id);
+            if (! in_array($actual->estado, [PaseSalida::PENDIENTE, PaseSalida::RECHAZADO], true)) {
+                throw ValidationException::withMessages(['motivo_cancelacion' => 'Este pase ya se aprobó: no se puede cancelar.']);
+            }
+            $pendientes = $actual->aprobaciones()->where('ronda', $actual->ronda)->where('estado', PaseSalidaAprobacion::PENDIENTE)->pluck('id');
+            $actual->aprobaciones()->where('ronda', $actual->ronda)->where('estado', PaseSalidaAprobacion::PENDIENTE)
+                ->update(['estado' => PaseSalidaAprobacion::OMITIDO, 'comentario' => 'Pase cancelado', 'updated_at' => now()]);
+            $actual->forceFill(['estado' => PaseSalida::CANCELADO, 'cancelado_en' => now(), 'cancelado_por' => $actor->id, 'motivo_cancelacion' => $motivo])->save();
+            $this->anotar($actual, $actor, 'cancelado', 'Canceló el pase', $motivo);
+
+            return $pendientes;
+        });
+        foreach ($pendientes as $id) {
+            $this->campana->resolverAprobacion((int) $id);
+        }
+
+        $pase->refresh();
+        $this->auditoria->auditar($actor, 'pases_salida.cancelado', $pase, ['estado' => PaseSalida::ESTADOS[$anterior][0]],
+            ['folio' => $pase->folio, 'estado' => PaseSalida::ESTADOS[PaseSalida::CANCELADO][0], 'motivo' => $motivo]);
+    }
+
+    /**
+     * Paso físico de caseta: salida, recepción en destino, salida de regreso o
+     * regreso. Verifica los artículos (escaneados o marcados; siempre) y guarda
+     * las firmas que ese movimiento pide en este pase (PaseSalida::modoFirma):
+     * la de la persona que entrega o se lleva el equipo y la de Seguridad
+     * (omisión), solo la de Seguridad, o ninguna (queda el usuario, la hora,
+     * la IP y los artículos verificados en la bitácora). Devuelve el estado nuevo.
+     *
+     * @param  array<string, mixed>  $entrada  paso, persona_nombre, firma_persona, firma_modo, firma, guardar_firma,
+     *                                         verificados[], escaneados[], regresa[id], cerrar_con_faltantes, comentario
+     */
+    public function registrarPaso(User $actor, PaseSalida $pase, array $entrada): string
+    {
+        $this->equiposNoRegresaron = [];
+        $paso = is_string($entrada['paso'] ?? null) ? $entrada['paso'] : '';
+        if (! isset(PaseSalida::PASOS_FISICOS[$paso]) || $pase->pasoFisico() !== $paso) {
+            throw ValidationException::withMessages(['paso' => 'Este pase ya no está en el punto correcto del circuito para esta firma.']);
+        }
+        if (! $this->puedeFirmarPaso($actor, $pase, $paso)) {
+            throw new AuthorizationException('No tienes permiso para firmar esta parte del pase.');
+        }
+
+        $modo = $pase->modoFirma($paso);
+        $datos = Validator::make($entrada, [
+            'persona_nombre' => [$modo === 'dos' ? 'required' : 'nullable', 'string', 'max:150'],
+            'comentario' => ['nullable', 'string', 'max:1000'],
+            'verificados' => ['nullable', 'array'],
+            'verificados.*' => ['integer'],
+            'escaneados' => ['nullable', 'array'],
+            'escaneados.*' => ['integer'],
+            'regresa' => ['nullable', 'array'],
+            'regresa.*' => ['nullable', 'integer', 'min:0', 'max:9999'],
+        ], [
+            'persona_nombre.required' => $paso === 'salida' || $paso === 'salida_regreso'
+                ? 'Escribe el nombre de quien se lleva el equipo.' : 'Escribe el nombre de quien entrega el equipo.',
+            'persona_nombre.max' => 'El nombre admite máximo 150 caracteres.',
+            'comentario.max' => 'El comentario admite máximo 1000 caracteres.',
+            'regresa.*.integer' => 'La cantidad que regresa debe ser un número entero.',
+            'regresa.*.min' => 'La cantidad que regresa no puede ser negativa.',
+        ])->validate();
+
+        $pase->load('articulos');
+        $articulos = $pase->articulos->keyBy('id');
+        $comentario = $this->comentario($datos['comentario'] ?? null);
+        $verificados = array_values(array_intersect(array_map('intval', $datos['verificados'] ?? []), $articulos->keys()->map(fn ($k) => (int) $k)->all()));
+        $delPadron = $articulos->filter(fn ($a) => $a->equipo_id !== null)->keys()->map(fn ($k) => (int) $k)->all();
+        $escaneados = array_values(array_intersect(array_map('intval', $datos['escaneados'] ?? []), $verificados, $delPadron));
+        $regresan = [];
+        $cerrarConFaltantes = false;
+        $nuevoRegreso = null;
+
+        if ($paso === 'regreso') {
+            foreach ($articulos as $id => $a) {
+                $cantidad = (int) ($datos['regresa'][$id] ?? 0);
+                if ($cantidad > $a->pendientes()) {
+                    throw ValidationException::withMessages(['regresa' => "De «{$a->equipo}» solo faltan {$a->pendientes()} por regresar."]);
+                }
+                if ($cantidad > 0) {
+                    $regresan[(int) $id] = $cantidad;
+                }
+            }
+            if ($regresan === []) {
+                throw ValidationException::withMessages(['regresa' => 'Indica cuántos artículos regresan (al menos uno).']);
+            }
+            $faltan = $articulos->sum(fn ($a) => $a->pendientes()) - array_sum($regresan);
+            $cerrarConFaltantes = $faltan > 0 && filter_var($entrada['cerrar_con_faltantes'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            if ($faltan > 0 && $comentario === null) {
+                throw ValidationException::withMessages(['comentario' => 'Faltan artículos por regresar: anota en el comentario qué pasó con ellos.']);
+            }
+        } elseif ($paso === 'salida') {
+            $nuevoRegreso = $this->validarNuevoRegreso($pase, $entrada);
+            $faltan = $articulos->count() - count($verificados);
+            if ($faltan > 0) {
+                throw ValidationException::withMessages(['verificados' => $faltan === 1
+                    ? 'Marca o escanea cada artículo que sale: falta 1.' : "Marca o escanea cada artículo que sale: faltan {$faltan}."]);
+            }
+            // Revisión Etapa 2 (A-2): un equipo del padrón que dejó de estar DISPONIBLE (se entregó o se dio de baja con motivo) no sale en silencio
+            foreach (Equipo::whereIn('id', $articulos->pluck('equipo_id')->filter()->all())->get() as $equipo) {
+                if ($equipo->estado !== EstadoActivo::DISPONIBLE) {
+                    throw ValidationException::withMessages(['verificados' => "El equipo {$equipo->numero_serie} ya no está DISPONIBLE (está "
+                        .EstadoActivo::texto($equipo->estado).'): no puede salir con este pase. Si regresó, recíbelo primero; si no, cancela el pase y pide uno nuevo sin él.']);
+                }
+            }
+        } elseif (count($verificados) < $articulos->count() && $comentario === null) {
+            throw ValidationException::withMessages(['comentario' => 'Hay artículos sin marcar: anota en el comentario qué falta o qué llegó diferente.']);
+        }
+
+        $persona = mb_strtoupper(trim((string) preg_replace('/\s+/u', ' ', (string) ($datos['persona_nombre'] ?? ''))), 'UTF-8');
+        $rutaPersona = $modo !== 'dos' ? null
+            : $this->firmas->guardar($entrada['firma_persona'] ?? null, 'pases-salida', 'firma_persona', 'la firma de '.($paso === 'salida' || $paso === 'salida_regreso' ? 'quien se lleva el equipo' : 'quien entrega el equipo'));
+        try {
+            [$rutaSeguridad, $guardar] = $modo === 'ninguna' ? [null, null] : $this->firmaDelActor($actor, $entrada);
+        } catch (\Throwable $e) {
+            $this->firmas->borrar($rutaPersona);
+            throw $e;
+        }
+
+        [$estado, $columna, $evento, $texto] = self::AVANCE[$paso];
+        if ($paso === 'regreso' && $faltan > 0 && ! $cerrarConFaltantes) {
+            $estado = PaseSalida::REGRESO_PARCIAL;
+        }
+
+        try {
+            $reprogramado = DB::transaction(function () use ($pase, $paso, $modo, $actor, $persona, $rutaPersona, $rutaSeguridad, $comentario, $verificados, $escaneados, $regresan, $articulos, $estado, $columna, $texto, $cerrarConFaltantes, $nuevoRegreso) {
+                $actual = PaseSalida::query()->lockForUpdate()->findOrFail($pase->id);
+                if ($actual->pasoFisico() !== $paso) {
+                    throw ValidationException::withMessages(['paso' => 'Este pase ya no está en el punto correcto del circuito para esta firma.']);
+                }
+                // Las marcas reales van en orden: este movimiento nunca queda antes del anterior
+                $momento = now();
+                $anterior = $actual->marcaAnterior($paso);
+                if ($anterior !== null && $momento->lt($anterior)) {
+                    throw ValidationException::withMessages(['paso' => 'La hora de este movimiento quedaría antes del movimiento anterior del pase ('
+                        .app(HoraLocal::class)->formatear($anterior).'). Revisa la hora del equipo e intenta de nuevo.']);
+                }
+                // Regreso programado vencido al dar salida: queda el cambio (antes → después) en la bitácora
+                $reprogramado = null;
+                if ($nuevoRegreso !== null) {
+                    $antes = $actual->fecha_tentativa_regreso?->format('Y-m-d');
+                    $reprogramado = ['antes' => $antes, 'despues' => $nuevoRegreso];
+                    $formato = fn (?string $f) => $f === null ? '—' : Carbon::createFromFormat('Y-m-d', $f)->format('d/m/Y');
+                    $this->anotar($actual, $actor, 'regreso_reprogramado',
+                        'Cambió el regreso programado: '.$formato($antes).' → '.$formato($nuevoRegreso), null, $reprogramado);
+                }
+                [$titulo, , , $roles] = PaseSalida::PASOS_FISICOS[$paso];
+                [$rolPersona, $rolSeguridad] = array_keys($roles);
+                $detalle = array_filter(['paso' => $paso, 'persona' => $persona !== '' ? $persona : null,
+                    'firmas' => $modo !== PaseSalida::FIRMAS_CASETA_OMISION ? $modo : null]);
+                if ($paso === 'regreso') {
+                    $detalle['regresan'] = collect($regresan)->map(fn ($c, $id) => $c.'x '.$articulos[$id]->equipo)->values()->all();
+                    $detalle['faltan'] = $articulos->sum(fn ($a) => $a->pendientes()) - array_sum($regresan);
+                } else {
+                    $detalle['verificados'] = count($verificados).' de '.$articulos->count();
+                    $detalle['con_lector'] = count($escaneados);
+                }
+                $tituloBitacora = match (true) {
+                    $estado === PaseSalida::REGRESO_PARCIAL => 'Registró un regreso parcial',
+                    $cerrarConFaltantes => 'Registró el regreso y cerró el pase con faltantes',
+                    default => $texto,
+                };
+                $bitacora = $this->anotar($actual, $actor, $estado === PaseSalida::REGRESO_PARCIAL ? 'regreso_parcial' : $paso, $tituloBitacora, $comentario, $detalle);
+                if ($rutaPersona !== null) {
+                    $this->crearFirma($actual, $bitacora, $paso, $rolPersona, $persona, null, $roles[$rolPersona], $rutaPersona);
+                }
+                if ($rutaSeguridad !== null) {
+                    $this->crearFirma($actual, $bitacora, $paso, $rolSeguridad, $actor->name, $actor->id, $roles[$rolSeguridad], $rutaSeguridad);
+                }
+
+                if ($paso === 'salida') {
+                    foreach ($verificados as $id) {
+                        $articulos[$id]->forceFill(['verificado_salida_en' => now(), 'verificado_con_lector' => in_array($id, $escaneados, true)])->save();
+                    }
+                }
+                foreach ($regresan as $id => $cantidad) {
+                    $articulos[$id]->forceFill(['cantidad_regresada' => $articulos[$id]->cantidad_regresada + $cantidad])->save();
+                }
+
+                $cambios = ['estado' => $estado];
+                if ($estado !== PaseSalida::REGRESO_PARCIAL) {
+                    $cambios[$columna] = $momento;
+                }
+                if ($cerrarConFaltantes) {
+                    $cambios['cerrado_con_faltantes'] = true;
+                }
+                if ($nuevoRegreso !== null) {
+                    $cambios['fecha_tentativa_regreso'] = $nuevoRegreso;
+                }
+                $actual->forceFill($cambios)->save();
+                // C-18: el estado de los equipos del padrón sigue al pase
+                if (in_array($paso, ['salida', 'regreso'], true)) {
+                    $this->equiposNoRegresaron = $this->moverEquipos($actor, $actual, $paso, $regresan, $cerrarConFaltantes || ($paso === 'regreso' && $estado === PaseSalida::REGRESADO));
+                }
+
+                return $reprogramado;
+            });
+        } catch (\Throwable $e) {
+            $this->firmas->borrar($rutaPersona);
+            $this->firmas->borrar($rutaSeguridad);
+            throw $e;
+        }
+
+        $this->guardarFirmaUsuario($actor, $guardar);
+        $pase->refresh();
+        if ($reprogramado !== null) {
+            $this->auditoria->auditar($actor, 'pases_salida.regreso_reprogramado', $pase,
+                ['folio' => $pase->folio, 'regreso_programado' => $reprogramado['antes']], ['folio' => $pase->folio, 'regreso_programado' => $reprogramado['despues']]);
+        }
+        $this->auditoria->auditar($actor, $estado === PaseSalida::REGRESO_PARCIAL ? 'pases_salida.regreso_parcial' : self::AVANCE[$paso][2], $pase,
+            null, ['folio' => $pase->folio, 'estado' => $pase->insignia(false)[0], 'persona' => $persona !== '' ? $persona : null,
+                'firmas' => PaseSalida::FIRMAS_CASETA[$modo], 'comentario' => $comentario]);
+
+        // Campana: la caseta destino sabe que el pase viene; al llegar o regresar se resuelve
+        if ($pase->pasoFisico() === 'recepcion') {
+            $pase->load(['sede:id,nombre', 'sedeDestino:id,nombre'])->loadCount('articulos');
+            $this->campana->llega($pase, $actor);
+        } elseif ($paso === 'recepcion') {
+            $this->campana->resolverLlegada($pase);
+        }
+        if ($estado === PaseSalida::REGRESADO) {
+            $this->campana->resolverVencido($pase);
+        }
+
+        return $estado;
+    }
+
+    // ------------------------------------------------------------ Firma propia
+
+    public function firmaGuardada(User $actor): ?FirmaUsuario
+    {
+        return FirmaUsuario::where('user_id', $actor->id)->first();
+    }
+
+    /**
+     * Guarda (o reemplaza) la firma del usuario, solo si él lo pidió.
+     */
+    public function guardarFirmaUsuario(User $actor, ?string $dataUrl): void
+    {
+        if ($dataUrl === null) {
+            return;
+        }
+        $ruta = $this->firmas->guardar($dataUrl, 'usuarios', 'firma', 'tu firma');
+        $anterior = $this->firmaGuardada($actor);
+        if ($anterior !== null) {
+            $this->firmas->borrar($anterior->firma_ruta);
+            $anterior->forceFill(['firma_ruta' => $ruta])->save();
+        } else {
+            FirmaUsuario::create(['user_id' => $actor->id, 'firma_ruta' => $ruta]);
+        }
+        $this->auditoria->auditar($actor, 'pases_salida.firma_guardada', $this->firmaGuardada($actor), null, ['usuario' => $actor->name]);
+    }
+
+    public function borrarFirmaUsuario(User $actor): bool
+    {
+        $firma = $this->firmaGuardada($actor);
+        if ($firma === null) {
+            return false;
+        }
+        $this->firmas->borrar($firma->firma_ruta);
+        $this->auditoria->auditar($actor, 'pases_salida.firma_borrada', $firma, ['usuario' => $actor->name], null);
+        $firma->delete();
+
+        return true;
+    }
+
+    // ------------------------------------------------------------- Presentación
+
+    /**
+     * Pasos del indicador (Solicitud → Aprobaciones → Salida → En destino /
+     * Fuera → Regreso → Cerrado), cada uno con su estado: hecho, actual,
+     * pendiente, error (rechazado o vencido) o cancelado.
+     *
+     * @return list<array{clave: string, texto: string, estado: string, detalle: ?string}>
+     */
+    public function etapas(PaseSalida $pase, bool $vencido = false): array
+    {
+        $ronda = $this->circuito->rondaActual($pase);
+        $resueltas = $ronda->filter->resuelta()->count();
+        $orden = ['solicitud' => 0, 'aprobaciones' => 1, 'salida' => 2, 'fuera' => 3, 'regreso' => 4, 'cerrado' => 5];
+        $actual = match ($pase->estado) {
+            PaseSalida::RECHAZADO => 'solicitud',
+            PaseSalida::PENDIENTE => 'aprobaciones',
+            PaseSalida::APROBADO => 'salida',
+            PaseSalida::SALIO => $pase->requiere_regreso ? 'fuera' : 'cerrado',
+            PaseSalida::EN_DESTINO => 'fuera',
+            PaseSalida::EN_TRANSITO_REGRESO, PaseSalida::REGRESO_PARCIAL => 'regreso',
+            PaseSalida::CANCELADO => $pase->aprobado_en ? 'salida' : ($ronda->contains('estado', PaseSalidaAprobacion::APROBADO) ? 'aprobaciones' : 'solicitud'),
+            default => 'cerrado',
+        };
+        $claves = $pase->requiere_regreso ? array_keys($orden) : ['solicitud', 'aprobaciones', 'salida', 'cerrado'];
+        $textos = [
+            'solicitud' => 'Solicitud', 'aprobaciones' => 'Aprobaciones', 'salida' => 'Salida',
+            'fuera' => $pase->destino_tipo === 'sede' ? 'En destino' : 'Fuera', 'regreso' => 'Regreso',
+            'cerrado' => $pase->estado === PaseSalida::CANCELADO ? 'Cancelado' : 'Cerrado',
+        ];
+        $terminado = $pase->cerrado() && $pase->estado !== PaseSalida::CANCELADO;
+
+        return array_map(function (string $clave) use ($orden, $actual, $textos, $pase, $vencido, $resueltas, $ronda, $terminado) {
+            $estado = match (true) {
+                $terminado => 'hecho',
+                $pase->estado === PaseSalida::CANCELADO && $clave === 'cerrado' => 'cancelado',
+                $pase->estado === PaseSalida::CANCELADO && $orden[$clave] >= $orden[$actual] => 'pendiente',
+                $orden[$clave] < $orden[$actual] => 'hecho',
+                $clave === $actual && $pase->estado === PaseSalida::RECHAZADO => 'error',
+                $clave === $actual => $vencido ? 'error' : 'actual',
+                $clave === 'aprobaciones' && $pase->estado === PaseSalida::RECHAZADO => 'error',
+                default => 'pendiente',
+            };
+            $detalle = match (true) {
+                $clave === 'aprobaciones' && $ronda->isNotEmpty() => $resueltas.' de '.$ronda->count(),
+                $clave === 'solicitud' && $pase->estado === PaseSalida::RECHAZADO => 'Devuelto',
+                $clave === 'regreso' && $pase->estado === PaseSalida::REGRESO_PARCIAL => 'Parcial',
+                $clave === $actual && $vencido => 'Vencido',
+                default => null,
+            };
+
+            return ['clave' => $clave, 'texto' => $textos[$clave], 'estado' => $estado, 'detalle' => $detalle];
+        }, $claves);
+    }
+
+    /**
+     * Quién debe actuar ahora, en palabras ("Espera la firma de: Contraloría…").
+     */
+    public function siguiente(PaseSalida $pase): ?string
+    {
+        $sede = fn (?int $id) => $id === (int) $pase->sede_id ? ($pase->sede?->nombre ?? 'origen') : ($pase->sedeDestino?->nombre ?? 'destino');
+
+        return match ($pase->estado) {
+            PaseSalida::PENDIENTE => ($a = $this->circuito->actual($pase)) === null ? null
+                : "Espera la firma de: {$a->nombre} (paso {$a->orden} de {$this->circuito->rondaActual($pase)->count()}) · {$a->quienFirma()}",
+            PaseSalida::RECHAZADO => 'Devuelto al solicitante: corregir y reenviar, o cancelar.',
+            PaseSalida::APROBADO => 'Caseta de '.$sede((int) $pase->sede_id).': registrar la salida.',
+            default => match ($pase->pasoFisico()) {
+                'recepcion' => 'Caseta de '.$sede($pase->sede_destino_id).' (destino): «Recibir en esta sede» cuando llegue.',
+                'salida_regreso' => 'Caseta de '.$sede($pase->sede_destino_id).' (destino): «Dar salida de regreso» cuando vuelva a '.$sede((int) $pase->sede_id).'.',
+                'regreso' => 'Caseta de '.$sede((int) $pase->sede_id).': registrar el regreso'
+                    .($pase->estado === PaseSalida::REGRESO_PARCIAL ? ' de lo que falta.' : '.'),
+                default => null,
+            },
+        };
+    }
+
+    /**
+     * «Recorrido del pase»: cada momento físico que aplica a este pase, en
+     * orden, con lo programado (lo que capturó quien lo pidió) y lo real (lo
+     * que registró la caseta). Los nombres dicen el lugar: «Sale de Hotel
+     * Centro», «Llega a Hotel Playa», «Sale de regreso de Hotel Playa»,
+     * «Regresa a Hotel Centro». La salida definitiva solo tiene el primero.
+     *
+     * estado: hecho | pendiente | parcial | vencido | cancelado
+     *
+     * @return array{definitivo: bool, renglones: list<array{clave: string, momento: string, programado: ?string, real: ?string, texto: ?string, nota: ?string, estado: string}>}
+     */
+    public function recorrido(PaseSalida $pase, ?bool $vencido = null): array
+    {
+        $vencido ??= $this->vencido($pase);
+        $hora = app(HoraLocal::class);
+        $origen = $pase->sede?->nombre ?? 'la sede de origen';
+        $destino = $pase->nombreDestino() !== '—' ? $pase->nombreDestino() : 'el destino';
+        $dia = fn (?Carbon $f) => $f === null ? null : $hora->formatear(PaseSalida::dia($f), 'd/m/Y');
+        $real = fn (?Carbon $f) => $f === null ? null : $hora->formatear($f);
+        $cancelado = $pase->estado === PaseSalida::CANCELADO;
+        $momentos = [
+            'salida' => 'Sale de '.$origen,
+            'recepcion' => 'Llega a '.$destino,
+            'salida_regreso' => 'Sale de regreso de '.$destino,
+            'regreso' => 'Regresa a '.$origen,
+        ];
+
+        $renglones = [];
+        foreach ($pase->pasosFisicos() as $paso) {
+            $marca = $pase->{PaseSalida::MARCAS_REALES[$paso]};
+            $renglon = ['clave' => $paso, 'momento' => $momentos[$paso], 'programado' => null, 'real' => $real($marca),
+                'texto' => null, 'nota' => null, 'estado' => $marca !== null ? 'hecho' : ($cancelado ? 'cancelado' : 'pendiente')];
+
+            if ($paso === 'salida') {
+                $renglon['programado'] = $dia($pase->fecha_salida_programada);
+                if ($marca !== null && $pase->fecha_salida_programada !== null) {
+                    $diferencia = (int) Carbon::parse($pase->fecha_salida_programada->format('Y-m-d'))
+                        ->diffInDays(Carbon::parse($marca->copy()->setTimezone($hora->zona())->format('Y-m-d')), false);
+                    if ($diferencia !== 0) {
+                        $n = abs($diferencia);
+                        $renglon['nota'] = $n.' '.($n === 1 ? 'día' : 'días').' '.($diferencia > 0 ? 'después' : 'antes').' de lo programado';
+                    }
+                }
+            }
+
+            if ($paso === 'regreso') {
+                $renglon['programado'] = $dia($pase->fecha_tentativa_regreso);
+                $articulos = $pase->relationLoaded('articulos') ? $pase->articulos : $pase->articulos()->get();
+                $total = (int) $articulos->sum('cantidad');
+                $regresaron = (int) $articulos->sum('cantidad_regresada');
+                if ($marca === null && $pase->estado === PaseSalida::REGRESO_PARCIAL) {
+                    $ultimo = $pase->relationLoaded('bitacora')
+                        ? $pase->bitacora->where('evento', 'regreso_parcial')->sortBy('id')->last()
+                        : $pase->bitacora()->where('evento', 'regreso_parcial')->reorder()->orderByDesc('id')->first();
+                    $renglon['estado'] = 'parcial';
+                    $renglon['real'] = null;
+                    $renglon['texto'] = "Parcial: {$regresaron} de {$total}".($ultimo ? ' · el último, '.$real($ultimo->created_at) : '');
+                } elseif ($marca !== null && $pase->cerrado_con_faltantes) {
+                    $renglon['nota'] = "Cerrado con faltantes: regresaron {$regresaron} de {$total}";
+                }
+                if ($marca === null && $vencido) {
+                    $renglon['estado'] = 'vencido';
+                    $renglon['texto'] = ($renglon['texto'] ?? 'Pendiente').' · Vencido (debía regresar el '.$renglon['programado'].')';
+                }
+            }
+
+            $renglon['texto'] ??= match ($renglon['estado']) {
+                'cancelado' => 'No ocurrió (pase cancelado)',
+                'pendiente' => 'Pendiente',
+                default => null,
+            };
+            $renglones[] = $renglon;
+        }
+
+        return ['definitivo' => ! $pase->requiere_regreso, 'renglones' => $renglones];
+    }
+
+    /**
+     * Nombre que se propone para quien entrega o se lleva el equipo, para
+     * teclear lo menos posible: al salir, el colaborador destino o el
+     * solicitante; después, quien lo llevó.
+     */
+    public function personaSugerida(PaseSalida $pase): string
+    {
+        $ultima = $pase->relationLoaded('bitacora')
+            ? $pase->bitacora->reverse()->first(fn ($b) => isset($b->detalle['persona']))
+            : $pase->bitacora()->whereIn('evento', ['salida', 'recepcion', 'salida_regreso', 'regreso_parcial'])->orderByDesc('id')->first();
+        $nombre = $ultima?->detalle['persona'] ?? ($pase->colaboradorDestino?->nombreCompleto() ?? $pase->solicitante?->nombreCompleto() ?? '');
+
+        return mb_strtoupper((string) $nombre, 'UTF-8');
+    }
+
+    // ------------------------------------------------------------------ Avisos
+
+    /**
+     * Recordatorio diario de los pases vencidos (lo llama el comando
+     * plataforma:pases-vencidos desde desplegar.sh; corre en proceso, sin exec).
+     * Un recordatorio por pase y por día local de su sede, en la campana
+     * siempre y por correo si el aviso está encendido. Con $siToca, solo
+     * después de las 8:00 de la sede.
+     *
+     * @return int pases recordados
+     */
+    public function recordatoriosVencidos(bool $siToca = true): int
+    {
+        $enviados = 0;
+        foreach (Empresa::where('activo', true)->get(['id', 'preferencias']) as $empresa) {
+            $conCorreo = $empresa->aviso('pase_salida_vencido');
+            $enviados += app(Tenant::class)->conEmpresa($empresa->id, function () use ($siToca, $conCorreo) {
+                $this->hoy = null;
+                $horas = Sede::withTrashed()->with('empresa:id,zona_horaria')->get(['id', 'empresa_id', 'zona_horaria'])
+                    ->mapWithKeys(fn (Sede $s) => [(int) $s->id => (int) now($s->zonaHoraria())->format('G')])->all();
+                $cuenta = 0;
+                $pases = $this->filtrar(PaseSalida::query(), 'vencidos')
+                    ->with(['sede:id,nombre', 'sedeDestino:id,nombre', 'proveedor:id,nombre', 'colaboradorDestino:id,nombre,apellido_paterno,apellido_materno',
+                        'solicitante:id,nombre,apellido_paterno,apellido_materno'])->withCount('articulos')->get();
+                foreach ($pases as $pase) {
+                    $hoy = $this->hoyDe($pase);
+                    if ($pase->recordatorio_vencido_en?->format('Y-m-d') === $hoy || ($siToca && ($horas[(int) $pase->sede_id] ?? 0) < 8)) {
+                        continue;
+                    }
+                    $enviado = false;
+                    if ($conCorreo) {
+                        $correos = [...$this->correosDuenos($pase), ...$this->avisos->conPermiso($pase->empresa_id, 'pases_salida.aprobar', $pase->sede_id)];
+                        $enviado = $this->avisos->paseSalida($pase->empresa_id, 'pase_salida_vencido', $correos,
+                            $this->mensaje($pase, 'vencido', null, null), false);
+                    }
+                    $enCampana = $this->campana->vencido($pase) > 0;
+                    $pase->forceFill(['recordatorio_vencido_en' => $hoy])->saveQuietly();
+                    if ($enviado || $enCampana) {
+                        $cuenta++;
+                        $this->anotar($pase, null, 'recordatorio', 'Se envió el recordatorio de vencido'.($enviado ? ' por correo y en la campana' : ' en la campana'));
+                    }
+                }
+
+                return $cuenta;
+            });
+        }
+
+        return $enviados;
+    }
+
+    private function avisarSiguiente(PaseSalida $pase): void
+    {
+        $pase->load(['aprobaciones.rol:id,nombre', 'aprobaciones.departamento:id,nombre', 'sede:id,nombre', 'sedeDestino:id,nombre', 'proveedor:id,nombre', 'colaboradorDestino:id,nombre,apellido_paterno,apellido_materno',
+            'solicitante:id,nombre,apellido_paterno,apellido_materno,departamento_id'])->loadCount('articulos');
+        $aprobacion = $this->circuito->actual($pase);
+        if ($aprobacion === null) {
+            return;
+        }
+        $aprobadores = $this->circuito->aQuienAvisar($pase, $aprobacion); // C-12: respeta «No molestar»
+        $correos = $aprobadores->pluck('email')->filter()->values()->all();
+        $this->avisos->paseSalida($pase->empresa_id, 'pase_salida_aprobacion', $correos, $this->mensaje($pase, 'por_aprobar', $aprobacion->nombre, null));
+        $this->campana->porFirmar($pase, $aprobacion, $aprobadores, $this->circuito->rondaActual($pase)->count());
+    }
+
+    private function avisarResultado(PaseSalida $pase, string $tipo, ?string $paso, ?string $comentario, ?User $actor = null): void
+    {
+        $pase->load(['sede:id,nombre', 'sedeDestino:id,nombre', 'proveedor:id,nombre', 'colaboradorDestino:id,nombre,apellido_paterno,apellido_materno',
+            'solicitante:id,nombre,apellido_paterno,apellido_materno'])->loadCount('articulos');
+        $this->avisos->paseSalida($pase->empresa_id, 'pase_salida_resultado', $this->correosDuenos($pase), $this->mensaje($pase, $tipo, $paso, $comentario));
+        $this->campana->resultado($pase, $tipo, $comentario, $actor);
+    }
+
+    /**
+     * Correo de quien registró el pase y de los usuarios ligados al solicitante.
+     *
+     * @return list<string>
+     */
+    private function correosDuenos(PaseSalida $pase): array
+    {
+        return User::where('empresa_id', $pase->empresa_id)->where('activo', true)->whereNotNull('email')
+            ->where(fn ($q) => $q->where('id', $pase->creado_por)->orWhere('colaborador_id', $pase->colaborador_id))
+            ->pluck('email')->unique()->values()->all();
+    }
+
+    private function mensaje(PaseSalida $pase, string $tipo, ?string $paso, ?string $comentario): AvisoPaseSalida
+    {
+        $tentativa = PaseSalida::dia($pase->fecha_tentativa_regreso);
+
+        return new AvisoPaseSalida(
+            $tipo, $pase->folio, $pase->etiquetaMotivo(), $pase->solicitante?->nombreCompleto(), $pase->sede?->nombre, $pase->nombreDestino(),
+            (int) ($pase->articulos_count ?? $pase->articulos()->count()), $paso, $comentario,
+            $tentativa ? app(HoraLocal::class)->formatear($tentativa, 'd/m/Y') : null,
+            route('pases-salida.show', $pase->id),
+        );
+    }
+
+    private function despuesDeResolver(User $actor, PaseSalida $pase, bool $completo): void
+    {
+        if ($completo) {
+            $this->auditoria->auditar($actor, 'pases_salida.aprobado', $pase, ['estado' => PaseSalida::ESTADOS[PaseSalida::PENDIENTE][0]],
+                ['folio' => $pase->folio, 'estado' => PaseSalida::ESTADOS[PaseSalida::APROBADO][0]]);
+            $this->avisarResultado($pase, 'aprobado', null, null, $actor);
+        } else {
+            $this->avisarSiguiente($pase);
+        }
+    }
+
+    // --------------------------------------------------------------- Opciones
+
+    /**
+     * Sedes de origen donde puede registrar pases (activas y en su alcance).
+     *
+     * @return Collection<int, Sede>
+     */
+    public function sedesOrigen(User $actor)
+    {
+        $permitidas = $this->sedes($actor, 'pases_salida.crear');
+
+        return Sede::where('activo', true)->when($permitidas !== null, fn ($q) => $q->whereIn('id', $permitidas))
+            ->orderBy('nombre')->get(['id', 'nombre', 'direccion', 'colonia', 'ciudad', 'telefono']);
+    }
+
+    /**
+     * Datos del equipo escaneado para llenar un renglón de artículos.
+     *
+     * @return array{equipo_id: int, equipo: string, marca: ?string, modelo: ?string, serie: string, descripcion: ?string, valor: ?string}
+     */
+    public function articuloDeEquipo(Equipo $equipo): array
+    {
+        $equipo->loadMissing('tipo:id,nombre');
+
+        return [
+            'equipo_id' => $equipo->id,
+            'equipo' => $equipo->tipo?->nombre ?? 'Equipo',
+            'marca' => $equipo->marca,
+            'modelo' => $equipo->modelo,
+            'serie' => $equipo->numero_serie,
+            'descripcion' => null,
+            // Costo del padrón: el valor del artículo para las condiciones de valor del circuito
+            'valor' => $equipo->costo !== null ? number_format((float) $equipo->costo, 2, '.', '') : null,
+        ];
+    }
+
+    // ---------------------------------------------------------------- Internos
+
+    /**
+     * Copia el circuito al pase; si ningún paso aplica a su motivo, queda
+     * aprobado. Al retomar, anota qué firmas se conservaron; si ya no falta
+     * ninguna, queda aprobado.
+     */
+    private function iniciarRonda(PaseSalida $pase, bool $retomar = false, ?PaseSalidaBitacora $reenvio = null): void
+    {
+        $r = $this->circuito->instanciar($pase, $retomar);
+        if ($r['conservadas'] !== []) {
+            $this->anotar($pase, null, 'firma', 'Se conservan las firmas de la ronda anterior: '.implode(', ', $r['conservadas']),
+                null, ['conservadas' => $r['conservadas'], 'reenvio' => $reenvio?->id]);
+        }
+        if ($r['aplican'] === 0) {
+            $pase->forceFill(['estado' => PaseSalida::APROBADO, 'aprobado_en' => now()])->save();
+            $this->anotar($pase, null, 'aprobado', 'Sin pasos de aprobación para este motivo: queda aprobado');
+        } elseif ($r['pendientes'] === 0) {
+            $pase->forceFill(['estado' => PaseSalida::APROBADO, 'aprobado_en' => now()])->save();
+            $this->anotar($pase, null, 'aprobado', 'Todas las firmas que aplican ya estaban: queda aprobado');
+        }
+    }
+
+    /**
+     * El paso que el formulario quería firmar debe ser el que toca.
+     *
+     * @param  array<string, mixed>  $entrada
+     */
+    private function aprobacionEsperada(PaseSalida $pase, array $entrada, string $campo = 'aprobacion_id'): PaseSalidaAprobacion
+    {
+        $actual = $this->circuito->actual($pase->load(['aprobaciones.rol:id,nombre', 'aprobaciones.departamento:id,nombre']));
+        if ($actual === null || (isset($entrada['aprobacion_id']) && (int) $entrada['aprobacion_id'] !== (int) $actual->id)) {
+            throw ValidationException::withMessages([$campo => 'Este pase ya no está en el punto correcto del circuito para esta firma.']);
+        }
+
+        return $actual;
+    }
+
+    /**
+     * Bloquea el pase (dos firmas simultáneas no se saltan el circuito) y
+     * confirma que el paso sigue siendo el que toca.
+     */
+    private function bloquearEnPaso(PaseSalida $pase, PaseSalidaAprobacion $aprobacion, string $campo = 'aprobacion_id'): PaseSalida
+    {
+        $actual = PaseSalida::query()->lockForUpdate()->findOrFail($pase->id);
+        $vigente = $this->circuito->actual($actual->load(['aprobaciones.rol:id,nombre', 'aprobaciones.departamento:id,nombre']));
+        if ($vigente === null || (int) $vigente->id !== (int) $aprobacion->id) {
+            throw ValidationException::withMessages([$campo => 'Este pase ya no está en el punto correcto del circuito para esta firma.']);
+        }
+
+        return $actual;
+    }
+
+    private function avanzarSiCompleto(PaseSalida $pase): bool
+    {
+        $pendientes = $pase->aprobaciones()->where('ronda', $pase->ronda)->where('estado', PaseSalidaAprobacion::PENDIENTE)->exists();
+        if ($pendientes) {
+            return false;
+        }
+        $pase->forceFill(['estado' => PaseSalida::APROBADO, 'aprobado_en' => now()])->save();
+
+        return true;
+    }
+
+    /**
+     * Firma del usuario en sesión: la guardada (se copia al pase) o la que
+     * dibujó ahora. Devuelve [ruta en el pase, firma a guardar como suya o null].
+     *
+     * @param  array<string, mixed>  $entrada
+     * @return array{0: string, 1: ?string}
+     */
+    private function firmaDelActor(User $actor, array $entrada): array
+    {
+        if (($entrada['firma_modo'] ?? null) === 'guardada') {
+            $guardada = $this->firmaGuardada($actor);
+            if ($guardada === null || ! Storage::disk('local')->exists($guardada->firma_ruta)) {
+                throw ValidationException::withMessages(['firma' => 'No tienes una firma guardada: firma en el recuadro.']);
+            }
+            $tipo = str_ends_with($guardada->firma_ruta, '.png') ? 'png' : 'jpeg';
+            $dataUrl = 'data:image/'.$tipo.';base64,'.base64_encode((string) Storage::disk('local')->get($guardada->firma_ruta));
+
+            return [$this->firmas->guardar($dataUrl, 'pases-salida', 'firma', 'tu firma'), null];
+        }
+
+        $dibujada = is_string($entrada['firma'] ?? null) ? $entrada['firma'] : null;
+        $ruta = $this->firmas->guardar($dibujada, 'pases-salida', 'firma', 'tu firma');
+
+        return [$ruta, filter_var($entrada['guardar_firma'] ?? false, FILTER_VALIDATE_BOOLEAN) ? $dibujada : null];
+    }
+
+    private function crearFirma(PaseSalida $pase, PaseSalidaBitacora $bitacora, string $grupo, string $rol, string $nombre, ?int $usuario, string $cargo, string $ruta): PaseSalidaFirma
+    {
+        return PaseSalidaFirma::create([
+            'empresa_id' => $pase->empresa_id, 'pase_salida_id' => $pase->id, 'bitacora_id' => $bitacora->id, 'grupo' => $grupo, 'rol' => $rol,
+            'nombre_firma' => mb_strtoupper(trim($nombre), 'UTF-8'), 'user_id' => $usuario, 'cargo' => $cargo, 'firma_ruta' => $ruta,
+        ]);
+    }
+
+    /**
+     * Una línea en la bitácora del pase (quién, cuándo, comentario e IP).
+     *
+     * @param  array<string, mixed>|null  $detalle
+     */
+    /**
+     * Revisión Etapa 2: el equipo del padrón que no regresó apareció y se
+     * recibió desde su ficha con el pase ya cerrado. Suma lo regresado del
+     * artículo y lo anota en la bitácora del pase («Recibido después del
+     * cierre por …, fecha»). Devuelve el pase (null si no venía de uno).
+     */
+    public function recibidoDespuesDelCierre(User $actor, Equipo $equipo): ?PaseSalida
+    {
+        $articulo = PaseSalidaArticulo::with('pase')->where('equipo_id', $equipo->id)
+            ->whereColumn('cantidad_regresada', '<', 'cantidad')
+            ->whereHas('pase', fn ($q) => $q->whereNotNull('salio_en'))
+            ->latest('id')->first();
+        if ($articulo === null || $articulo->pase === null) {
+            return null;
+        }
+        $articulo->forceFill(['cantidad_regresada' => $articulo->cantidad_regresada + 1])->save();
+        $cuando = app(HoraLocal::class)->formatear(now(), 'd/m/Y H:i');
+        $this->anotar($articulo->pase, $actor, 'recibido_tarde',
+            "Recibido después del cierre por {$actor->name}, {$cuando}: {$articulo->equipo} ({$equipo->numero_serie})", null,
+            ['articulo_id' => $articulo->id, 'equipo_id' => $equipo->id]);
+
+        return $articulo->pase;
+    }
+
+    private function anotar(PaseSalida $pase, ?User $actor, string $evento, string $titulo, ?string $comentario = null, ?array $detalle = null): PaseSalidaBitacora
+    {
+        return PaseSalidaBitacora::create([
+            'empresa_id' => $pase->empresa_id, 'pase_salida_id' => $pase->id, 'evento' => $evento, 'titulo' => mb_substr($titulo, 0, 150),
+            'comentario' => $comentario, 'detalle' => $detalle, 'user_id' => $actor?->id, 'usuario_nombre' => $actor?->name,
+            'ip' => $actor !== null ? request()->ip() : null,
+        ]);
+    }
+
+    private function comentario(mixed $texto): ?string
+    {
+        if (! is_string($texto)) {
+            return null;
+        }
+        $texto = trim($texto);
+        if (mb_strlen($texto) > 1000) {
+            throw ValidationException::withMessages(['comentario' => 'El comentario admite máximo 1000 caracteres.']);
+        }
+
+        return $texto === '' ? null : $texto;
+    }
+
+    private function codigoNuevo(): string
+    {
+        do {
+            $codigo = Str::upper(Str::random(20));
+        } while (PaseSalida::withoutGlobalScopes()->where('codigo_verificacion', $codigo)->exists());
+
+        return $codigo;
+    }
+
+    // ------------------------------------------------------------- Validación
+
+    /**
+     * @param  array<string, mixed>  $entrada
+     * @return array{0: array<string, mixed>, 1: list<array<string, mixed>>}
+     */
+    private function validar(User $actor, array $entrada, ?PaseSalida $actual = null): array
+    {
+        // Rol Solicitante sin colaborador vinculado: el aviso claro va primero (aunque no haya elegido a nadie)
+        if ($this->soloASuNombre($actor) && ($actor->getAttributes()['colaborador_id'] ?? null) === null) {
+            throw ValidationException::withMessages(['colaborador_id' => 'Tu usuario no está vinculado a un colaborador: pide a tu administrador que lo vincule en Usuarios para poder solicitar pases.']);
+        }
+        // Renglones vacíos (sin "Equipo") se ignoran, como en SEGCAT
+        $articulos = collect(is_array($entrada['articulos'] ?? null) ? $entrada['articulos'] : [])
+            ->filter(fn ($a) => is_array($a) && trim((string) ($a['equipo'] ?? '')) !== '')
+            ->values()->all();
+        $entrada['articulos'] = $articulos;
+        foreach (['destino_direccion', 'destino_telefono'] as $campo) {
+            if (isset($entrada[$campo]) && is_string($entrada[$campo])) {
+                $entrada[$campo] = trim($entrada[$campo]);
+            }
+        }
+
+        $datos = Validator::make($entrada, [
+            'sede_id' => ['required', 'integer'],
+            'motivo' => ['required', 'string', Rule::in(array_keys(PaseSalida::MOTIVOS))],
+            'colaborador_id' => ['required', 'integer'],
+            'destino_tipo' => ['required', 'string', Rule::in(array_keys(PaseSalida::DESTINOS))],
+            'sede_destino_id' => ['nullable', 'required_if:destino_tipo,sede', 'integer'],
+            'proveedor_id' => ['nullable', 'required_if:destino_tipo,proveedor', 'integer'],
+            'colaborador_destino_id' => ['nullable', 'required_if:destino_tipo,colaborador', 'integer'],
+            'destino_direccion' => ['nullable', 'string', 'max:255'],
+            'destino_telefono' => ['nullable', 'string', 'regex:'.self::TELEFONO],
+            'fecha_salida_programada' => ['nullable', 'date_format:Y-m-d'],
+            'fecha_tentativa_regreso' => ['nullable', 'date_format:Y-m-d',
+                ...(is_string($entrada['fecha_salida_programada'] ?? null) && $entrada['fecha_salida_programada'] !== '' ? ['after_or_equal:fecha_salida_programada'] : [])],
+            'articulos' => ['required', 'array', 'max:'.self::MAX_ARTICULOS],
+            'articulos.*.cantidad' => ['required', 'integer', 'min:1', 'max:9999'],
+            'articulos.*.equipo' => ['required', 'string', 'max:150'],
+            'articulos.*.marca' => ['nullable', 'string', 'max:100'],
+            'articulos.*.modelo' => ['nullable', 'string', 'max:100'],
+            'articulos.*.serie' => ['nullable', 'string', 'max:100'],
+            'articulos.*.descripcion' => ['nullable', 'string', 'max:500'],
+            'articulos.*.equipo_id' => ['nullable', 'integer'],
+            'articulos.*.valor' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+        ], [
+            'sede_id.required' => 'Elige la sede de origen (de donde sale el equipo).',
+            'motivo.required' => 'Elige el motivo de salida.',
+            'motivo.in' => 'Motivo de salida no válido.',
+            'colaborador_id.required' => 'Elige al solicitante: escanea su gafete, busca su nombre o regístralo con «Nuevo Colaborador».',
+            'destino_tipo.required' => 'Elige el tipo de destino.',
+            'destino_tipo.in' => 'Tipo de destino no válido.',
+            'sede_destino_id.required_if' => 'Elige la sede destino.',
+            'proveedor_id.required_if' => 'Elige el proveedor destino (o regístralo con «Nuevo Proveedor»).',
+            'colaborador_destino_id.required_if' => 'Elige el colaborador que se lleva el equipo.',
+            'destino_direccion.max' => 'La dirección de destino admite máximo 255 caracteres.',
+            'destino_telefono.regex' => 'Revisa el teléfono: solo números (7 a 20), con "+" si es de otro país.',
+            'fecha_salida_programada.date_format' => 'La salida programada no es una fecha válida.',
+            'fecha_tentativa_regreso.date_format' => 'El regreso programado no es una fecha válida.',
+            'fecha_tentativa_regreso.after_or_equal' => 'El regreso programado no puede ser antes de la salida programada.',
+            'articulos.required' => 'Agrega al menos un artículo que salga en el pase.',
+            'articulos.max' => 'Un pase admite máximo '.self::MAX_ARTICULOS.' artículos.',
+            'articulos.*.cantidad.required' => 'Escribe la cantidad de cada artículo.',
+            'articulos.*.cantidad.integer' => 'La cantidad debe ser un número entero.',
+            'articulos.*.cantidad.min' => 'La cantidad mínima es 1.',
+            'articulos.*.cantidad.max' => 'Revisa la cantidad: es demasiado alta.',
+            'articulos.*.equipo.max' => 'El nombre del equipo admite máximo 150 caracteres.',
+            'articulos.*.marca.max' => 'La marca admite máximo 100 caracteres.',
+            'articulos.*.modelo.max' => 'El modelo admite máximo 100 caracteres.',
+            'articulos.*.serie.max' => 'El número de serie admite máximo 100 caracteres.',
+            'articulos.*.descripcion.max' => 'La descripción de un artículo admite máximo 500 caracteres.',
+            'articulos.*.valor.numeric' => 'Escribe el valor del artículo en pesos (solo números, por ejemplo 12500).',
+            'articulos.*.valor.min' => 'El valor de un artículo no puede ser negativo.',
+            'articulos.*.valor.max' => 'Revisa el valor del artículo: es demasiado alto.',
+        ])->validate();
+
+        // Sede de origen: activa y dentro de su alcance para crear
+        $origen = $this->sedesOrigen($actor)->firstWhere('id', (int) $datos['sede_id']);
+        if ($origen === null) {
+            throw ValidationException::withMessages(['sede_id' => 'Elige una sede de origen activa en la que puedas registrar pases.']);
+        }
+
+        // Solicitante: cualquier colaborador activo de la empresa (también el corporativo, sin sede)
+        $solicitante = Colaborador::where('activo', true)->whereNull('fusionado_en_id')->find((int) $datos['colaborador_id']);
+        if ($solicitante === null) {
+            throw ValidationException::withMessages(['colaborador_id' => 'Solicitante no válido: búscalo o regístralo antes de continuar.']);
+        }
+        // Quien no puede consultar colaboradores (rol Solicitante) solo pide pases a su nombre
+        if ($this->soloASuNombre($actor) && (int) $solicitante->id !== (int) ($actor->getAttributes()['colaborador_id'] ?? 0)) {
+            throw ValidationException::withMessages(['colaborador_id' => ($actor->getAttributes()['colaborador_id'] ?? null) === null
+                ? 'Tu usuario no está vinculado a un colaborador: pide a tu administrador que lo vincule en Usuarios para poder solicitar pases.'
+                : 'Solo puedes solicitar pases de salida a tu nombre.']);
+        }
+
+        $destino = ['sede_destino_id' => null, 'proveedor_id' => null, 'colaborador_destino_id' => null];
+        switch ($datos['destino_tipo']) {
+            case 'sede':
+                $sedeDestino = (int) $datos['sede_destino_id'];
+                if ($sedeDestino === $origen->id) {
+                    throw ValidationException::withMessages(['sede_destino_id' => 'La sede de destino no puede ser la misma que la sede de origen: elige una distinta.']);
+                }
+                if (! Sede::where('activo', true)->whereKey($sedeDestino)->exists()) {
+                    throw ValidationException::withMessages(['sede_destino_id' => 'Elige una sede destino activa de la empresa.']);
+                }
+                $destino['sede_destino_id'] = $sedeDestino;
+                break;
+            case 'proveedor':
+                if (! Proveedor::where('activo', true)->whereKey((int) $datos['proveedor_id'])->exists()) {
+                    throw ValidationException::withMessages(['proveedor_id' => 'Elige un proveedor activo de la empresa.']);
+                }
+                $destino['proveedor_id'] = (int) $datos['proveedor_id'];
+                break;
+            default:
+                // C-18: «Un colaborador se lo lleva (resguardo personal)» ya no se ofrece: es una responsiva.
+                // Solo se conserva al corregir un pase que ya lo traía.
+                if ($actual?->destino_tipo !== 'colaborador') {
+                    throw ValidationException::withMessages(['destino_tipo' => 'Para que un colaborador se lleve un equipo a su resguardo usa Responsivas (Operación → Responsivas): ahí queda a su cargo con su firma.']);
+                }
+                if (! Colaborador::where('activo', true)->whereNull('fusionado_en_id')->whereKey((int) $datos['colaborador_destino_id'])->exists()) {
+                    throw ValidationException::withMessages(['colaborador_destino_id' => 'Elige el colaborador que se lleva el equipo.']);
+                }
+                $destino['colaborador_destino_id'] = (int) $datos['colaborador_destino_id'];
+        }
+
+        $conRegreso = PaseSalida::requiereRegreso($datos['motivo']);
+
+        // Equipos escaneados: solo se ligan si son de la empresa (si no, se guarda solo el texto)
+        $idsEquipo = collect($datos['articulos'])->pluck('equipo_id')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
+        // El valor de un equipo del padrón es su costo registrado (si lo tiene); si no, el que escribió el solicitante
+        $costos = $idsEquipo === [] ? [] : Equipo::whereIn('id', $idsEquipo)->pluck('costo', 'id')->all();
+        $equiposValidos = array_map('intval', array_keys($costos));
+
+        // C-18: un equipo del padrón sale solo si está DISPONIBLE, es de la sede de origen, va de uno en uno y no está en otro pase abierto
+        $this->exigirEquiposParaPase($datos['articulos'], $origen, $actual);
+
+        $limpio = fn ($v) => ($t = trim((string) preg_replace('/\s+/u', ' ', (string) $v))) === '' ? null : $t;
+        $renglones = array_map(function (array $a) use ($equiposValidos, $costos, $limpio) {
+            $equipo = isset($a['equipo_id']) && in_array((int) $a['equipo_id'], $equiposValidos, true) ? (int) $a['equipo_id'] : null;
+            $capturado = isset($a['valor']) && is_numeric($a['valor']) ? round((float) $a['valor'], 2) : null;
+
+            return [
+                'equipo_id' => $equipo,
+                'valor_unitario' => $equipo !== null && $costos[$equipo] !== null ? round((float) $costos[$equipo], 2) : $capturado,
+                'cantidad' => (int) $a['cantidad'],
+                'equipo' => $limpio($a['equipo']),
+                'marca' => $limpio($a['marca'] ?? null),
+                'modelo' => $limpio($a['modelo'] ?? null),
+                'serie' => $limpio($a['serie'] ?? null),
+                'descripcion' => isset($a['descripcion']) && trim((string) $a['descripcion']) !== '' ? trim((string) $a['descripcion']) : null,
+            ];
+        }, $datos['articulos']);
+
+        return [[
+            'sede_id' => $origen->id,
+            'motivo' => $datos['motivo'],
+            'colaborador_id' => $solicitante->id,
+            'destino_tipo' => $datos['destino_tipo'],
+            ...$destino,
+            'destino_direccion' => ($datos['destino_direccion'] ?? '') !== '' ? $datos['destino_direccion'] : null,
+            'destino_telefono' => ($datos['destino_telefono'] ?? '') !== '' ? $datos['destino_telefono'] : null,
+            'fecha_salida_programada' => $datos['fecha_salida_programada'] ?? null,
+            'fecha_tentativa_regreso' => $conRegreso ? ($datos['fecha_tentativa_regreso'] ?? null) : null,
+        ], $renglones];
+    }
+
+    /** Estados de un pase en que sus equipos del padrón están comprometidos (por salir o fuera). */
+    public const ABIERTOS_CON_EQUIPO = [PaseSalida::PENDIENTE, PaseSalida::RECHAZADO, PaseSalida::APROBADO, ...PaseSalida::FUERA];
+
+    /**
+     * C-18 (GC-04): candados de los equipos del padrón al guardar un pase.
+     *
+     * @param  list<array<string, mixed>>  $articulos
+     */
+    private function exigirEquiposParaPase(array $articulos, Sede $origen, ?PaseSalida $actual): void
+    {
+        $vistos = [];
+        foreach ($articulos as $i => $a) {
+            if (empty($a['equipo_id']) || ! is_numeric($a['equipo_id'])) {
+                continue;
+            }
+            $equipo = Equipo::with('tipo:id,nombre')->find((int) $a['equipo_id']);
+            if ($equipo === null) {
+                continue; // de otra empresa: se guarda solo el texto (como siempre)
+            }
+            $campo = "articulos.{$i}.equipo_id";
+            $nombre = 'El equipo '.$equipo->numero_serie;
+            if (in_array($equipo->id, $vistos, true)) {
+                throw ValidationException::withMessages([$campo => "{$nombre} está dos veces en el pase."]);
+            }
+            $vistos[] = $equipo->id;
+            if ((int) ($a['cantidad'] ?? 1) !== 1) {
+                throw ValidationException::withMessages([$campo => "{$nombre} es una sola pieza del padrón: su cantidad debe ser 1."]);
+            }
+            if ((int) $equipo->sede_id !== (int) $origen->id) {
+                throw ValidationException::withMessages([$campo => "{$nombre} es de otra sede: solo salen equipos de {$origen->nombre}."]);
+            }
+            $otro = PaseSalidaArticulo::query()->where('equipo_id', $equipo->id)
+                ->when($actual !== null, fn ($q) => $q->where('pase_salida_id', '!=', $actual->id))
+                ->whereColumn('cantidad_regresada', '<', 'cantidad')
+                ->whereHas('pase', fn ($q) => $q->whereIn('estado', self::ABIERTOS_CON_EQUIPO))
+                ->with('pase:id,folio')->first();
+            if ($otro !== null) {
+                throw ValidationException::withMessages([$campo => "{$nombre} ya está en el pase {$otro->pase?->folio}, que sigue abierto."]);
+            }
+            if ($equipo->estado !== EstadoActivo::DISPONIBLE) {
+                throw ValidationException::withMessages([$campo => "{$nombre} no está DISPONIBLE (está ".EstadoActivo::texto($equipo->estado).'). '
+                    .(in_array($equipo->estado, EstadoActivo::EN_RESGUARDO, true) ? 'Primero recíbelo en Responsivas.' : 'Solo sale un equipo disponible.')]);
+            }
+        }
+    }
+
+    /**
+     * C-18: lo que el pase hace con los equipos del padrón en cada paso.
+     *  - salida: FUERA; en venta o traspaso definitivo (no regresan) se cierra
+     *    aquí: venta → BAJA sin voucher; traspaso a otra sede → DISPONIBLE en la sede destino.
+     *  - regreso: los que regresan vuelven a DISPONIBLE; con «Cerrar con
+     *    faltantes» los que no regresaron quedan NO REGRESÓ (o BAJA sin cobro
+     *    si eran de consignación) y se ofrece su voucher.
+     *
+     * @param  array<int, int>  $regresan  id del artículo => cantidad
+     * @return list<string> números de serie que quedaron NO REGRESÓ
+     */
+    private function moverEquipos(User $actor, PaseSalida $pase, string $paso, array $regresan, bool $cerrarConFaltantes): array
+    {
+        $articulos = $pase->articulos()->whereNotNull('equipo_id')->get();
+        $noRegresaron = [];
+        foreach ($articulos as $a) {
+            $equipo = Equipo::whereKey($a->equipo_id)->lockForUpdate()->first();
+            if ($equipo === null || $equipo->estado === EstadoActivo::BAJA) {
+                continue;
+            }
+            $antes = $equipo->estado;
+            $sedeAntes = $equipo->sede_id;
+            $cambios = null;
+            $evento = 'equipos.pase_salida';
+            if ($paso === 'salida' && $equipo->estado === EstadoActivo::DISPONIBLE) {
+                $cambios = match (true) {
+                    $pase->motivo === 'venta' => ['estado' => EstadoActivo::BAJA],
+                    $pase->motivo === 'traspaso_definitivo' && $pase->sede_destino_id !== null => ['estado' => EstadoActivo::DISPONIBLE, 'sede_id' => $pase->sede_destino_id],
+                    $pase->motivo === 'traspaso_definitivo' => ['estado' => EstadoActivo::BAJA],
+                    default => ['estado' => EstadoActivo::FUERA],
+                };
+            } elseif ($paso === 'regreso' && in_array($equipo->estado, [EstadoActivo::FUERA, EstadoActivo::NO_REGRESO], true)) {
+                if (($regresan[$a->id] ?? 0) > 0) {
+                    $cambios = ['estado' => EstadoActivo::DISPONIBLE];
+                } elseif ($cerrarConFaltantes) {
+                    $cambios = ['estado' => $pase->motivo === 'consignacion' ? EstadoActivo::BAJA : EstadoActivo::NO_REGRESO];
+                }
+            }
+            if ($cambios === null) {
+                continue;
+            }
+            $equipo->forceFill($cambios)->save();
+            $this->auditoria->auditar($actor, $evento, $equipo, ['estado' => $antes, 'sede_id' => $sedeAntes],
+                $cambios + ['pase' => $pase->folio, 'motivo' => $cambios['estado'] === EstadoActivo::BAJA ? 'Salida definitiva ('.$pase->folio.')' : null]);
+            if ($cambios['estado'] === EstadoActivo::NO_REGRESO) {
+                $noRegresaron[] = $equipo->numero_serie;
+                app(CustodiaActivos::class)->avisarNoRegreso($equipo, 'equipo', 'equipo '.$equipo->numero_serie,
+                    "El pase {$pase->folio} se cerró sin que regresara.", $actor);
+            } elseif ($antes === EstadoActivo::NO_REGRESO) {
+                app(CustodiaActivos::class)->resolverNoRegreso($equipo, 'equipo');
+            }
+        }
+
+        return $noRegresaron;
+    }
+
+    /**
+     * Lo que se guarda en la bitácora de auditoría.
+     *
+     * @return array<string, mixed>
+     */
+    public function foto(PaseSalida $p): array
+    {
+        return [
+            'folio' => $p->folio,
+            'sede_id' => $p->sede_id,
+            'motivo' => $p->motivo,
+            'requiere_regreso' => $p->requiere_regreso,
+            'colaborador_id' => $p->colaborador_id,
+            'destino_tipo' => $p->destino_tipo,
+            'sede_destino_id' => $p->sede_destino_id,
+            'proveedor_id' => $p->proveedor_id,
+            'colaborador_destino_id' => $p->colaborador_destino_id,
+            'destino_direccion' => $p->destino_direccion,
+            'destino_telefono' => $p->destino_telefono,
+            'fecha_salida_programada' => $p->fecha_salida_programada?->format('Y-m-d'),
+            'fecha_tentativa_regreso' => $p->fecha_tentativa_regreso?->format('Y-m-d'),
+            'estado' => $p->estado,
+            'ronda' => $p->ronda,
+            'articulos' => $p->articulos->map(fn ($a) => $a->resumen())->values()->all(),
+            'valor_total' => $p->valorTotal(),
+            'firmas_caseta' => $p->firmas_caseta,
+        ];
+    }
+}
