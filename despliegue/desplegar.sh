@@ -293,7 +293,9 @@ fi
 if [ "$AMB" = "prod" ]; then
   # Primera linea: "v0.1.0" y, opcionalmente, la huella autorizada: "v0.1.0 sha256:<64 hex>"
   ETIQUETA=""; HUELLA_AUTORIZADA=""
-  read -r ETIQUETA HUELLA_AUTORIZADA _ < <(head -1 "$HOME/desplegar_version.txt" 2>/dev/null | tr -d '\r')
+  # Sin "< <(...)": en el cron del hospedaje (CageFS) no existe /dev/fd y la lectura salia vacia
+  LINEA_VERSION="$(head -1 "$HOME/desplegar_version.txt" 2>/dev/null | tr -d '\r')"
+  read -r ETIQUETA HUELLA_AUTORIZADA _ <<< "$LINEA_VERSION"
   [ -n "$ETIQUETA" ] || { estado "Sin version autorizada (falta desplegar_version.txt)"; exit 0; }
   [[ "$ETIQUETA" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || fallo "desplegar_version.txt debe decir algo como v0.1.0 (dice: ${ETIQUETA:0:40})"
   [ -z "$HUELLA_AUTORIZADA" ] || [[ "$HUELLA_AUTORIZADA" =~ ^sha256:[0-9a-f]{64}$ ]] \
