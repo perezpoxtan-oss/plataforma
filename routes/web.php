@@ -842,9 +842,11 @@ Route::middleware('auth')->group(function () {
     Route::controller('App\Http\Controllers\ImportacionController')->group(function () {
         Route::get('/importar/{tipo}', 'create')->where('tipo', '[a-z0-9_]{1,20}')->name('importaciones.create');
         Route::get('/importar/{tipo}/plantilla', 'plantilla')->where('tipo', '[a-z0-9_]{1,20}')->name('importaciones.plantilla');
-        Route::post('/importar/{tipo}', 'store')->where('tipo', '[a-z0-9_]{1,20}')->name('importaciones.store');
+        // Importar estructura: la estructura actual en el formato de la plantilla (respaldo)
+        Route::get('/importar/{tipo}/exportar', 'exportar')->where('tipo', '[a-z0-9_]{1,20}')->middleware('throttle:importaciones.exportar')->name('importaciones.exportar');
+        Route::post('/importar/{tipo}', 'store')->where('tipo', '[a-z0-9_]{1,20}')->middleware('throttle:importaciones.store')->name('importaciones.store');
         Route::get('/importaciones/{importacion}', 'show')->whereNumber('importacion')->name('importaciones.show');
-        Route::post('/importaciones/{importacion}/guardar', 'aplicar')->whereNumber('importacion')->name('importaciones.aplicar');
+        Route::post('/importaciones/{importacion}/guardar', 'aplicar')->whereNumber('importacion')->middleware('throttle:importaciones.aplicar')->name('importaciones.aplicar');
         // C-43 (A-19): «Crear los que faltan» (departamentos, puestos y turnos que el archivo trae y no existen)
         Route::post('/importaciones/{importacion}/crear-faltantes', 'crearFaltantes')->whereNumber('importacion')->name('importaciones.crear-faltantes');
         Route::get('/importaciones/{importacion}/original', 'original')->whereNumber('importacion')->name('importaciones.original');

@@ -92,6 +92,10 @@ final class Limitadores
         'puestos.duplicado' => 120,
         'turnos.duplicado' => 120,
         'usuarios.duplicado' => 120,
+        // Importar desde Excel e Importar estructura: archivos de hasta 5,000 renglones
+        'importaciones.store' => 10,
+        'importaciones.aplicar' => 10,
+        'importaciones.exportar' => 10,
     ];
 
     public static function registrar(): void

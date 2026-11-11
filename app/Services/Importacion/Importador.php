@@ -58,6 +58,56 @@ abstract class Importador
         return true;
     }
 
+    /** Máximo de filas por archivo (Estructura admite más que los padrones). */
+    public function maxFilas(): int
+    {
+        return AdministradorImportaciones::MAX_FILAS;
+    }
+
+    /**
+     * Todo o nada: al guardar, si una sola fila falla no se guarda ninguna
+     * (Estructura). Los padrones guardan las buenas y reportan las demás.
+     */
+    public function todoONada(): bool
+    {
+        return false;
+    }
+
+    /** ¿La plantilla se descarga como libro de Excel (.xlsx) con instrucciones? */
+    public function plantillaXlsx(): bool
+    {
+        return false;
+    }
+
+    /** ¿Tiene «Descargar lo que ya hay» en el mismo formato de la plantilla? */
+    public function exportable(): bool
+    {
+        return false;
+    }
+
+    /** ¿Puede dar de alta algo con este archivo? (si no, las filas nuevas son error) */
+    public function puedeCrear(User $actor): bool
+    {
+        return $actor->can($this->modulo().'.crear');
+    }
+
+    /** Qué se creó con la última fila guardada («Se crea: Torre A › Piso 1 › 101.»). */
+    public function detalleCreado(): string
+    {
+        return '';
+    }
+
+    /**
+     * Datos extra del resumen de la corrida (por ejemplo, cuántas sedes,
+     * zonas y habitaciones se crean).
+     *
+     * @return array<string, mixed>
+     */
+    public function resumenExtra(): array
+    {
+        return [];
+    }
+
     /** Lo que se dice de un registro que ya existe («Ya existe: Juan Pérez»). */
     public function describir(Model $registro): string
     {
