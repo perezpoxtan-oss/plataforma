@@ -51,6 +51,8 @@ class AdministradorImportaciones
         'proveedores' => ImportadorProveedores::class,
         'vehiculos' => ImportadorVehiculos::class,
         'zonas' => ImportadorZonas::class,
+        // Importar estructura (docs/tecnico/importar-estructura.md): sedes, zonas, pisos, habitaciones y áreas
+        'estructura' => ImportadorEstructura::class,
     ];
 
     public function __construct(
@@ -122,8 +124,8 @@ class AdministradorImportaciones
             if ($datos['filas'] === []) {
                 throw new ArchivoNoValido('El archivo no trae datos: solo el renglón de encabezados. Copia tus datos desde el renglón 2.');
             }
-            if (count($datos['filas']) > self::MAX_FILAS) {
-                throw new ArchivoNoValido('El archivo trae '.number_format(count($datos['filas'])).' filas y el máximo es '.number_format(self::MAX_FILAS)
+            if (count($datos['filas']) > $importador->maxFilas()) {
+                throw new ArchivoNoValido('El archivo trae '.number_format(count($datos['filas'])).' filas y el máximo es '.number_format($importador->maxFilas())
                     .' por archivo. Divídelo en varios archivos y súbelos uno por uno.');
             }
         } catch (ArchivoNoValido $e) {
@@ -142,7 +144,7 @@ class AdministradorImportaciones
                 'formato' => $formato,
                 'total_filas' => count($datos['filas']),
                 'filas' => $filas,
-                'resumen' => $this->contar($filas) + ['ignoradas' => $datos['ignoradas']],
+                'resumen' => $this->contar($filas) + ['ignoradas' => $datos['ignoradas']] + $importador->resumenExtra(),
             ]);
         });
     }
@@ -231,6 +233,12 @@ class AdministradorImportaciones
             $existentes = 'omitir';
         }
 
+        // Todo o nada (Estructura): con errores en la vista previa no se guarda ninguna fila
+        if ($importador->todoONada() && (int) ($importacion->resumen['error'] ?? 0) > 0) {
+            throw ValidationException::withMessages(['archivo' => 'No se guardó nada: el archivo tiene '.$importacion->resumen['error']
+                .' '.((int) $importacion->resumen['error'] === 1 ? 'fila con error' : 'filas con error').'. Corrígelas en tu archivo y súbelo de nuevo.']);
+        }
+
         // Una sola vez aunque se toque dos veces el botón
         $tomada = Importacion::whereKey($importacion->id)->where('estado', Importacion::VISTA_PREVIA)->update(['estado' => 'guardando']);
         if ($tomada !== 1) {
@@ -241,6 +249,19 @@ class AdministradorImportaciones
             $valores = $this->tenant->conEmpresa($empresaId, fn () => $this->valoresDe($actor, $importacion));
             $filas = collect($valores)->map(fn ($v, $n) => ['fila' => (int) $n, 'valores' => $v])->values()->all();
             $resultado = $this->procesar($actor, $empresaId, $importador, $filas, $existentes, true);
+        } catch (GuardadoCancelado $e) {
+            // Todo o nada: algo cambió desde la vista previa y una fila falló; no se guardó nada
+            $filasPrevia = array_map(fn ($f) => ['estado' => match ($f['estado']) {
+                'creada' => 'nueva', 'omitida', 'actualizada' => 'existe', default => $f['estado'],
+            }] + $f, $e->resultados);
+            $resumen = $this->contar($filasPrevia);
+            Importacion::whereKey($importacion->id)->update([
+                'estado' => Importacion::VISTA_PREVIA,
+                'filas' => json_encode($filasPrevia),
+                'resumen' => json_encode($resumen + ['ignoradas' => $importacion->resumen['ignoradas'] ?? []]),
+            ]);
+            throw ValidationException::withMessages(['archivo' => 'No se guardó nada: '.$resumen['error'].' '
+                .($resumen['error'] === 1 ? 'fila tiene' : 'filas tienen').' error (algo cambió desde la vista previa). Revísalas abajo, corrígelas en tu archivo y súbelo de nuevo.']);
         } catch (\Throwable $e) {
             Importacion::whereKey($importacion->id)->update(['estado' => Importacion::VISTA_PREVIA]);
             throw $e;
@@ -251,7 +272,7 @@ class AdministradorImportaciones
             'estado' => Importacion::APLICADA,
             'existentes' => $existentes,
             'resultado' => $resultado,
-            'resumen' => $resumen + ['ignoradas' => $importacion->resumen['ignoradas'] ?? []],
+            'resumen' => $resumen + ['ignoradas' => $importacion->resumen['ignoradas'] ?? []] + $importador->resumenExtra(),
             'aplicada_en' => now(),
         ])->save();
 
@@ -264,7 +285,7 @@ class AdministradorImportaciones
             'omitidas' => $resumen['omitida'],
             'con_error' => $resumen['error'],
             'ya_existentes' => $existentes,
-        ]);
+        ] + $importador->resumenExtra());
 
         return $importacion;
     }
@@ -283,7 +304,7 @@ class AdministradorImportaciones
         if ($limite > 0 && $limite < 600) {
             @set_time_limit(600);
         }
-        $estado = ['vistas' => [], 'puedeCrear' => $actor->can($importador->modulo().'.crear'),
+        $estado = ['vistas' => [], 'puedeCrear' => $importador->puedeCrear($actor),
             'puedeEditar' => $importador->actualizable() && $actor->can($importador->modulo().'.editar')];
 
         return $this->tenant->conEmpresa($empresaId, function () use ($actor, $empresaId, $importador, $filas, $existentes, $guardar, &$estado) {
@@ -297,6 +318,20 @@ class AdministradorImportaciones
                 } finally {
                     DB::rollBack();
                 }
+
+                return $resultados;
+            }
+
+            if ($importador->todoONada()) {
+                // Una sola transacción: con un error en cualquier fila se deshace todo
+                DB::transaction(function () use ($actor, $empresaId, $importador, $filas, $existentes, &$estado, &$resultados) {
+                    foreach ($filas as $fila) {
+                        $resultados[] = $this->fila($actor, $empresaId, $importador, $fila, $existentes, true, $estado);
+                    }
+                    if (collect($resultados)->contains('estado', 'error')) {
+                        throw new GuardadoCancelado($resultados);
+                    }
+                });
 
                 return $resultados;
             }
@@ -345,7 +380,7 @@ class AdministradorImportaciones
                 }
                 $this->punto(fn () => $importador->crear($actor, $empresaId, $valores));
 
-                return ['estado' => $guardar ? 'creada' : 'nueva'] + $r;
+                return ['estado' => $guardar ? 'creada' : 'nueva', 'mensaje' => $importador->detalleCreado()] + $r;
             }
 
             $descripcion = $importador->describir($existente);
@@ -435,7 +470,7 @@ class AdministradorImportaciones
     {
         return match ($importador->tipo()) {
             'colaboradores' => 'colaboradores', 'personas' => 'personas', 'proveedores' => 'empresas externas',
-            'vehiculos' => 'vehículos', default => 'zonas y edificios',
+            'vehiculos' => 'vehículos', 'estructura' => 'sedes ni zonas', default => 'zonas y edificios',
         };
     }
 

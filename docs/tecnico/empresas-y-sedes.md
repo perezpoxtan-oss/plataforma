@@ -26,6 +26,7 @@ El nombre de la pantalla sale de la terminología del rubro. Por decisión del c
 - **Sin borrado:** las sedes se dan de baja para conservar el historial.
 - **Vocabulario (criterio 4):** en Empresas y Sedes la acción se llama **Dar de baja** / **Reactivar** (botón, `title`, `aria-label`, confirmación y mensaje), el estado **DE BAJA** y el filtro **De baja**, como en el resto de la plataforma. Los eventos de auditoría conservan su clave (`empresas.desactivada`, `sedes.desactivada`).
 - **Auditoría:** `empresas.*` y `sedes.*`, con antes y después.
+- **Importar estructura** (`sedes.importar`): sedes con sus zonas, pisos, habitaciones y áreas desde un archivo; ver [importar-estructura.md](importar-estructura.md).
 
 ## Componentes compartidos nuevos
 

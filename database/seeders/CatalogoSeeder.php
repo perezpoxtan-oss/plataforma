@@ -116,7 +116,8 @@ class CatalogoSeeder extends Seeder
             'direccion' => ['Dirección', 'bi-building-gear', [
                 // «exportar»: todos los datos de la empresa en un archivo (portabilidad; ver docs/tecnico/traslado.md)
                 'empresas' => ['Empresas', 'bi-building', ['exportar']],
-                'sedes' => ['Sedes', 'bi-geo-alt', []],
+                // Importar estructura: sedes, zonas, pisos, habitaciones y áreas desde un archivo
+                'sedes' => ['Sedes', 'bi-geo-alt', ['importar']],
                 // Mejoras estructura (ADR-0016): «área» queda solo para las partes de una habitación
                 'espacios' => ['Zonas y edificios', 'bi-grid-3x3-gap', ['imprimir', 'importar']],
                 'usuarios' => ['Usuarios', 'bi-person-gear', ['desbloquear']],

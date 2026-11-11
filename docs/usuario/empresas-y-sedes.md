@@ -95,6 +95,10 @@ Cada empresa nueva nace con **todos** los módulos. Si una empresa no usa alguno
 
 ![Sedes](img/empresas/2-sedes.png)
 
+### Muchas sedes de una vez
+
+Si vas a dar de alta varias sedes con sus zonas, pisos y habitaciones, toca **Importar estructura** (arriba a la derecha, en **Sedes**) y cárgalas desde un archivo de Excel. Ver [Importar estructura](importar-estructura.md).
+
 ## Cómo editar, dar de baja o reactivar una sede
 
 1. **Editar** (lápiz): corrige los datos y toca **Guardar Cambios**. Verás ««…» actualizada correctamente.»
@@ -147,6 +151,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 ## Relacionado
 
 - [Zonas y edificios](zonas-y-areas.md)
+- [Importar estructura](importar-estructura.md)
 - [Usuarios](usuarios.md)
 - [Configuración](configuracion.md)
 - [Respaldos y traslado a otro servidor](respaldos-y-traslado.md)
