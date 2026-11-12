@@ -1,27 +1,55 @@
 @extends('layouts.app')
 
-@section('titulo', 'Importar '.mb_strtolower($importador->titulo()))
+@section('titulo', $importador->tipo() === 'estructura' ? 'Importar estructura' : 'Importar '.mb_strtolower($importador->titulo()))
 
 @section('contenido')
 <div class="tema-azul pantalla-importar">
     @include('administracion.partes.avisos')
 
+    @if ($importador->tipo() === 'estructura')
+        {{-- Importar estructura: el Super Administrador elige con qué empresa trabaja --}}
+        @include('administracion.partes.selector-empresa')
+    @endif
+
+    @if ($sinEmpresa ?? false)
+        <div class="encabezado-pantalla mb-4">
+            <div class="icono"><i class="bi bi-diagram-3 text-primary" aria-hidden="true"></i></div>
+            <div><h1>Importar estructura</h1><p>Sedes, zonas, pisos, habitaciones y áreas de una empresa desde un archivo de Excel.</p></div>
+        </div>
+        <div class="tarjeta estado-vacio">
+            <div class="icono"><i class="bi bi-buildings" aria-hidden="true"></i></div>
+            <p class="text-muted small m-0">Elige arriba la <strong>empresa de trabajo</strong> a la que vas a cargar su estructura.</p>
+        </div>
+    @else
+    @php
+        $estructura = $importador->tipo() === 'estructura';
+        $especifica = $estructura ? mb_strtolower($importador->especifica()) : '';
+    @endphp
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
         <div class="encabezado-pantalla m-0">
             <div class="icono"><i class="bi bi-file-earmark-arrow-up text-primary" aria-hidden="true"></i></div>
             <div>
-                <h1>Importar desde Excel: {{ $importador->titulo() }}</h1>
-                <p>Carga muchos registros de una vez. Primero ves cómo quedará cada fila; nada se guarda hasta que tocas <strong>Guardar</strong>.</p>
+                @if ($estructura)
+                    <h1>Importar estructura</h1>
+                    <p>Las sedes de <strong>{{ $empresa?->nombre_comercial }}</strong> con sus zonas, pisos, {{ mb_strtolower(\App\Support\Espacios\Etiquetas::plural($importador->especifica())) }} y áreas, desde un solo archivo. Lo que ya existe se usa; nada se borra. Nada se guarda hasta que tocas <strong>Guardar</strong>.</p>
+                @else
+                    <h1>Importar desde Excel: {{ $importador->titulo() }}</h1>
+                    <p>Carga muchos registros de una vez. Primero ves cómo quedará cada fila; nada se guarda hasta que tocas <strong>Guardar</strong>.</p>
+                @endif
             </div>
         </div>
-        <a href="{{ $importador->rutaLista() }}" class="enlace-volver"><i class="bi bi-arrow-left" aria-hidden="true"></i> Volver a {{ $importador->titulo() }}</a>
+        @if ($estructura)
+            <a href="{{ route('sedes.index') }}" class="enlace-volver"><i class="bi bi-arrow-left" aria-hidden="true"></i> Volver a Sedes</a>
+        @else
+            <a href="{{ $importador->rutaLista() }}" class="enlace-volver"><i class="bi bi-arrow-left" aria-hidden="true"></i> Volver a {{ $importador->titulo() }}</a>
+        @endif
     </div>
 
     @include('importaciones._pasos', ['actual' => 1])
 
     @unless ($puedeCrear)
         <div class="alert alert-warning small" role="status"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>
-            Tu rol no puede dar de alta {{ mb_strtolower($importador->titulo()) }}: las filas nuevas saldrán con error.
+            Tu rol no puede dar de alta {{ $estructura ? 'sedes ni zonas' : mb_strtolower($importador->titulo()) }}: las filas nuevas saldrán con error.
             @if ($puedeEditar) Sí puedes actualizar los que ya existen. @endif
         </div>
     @endunless
@@ -30,8 +58,18 @@
         <div class="col-lg-5">
             <section class="tarjeta p-4 h-100" aria-labelledby="t-plantilla">
                 <h2 id="t-plantilla" class="h5 fw-bold mb-2"><span class="numero-paso">1</span>Descarga la plantilla</h2>
-                <p class="small text-muted">Ábrela en Excel, borra la fila de ejemplo y copia tus datos debajo de los encabezados (una fila por {{ $importador->registro() }}). Las columnas con <strong>*</strong> son obligatorias; las demás las puedes dejar vacías y completarlas después.</p>
-                <a href="{{ route('importaciones.plantilla', $importador->tipo()) }}" class="btn-importar-descarga"><i class="bi bi-download" aria-hidden="true"></i> Descargar plantilla</a>
+                @if ($estructura)
+                    <p class="small text-muted">Es un libro de Excel con dos hojas: <strong>Estructura</strong> (con ejemplos ficticios que borras) e <strong>Instrucciones</strong>. Escribe un renglón por lugar con su camino completo: sede, zona, piso, {{ $especifica }} y área. Solo <strong>Sede</strong> es obligatoria; la ciudad y el estado, solo si la sede es nueva.</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ route('importaciones.plantilla', $importador->tipo()) }}" class="btn-importar-descarga"><i class="bi bi-download" aria-hidden="true"></i> Descargar plantilla</a>
+                        @can('espacios.ver')
+                            <a href="{{ route('importaciones.exportar', $importador->tipo()) }}" class="btn-importar-descarga secundario" title="La estructura que ya tienes, en el mismo formato: sirve de respaldo y para agregarle renglones"><i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i> Descargar lo que ya hay</a>
+                        @endcan
+                    </div>
+                @else
+                    <p class="small text-muted">Ábrela en Excel, borra la fila de ejemplo y copia tus datos debajo de los encabezados (una fila por {{ $importador->registro() }}). Las columnas con <strong>*</strong> son obligatorias; las demás las puedes dejar vacías y completarlas después.</p>
+                    <a href="{{ route('importaciones.plantilla', $importador->tipo()) }}" class="btn-importar-descarga"><i class="bi bi-download" aria-hidden="true"></i> Descargar plantilla</a>
+                @endif
                 <p class="small text-muted mt-3 mb-2">Con lo que reconocemos si ya existe: <strong>{{ $importador->nombreClave() }}</strong>.</p>
 
                 <details class="importar-columnas mt-2">
@@ -64,7 +102,8 @@
                     <input type="file" id="archivo" name="archivo" class="campo" accept=".xlsx,.csv,.txt" required>
                     <button type="submit" class="btn-azul boton-importar mt-3"><i class="bi bi-eye me-1" aria-hidden="true"></i>Revisar archivo</button>
                 </form>
-                <p class="small text-muted mt-3 mb-0"><i class="bi bi-shield-check me-1" aria-hidden="true"></i>Al revisar no se guarda nada: verás cada fila marcada como <strong>Nueva</strong>, <strong>Ya existe</strong> o <strong>Con error</strong> y decides antes de guardar.</p>
+                <p class="small text-muted mt-3 mb-0"><i class="bi bi-shield-check me-1" aria-hidden="true"></i>Al revisar no se guarda nada: verás cada fila marcada como <strong>Nueva</strong>, <strong>Ya existe</strong> o <strong>Con error</strong> y decides antes de guardar.
+                    @if ($estructura) Si una fila tiene error, no se guarda ninguna: corriges el archivo y lo subes de nuevo. @endif</p>
             </section>
         </div>
     </div>
@@ -84,7 +123,11 @@
                                 <td class="text-break">{{ $anterior->archivo_nombre }}</td>
                                 <td>
                                     @if ($anterior->aplicada())
+                                        @if ($estructura)
+                                            {{ ucfirst(\App\Http\Controllers\ImportacionController::loQueSeCrea($importador, $r['crea'] ?? [])) }} · {{ ($r['omitida'] ?? 0) }} ya existían
+                                        @else
                                         {{ ($r['creada'] ?? 0) }} nuevos · {{ ($r['actualizada'] ?? 0) }} actualizados · {{ ($r['omitida'] ?? 0) }} sin cambios · {{ ($r['error'] ?? 0) }} con error
+                                        @endif
                                     @else
                                         <span class="text-muted">Sin guardar (vista previa)</span>
                                     @endif
@@ -96,6 +139,7 @@
                 </table>
             </div>
         </section>
+    @endif
     @endif
 </div>
 @endsection

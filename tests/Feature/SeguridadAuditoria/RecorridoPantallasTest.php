@@ -161,7 +161,7 @@ class RecorridoPantallasTest extends TestCase
                 // Privacidad: el aviso de cada empresa y su formulario ARCO son públicos a propósito (como la bolsa de trabajo)
                 && ! in_array($ruta->getName(), ['privacidad.aviso', 'privacidad.empresa.solicitud'], true)
                 // Importar desde Excel: {tipo} es el módulo (colaboradores, zonas…), no un registro
-                && ! in_array($ruta->getName(), ['importaciones.create', 'importaciones.plantilla'], true);
+                && ! in_array($ruta->getName(), ['importaciones.create', 'importaciones.plantilla', 'importaciones.exportar'], true);
             foreach ($this->urlsDe($ruta) as [$url, $json]) {
                 $visitas++;
                 $this->app['auth']->forgetGuards();
@@ -410,6 +410,8 @@ class RecorridoPantallasTest extends TestCase
             'catalogo-comercial.promociones.editar' => DB::table('promociones')->orderBy('id')->limit(1)->pluck('id')->map(fn ($id) => ['id' => $id])->all(),
             // Importar desde Excel: cada módulo y las importaciones de la demo (si hay)
             'importaciones.create', 'importaciones.plantilla' => array_map(fn ($t) => ['tipo' => $t], array_keys(AdministradorImportaciones::TIPOS)),
+            // Importar estructura: exportar solo existe para «estructura»
+            'importaciones.exportar' => [['tipo' => 'estructura']],
             'importaciones.show', 'importaciones.original', 'importaciones.resultado' => DB::table('importaciones')->where('empresa_id', $e)->orderBy('id')->limit(2)
                 ->pluck('id')->map(fn ($id) => ['importacion' => $id])->all(),
             // Reservas de áreas: cada reserva de la demo (confirmada al momento, por aprobar y con cliente), su hoja, edición y las áreas

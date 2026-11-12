@@ -72,7 +72,26 @@
         </section>
     @endif
 
-    @if (! $aplicada)
+    @if (! $aplicada && $importador->todoONada())
+        {{-- Importar estructura: todo o nada --}}
+        @php $loQueSeCrea = \App\Http\Controllers\ImportacionController::loQueSeCrea($importador, $conteo['crea'] ?? []); @endphp
+        <section class="tarjeta p-4 mb-4" aria-labelledby="t-guardar">
+            <h2 id="t-guardar" class="h5 fw-bold mb-2"><span class="numero-paso">3</span>Guarda la estructura</h2>
+            @if (($conteo['error'] ?? 0) > 0)
+                <p class="small fw-bold mb-1"><i class="bi bi-exclamation-circle me-1 text-danger" aria-hidden="true"></i>No se puede guardar: {{ $conteo['error'] }} {{ $conteo['error'] === 1 ? 'fila tiene' : 'filas tienen' }} error.</p>
+                <p class="small text-muted mb-0">Para no dejar la estructura a medias, se guarda todo o nada. Toca <strong>Con error</strong> arriba para verlas, corrígelas en tu archivo y súbelo de nuevo.</p>
+            @elseif ($porGuardar > 0)
+                <p class="small mb-3">Todavía no se ha guardado nada. Al guardar se crea: <strong>{{ $loQueSeCrea }}</strong>.
+                    @if (($conteo['existe'] ?? 0) > 0) Las {{ $conteo['existe'] }} filas que ya existen se dejan igual. @endif</p>
+                <form action="{{ route('importaciones.aplicar', $importacion) }}" method="POST">
+                    @csrf
+                    <button type="submit" class="btn-azul boton-importar"><i class="bi bi-check-lg me-1" aria-hidden="true"></i>Guardar</button>
+                </form>
+            @else
+                <p class="small fw-bold mb-0"><i class="bi bi-check2-circle me-1 text-success" aria-hidden="true"></i>Todo lo del archivo ya existe: no hay nada nuevo que guardar.</p>
+            @endif
+        </section>
+    @elseif (! $aplicada)
         <section class="tarjeta p-4 mb-4" aria-labelledby="t-guardar">
             <h2 id="t-guardar" class="h5 fw-bold mb-2"><span class="numero-paso">3</span>Guarda lo que está bien</h2>
             <p class="small text-muted mb-3">Todavía no se ha guardado nada.
@@ -103,9 +122,13 @@
     @else
         <section class="tarjeta p-4 mb-4" aria-labelledby="t-resultado">
             <h2 id="t-resultado" class="h5 fw-bold mb-2"><i class="bi bi-check2-circle me-2 text-success" aria-hidden="true"></i>Así quedó</h2>
+            @if ($importador->todoONada())
+                <p class="small mb-3">Se creó: <strong>{{ \App\Http\Controllers\ImportacionController::loQueSeCrea($importador, $conteo['crea'] ?? []) }}</strong> · {{ $conteo['omitida'] ?? 0 }} {{ ($conteo['omitida'] ?? 0) === 1 ? 'fila ya existía' : 'filas ya existían' }} y se dejaron igual.</p>
+            @else
             <p class="small mb-3">{{ $conteo['creada'] ?? 0 }} nuevos · {{ $conteo['actualizada'] ?? 0 }} actualizados · {{ $conteo['omitida'] ?? 0 }} sin cambios (ya existían) · {{ $conteo['error'] ?? 0 }} con error.</p>
+            @endif
             <div class="d-flex flex-wrap gap-2">
-                <a href="{{ $importador->rutaLista() }}" class="btn-importar-descarga"><i class="bi bi-arrow-right" aria-hidden="true"></i> Ir a {{ $importador->titulo() }}</a>
+                <a href="{{ $importador->rutaLista() }}" class="btn-importar-descarga"><i class="bi bi-arrow-right" aria-hidden="true"></i> Ir a {{ $importador->todoONada() ? 'Zonas y edificios' : $importador->titulo() }}</a>
                 <a href="{{ route('importaciones.resultado', $importacion) }}" class="btn-importar-descarga secundario"><i class="bi bi-download" aria-hidden="true"></i> Descargar resultado</a>
                 @if ($puedeOriginal)
                     <a href="{{ route('importaciones.original', $importacion) }}" class="btn-importar-descarga secundario"><i class="bi bi-file-earmark" aria-hidden="true"></i> Descargar archivo original</a>

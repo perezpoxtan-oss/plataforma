@@ -27,6 +27,8 @@ resumen: Cargar de una vez colaboradores, personas, empresas externas, vehículo
 | Padrón vehicular | **Padrones → Padrón vehicular** | Placas |
 | Zonas y edificios | **Estructura → Zonas y edificios** | Sede + zona + piso + habitación |
 
+Para cargar **sedes completas** (la sede con sus zonas, pisos, habitaciones y las áreas de cada habitación) en un solo archivo, usa **Estructura → Sedes → Importar estructura**: ver [Importar estructura](importar-estructura.md).
+
 ## Cómo descargar la plantilla
 
 1. Entra a la lista que vas a llenar, por ejemplo **Estructura → Colaboradores**.
@@ -139,6 +141,7 @@ Si al revisar un archivo de **colaboradores** hay filas con error porque su depa
 
 ## Relacionado
 
+- [Importar estructura](importar-estructura.md)
 - [Configura tu empresa](configura-tu-empresa.md)
 - [Colaboradores](colaboradores.md)
 - [Padrón de personas](personas.md)

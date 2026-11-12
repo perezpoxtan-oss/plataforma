@@ -33,12 +33,20 @@
                     <p>{{ $plural }} de {{ $empresa->nombre_comercial }}.</p>
                 </div>
             </div>
-            @if ($sedes->count() > 1)
-                <div class="buscador">
-                    <i class="bi bi-search" aria-hidden="true"></i>
-                    <input type="search" placeholder="Buscar por nombre, código o ciudad..." aria-label="Buscar {{ mb_strtolower($plural) }}" data-filtro-texto="sedes">
-                </div>
-            @endif
+            <div class="barra-filtros justify-content-md-end">
+                @if ($sedes->count() > 1)
+                    <div class="buscador">
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                        <input type="search" placeholder="Buscar por nombre, código o ciudad..." aria-label="Buscar {{ mb_strtolower($plural) }}" data-filtro-texto="sedes">
+                    </div>
+                @endif
+                {{-- Importar estructura: sedes, zonas, pisos, habitaciones y áreas desde un archivo --}}
+                @can('sedes.importar')
+                    <a href="{{ route('importaciones.create', 'estructura') }}" class="btn-importar" title="Cargar sedes con sus zonas, pisos, {{ mb_strtolower(\App\Support\Espacios\Etiquetas::plural($empresa->rubro?->terminologia['area_especifica'] ?? 'Habitación')) }} y áreas desde un archivo de Excel">
+                        <i class="bi bi-diagram-3" aria-hidden="true"></i><span>Importar estructura</span>
+                    </a>
+                @endcan
+            </div>
         </div>
 
         @if ($sedes->count() > 1)

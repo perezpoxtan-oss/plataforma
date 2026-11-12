@@ -62,6 +62,10 @@ Petición del dueño (prioridad alta antes de Producción): cargar desde archivo
 7. «Qué va en cada columna» va plegado; la pantalla muestra lo común (descargar, subir, revisar).
 8. Solo las columnas con * son obligatorias (las mismas del alta corta); lo demás se completa después en la ficha.
 
+## Importar estructura
+
+Tipo `estructura` (`ImportadorEstructura`, permiso `sedes.importar`): sedes con zonas, pisos, habitaciones y áreas en un solo archivo, todo o nada, hasta 5,000 renglones, plantilla .xlsx y exportar. A diferencia de los padrones, **sí crea sedes** (con `Limites::exigirSede`). Ver [importar-estructura.md](importar-estructura.md). Los ganchos de `Importador` (`maxFilas`, `todoONada`, `plantillaXlsx`, `exportable`, `puedeCrear`, `detalleCreado`, `resumenExtra`) tienen valores por omisión que dejan igual a los demás tipos. `importaciones.store` e `importaciones.aplicar` tienen ahora límite de 10 por minuto.
+
 ## Agregar otro módulo
 
 1. Crear `ImportadorX extends Importador` (columnas, clave, existente, crear/actualizar llamando al servicio del módulo, editable).
