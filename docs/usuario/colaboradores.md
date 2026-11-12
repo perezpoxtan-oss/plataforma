@@ -61,7 +61,7 @@ resumen: Directorio del personal de la empresa, sus sedes, lo que registra la ca
 
 Si vas a cargar toda tu plantilla de personal, no la captures uno por uno:
 
-1. Toca **Importar** (arriba, junto al buscador).
+1. Toca **Importar** (arriba a la derecha, junto al título; los filtros y el buscador quedan en el renglón de abajo).
 2. Toca **Descargar plantilla**, llénala en Excel (una fila por colaborador; el **Número de empleado**, el **Nombre(s)** y el **Apellido paterno** son obligatorios) y guárdala.
 3. Toca **Elegir archivo**, elige tu archivo y toca **Revisar archivo**.
 4. Revisa la vista previa (**Nueva**, **Ya existe** o **Con error**, con el motivo en la celda) y toca **Guardar**.

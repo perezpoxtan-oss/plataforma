@@ -32,7 +32,7 @@ Para cargar **sedes completas** (la sede con sus zonas, pisos, habitaciones y la
 ## Cómo descargar la plantilla
 
 1. Entra a la lista que vas a llenar, por ejemplo **Estructura → Colaboradores**.
-2. Toca **Importar** (arriba, junto al buscador).
+2. Toca **Importar** (arriba a la derecha de la lista; en Colaboradores está junto al título, con **Credenciales** y **Exportar a Excel**).
 
 ![Botón Importar en la lista](img/importar-desde-excel/00-boton.png)
 
