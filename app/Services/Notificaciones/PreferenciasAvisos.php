@@ -54,7 +54,7 @@ class PreferenciasAvisos
         'alta_por_verificar' => 'altas', 'alta_rechazada' => 'altas',
         'solicitud_compra' => 'plataforma_solicitudes', 'cliente_por_revisar' => 'plataforma_clientes', 'suscripcion_aviso' => 'suscripcion',
         'reserva_por_aprobar' => 'reservas', 'reserva_recordatorio' => 'reservas', 'reserva_escalada' => 'reservas', 'reserva_rechazada' => 'reservas',
-        'reserva_cambio' => 'reservas', 'reserva_orden' => 'reservas',
+        'reserva_cambio' => 'reservas', 'reserva_orden' => 'reservas', 'reserva_bloqueada' => 'reservas',
         'reloj_recordatorio' => 'el renglón del asunto',
         'novedad_departamento' => 'novedades_departamento', // C-28
         'acceso_articulos' => 'articulos_caseta', // Etapa 6 (C-19)
@@ -169,6 +169,8 @@ class PreferenciasAvisos
         'reserva_orden' => ['Reservas de áreas', 'Llegó, cambió o se canceló una orden de servicio de tu departamento', ['reservas.ver', 'reservas.crear']],
         'reserva_orden_sin_quien' => ['Reservas de áreas', 'Una orden de servicio no tiene quien la atienda (siempre llega)', ['reservas.configurar']],
         'reserva_orden_lista' => ['Reservas de áreas', 'Un departamento tiene listo su servicio para una reserva', ['reservas.crear']],
+        'reserva_bloqueada' => ['Reservas de áreas', 'Un bloqueo afecta tu reserva o reservas de un área que te toca', ['reservas.ver', 'reservas.crear']],
+        'reserva_bloqueo_quitado' => ['Reservas de áreas', 'Se quitó el bloqueo que afectaba tu reserva', ['reservas.crear']],
     ];
 
     /**

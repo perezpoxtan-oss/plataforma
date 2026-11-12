@@ -370,7 +370,7 @@ class RolesPlantillaSeeder extends Seeder
      * roles existentes. rol => [acciones, alcance].
      */
     public const RESERVAS = [
-        'Administrador' => [['ver', 'crear', 'aprobar', 'configurar', 'exportar', 'imprimir'], Alcance::Empresa],
+        'Administrador' => [['ver', 'crear', 'aprobar', 'configurar', 'exportar', 'imprimir', 'bloquear'], Alcance::Empresa],
         'Director' => [['ver'], Alcance::Empresa],
         'Recursos Humanos' => [['ver', 'crear', 'imprimir'], Alcance::Sede],
         'Jefe de seguridad' => [['ver', 'crear', 'imprimir'], Alcance::Sede],

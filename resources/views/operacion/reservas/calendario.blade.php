@@ -50,6 +50,24 @@
             </select>
         </form>
 
+        @if ($quienes)
+            {{-- Calendario de una sala: quién responde por ella y quién es el responsable general --}}
+            <div class="res-quienes mb-3">
+                <span><i class="bi bi-person-check text-success me-1" aria-hidden="true"></i><strong>Responsable de {{ $mostrar->first()->nombre() }}:</strong>
+                    {{ $quienes['responsable'] ?? 'sin asignar' }}@if ($quienes['suplente']) · suplente {{ $quienes['suplente'] }}@endif
+                    @unless ($quienes['propio'])<span class="res-meta">(el general, porque la sala no tiene uno propio)</span>@endunless
+                </span>
+                <span><i class="bi bi-person-badge me-1" aria-hidden="true"></i><strong>Responsable general de reservas:</strong>
+                    {{ $quienes['general'] ?? 'sin asignar' }}@if ($quienes['general_suplente']) · suplente {{ $quienes['general_suplente'] }}@endif</span>
+                @if ($puedeBloquear)
+                    <a href="{{ route('reservas.bloqueos.create', ['area' => $area, 'fecha' => $fecha->toDateString()]) }}" class="btn-secundario-rh ms-md-auto"><i class="bi bi-lock me-1" aria-hidden="true"></i>Bloquear este sitio</a>
+                @endif
+            </div>
+            @if (collect($dias)->contains(fn ($d) => $d['huecos'] !== []))
+                <p class="res-meta mb-2"><i class="bi bi-hand-index me-1" aria-hidden="true"></i>Toca una hora libre para reservarla.</p>
+            @endif
+        @endif
+
         @if ($mostrar->isEmpty())
             <div class="tarjeta estado-vacio">
                 <div class="icono"><i class="bi bi-door-closed" aria-hidden="true"></i></div>
@@ -74,11 +92,20 @@
                                 <a href="{{ route('reservas.create', ['area' => $a->id, 'fecha' => $dia['fecha']->toDateString()]) }}" class="btn-secundario-rh"><i class="bi bi-calendar-plus me-1" aria-hidden="true"></i>Reservar aquí</a>
                             @endif
                         </div>
+                        @php $suyosBloqueos = $dia['bloqueos']->filter(fn ($b) => in_array($a->id, $b['areas'], true)); @endphp
+                        @foreach ($suyosBloqueos as $b)
+                            @include('operacion.reservas._bloqueo', ['b' => $b, 'conSitio' => $b['sitio'] !== $a->nombre()])
+                        @endforeach
                         @forelse ($suyos as $e)
                             @include('operacion.reservas._evento', ['e' => $e])
                         @empty
-                            <p class="res-meta m-0"><i class="bi bi-check-circle text-success" aria-hidden="true"></i> Libre todo el día.</p>
+                            @if ($suyosBloqueos->isEmpty())
+                                <p class="res-meta m-0"><i class="bi bi-check-circle text-success" aria-hidden="true"></i> Libre todo el día.</p>
+                            @endif
                         @endforelse
+                        @if ($area !== null && $dia['huecos'] !== [])
+                            @include('operacion.reservas._huecos', ['a' => $a, 'clave' => $dia['fecha']->toDateString(), 'huecos' => $dia['huecos']])
+                        @endif
                     </section>
                 @endforeach
             </div>
@@ -101,9 +128,15 @@
                                 <a href="{{ route('reservas.create', array_filter(['area' => $area ?? (count($puedeReservar) === 1 ? $puedeReservar[0] : null), 'fecha' => $clave])) }}" class="res-reservar-aqui" aria-label="Reservar el {{ $dia['fecha']->format('d/m') }}"><i class="bi bi-plus-circle" aria-hidden="true"></i> Reservar</a>
                             @endif
                         </div>
+                        @foreach ($dia['bloqueos'] as $b)
+                            @include('operacion.reservas._bloqueo', ['b' => $b, 'conSitio' => $area === null || $b['sitio'] !== $mostrar->first()?->nombre()])
+                        @endforeach
                         @foreach ($dia['eventos'] as $e)
                             @include('operacion.reservas._evento', ['e' => $e, 'conArea' => $area === null])
                         @endforeach
+                        @if ($area !== null && $dia['huecos'] !== [])
+                            @include('operacion.reservas._huecos', ['a' => $mostrar->first(), 'clave' => $clave, 'huecos' => $dia['huecos']])
+                        @endif
                     </div>
                 @endforeach
             </div>
@@ -113,6 +146,7 @@
                 <span style="--res-color:#15803d">Confirmada</span>
                 <span style="--res-color:#d97706">Por aprobar o con cambio pedido</span>
                 <span style="--res-color:#94a3b8">Ocupada (reserva de otra persona)</span>
+                <span class="res-leyenda-bloqueo">Bloqueado (nadie puede reservar)</span>
                 <span>El horario ocupado incluye el montaje y desmontaje del área.</span>
             </div>
         @endif

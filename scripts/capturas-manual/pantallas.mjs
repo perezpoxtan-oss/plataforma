@@ -1042,6 +1042,20 @@ const reservas = [
     { archivo: 'reservas/orden-impresion.png', cuenta: 'admin', url: '/reservas/mis-reservas', antes: async (h) => { await h.enlaceDe('/reservas/', 'Congreso regional'); await h.ir(new URL(h.p.url()).pathname + '/imprimir'); },
         recorte: async (h, ruta) => { await h.p.locator(':is(.hoja, article, section, main > div)').filter({ hasText: 'Orden de evento' }).filter({ hasNotText: 'Imprimir' }).first().screenshot({ path: ruta }); } },
     // Al final: quitan un área de reservas
+    // Bloqueos (preparar.php deja uno en la Sala de juntas Ceiba) y el calendario de la sala con sus horas libres
+    { archivo: 'reservas/bloqueos.png', cuenta: 'admin', url: '/reservas/bloqueos', vista: 'alto' },
+    { archivo: 'reservas/calendario-bloqueo.png', cuenta: 'admin', url: '/reservas/bloqueos', vista: 'alto', antes: async (h) => { await h.enlaceDe('/reservas/calendario', 'Mantenimiento del aire'); } },
+    { archivo: 'reservas/calendario-horas-libres.png', cuenta: 'admin', url: '/reservas/bloqueos', vista: 'alto',
+        antes: async (h) => { await h.enlaceDe('/reservas/calendario', 'Mantenimiento del aire'); const u = new URL(h.p.url()); await h.ir(u.pathname + u.search + '&vista=dia'); } },
+    { archivo: 'reservas/bloqueo-formulario.png', cuenta: 'admin', url: '/reservas/bloqueos/nuevo', vista: { width: 1366, height: 1100 },
+        antes: async (h) => {
+            await h.p.locator('[name=reserva_area_id]').evaluate((s) => { const o = [...s.options].find((x) => x.text.includes('Salón Maya')); if (o) { s.value = o.value; s.dispatchEvent(new Event('change', { bubbles: true })); } });
+            // El día de la «Capacitación anual» de los datos de ejemplo (8 días hábiles después), para que se vea el impacto
+            const d = new Date(Date.now() + 8 * 864e5); while (d.getDay() === 0 || d.getDay() === 6) { d.setDate(d.getDate() + 1); }
+            const dia = d.toISOString().slice(0, 10);
+            await h.p.evaluate((f) => { for (const n of ['fecha_desde', 'fecha_hasta']) { const c = document.querySelector(`[name=${n}]`); c.value = f; c.dispatchEvent(new Event('change', { bubbles: true })); } }, dia);
+            await h.llenar('[name=motivo]', 'Mantenimiento del aire acondicionado'); await h.esperar(1500);
+        }, recorte: 'main' },
     { archivo: 'reservas/eliminada-archivada.png', cuenta: 'admin', url: '/reservas/configuracion', vista: 'alto',
         antes: async (h) => { await h.botonDe('button[title*="liminar"], button[aria-label*="liminar"]', 'Sala Holbox'); await h.listo(); await h.arriba(); } },
     { archivo: 'reservas/mostrar-quitadas.png', cuenta: 'admin', url: '/reservas/configuracion', vista: 'alto',

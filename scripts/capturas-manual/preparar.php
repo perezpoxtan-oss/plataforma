@@ -5,7 +5,8 @@
  *  - cambia usuarios, correos, nombres y empresas de prueba por nombres neutros
  *    (en las capturas no debe verse «admin.demo», «Hotel Demo», etc.);
  *  - crea la cuenta de Super Administrador «soporte» con verificación en dos
- *    pasos de clave conocida (el script de capturas genera el código).
+ *    pasos de clave conocida (el script de capturas genera el código);
+ *  - deja un bloqueo de Reservas en la Sala de juntas Ceiba (sin reservas afectadas).
  * Solo corre con APP_ENV=local y base SQLite. Uso (después de plataforma:demo):
  *   php scripts/capturas-manual/preparar.php
  */
@@ -16,9 +17,12 @@ use App\Models\AsistenciaJustificacion;
 use App\Models\Colaborador;
 use App\Models\MarcajeEquipoAcceso;
 use App\Models\Modulo;
+use App\Models\ReservaArea;
+use App\Models\ReservaBloqueo;
 use App\Models\User;
 use App\Services\Comercial\AjustesComerciales;
 use App\Services\EquiposAcceso\AdministradorEquipos;
+use App\Services\Reservas\Disponibilidad;
 use App\Support\Tenancy\Tenant;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Console\Kernel;
@@ -234,6 +238,27 @@ if (! DB::table('accesos')->where('empresa_id', 1)->where('nombre', 'JUAN CHAN P
             'bloqueo_desde' => $dia->setTime(10, 0)->utc(), 'bloqueo_hasta' => $dia->setTime(17, 0)->utc(),
             'montaje_minutos' => 60, 'desmontaje_minutos' => 0, 'created_at' => now(), 'updated_at' => now(),
         ]));
+    });
+}
+
+// Un bloqueo de Reservas (para «Bloquear un sitio de reservas»): la Sala de juntas Ceiba por mantenimiento,
+// el primer día hábil desde pasado mañana sin reservas en ella (así no afecta a las capturas de las reservas)
+if (Schema::hasTable('reserva_bloqueos') && ! DB::table('reserva_bloqueos')->where('empresa_id', 1)->where('motivo', 'Mantenimiento del aire acondicionado')->exists()) {
+    app(Tenant::class)->conEmpresa(1, function () {
+        $ana = User::query()->where('username', 'ana.lopez')->firstOrFail();
+        $sala = ReservaArea::whereHas('espacio', fn ($q) => $q->where('nombre', 'Sala de juntas Ceiba'))->first();
+        if ($sala === null) {
+            return;
+        }
+        $z = app(Disponibilidad::class)->zona($sala);
+        for ($dia = CarbonImmutable::now($z)->startOfDay()->addDays(2); ; $dia = $dia->addDay()) {
+            if ($dia->isWeekday() && app(Disponibilidad::class)->choques($sala, $dia->utc(), $dia->addDay()->utc())->isEmpty()) {
+                break;
+            }
+        }
+        $b = ReservaBloqueo::create(['empresa_id' => 1, 'sede_id' => $sala->sede_id, 'reserva_area_id' => $sala->id, 'espacio_id' => $sala->espacio_id,
+            'desde' => $dia->setTime(8, 0)->utc(), 'hasta' => $dia->setTime(14, 0)->utc(), 'motivo' => 'Mantenimiento del aire acondicionado']);
+        $b->forceFill(['creado_por' => $ana->id, 'actualizado_por' => $ana->id])->save();
     });
 }
 

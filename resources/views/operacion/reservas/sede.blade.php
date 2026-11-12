@@ -33,6 +33,9 @@
         'descripcion' => $zona ? $sede->nombre.' — elige un espacio para reservarlo o ver su calendario.' : $sede->nombre.' — elige un área para reservarla o ver su calendario.',
         'icono' => $zona ? 'bi-building' : 'bi-calendar-check', 'actual' => 'areas', 'buscar' => ['reservas-areas', $zona ? 'Buscar espacio...' : 'Buscar área...']])
 
+    {{-- Quién responde por las reservas: el general (y su suplente) cuando un área no tiene responsable propio --}}
+    <p class="res-meta mb-3"><i class="bi bi-person-badge me-1" aria-hidden="true"></i>Responsable general de reservas: <strong>{{ $general ?? 'sin asignar' }}</strong>@if ($generalSuplente) · suplente <strong>{{ $generalSuplente }}</strong>@endif. Cada área dice abajo quién la aprueba.</p>
+
     <div class="fichas-grid" data-fichas="reservas-areas">
         @if ($puede['crear'] && $puedeReservar)
             <a href="{{ route('reservas.create', array_filter(['zona' => $zona?->id])) }}" class="ficha-card ficha-create text-decoration-none">
@@ -89,7 +92,9 @@
                                 <i class="bi bi-geo-alt" aria-hidden="true"></i> {{ $f['grupo'] ?: $sede->nombre }}
                             @endif
                         </span>
-                        @if ($f['hoy'] > 0)
+                        @if ($f['bloqueo'])
+                            <span class="etiqueta-estado inactivo text-nowrap" title="Bloqueado: {{ $f['bloqueo'] }}"><i class="bi bi-lock-fill" aria-hidden="true"></i> Bloqueado hoy</span>
+                        @elseif ($f['hoy'] > 0)
                             <span class="etiqueta-estado pendiente text-nowrap" title="Reservas de hoy">Hoy: {{ $f['hoy'] }}</span>
                         @else
                             <span class="etiqueta-estado activo text-nowrap" title="Sin reservas hoy">Libre hoy</span>
@@ -103,11 +108,16 @@
                             <li><i class="bi bi-people me-1" aria-hidden="true"></i> {{ $a->aforo_maximo ? 'Hasta '.$a->aforo_maximo.' personas' : 'Sin aforo definido' }}</li>
                             <li><i class="bi bi-grid-3x3-gap me-1" aria-hidden="true"></i> {{ $montajes->isEmpty() ? 'Sin montajes' : $montajes->join(', ') }}</li>
                             <li><i class="bi bi-cash-coin me-1" aria-hidden="true"></i> {{ $f['tarifa'] ?? 'Sin costo' }}</li>
-                            <li><i class="bi bi-person-check me-1" aria-hidden="true"></i> Aprueba {{ $f['responsable'] ?? 'quien aprueba reservas en la sede' }}</li>
+                            <li><i class="bi bi-person-check me-1" aria-hidden="true"></i> Responsable: {{ $f['responsable'] ?? 'quien aprueba reservas en la sede' }}@if ($f['suplente']) · suplente {{ $f['suplente'] }}@endif</li>
                             @if ($a->confirmacion_inmediata)<li><i class="bi bi-lightning-charge me-1" aria-hidden="true"></i> Confirmación inmediata</li>@endif
                             @if ($a->montaje_minutos || $a->desmontaje_minutos)<li><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i> Montaje {{ $a->montaje_minutos }} min · desmontaje {{ $a->desmontaje_minutos }} min</li>@endif
                         @endunless
                     </ul>
+                    @if ($f['puedeBloquear'])
+                        {{-- Bloqueos: solo a quien le toca bloquear esta área (enlace de texto para no apretar el título) --}}
+                        <a href="{{ route('reservas.bloqueos.create', ['area' => $a->id]) }}" class="d-inline-flex align-items-center gap-1 small mt-2" style="min-height:44px" aria-label="Bloquear {{ $a->nombre() }}"><i class="bi bi-lock" aria-hidden="true"></i> Bloquear este sitio</a>
+                    @endif
+                    @if ($f['bloqueo'])<span class="ficha-dato"><i class="bi bi-lock" aria-hidden="true"></i> Bloqueado: {{ $f['bloqueo'] }}</span>@endif
                     <span class="ficha-dato"><i class="bi bi-calendar-event" aria-hidden="true"></i> Próxima: {{ $f['proxima'] ?? 'sin reservas' }}</span>
                 </div>
                 @if ($contenedora)

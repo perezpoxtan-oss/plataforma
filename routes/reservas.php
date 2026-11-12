@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Operacion\Reservas\AprobacionReservaController;
+use App\Http\Controllers\Operacion\Reservas\BloqueoReservaController;
 use App\Http\Controllers\Operacion\Reservas\ConfiguracionReservasController;
 use App\Http\Controllers\Operacion\Reservas\InformeReservasController;
 use App\Http\Controllers\Operacion\Reservas\OrdenServicioController;
@@ -34,6 +35,14 @@ Route::prefix('reservas')->name('reservas.')->group(function () {
     Route::controller(OrdenServicioController::class)->group(function () {
         Route::get('/ordenes', 'index')->name('ordenes');
         Route::post('/ordenes/{orden}/listo', 'listo')->whereNumber('orden')->name('ordenes.listo');
+    });
+    // Bloqueos de sitios (docs/tecnico/reservas.md, «Bloqueos»)
+    Route::controller(BloqueoReservaController::class)->group(function () {
+        Route::get('/bloqueos', 'index')->name('bloqueos');
+        Route::get('/bloqueos/nuevo', 'create')->name('bloqueos.create');
+        Route::get('/bloqueos/impacto', 'impacto')->middleware('throttle:reservas.disponibilidad')->name('bloqueos.impacto');
+        Route::post('/bloqueos', 'store')->middleware('throttle:reservas.store')->name('bloqueos.store');
+        Route::patch('/bloqueos/{bloqueo}/baja', 'baja')->whereNumber('bloqueo')->name('bloqueos.baja');
     });
     Route::controller(InformeReservasController::class)->group(function () {
         Route::get('/informes', 'index')->name('informes');

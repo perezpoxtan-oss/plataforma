@@ -5,7 +5,8 @@
  *    espacio se elige solo.
  *  - Al elegir el área: montajes con su aforo, tarifas, horario, montaje y
  *    desmontaje, foto y descripción.
- *  - Al elegir área y día: horarios ocupados (incluye montaje y desmontaje).
+ *  - Al elegir área y día: horarios ocupados (incluye montaje y desmontaje) y
+ *    bloqueos del sitio («Bloqueado de 08:00 a 18:00: Mantenimiento»).
  *  - Uso interno / Para un cliente: muestra los datos del cliente, la tarifa
  *    y el costo estimado (el servidor calcula el definitivo).
  *  - Cantidad de un servicio vacía: al tocarla se sugiere (por persona = las
@@ -184,6 +185,13 @@
                 var ul = document.createElement('ul');
                 datos.ocupado.forEach(function (o) {
                     var li = document.createElement('li');
+                    if (o.bloqueado) {
+                        // Bloqueo del sitio (o de la zona que lo contiene / un espacio interior): nadie puede reservar
+                        li.className = 'text-danger fw-semibold';
+                        li.textContent = 'Bloqueado de ' + o.desde + ' a ' + o.hasta + ': ' + o.bloqueado + (o.otro ? ' (bloqueo de «' + o.otro + '», que comparte lugar con este espacio)' : '');
+                        ul.appendChild(li);
+                        return;
+                    }
                     li.textContent = 'Ocupado de ' + o.desde + ' a ' + o.hasta + (o.desde !== o.inicio || o.hasta !== o.fin ? ' (evento de ' + o.inicio + ' a ' + o.fin + ' más montaje y desmontaje)' : '')
                         + (o.otro ? ' · reservado «' + o.otro + '», que comparte lugar con este espacio' : '');
                     ul.appendChild(li);

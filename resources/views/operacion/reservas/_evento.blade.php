@@ -8,5 +8,6 @@
     <span class="res-hora">{{ $e['desde'] }}–{{ $e['hasta'] }}</span>
     <span class="res-titulo"> {{ $e['titulo'] }}</span>
     @if ($conArea ?? true)<span class="res-area">{{ $e['area'] }}</span>@endif
+    @if ($e['url'] && ! empty($e['afectada']))<span class="res-area fw-semibold"><i class="bi bi-lock-fill" aria-hidden="true"></i> Afectada por bloqueo</span>@endif
     @if ($e['url'])<span class="visually-hidden">· {{ $e['estadoTexto'] }}</span>@endif
 @if ($e['url'])</a>@else</div>@endif

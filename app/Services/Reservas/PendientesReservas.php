@@ -140,10 +140,19 @@ class PendientesReservas
             }
         }
 
-        $cambios = DB::table('reservas')->where('empresa_id', $empresaId)->where('solicitante_id', $actor->id)->where('estado', Reserva::CAMBIO_PEDIDO)->count();
+        // Cambio pedido y «Afectada por bloqueo» en una sola consulta
+        $suyas = DB::table('reservas')->where('empresa_id', $empresaId)->where('solicitante_id', $actor->id)
+            ->where(fn ($q) => $q->where('estado', Reserva::CAMBIO_PEDIDO)->orWhere(fn ($q) => $q->whereNotNull('bloqueo_id')->whereIn('estado', Reserva::OCUPAN)->where('fin', '>', now())))
+            ->get(['estado', 'bloqueo_id', 'fin']);
+        $cambios = $suyas->where('estado', Reserva::CAMBIO_PEDIDO)->count();
         if ($cambios > 0) {
             $items[] = ['clave' => 'reservas_cambio', 'titulo' => 'Reservas con cambio pedido', 'icono' => 'bi-arrow-repeat', 'total' => $cambios,
                 'url' => route('reservas.mias', ['estado' => Reserva::CAMBIO_PEDIDO]), 'nivel' => 'ambar'];
+        }
+        $afectadas = $suyas->filter(fn ($r) => $r->bloqueo_id !== null && CarbonImmutable::parse($r->fin, 'UTC')->greaterThan(now()))->count();
+        if ($afectadas > 0) {
+            $items[] = ['clave' => 'reservas_bloqueadas', 'titulo' => 'Reservas afectadas por un bloqueo', 'icono' => 'bi-lock', 'total' => $afectadas,
+                'url' => route('reservas.mias', ['afectadas' => 1]), 'nivel' => 'roja'];
         }
 
         return $items;
