@@ -97,6 +97,7 @@ class BloqueoReservaController extends Controller
     {
         $actor = $request->user();
         abort_if(! $this->tenant->activo(), 404);
+        abort_unless($this->bloqueos->puedeBloquearAlgo($actor, (int) $this->tenant->empresaId()), 403);
         try {
             [$area, $desde, $hasta] = $this->bloqueos->leer($actor, $request->all(), false);
         } catch (ValidationException $e) {

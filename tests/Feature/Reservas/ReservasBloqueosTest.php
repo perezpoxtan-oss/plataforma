@@ -156,6 +156,7 @@ class ReservasBloqueosTest extends TestCase
         $this->actingAs($this->agente)->get('/reservas/bloqueos')->assertForbidden();
         $this->actingAs($this->agente)->get('/reservas/bloqueos/nuevo')->assertForbidden();
         $this->bloquear($this->agente, $this->sala, '20:00', '21:00')->assertForbidden();
+        $this->actingAs($this->agente)->getJson('/reservas/bloqueos/impacto?reserva_area_id='.$this->sala->id)->assertForbidden();
         $this->assertSame(3, $this->enEmpresa(fn () => ReservaBloqueo::count()));
 
         // La pestaña «Bloqueos» solo aparece a quien puede bloquear
