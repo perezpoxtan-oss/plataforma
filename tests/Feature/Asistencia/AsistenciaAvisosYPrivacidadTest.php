@@ -154,12 +154,12 @@ class AsistenciaAvisosYPrivacidadTest extends TestCase
     public function test_configuracion_resume_los_ajustes_solo_con_el_modulo_encendido(): void
     {
         $admin = $this->crearUsuario($this->empresa, 'Administrador');
-        $this->actingAs($admin)->get('/configuracion')->assertOk()->assertSee('Asistencia: tolerancia y aviso de faltas')
+        $this->actingAs($admin)->get('/configuracion/personal')->assertOk()->assertSee('Asistencia: tolerancia y aviso de faltas')
             ->assertSee('Configurar en Asistencia → Avanzado')->assertSee('Asistencia: notas de las justificaciones');
 
         $otra = $this->crearEmpresa('Hotel Sin Asistencia');
         $adminOtra = $this->crearUsuario($otra, 'Administrador');
-        $this->actingAs($adminOtra)->get('/configuracion')->assertOk()->assertDontSee('Asistencia: tolerancia y aviso de faltas')
+        $this->actingAs($adminOtra)->configuracionCompleta()->assertDontSee('Asistencia: tolerancia y aviso de faltas')
             ->assertDontSee('Asistencia: notas de las justificaciones');
     }
 }

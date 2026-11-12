@@ -486,7 +486,7 @@ class EtapaCuatroFlujosTest extends TestCase
 
     public function test_configuracion_reloj_y_suplente_se_guarda_valida_y_restablece(): void
     {
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Reloj y suplente')->assertSee('Tiempo de permanencia en sitio')->assertSee('Noche sin supervisor');
+        $this->actingAs($this->admin)->configuracionCompleta()->assertSee('Reloj y suplente')->assertSee('Tiempo de permanencia en sitio')->assertSee('Noche sin supervisor');
         $this->actingAs($this->admin)->put(route('configuracion.relojes'), ['vobo_horas_amarillo' => 12, 'vobo_horas_rojo' => 6, 'encendido' => 1])
             ->assertSessionHasErrors('vobo_horas_rojo');
         $this->actingAs($this->admin)->put(route('configuracion.relojes'), ['vobo_horas_amarillo' => 12, 'vobo_horas_rojo' => 36, 'encendido' => 1,

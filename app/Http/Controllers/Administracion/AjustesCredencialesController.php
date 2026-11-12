@@ -7,6 +7,7 @@ use App\Models\Empresa;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Support\AjustesCredenciales;
+use App\Support\TemasConfiguracion;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,7 +47,7 @@ class AjustesCredencialesController extends Controller
         $empresa->forceFill(['preferencias' => $preferencias])->save();
         $this->auditoria->auditar($actor, 'configuracion.credenciales', $empresa, $antes, AjustesCredenciales::de($empresa->refresh()));
 
-        return redirect()->to(route('configuracion.index').'#cfg-credenciales')
+        return redirect()->to(TemasConfiguracion::url('cfg-credenciales'))
             ->with('ok', $guardar === [] ? 'Credenciales: todo quedó en el valor original (sin vencimiento, solo QR).' : 'Ajustes de credenciales guardados.')
             ->with('siguientes', [['Ir a Credenciales', route('credenciales.index'), 'bi-person-vcard']]);
     }

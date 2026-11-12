@@ -251,7 +251,7 @@ class ReservasDeAreasTest extends TestCase
 
         // Ajustes desde Configuración (mismo formulario)
         $this->flushSession();
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Responsable general de reservas')->assertSee('Configurar en Reservas de áreas');
+        $this->actingAs($this->admin)->get('/configuracion/reservas')->assertOk()->assertSee('Responsable general de reservas')->assertSee('Configurar en Reservas de áreas');
         $this->put('/reservas/ajustes', ['desde' => 'configuracion', 'responsable_id' => $this->sergio->id, 'suplente_id' => $this->sergio->id, 'recordar_horas' => 4, 'escalar_horas' => 24])
             ->assertSessionHasErrors('suplente_id');
         $this->put('/reservas/ajustes', ['desde' => 'configuracion', 'responsable_id' => $this->sergio->id, 'recordar_horas' => 6, 'escalar_horas' => 12, 'iva_porcentaje' => 8, 'iva_aplica' => '1'])

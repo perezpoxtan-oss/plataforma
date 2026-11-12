@@ -243,7 +243,7 @@ class CuentaEsDeSuDuenoTest extends TestCase
         $this->assertTrue(app(SuperAdministradores::class)->faltan());
 
         $this->actingAs($sa)->get('/')->assertOk()->assertSee('Falta el segundo Super Administrador');
-        $this->actingAs($sa)->get('/configuracion')->assertOk()->assertSee('Super Administradores')->assertSee('Solo hay 1 Super Administrador activo');
+        $this->actingAs($sa)->get('/configuracion/plataforma')->assertOk()->assertSee('Super Administradores')->assertSee('Solo hay 1 Super Administrador activo');
         // Un administrador de empresa no ve nada de esto
         $this->actingAs($this->admin)->get('/')->assertOk()->assertDontSee('Falta el segundo Super Administrador');
         $this->actingAs($this->admin)->post(route('superadmins.store'), ['name' => 'X'])->assertForbidden();
@@ -269,7 +269,7 @@ class CuentaEsDeSuDuenoTest extends TestCase
         $this->actingAs($sa1)->patch(route('superadmins.estado', $sa2->id), ['activo' => 0, 'contrasena_actual' => 'Super-Uno-2026'])
             ->assertSessionHasErrors('superadmin');
         $this->assertTrue($sa2->refresh()->activo);
-        $this->actingAs($sa1)->get('/configuracion')->assertSee('No se puede: quedaría menos de dos Super Administradores activos.');
+        $this->actingAs($sa1)->get('/configuracion/plataforma')->assertSee('No se puede: quedaría menos de dos Super Administradores activos.');
         // Ni a sí mismo
         $this->actingAs($sa1)->patch(route('superadmins.estado', $sa1->id), ['activo' => 0, 'contrasena_actual' => 'Super-Uno-2026'])->assertSessionHasErrors('superadmin');
 
@@ -307,7 +307,7 @@ class CuentaEsDeSuDuenoTest extends TestCase
         $this->assertFalse(Notificacion::withoutGlobalScopes()->where('user_id', $sa2->id)->where('tipo', 'cuenta_solicitud')->exists());
 
         $this->actingAs($sa1)->get('/')->assertOk()->assertSee('Super Administradores que piden ayuda');
-        $this->actingAs($sa1)->get('/configuracion')->assertOk()->assertSee('Piden ayuda:')->assertSee('Dar de baja sus dos pasos');
+        $this->actingAs($sa1)->get('/configuracion/plataforma')->assertOk()->assertSee('Piden ayuda:')->assertSee('Dar de baja sus dos pasos');
 
         // Con contraseña equivocada no; consigo mismo no; un administrador de empresa no
         $this->actingAs($sa1)->post(route('superadmins.dos-pasos', $sa2->id), ['contrasena_actual' => 'mala'])->assertSessionHasErrors('contrasena_actual');
@@ -503,7 +503,7 @@ class CuentaEsDeSuDuenoTest extends TestCase
         $this->post('/olvide-contrasena/administrador', ['cuenta' => 'sa.a08']);
         $s = $this->solicitudes()->firstOrFail();
 
-        $this->actingAs($sa1)->get('/configuracion')->assertSee(route('superadmins.solicitudes.rechazar', $s->id), false);
+        $this->actingAs($sa1)->get('/configuracion/plataforma')->assertSee(route('superadmins.solicitudes.rechazar', $s->id), false);
         $this->actingAs($this->admin)->patch(route('superadmins.solicitudes.rechazar', $s->id))->assertForbidden();
         $this->actingAs($sa2)->patch(route('superadmins.solicitudes.rechazar', $s->id))->assertSessionHas('error'); // la propia no
         $this->actingAs($sa1)->patch(route('superadmins.solicitudes.rechazar', $s->id), ['motivo' => 'No fue la persona'])->assertSessionHas('ok');

@@ -6,6 +6,12 @@ Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PA
 Bajo «## [Sin publicar]»:
 
 ### Agregado
+- **Configuración en mosaico + buscador** (pedido del dueño, 12 nov 2026). Ver `docs/tecnico/configuracion.md`.
+  - Al entrar: buscador **«¿Qué quieres ajustar?»** y una tarjeta por tema (General, Caseta y accesos, Estructura, Recepción y RR. HH., la bitácora, **Activos, transporte y pases**, Reservas de áreas, Avisos por correo, **Seguridad y privacidad** y, solo SA, Plataforma), con una línea de qué contiene e insignia **Cambiado** si la empresa tiene ajustes distintos de los de fábrica.
+  - Cada tema abre solo sus ajustes en `/configuracion/{tema}` con «‹ Configuración». El buscador filtra tarjetas y encuentra ajustes por nombre o palabra clave (lleva al ajuste resaltado); funciona sin JavaScript (`?q=`) y con JavaScript al escribir.
+  - Se conservan todos los ajustes, formularios, permisos, validaciones, «Restablecer» y valores originales. Tras **Guardar** se vuelve al mismo tema y tarjeta con su mensaje; los enlaces viejos `/configuracion#…` (y `/lost-found/dias-resguardo`) llevan al tema correcto.
+  - **Guardar avisos** en un tema ya no toca los avisos ni las listas de correos de los demás temas (antes, con la página única, se mandaban todas las casillas).
+  - Manual (`configuracion.md` y las páginas que citan rutas de Configuración), capturas nuevas (`mosaico`, `mosaico-celular`, `buscador`, `tema-activos`) y las de Configuración retomadas; lección 73. Sin migraciones.
 - **Capturas del Manual de usuario al día con la versión actual.** Script reutilizable `scripts/capturas-manual/` (preparar la base local con nombres neutros, recorrer cada imagen que usa el manual y regenerarla con el mismo nombre, sin la franja de ambiente). Ver `docs/tecnico/capturas-manual.md`. Manual: Colaboradores e Importar desde Excel dicen dónde quedó **Importar** (junto al título).
 - **Importar estructura** (pedido del dueño: «importar las sedes, con sus zonas, habitaciones y áreas dentro de las habitaciones, con un Excel»). Ver `docs/tecnico/importar-estructura.md`.
   - **Estructura → Sedes → Importar estructura**: plantilla → subir → vista previa renglón por renglón → **Guardar** → resumen, con el mismo flujo de Importar desde Excel. El Super Administrador elige la empresa en «Empresa de trabajo».

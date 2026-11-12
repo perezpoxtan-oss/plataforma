@@ -155,7 +155,7 @@ class EtapaOchoRecepcionTest extends TestCase
     public function test_garantia_de_la_llave_obligatoria_por_configuracion(): void
     {
         $this->actingAs($this->admin)->get(route('prestamo_llaves.index'))->assertSee('Ninguna (Riesgo)');
-        $this->actingAs($this->admin)->get(route('configuracion.index'))->assertOk()
+        $this->actingAs($this->admin)->get(route('configuracion.tema', 'activos'))->assertOk()
             ->assertSee('Avanzado: garantía de la llave')->assertSee('Avanzado: firma de la responsiva');
 
         $this->actingAs($this->admin)->put('/configuracion/caseta', ['_tarjeta' => 'llaves'] + array_merge(AjustesCaseta::OMISION, ['llaves_garantia' => 'obligatoria']))->assertSessionHasNoErrors();

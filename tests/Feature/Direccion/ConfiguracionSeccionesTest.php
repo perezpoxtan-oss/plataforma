@@ -20,8 +20,8 @@ use Tests\Feature\Nucleo\CreaDatosNucleo;
 use Tests\TestCase;
 
 /**
- * Configuración por secciones (petición del dueño, 2026-10-15): índice con
- * anclas, ajustes que solo estaban en código (reloj del Vo.Bo., recordatorio
+ * Configuración por secciones (petición del dueño, 2026-10-15), hoy en
+ * mosaico por temas (12 nov 2026; ver ConfiguracionMosaicoTest), ajustes que solo estaban en código (reloj del Vo.Bo., recordatorio
  * de procedimientos, nombres del menú), «Restablecer valor original» y permisos.
  */
 class ConfiguracionSeccionesTest extends TestCase
@@ -51,14 +51,21 @@ class ConfiguracionSeccionesTest extends TestCase
 
     public function test_la_pagina_lista_todas_las_secciones_con_indice_para_el_administrador(): void
     {
-        $html = $this->actingAs($this->admin)->get('/configuracion')->assertOk()->getContent();
+        // Configuración en mosaico: una tarjeta por tema y cada tema abre sus secciones
+        $mosaico = $this->actingAs($this->admin)->get('/configuracion')->assertOk()->getContent();
+        foreach (['general', 'caseta', 'estructura', 'personal', 'novedades', 'activos', 'reservas', 'avisos', 'seguridad'] as $tema) {
+            $this->assertStringContainsString('href="'.route('configuracion.tema', $tema).'"', $mosaico, "Falta la tarjeta del tema {$tema}");
+        }
+        $this->assertStringNotContainsString('href="'.route('configuracion.tema', 'plataforma').'"', $mosaico);
+        $html = $this->configuracionCompleta()->getContent();
 
         foreach (['sec-general' => 'General', 'caseta' => 'Caseta y accesos', 'sec-rh' => 'Recepción y RR. HH.', 'sec-novedades' => 'Novedades',
             'sec-activos' => 'Activos', 'sec-transporte' => 'Transporte', 'sec-pases' => 'Pases de salida', 'sec-avisos' => 'Avisos por correo',
             'sec-cuentas' => 'Cuentas y seguridad'] as $ancla => $nombre) {
-            $this->assertStringContainsString('href="#'.$ancla.'"', $html, "Falta {$nombre} en el índice");
             $this->assertStringContainsString('id="'.$ancla.'"', $html, "Falta la sección {$nombre}");
         }
+        // El tema con varias secciones trae su índice
+        $this->get('/configuracion/activos')->assertSee('href="#sec-transporte"', false)->assertSee('href="#sec-pases"', false);
         // Plataforma es solo del Super Administrador
         $this->assertStringNotContainsString('id="sec-plataforma"', $html);
         $this->assertStringNotContainsString('Respaldar ahora', $html);
@@ -81,7 +88,8 @@ class ConfiguracionSeccionesTest extends TestCase
     public function test_el_super_administrador_ve_la_seccion_plataforma_con_sus_enlaces(): void
     {
         $sa = $this->crearSuperadmin();
-        $this->actingAs($sa)->get('/configuracion')->assertOk()
+        $this->actingAs($sa)->get('/configuracion')->assertOk()->assertSee('href="'.route('configuracion.tema', 'plataforma').'"', false);
+        $this->actingAs($sa)->get('/configuracion/plataforma')->assertOk()
             ->assertSee('id="sec-plataforma"', false)->assertSee('Identidad de la plataforma')->assertSee('Catálogo comercial → Ajustes')
             ->assertSee('Correo de la plataforma')->assertSee('Respaldar ahora');
     }
@@ -89,7 +97,7 @@ class ConfiguracionSeccionesTest extends TestCase
     public function test_reloj_del_visto_bueno_configurable_se_guarda_y_se_aplica(): void
     {
         $this->actingAs($this->admin)->put('/configuracion/caseta', ['_tarjeta' => 'vobo', 'vobo_horas_amarillo' => '12', 'vobo_horas_rojo' => '36'])
-            ->assertSessionHasNoErrors()->assertRedirect(route('configuracion.index').'#cfg-vobo');
+            ->assertSessionHasNoErrors()->assertRedirect(route('configuracion.tema', 'general').'#cfg-vobo');
         $this->assertSame(['vobo_horas_amarillo' => 12, 'vobo_horas_rojo' => 36], $this->empresa->refresh()->preferencias['caseta']);
         $this->assertTrue(Auditoria::where('evento', 'configuracion.caseta')->exists());
 
@@ -108,7 +116,7 @@ class ConfiguracionSeccionesTest extends TestCase
     {
         $this->actingAs($this->admin)->put('/configuracion/caseta', ['_tarjeta' => 'transporte', 'transporte_firmas' => 'guardia'])->assertSessionHasNoErrors();
         $this->actingAs($this->admin)->put('/configuracion/caseta', ['_tarjeta' => 'llaves', 'llaves_horas_aviso' => '8', 'llaves_horas_escalar' => '12'])
-            ->assertRedirect(route('configuracion.index').'#cfg-llaves');
+            ->assertRedirect(route('configuracion.tema', 'activos').'#cfg-llaves');
 
         $this->assertSame(['transporte_firmas' => 'guardia', 'llaves_horas_aviso' => 8, 'llaves_horas_escalar' => 12], $this->empresa->refresh()->preferencias['caseta']);
     }
@@ -117,7 +125,7 @@ class ConfiguracionSeccionesTest extends TestCase
     {
         $this->assertSame(AdministradorProcedimientos::RECORDATORIO_CADA_DIAS, AjustesCaseta::valor($this->empresa, 'procedimientos_recordatorio_dias'));
         $this->actingAs($this->admin)->put('/configuracion/caseta', ['_tarjeta' => 'procedimientos', 'procedimientos_acuse' => 'firma', 'procedimientos_recordatorio_dias' => '7'])
-            ->assertSessionHasNoErrors()->assertRedirect(route('configuracion.index').'#cfg-procedimientos');
+            ->assertSessionHasNoErrors()->assertRedirect(route('configuracion.tema', 'novedades').'#cfg-procedimientos');
         $this->assertSame(7, AjustesCaseta::valor($this->empresa->refresh(), 'procedimientos_recordatorio_dias'));
 
         $this->actingAs($this->admin)->put('/configuracion/caseta', ['_tarjeta' => 'procedimientos', 'procedimientos_recordatorio_dias' => '0'])
@@ -127,30 +135,31 @@ class ConfiguracionSeccionesTest extends TestCase
     public function test_nombres_del_menu_se_guardan_se_aplican_y_se_restablecen(): void
     {
         $modulo = Modulo::where('clave', 'rutas')->firstOrFail();
-        $this->actingAs($this->admin)->get('/configuracion')->assertSee('id="menu_'.$modulo->id.'"', false)
+        $this->actingAs($this->admin)->get('/configuracion/general')->assertSee('id="menu_'.$modulo->id.'"', false)
             // La bitácora tiene su propio ajuste: no se repite en la lista
             ->assertDontSee('id="menu_'.Modulo::where('clave', 'novedades')->value('id').'"', false);
 
         $this->actingAs($this->admin)->put('/configuracion/menu', ['nombres' => [$modulo->id => 'Rutas del personal']])
-            ->assertSessionHasNoErrors()->assertRedirect(route('configuracion.index').'#cfg-menu');
+            ->assertSessionHasNoErrors()->assertRedirect(route('configuracion.tema', 'general').'#cfg-menu');
         $this->assertSame('Rutas del personal', DB::table('empresa_modulos')->where('empresa_id', $this->empresa->id)->where('modulo_id', $modulo->id)->value('nombre_visible'));
         $this->assertTrue(Auditoria::where('evento', 'configuracion.menu')->exists());
         // El menú ya lo muestra así
-        $this->actingAs($this->admin)->get('/configuracion')->assertSee('Rutas del personal');
+        $this->actingAs($this->admin)->get('/configuracion/general')->assertSee('Rutas del personal');
 
         $this->actingAs($this->admin)->put('/configuracion/menu', ['nombres' => [$modulo->id => '<script>']])->assertSessionHasErrors('nombres.'.$modulo->id);
 
         $this->actingAs($this->admin)->put('/configuracion/restablecer', ['ajuste' => 'menu'])
-            ->assertRedirect(route('configuracion.index').'#cfg-menu')->assertSessionHas('ok', 'Listo: los nombres del menú volvieron a su valor original.');
+            ->assertRedirect(route('configuracion.tema', 'general').'#cfg-menu')->assertSessionHas('ok', 'Listo: los nombres del menú volvieron a su valor original.');
         $this->assertNull(DB::table('empresa_modulos')->where('empresa_id', $this->empresa->id)->where('modulo_id', $modulo->id)->value('nombre_visible'));
     }
 
     public function test_restablecer_regresa_cada_tarjeta_a_su_valor_original_sin_tocar_las_demas(): void
     {
         $this->actingAs($this->admin)->put('/configuracion/caseta', ['transporte_firmas' => 'ninguna', 'vobo_horas_amarillo' => '10', 'vobo_horas_rojo' => '20']);
-        $this->actingAs($this->admin)->get('/configuracion')->assertSee('name="ajuste" value="vobo"', false)->assertSee('name="ajuste" value="transporte"', false);
+        $this->actingAs($this->admin)->get('/configuracion/general')->assertSee('name="ajuste" value="vobo"', false);
+        $this->actingAs($this->admin)->get('/configuracion/activos')->assertSee('name="ajuste" value="transporte"', false);
 
-        $this->actingAs($this->admin)->put('/configuracion/restablecer', ['ajuste' => 'vobo'])->assertRedirect(route('configuracion.index').'#cfg-vobo');
+        $this->actingAs($this->admin)->put('/configuracion/restablecer', ['ajuste' => 'vobo'])->assertRedirect(route('configuracion.tema', 'general').'#cfg-vobo');
         $this->assertSame(['transporte_firmas' => 'ninguna'], $this->empresa->refresh()->preferencias['caseta']);
         $this->assertTrue(Auditoria::where('evento', 'configuracion.restablecido')->exists());
 
@@ -179,7 +188,7 @@ class ConfiguracionSeccionesTest extends TestCase
 
     public function test_rol_que_solo_consulta_ve_las_secciones_pero_no_edita(): void
     {
-        $html = $this->actingAs($this->director)->get('/configuracion')->assertOk()->getContent();
+        $html = $this->actingAs($this->director)->configuracionCompleta()->getContent();
         $this->assertStringContainsString('id="sec-general"', $html);
         $this->assertStringNotContainsString('Guardar avisos', $html);
         $this->assertStringNotContainsString('Restablecer valor original', $html);

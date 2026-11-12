@@ -1,22 +1,20 @@
 @extends('layouts.app')
 
-@section('titulo', 'Configuración')
+@section('titulo', $tema === null ? 'Configuración' : $temaNombre.' · Configuración')
 
 @php
-    // Configuración por secciones (petición del dueño, 2026-10-15): cada sección junta los ajustes de un tema,
-    // con sus avisos por correo (ADR-0016) y, si un ajuste vive en otro módulo, su enlace «Configurar en …».
-    // Inventario completo: docs/tecnico/configuracion-inventario.md
+    // Configuración en mosaico (pedido del dueño, 12 nov 2026): al entrar, buscador y una tarjeta por tema
+    // (App\Support\TemasConfiguracion); cada tema abre solo sus secciones en /configuracion/{tema}.
+    // Cada sección junta los ajustes de un tema, con sus avisos por correo (ADR-0016) y, si un ajuste vive
+    // en otro módulo, su enlace «Configurar en …». Inventario completo: docs/tecnico/configuracion-inventario.md
     $u = auth()->user();
     // C-03: solo las secciones y avisos de los módulos que la empresa tiene contratados
     $autorizador = app(\App\Services\Permisos\Autorizador::class);
     $tiene = fn (string ...$modulos) => $empresa === null || collect($modulos)->contains(fn ($m) => $autorizador->moduloActivo((int) $empresa->id, $m));
     $mostrarAvisos = $empresa && $verConfiguracion;
-    $nombreBitacora = $empresa ? app(\App\Services\Novedades\AjustesNovedades::class)->nombreMenu($empresa->id) : 'Novedades';
-    // Grupo de avisos => sección donde se muestra (los que no estén aquí van en «Avisos por correo»)
+    // Grupo de avisos => sección donde se muestra (los que no estén ahí van en «Avisos por correo»)
     // C-38: un solo lugar por ajuste — Colaboradores en Estructura, Procedimientos en la bitácora y las autorizaciones de visitas en la caseta
-    $seccionDeGrupo = ['cuentas' => 'sec-cuentas', 'colaboradores' => 'sec-estructura', 'padrones' => 'caseta', 'procedimientos' => 'sec-novedades',
-        'autorizaciones' => 'caseta', 'novedades' => 'sec-novedades', 'pases_salida' => 'sec-pases', 'transporte' => 'sec-transporte', 'vouchers' => 'sec-activos',
-        'candidatos' => 'sec-rh', 'reservas' => 'sec-reservas'];
+    $seccionDeGrupo = \App\Support\TemasConfiguracion::SECCION_DE_GRUPO;
     $gruposEn = fn (string $seccion) => $mostrarAvisos
         ? array_filter($grupos, fn ($def, $g) => ($seccionDeGrupo[$g] ?? 'sec-avisos') === $seccion && ($def['modulo'] === null || $tiene($def['modulo'])), ARRAY_FILTER_USE_BOTH) : [];
     $verPases = $empresa && $u->can('pases_salida.configurar');
@@ -25,55 +23,108 @@
     $verNovedades = $mostrarAvisos && $u->can('novedades.ver');
     // Decisión 10: Equipos de acceso (ZKTeco, Hikvision) en «Caseta y accesos»
     $verEquipos = $empresa && $verConfiguracion && $tiene('accesos');
-    $plataforma = $esSuperadmin;
-    // [ancla, nombre, icono, ¿se muestra?]
-    $secciones = [
-        ['sec-general', 'General', 'bi-sliders', $mostrarAvisos],
-        ['caseta', 'Caseta y accesos', 'bi-door-open', $mostrarAvisos || isset($enOtras['esperas']) || isset($enOtras['impresion']) || $verEquipos],
-        // C-38: Estructura (avisos de Colaboradores)
-        ['sec-estructura', 'Estructura', 'bi-diagram-3', $mostrarAvisos && $tiene('colaboradores')],
-        ['sec-rh', 'Recepción y RR. HH.', 'bi-people', (($mostrarAvisos || $verRecepcion || $verBolsa) && $tiene('candidatos', 'recepcion_rh', 'vacantes')) || isset($enOtras['asistencia'])],
-        ['sec-novedades', $nombreBitacora, 'bi-headset', ($mostrarAvisos || $lostFound) && $tiene('novedades', 'procedimientos')],
-        ['sec-activos', 'Activos', 'bi-key', $mostrarAvisos && $tiene('llaves', 'prestamo_llaves', 'responsivas', 'vouchers')],
-        ['sec-transporte', 'Transporte', 'bi-taxi-front', $mostrarAvisos && $tiene('transporte')],
-        ['sec-pases', 'Pases de salida', 'bi-box-arrow-up-right', ($mostrarAvisos || $verPases) && $tiene('pases_salida')],
-        ['sec-avisos', 'Avisos por correo', 'bi-envelope', $mostrarAvisos],
-        ['sec-cuentas', 'Cuentas y seguridad', 'bi-shield-lock', $mostrarAvisos],
-        ['sec-privacidad', 'Privacidad', 'bi-person-lock', $privacidad !== null],
-        ['sec-plataforma', 'Plataforma', 'bi-hdd-network', $plataforma],
-        // Reservas de áreas (docs/tecnico/reservas.md): al final para no mover las demás secciones
-        ['sec-reservas', 'Reservas de áreas', 'bi-calendar-check', ($mostrarAvisos || ($empresa && $u->can('reservas.configurar'))) && $tiene('reservas')],
-    ];
-    $visibles = array_values(array_filter($secciones, fn ($s) => $s[3]));
-    $verSeccion = fn (string $ancla) => (bool) (collect($secciones)->firstWhere(0, $ancla)[3] ?? false);
+    // Qué secciones ve el rol lo decide el controlador ($secciones); aquí solo se pintan las del tema abierto
+    $seccionesDelTema = $tema === null ? [] : $seccionesDelTema;
+    $verSeccion = fn (string $ancla) => ($secciones[$ancla] ?? false) && in_array($ancla, $seccionesDelTema, true);
+    // Con una sola sección, su título repite el del tema: queda para lectores de pantalla
+    $tituloSeccion = count($seccionesDelTema) > 1 ? 'titulo-seccion-config' : 'titulo-seccion-config visually-hidden';
 @endphp
 
+@push('scripts')
+    <script src="{{ asset('js/configuracion.js') }}?v={{ @filemtime(public_path('js/configuracion.js')) ?: '1' }}"></script>
+@endpush
+
 @section('contenido')
-<div class="tema-azul">
+<div class="tema-azul" data-configuracion data-anclas='@json($mapaAnclas)'>
     @include('administracion.partes.avisos')
     @include('administracion.partes.selector-empresa')
 
-    <div class="encabezado-pantalla mb-3">
-        <div class="icono"><i class="bi bi-sliders text-primary" aria-hidden="true"></i></div>
-        <div>
-            <h1>Configuración</h1>
-            <p>Ordenada por secciones: cada una junta sus ajustes y sus avisos. Cada ajuste dice su valor original; lo que se configura en otra pantalla trae su botón «Configurar en …».</p>
+    @if ($tema === null)
+        {{-- ============================== Mosaico ============================== --}}
+        <div class="encabezado-pantalla mb-3">
+            <div class="icono"><i class="bi bi-sliders text-primary" aria-hidden="true"></i></div>
+            <div>
+                <h1>Configuración</h1>
+                <p>Toca un tema para ver solo sus ajustes, o escribe qué quieres ajustar. Cada ajuste dice su valor original; lo que se configura en otra pantalla trae su botón «Configurar en …».</p>
+            </div>
         </div>
-    </div>
 
-    {{-- Versión instalada (ADR-0016) --}}
-    <div class="version-instalada mb-3">
-        <i class="bi bi-box-seam" aria-hidden="true"></i>
-        <span>Versión instalada: <strong>{{ $version['numero'] ?? 'sin número (equipo de desarrollo)' }}</strong>@if ($version['instalada']) · desde el @fecha($version['instalada'], 'd/m/Y H:i')@endif</span>
-    </div>
+        {{-- Versión instalada (ADR-0016) --}}
+        <div class="version-instalada mb-3">
+            <i class="bi bi-box-seam" aria-hidden="true"></i>
+            <span>Versión instalada: <strong>{{ $version['numero'] ?? 'sin número (equipo de desarrollo)' }}</strong>@if ($version['instalada']) · desde el @fecha($version['instalada'], 'd/m/Y H:i')@endif</span>
+        </div>
 
-    @if (count($visibles) > 1)
-        <nav class="indice-config mb-3" aria-label="Secciones de la configuración">
-            @foreach ($visibles as [$ancla, $nombre, $icono])
-                <a href="#{{ $ancla }}" class="chip-config"><i class="bi {{ $icono }} me-1" aria-hidden="true"></i>{{ $nombre }}</a>
-            @endforeach
-        </nav>
-    @endif
+        @if ($temas !== [])
+            {{-- Sin JavaScript manda ?q= y el servidor filtra; con JavaScript filtra al escribir (js/configuracion.js) --}}
+            <form method="GET" action="{{ route('configuracion.index') }}" class="buscador-config mb-3" role="search" data-buscador-config>
+                <label class="campo-etiqueta" for="buscar-config">¿Qué quieres ajustar?</label>
+                <div class="buscador-config-fila">
+                    <span class="buscador-config-campo">
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                        <input type="search" id="buscar-config" name="q" class="campo mb-0" value="{{ $busqueda }}" maxlength="80" autocomplete="off"
+                               placeholder="Por ejemplo: llaves, dos pasos, correo" aria-describedby="buscar-config-ayuda">
+                    </span>
+                    <button type="submit" class="btn-azul">Buscar</button>
+                </div>
+                <p id="buscar-config-ayuda" class="campo-ayuda buscador-config-ayuda">Busca por el nombre del ajuste o por una palabra (por ejemplo «horas», «firma» o «avisos»).</p>
+            </form>
+
+            {{-- Ajustes que coinciden: llevan directo a su tarjeta, resaltada --}}
+            <section class="resultados-config mb-3" aria-labelledby="t-resultados-config" data-resultados-config @if ($busqueda === '') hidden @endif>
+                <h2 id="t-resultados-config" class="h6 fw-bold mb-2">Ajustes que coinciden</h2>
+                <ul class="lista-resultados-config">
+                    @foreach ($ajustes as $a)
+                        <li data-buscar="{{ $a['buscar'] }}" data-tema="{{ $a['slug'] }}" @unless ($a['coincide']) hidden @endunless>
+                            <a href="{{ $a['url'] }}"><span class="fw-bold">{{ $a['nombre'] }}</span><span class="small text-muted"> · {{ $a['tema'] }}</span></a>
+                        </li>
+                    @endforeach
+                </ul>
+                <p class="small text-muted mb-0" data-sin-resultados @if ($busqueda === '' || collect($ajustes)->contains('coincide', true) || collect($temas)->contains('coincide', true)) hidden @endif>
+                    No encontramos «<span data-texto-buscado>{{ $busqueda }}</span>». Prueba con otra palabra o toca un tema.
+                </p>
+            </section>
+
+            <nav aria-label="Temas de la configuración">
+                <ul class="mosaico-config">
+                    @foreach ($temas as $slug => $t)
+                        <li data-buscar="{{ $t['buscar'] }}" data-tema="{{ $slug }}" @unless ($t['coincide']) hidden @endunless>
+                            <a href="{{ $t['url'] }}" class="tarjeta tarjeta-tema-config" id="tema-{{ $slug }}">
+                                <span class="icono-tema-config"><i class="bi {{ $t['icono'] }}" aria-hidden="true"></i></span>
+                                <span class="cuerpo-tema-config">
+                                    <span class="nombre-tema-config">{{ $t['nombre'] }}
+                                        @if ($t['cambiado'])<span class="insignia-cambiado" title="Tu empresa tiene ajustes distintos de los de fábrica">Cambiado</span>@endif
+                                    </span>
+                                    <span class="descripcion-tema-config">{{ $t['descripcion'] }}</span>
+                                </span>
+                                <i class="bi bi-chevron-right flecha-tema-config" aria-hidden="true"></i>
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
+            </nav>
+        @endif
+        @unless ($empresa)
+            <div class="tarjeta estado-vacio mt-3"><p class="text-muted small m-0">Elige arriba la empresa de trabajo para ver sus ajustes.</p></div>
+        @endunless
+    @else
+        {{-- ============================== Un tema ============================== --}}
+        <p class="mb-2"><a href="{{ route('configuracion.index') }}" class="volver-config"><i class="bi bi-chevron-left" aria-hidden="true"></i>Configuración</a></p>
+        <div class="encabezado-pantalla mb-3">
+            <div class="icono"><i class="bi {{ $temaIcono }} text-primary" aria-hidden="true"></i></div>
+            <div>
+                <h1>{{ $temaNombre }}</h1>
+                <p>{{ $temaDescripcion }} Cada ajuste dice su valor original; lo que se configura en otra pantalla trae su botón «Configurar en …».</p>
+            </div>
+        </div>
+
+        @if (count($seccionesDelTema) > 1)
+            <nav class="indice-config mb-3" aria-label="Secciones de {{ $temaNombre }}">
+                @foreach ($seccionesDelTema as $ancla)
+                    <a href="#{{ $ancla }}" class="chip-config"><i class="bi {{ \App\Support\TemasConfiguracion::SECCIONES[$ancla][1] }} me-1" aria-hidden="true"></i>{{ \App\Support\TemasConfiguracion::SECCIONES[$ancla][0] }}</a>
+                @endforeach
+            </nav>
+        @endif
 
     @if ($mostrarAvisos)
         {{-- Un solo formulario de avisos; sus casillas viven en la tarjeta de cada módulo (atributo form) --}}
@@ -87,13 +138,13 @@
         {{-- ============================== General ============================== --}}
         @if ($verSeccion('sec-general'))
             <section class="seccion-config" id="sec-general" aria-labelledby="t-sec-general">
-                <h2 id="t-sec-general" class="titulo-seccion-config"><i class="bi bi-sliders" aria-hidden="true"></i>General</h2>
+                <h2 id="t-sec-general" class="{{ $tituloSeccion }}"><i class="bi bi-sliders" aria-hidden="true"></i>General</h2>
                 {{-- «Configura tu empresa»: volver a mostrarla (u ocultarla) en Inicio --}}
                 @if ($u->can('configuracion.editar'))
                     @include('administracion.configuracion._configura-tu-empresa', ['empresa' => $empresa])
                 @endif
                 @isset($enOtras['empresa'])
-                    <div class="tarjeta p-4 tarjeta-enlace-config">
+                    <div class="tarjeta p-4 tarjeta-enlace-config" id="cfg-empresa">
                         <h3 class="h6 fw-bold"><i class="bi bi-building me-2 text-primary" aria-hidden="true"></i>Datos de la empresa</h3>
                         <p class="small mb-1">Zona horaria: <strong>{{ $enOtras['empresa']['zona'] }}</strong> <span class="valor-original">· Valor original: {{ \App\Support\ZonasHorarias::etiqueta('America/Mexico_City') }}</span>. Cada sede puede tener la suya (en Sedes).</p>
                         <p class="small text-muted mb-2">Nombre, razón social, RFC, logo y zona horaria se cambian en Empresas.</p>
@@ -109,7 +160,7 @@
         {{-- ========================== Caseta y accesos ========================== --}}
         @if ($verSeccion('caseta'))
             <section class="seccion-config" id="caseta" aria-labelledby="t-sec-caseta">
-                <h2 id="t-sec-caseta" class="titulo-seccion-config"><i class="bi bi-door-open" aria-hidden="true"></i>Caseta y accesos</h2>
+                <h2 id="t-sec-caseta" class="{{ $tituloSeccion }}"><i class="bi bi-door-open" aria-hidden="true"></i>Caseta y accesos</h2>
                 @isset($enOtras['esperas'])
                     @php $e = $enOtras['esperas']; @endphp
                     <div class="tarjeta p-4 tarjeta-enlace-config" id="cfg-esperas">
@@ -160,7 +211,7 @@
         {{-- ============================== Estructura (C-38) ============================== --}}
         @if ($verSeccion('sec-estructura'))
             <section class="seccion-config" id="sec-estructura" aria-labelledby="t-sec-estructura">
-                <h2 id="t-sec-estructura" class="titulo-seccion-config"><i class="bi bi-diagram-3" aria-hidden="true"></i>Estructura</h2>
+                <h2 id="t-sec-estructura" class="{{ $tituloSeccion }}"><i class="bi bi-diagram-3" aria-hidden="true"></i>Estructura</h2>
                 @foreach ($gruposEn('sec-estructura') as $grupo => $def)
                     @include('administracion.configuracion._avisos-grupo')
                 @endforeach
@@ -172,7 +223,7 @@
         {{-- ========================= Recepción y RR. HH. ========================= --}}
         @if ($verSeccion('sec-rh'))
             <section class="seccion-config" id="sec-rh" aria-labelledby="t-sec-rh">
-                <h2 id="t-sec-rh" class="titulo-seccion-config"><i class="bi bi-people" aria-hidden="true"></i>Recepción y RR. HH.</h2>
+                <h2 id="t-sec-rh" class="{{ $tituloSeccion }}"><i class="bi bi-people" aria-hidden="true"></i>Recepción y RR. HH.</h2>
                 @foreach ($gruposEn('sec-rh') as $grupo => $def)
                     @include('administracion.configuracion._avisos-grupo')
                 @endforeach
@@ -221,7 +272,7 @@
         {{-- ============================ Novedades / Incidentes ============================ --}}
         @if ($verSeccion('sec-novedades'))
             <section class="seccion-config" id="sec-novedades" aria-labelledby="t-sec-novedades">
-                <h2 id="t-sec-novedades" class="titulo-seccion-config"><i class="bi bi-headset" aria-hidden="true"></i>{{ $nombreBitacora }}</h2>
+                <h2 id="t-sec-novedades" class="{{ $tituloSeccion }}"><i class="bi bi-headset" aria-hidden="true"></i>{{ $nombreBitacora }}</h2>
                 @foreach ($gruposEn('sec-novedades') as $grupo => $def)
                     @include('administracion.configuracion._avisos-grupo')
                 @endforeach
@@ -265,7 +316,7 @@
         {{-- =============================== Activos =============================== --}}
         @if ($verSeccion('sec-activos'))
             <section class="seccion-config" id="sec-activos" aria-labelledby="t-sec-activos">
-                <h2 id="t-sec-activos" class="titulo-seccion-config"><i class="bi bi-key" aria-hidden="true"></i>Activos</h2>
+                <h2 id="t-sec-activos" class="{{ $tituloSeccion }}"><i class="bi bi-key" aria-hidden="true"></i>Activos</h2>
                 @if ($tiene('prestamo_llaves'))
                     @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'llaves'])
                 @endif
@@ -281,7 +332,7 @@
         {{-- ============================== Transporte ============================== --}}
         @if ($verSeccion('sec-transporte'))
             <section class="seccion-config" id="sec-transporte" aria-labelledby="t-sec-transporte">
-                <h2 id="t-sec-transporte" class="titulo-seccion-config"><i class="bi bi-taxi-front" aria-hidden="true"></i>Transporte</h2>
+                <h2 id="t-sec-transporte" class="{{ $tituloSeccion }}"><i class="bi bi-taxi-front" aria-hidden="true"></i>Transporte</h2>
                 @include('administracion.configuracion._caseta', ['empresa' => $empresa, 'puedeEditar' => $puedeEditar, 'tarjeta' => 'transporte'])
                 @foreach ($gruposEn('sec-transporte') as $grupo => $def)
                     @include('administracion.configuracion._avisos-grupo')
@@ -292,7 +343,7 @@
         {{-- =========================== Pases de salida =========================== --}}
         @if ($verSeccion('sec-pases'))
             <section class="seccion-config" id="sec-pases" aria-labelledby="t-sec-pases">
-                <h2 id="t-sec-pases" class="titulo-seccion-config"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>Pases de salida</h2>
+                <h2 id="t-sec-pases" class="{{ $tituloSeccion }}"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>Pases de salida</h2>
                 {{-- Pases de salida: circuito de aprobación (ver docs/tecnico/pases-salida.md) --}}
                 @if ($verPases)
                     @include('seguridad.pases-salida._config-resumen', ['empresa' => $empresa])
@@ -304,14 +355,14 @@
         @endif
 
         {{-- ========================= Reservas de áreas ========================= --}}
-        @if (collect($secciones)->firstWhere(0, 'sec-reservas')[3])
+        @if ($verSeccion('sec-reservas'))
             <section class="seccion-config" id="sec-reservas" aria-labelledby="t-sec-reservas">
-                <h2 id="t-sec-reservas" class="titulo-seccion-config"><i class="bi bi-calendar-check" aria-hidden="true"></i>Reservas de áreas</h2>
+                <h2 id="t-sec-reservas" class="{{ $tituloSeccion }}"><i class="bi bi-calendar-check" aria-hidden="true"></i>Reservas de áreas</h2>
                 @if ($u->can('reservas.configurar'))
                     @push('estilos')<link href="{{ asset('css/reservas.css') }}" rel="stylesheet">@endpush
                     @include('operacion.reservas._ajustes', ['empresa' => $empresa, 'desde' => 'configuracion',
                         'editable' => app(\App\Services\Permisos\Autorizador::class)->alcanceDeEmpresa($u, 'reservas.configurar')])
-                    <div class="tarjeta p-4 tarjeta-enlace-config">
+                    <div class="tarjeta p-4 tarjeta-enlace-config" id="cfg-reservas-areas">
                         <h3 class="h6 fw-bold"><i class="bi bi-door-open me-2 text-primary" aria-hidden="true"></i>Áreas reservables y catálogos</h3>
                         <p class="small text-muted mb-2">Qué salones y salas se reservan (aforo, montajes, horario, tarifas, responsable), montajes, tipos de uso y servicios con su departamento.</p>
                         <a href="{{ route('reservas.configuracion') }}" class="btn-enlace-config"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Configurar en Reservas de áreas</a>
@@ -326,16 +377,16 @@
         {{-- =========================== Avisos por correo =========================== --}}
         @if ($verSeccion('sec-avisos'))
             <section class="seccion-config" id="sec-avisos" aria-labelledby="t-sec-avisos">
-                <h2 id="t-sec-avisos" class="titulo-seccion-config"><i class="bi bi-envelope" aria-hidden="true"></i>Avisos por correo</h2>
+                <h2 id="t-sec-avisos" class="{{ $tituloSeccion }}"><i class="bi bi-envelope" aria-hidden="true"></i>Avisos por correo</h2>
                 <div class="tarjeta p-4">
                     @unless ($correoListo)
                         <div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>El correo de la plataforma aún no está configurado: los avisos por correo se activarán cuando el Super Administrador lo configure. Los de la campana sí llegan.</div>
                     @endunless
-                    <p class="small text-muted">Cada sección de arriba tiene sus avisos con un interruptor general. Aquí ves todos de un vistazo; toca uno para ir a sus casillas. Por omisión todos están encendidos, salvo los que dicen «Valor original: apagado».</p>
+                    <p class="small text-muted">Cada tema tiene sus avisos con un interruptor general. Aquí ves todos de un vistazo; toca uno para ir a sus casillas. Por omisión todos están encendidos, salvo los que dicen «Valor original: apagado».</p>
                     <ul class="lista-avisos-config small mb-2">
                         @foreach ($grupos as $grupo => $def)
                             @php $encendido = \App\Support\GruposAvisos::encendido($empresa, $grupo); @endphp
-                            <li><a href="#config-{{ $grupo }}">{{ $def['nombre'] }}</a>: <strong>{{ $encendido ? 'encendidos' : 'apagados' }}</strong></li>
+                            <li><a href="{{ \App\Support\TemasConfiguracion::url('config-'.$grupo) }}">{{ $def['nombre'] }}</a>: <strong>{{ $encendido ? 'encendidos' : 'apagados' }}</strong></li>
                         @endforeach
                     </ul>
                     <p class="small text-muted mb-0">Cada persona puede silenciar los avisos que no quiere recibir en <a href="{{ route('mi-cuenta.index') }}">Mi cuenta → Mis avisos</a>.</p>
@@ -352,7 +403,7 @@
         {{-- ========================= Cuentas y seguridad ========================= --}}
         @if ($verSeccion('sec-cuentas'))
             <section class="seccion-config" id="sec-cuentas" aria-labelledby="t-sec-cuentas">
-                <h2 id="t-sec-cuentas" class="titulo-seccion-config"><i class="bi bi-shield-lock" aria-hidden="true"></i>Cuentas y seguridad</h2>
+                <h2 id="t-sec-cuentas" class="{{ $tituloSeccion }}"><i class="bi bi-shield-lock" aria-hidden="true"></i>Cuentas y seguridad</h2>
                 @foreach ($gruposEn('sec-cuentas') as $grupo => $def)
                     @include('administracion.configuracion._avisos-grupo')
                 @endforeach
@@ -368,17 +419,17 @@
         @endif
 
         {{-- ============================== Privacidad ============================== --}}
-        @if ($privacidad)
+        @if ($verSeccion('sec-privacidad'))
             <section class="seccion-config" id="sec-privacidad" aria-labelledby="t-sec-privacidad">
-                <h2 id="t-sec-privacidad" class="titulo-seccion-config"><i class="bi bi-person-lock" aria-hidden="true"></i>Privacidad</h2>
+                <h2 id="t-sec-privacidad" class="{{ $tituloSeccion }}"><i class="bi bi-person-lock" aria-hidden="true"></i>Privacidad</h2>
                 @include('administracion.configuracion._privacidad', ['p' => $privacidad, 'empresa' => $empresa])
             </section>
         @endif
 
         {{-- ============================== Plataforma ============================== --}}
-        @if ($esSuperadmin)
+        @if ($verSeccion('sec-plataforma'))
             <div class="seccion-config" id="sec-plataforma">
-                <h2 id="t-sec-plataforma" class="titulo-seccion-config"><i class="bi bi-hdd-network" aria-hidden="true"></i>Plataforma</h2>
+                <h2 id="t-sec-plataforma" class="{{ $tituloSeccion }}"><i class="bi bi-hdd-network" aria-hidden="true"></i>Plataforma</h2>
                 <div class="tarjeta p-4 tarjeta-enlace-config">
                     <h3 class="h6 fw-bold"><i class="bi bi-gear-wide-connected me-2 text-primary" aria-hidden="true"></i>Ajustes de toda la plataforma</h3>
                     <p class="small text-muted">Solo tú (Super Administrador) ves esta sección. No son de una empresa: aplican a todas.</p>
@@ -399,7 +450,7 @@
                 @include('administracion.configuracion._version-php', ['php' => $php])
             </div>
             {{-- ================= Correo saliente (plataforma) ================= --}}
-            <section class="tarjeta p-4" aria-labelledby="t-correo">
+            <section class="tarjeta p-4" id="cfg-correo" aria-labelledby="t-correo">
                 <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
                     <h2 id="t-correo" class="h5 fw-bold m-0"><i class="bi bi-envelope-at me-2 text-primary" aria-hidden="true"></i>Correo de la plataforma</h2>
                     <span class="etiqueta-estado {{ $correoListo ? 'activo' : 'inactivo' }}">{{ $correoListo ? 'CONFIGURADO' : 'SIN CONFIGURAR' }}</span>
@@ -454,7 +505,7 @@
             </section>
 
             {{-- ================= Respaldos (plataforma) ================= --}}
-            <section class="tarjeta p-4" aria-labelledby="t-respaldos">
+            <section class="tarjeta p-4" id="cfg-respaldos" aria-labelledby="t-respaldos">
                 <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
                     <h2 id="t-respaldos" class="h5 fw-bold m-0"><i class="bi bi-database-check me-2 text-primary" aria-hidden="true"></i>Respaldos de la base de datos</h2>
                     <form action="{{ route('configuracion.respaldos') }}" method="POST" class="m-0" data-confirmar="¿Crear un respaldo ahora? Tarda unos segundos.">
@@ -482,9 +533,8 @@
                 {{-- Respaldos y traslado: base + fotos, documentos y firmas en un solo paquete --}}
                 <a href="{{ route('traslado.index') }}" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-truck me-1" aria-hidden="true"></i>Respaldos y traslado a otro servidor</a>
             </section>
-        @elseif (! $empresa)
-            <div class="tarjeta estado-vacio"><p class="text-muted small m-0">Elige arriba la empresa de trabajo.</p></div>
         @endif
     </div>
+    @endif
 </div>
 @endsection

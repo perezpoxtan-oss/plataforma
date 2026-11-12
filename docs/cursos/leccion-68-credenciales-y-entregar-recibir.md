@@ -47,7 +47,7 @@ Comprueba: se generó el voucher (origen **Credencial**), hay una credencial nue
 
 ## Práctica 5 · Garantía y firma por tipo
 
-1. Entra a **Configuración → Activos**.
+1. Entra a **Configuración → Activos, transporte y pases**.
 2. En la tarjeta de llaves abre **Avanzado: garantía de la llave** y elige **Obligatoria**. Guarda.
 3. En la tarjeta de responsivas abre **Avanzado: firma de la responsiva** y elige **a mano en la hoja impresa**. Guarda.
 

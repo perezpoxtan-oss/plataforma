@@ -184,13 +184,13 @@ class PrivacidadArcoTest extends TestCase
         $this->assertFalse(Auditoria::where('evento', 'privacidad.conservacion_aplicada')->exists());
 
         // Configuración muestra cuánto se quitaría al encenderla; el administrador la confirma
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Conservación de datos personales')
+        $this->actingAs($this->admin)->get('/configuracion/seguridad')->assertOk()->assertSee('Conservación de datos personales')
             ->assertSee('Apagada: no se quita nada hasta que la enciendas')->assertSee('hoy se quitarían');
         $this->actingAs($this->agente)->put('/configuracion/privacidad', ['conservacion_activa' => 1])->assertForbidden();
         $this->actingAs($this->admin)->put('/configuracion/privacidad', ['conservacion_activa' => '1', 'fotos_persona_dias' => 5, 'fotos_identificacion_dias' => 90, 'visitantes_dias' => 365, 'arco_recordar_dias' => 5])
             ->assertSessionHasErrors('fotos_persona_dias');
         $this->actingAs($this->admin)->put('/configuracion/privacidad', ['conservacion_activa' => '1', 'fotos_persona_dias' => 30, 'fotos_identificacion_dias' => 30, 'visitantes_dias' => 400, 'arco_recordar_dias' => 3])
-            ->assertRedirect(route('configuracion.index').'#cfg-conservacion')->assertSessionHas('ok');
+            ->assertRedirect(route('configuracion.tema', 'seguridad').'#cfg-conservacion')->assertSessionHas('ok');
         $this->assertTrue(Auditoria::where('evento', 'privacidad.conservacion')->exists());
         $this->artisan('plataforma:privacidad')->assertSuccessful();
         $this->assertSame(ConservacionDatos::TEXTO_ELIMINADO, $this->fila($visita)->nombre);
@@ -481,11 +481,11 @@ class PrivacidadArcoTest extends TestCase
         });
         $this->assertSame($v1->id, $c->aviso_privacidad_id);
 
-        // Publicar versión nueva desde Configuración → Privacidad (con autor y auditoría)
+        // Publicar versión nueva desde Configuración → Seguridad y privacidad → Privacidad (con autor y auditoría)
         $this->actingAs($this->agente)->post('/configuracion/privacidad/aviso', ['texto' => 'Nuevo aviso'])->assertForbidden();
         $this->actingAs($this->admin)->post('/configuracion/privacidad/aviso', ['texto' => $v1->texto])->assertSessionHasErrors('texto');
         $this->actingAs($this->admin)->post('/configuracion/privacidad/aviso', ['texto' => "Hotel Uno usará tus datos para tu visita.\nDerechos ARCO: privacidad@hoteluno.mx"])
-            ->assertRedirect(route('configuracion.index').'#cfg-aviso');
+            ->assertRedirect(route('configuracion.tema', 'seguridad').'#cfg-aviso');
         $v2 = $avisos->vigente($this->empresa->refresh());
         $this->assertSame(2, $v2->numero);
         $this->assertSame($this->admin->id, $v2->publicado_por);
@@ -497,7 +497,7 @@ class PrivacidadArcoTest extends TestCase
         $this->assertSame(2, $avisos->vigente($this->empresa->refresh())->numero);
         $this->assertStringNotContainsString('Texto desde Recepción.', app(AjustesRecepcion::class)->textoPrivacidad($this->empresa));
         $this->assertSame(2, app(AjustesRecepcion::class)->horasKiosco($this->empresa)); // el kiosco sí se guarda
-        $this->actingAs($this->admin)->get(route('recepcion.ajustes'))->assertOk()->assertSee('versión 2')->assertSee('Editar en Configuración → Privacidad')
+        $this->actingAs($this->admin)->get(route('recepcion.ajustes'))->assertOk()->assertSee('versión 2')->assertSee('Editar en Configuración → Seguridad y privacidad → Privacidad')
             ->assertDontSee('name="aviso_privacidad"', false);
         $this->actingAs($this->admin)->post('/configuracion/privacidad/aviso', ['texto' => 'Tercera versión del aviso.'])->assertRedirect();
         $v3 = $avisos->vigente($this->empresa->refresh());
@@ -505,7 +505,7 @@ class PrivacidadArcoTest extends TestCase
         $this->assertSame($this->admin->id, $v3->publicado_por);
 
         // El historial y la página pública muestran la versión; el candidato conserva la que aceptó
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('versión 3')->assertSee('Historial de versiones (3)');
+        $this->actingAs($this->admin)->get('/configuracion/seguridad')->assertOk()->assertSee('versión 3')->assertSee('Historial de versiones (3)');
         $this->actingAs($this->admin)->get(route('privacidad.aviso.version', $v1->id))->assertOk()->assertSee('versión 1');
         $otra = $this->crearEmpresa('Hotel Ajeno');
         $vOtra = $avisos->vigente($otra);

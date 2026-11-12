@@ -230,7 +230,7 @@ class EscaladaPrivilegiosTest extends TestCase
         $this->assertFalse(Rol::where('nombre', 'Nuevo')->exists());
 
         // Avisos por correo y datos de la empresa
-        $this->actingAs($actor)->get('/configuracion')->assertOk()->assertDontSee('Guardar avisos');
+        $this->actingAs($actor)->configuracionCompleta()->assertDontSee('Guardar avisos');
         $this->actingAs($actor)->put('/configuracion/avisos', ['avisos' => []])->assertForbidden();
         $this->actingAs($actor)->put("/empresas/{$this->empresa->id}", [
             'nombre_comercial' => 'Cambiada', 'razon_social' => 'X', 'rfc' => 'HUN200101AA1', 'zona_horaria' => 'America/Cancun',

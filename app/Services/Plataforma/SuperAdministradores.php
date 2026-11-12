@@ -11,6 +11,7 @@ use App\Services\Cuenta\SolicitudesCuenta;
 use App\Services\DosPasos\VerificacionDosPasos;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Permisos\AdministradorRoles;
+use App\Support\TemasConfiguracion;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
@@ -206,7 +207,7 @@ class SuperAdministradores
     {
         $ids = User::where('es_superadmin', true)->where('activo', true)->whereKeyNot($actor->id)->pluck('id');
         $this->campana->avisarPlataforma($ids, self::TIPO_AVISO, [
-            'titulo' => $titulo, 'texto' => $texto.' Si no lo esperabas, revisa la Bitácora de auditoría.', 'url' => route('configuracion.index').'#cfg-superadmins',
+            'titulo' => $titulo, 'texto' => $texto.' Si no lo esperabas, revisa la Bitácora de auditoría.', 'url' => TemasConfiguracion::url('cfg-superadmins'),
         ]);
     }
 }

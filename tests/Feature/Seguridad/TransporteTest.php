@@ -307,7 +307,7 @@ class TransporteTest extends TestCase
         $this->actingAs($this->admin)->put('/configuracion/avisos', ['avisos' => ['vale_taxi' => 1], 'destinatarios' => ['vale_taxi' => "Caja@Ejemplo.com\nfinanzas@ejemplo.com"]])
             ->assertSessionHas('ok');
         $this->assertSame(['caja@ejemplo.com', 'finanzas@ejemplo.com'], $this->empresa->fresh()->destinatariosAviso('vale_taxi'));
-        $this->actingAs($this->admin)->get('/configuracion')->assertSee('Correos que lo reciben')->assertSee('caja@ejemplo.com');
+        $this->actingAs($this->admin)->get('/configuracion/activos')->assertSee('Correos que lo reciben')->assertSee('caja@ejemplo.com');
 
         $this->actingAs($this->admin)->put('/configuracion/avisos', [])->assertSessionHas('ok');
         $this->assertFalse($this->empresa->fresh()->aviso('vale_taxi'));

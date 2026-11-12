@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Empresa;
 use App\Services\Arranque\AsistenteArranque;
 use App\Services\Permisos\AdministradorRoles;
+use App\Support\TemasConfiguracion;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,6 @@ class AsistenteArranqueController extends Controller
         return $datos['visible']
             ? redirect()->route('panel')->with('ok', 'Listo: «Configura tu empresa» ya se ve en Inicio.')
             : redirect()->back(fallback: route('panel'))->with('ok', 'Ocultamos «Configura tu empresa» de Inicio. Si la necesitas otra vez, ábrela desde Configuración.')
-                ->with('siguientes', [['Ir a Configuración', route('configuracion.index').'#configura-tu-empresa', 'bi-sliders']]);
+                ->with('siguientes', [['Ir a Configuración', TemasConfiguracion::url('configura-tu-empresa'), 'bi-sliders']]);
     }
 }

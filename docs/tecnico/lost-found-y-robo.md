@@ -46,7 +46,7 @@ Todas llevan `empresa_id` (scope de tenant) y autoría `creado_por` / `actualiza
 | GET | `/lost-found/articulos/{id}/etiqueta` | `lost_found.articulos.etiqueta` | `lost_found.imprimir` |
 | GET | `/lost-found/entregas/{id}/firma` | `lost_found.entregas.firma` | `lost_found.ver` (firma desde el disco privado) |
 | GET | `/lost-found/auditoria?sede=&desde=&hasta=` | `lost_found.auditoria` | `lost_found.imprimir` |
-| GET | `/lost-found/dias-resguardo` (dirección anterior) | `lost_found.umbrales` | `lost_found.ver` → 301 a `/configuracion#lost-found` (o a `/lost-found` si no puede abrir Configuración) |
+| GET | `/lost-found/dias-resguardo` (dirección anterior) | `lost_found.umbrales` | `lost_found.ver` → 301 a `/configuracion/novedades#lost-found` (o a `/lost-found` si no puede abrir Configuración) |
 | PUT | `/configuracion/lost-found` | `configuracion.lost_found` | `lost_found.configurar` **con alcance de empresa** |
 | PUT | `/lost-found/dias-resguardo` (`dias[…]`, `_dialogo=dias-lf`; 30/min) | `lost_found.umbrales.guardar` | `lost_found.configurar` **con alcance de empresa** (sede → 403). Mismas reglas y auditoría (`ArchivoLostFound::guardarUmbrales()`); éxito → `/lost-found?filtro=urgentes` con «Días de resguardo guardados…»; error → regresa con el diálogo abierto |
 | GET | `/robos?filtro=&q=&sede=&abrir=` | `robo.index` | `robo.ver` (menú «Robo — seguimiento») |

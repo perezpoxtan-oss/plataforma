@@ -335,7 +335,7 @@ class PendientesEtapaCincoTest extends TestCase
         $this->assertNull($ajustes->departamentoAccidentes($empresa->refresh()));
         $this->actingAs($admin)->put(route('configuracion.restablecer'), ['ajuste' => 'novedades'])->assertSessionHasNoErrors();
         $this->assertSame($rh->id, $ajustes->departamentoAccidentes($empresa->refresh()));
-        $this->actingAs($admin)->get(route('configuracion.index'))->assertOk()
+        $this->actingAs($admin)->get(route('configuracion.tema', 'novedades'))->assertOk()
             ->assertSee('el departamento que recibe los accidentes de personal');
     }
 

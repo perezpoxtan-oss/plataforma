@@ -190,7 +190,7 @@ class RevisionEtapaCincoTest extends TestCase
         $ajustes = app(AjustesNovedades::class);
         // De fábrica: el que se llama como Recursos Humanos (y se muestra así en Configuración)
         $this->assertSame($rh->id, $this->en($empresa, fn () => $ajustes->departamentoAccidentes($empresa->refresh())));
-        $this->actingAs($admin)->get(route('configuracion.index'))->assertOk()->assertSee('Departamento que recibe accidentes de personal');
+        $this->actingAs($admin)->get(route('configuracion.tema', 'novedades'))->assertOk()->assertSee('Departamento que recibe accidentes de personal');
 
         // Configuración: «Gente y Cultura»
         $this->actingAs($admin)->put(route('configuracion.novedades'), ['nombre_opcion' => 'Novedades', 'categoria_hallazgo_pc' => 'proteccion_civil',

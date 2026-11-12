@@ -96,10 +96,10 @@ Si tu empresa tiene encendido el ajuste **La caseta espera a que RR. HH. diga «
 
 ## Cómo cambiar los ajustes de Recepción
 
-Aquí queda el kiosco. El **aviso de privacidad** que acepta el candidato se ve aquí (con su número de versión), pero **se edita en un solo lugar**: **Configuración → Privacidad** (ver [Configuración](configuracion.md)). Lo que espera en la caseta (autorización de visitas, «Aprobar · que pase», recordatorio y escalamiento) está en **Responsables por departamento**, y los criterios de entrevista en **Candidatos → Criterios de entrevista** (ver [Candidatos](candidatos.md)).
+Aquí queda el kiosco. El **aviso de privacidad** que acepta el candidato se ve aquí (con su número de versión), pero **se edita en un solo lugar**: **Configuración → Seguridad y privacidad → Privacidad** (ver [Configuración](configuracion.md)). Lo que espera en la caseta (autorización de visitas, «Aprobar · que pase», recordatorio y escalamiento) está en **Responsables por departamento**, y los criterios de entrevista en **Candidatos → Criterios de entrevista** (ver [Candidatos](candidatos.md)).
 
 1. En Recepción toca **Ajustes** (también están en [Configuración](configuracion.md)).
-2. Revisa la **versión del aviso de privacidad** vigente. Para cambiar su texto, toca **Editar en Configuración → Privacidad** (si tu rol puede).
+2. Revisa la **versión del aviso de privacidad** vigente. Para cambiar su texto, toca **Editar en Configuración → Seguridad y privacidad → Privacidad** (si tu rol puede).
 3. Ajusta **El enlace del kiosco dura (horas)** y **Veces que se puede enviar**.
 4. Toca **Guardar ajustes de Recepción**.
 

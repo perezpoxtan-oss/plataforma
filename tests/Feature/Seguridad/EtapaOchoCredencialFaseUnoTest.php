@@ -277,7 +277,7 @@ class EtapaOchoCredencialFaseUnoTest extends TestCase
     public function test_configuracion_de_credenciales_y_tecnologia(): void
     {
         $admin = $this->crearUsuario($this->empresa, 'Administrador');
-        $this->actingAs($admin)->get(route('configuracion.index'))->assertOk()->assertSee('Credenciales del personal')->assertSee('Sin vencimiento (de fábrica)');
+        $this->actingAs($admin)->get(route('configuracion.tema', 'estructura'))->assertOk()->assertSee('Credenciales del personal')->assertSee('Sin vencimiento (de fábrica)');
         $c = $this->colaborador();
         $this->actingAs($this->rh)->post(route('credenciales.emitir', $c->id));
         // Solo QR (de fábrica): no pide tarjeta al dar salida
