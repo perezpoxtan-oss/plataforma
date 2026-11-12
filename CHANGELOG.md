@@ -227,6 +227,7 @@ Bajo «## [Sin publicar]»:
   - Manual: `reservas-de-areas.md`, `reservas-aprobar.md`, `reservas-departamentos.md`, `reservas-configuracion.md` (con capturas). Curso: lección 60. Pruebas en `ReservasDeAreasTest`.
 
 ### Corregido
+- **Colaboradores: los botones se encimaban sobre el título.** «Credenciales», «Exportar a Excel» e «Importar» van ahora a la derecha del título y los filtros (sede, departamento, turno, registro y búsqueda) en su propio renglón, que se acomoda en varias líneas si no caben. En el celular se apilan.
 - **Producción no leía `desplegar_version.txt` en el servidor:** el script usaba una sustitución de procesos de bash (`< <(...)`) que en el cron del hospedaje (CageFS, sin `/dev/fd`) devolvía una línea vacía, y el estado decía «Sin version autorizada». Ahora se lee con una variable y `<<<`.
 - **Primera instalación de Producción sin terminal:** `desplegar.sh prod` ahora acepta `prod_inicial.txt` (plantilla en `despliegue/prod_inicial.txt`) para crear el Super Administrador de Producción; nunca siembra datos demo. Guía paso a paso en `docs/tecnico/despliegue.md`.
 - **Seguridad de dependencias:** `symfony/http-foundation`, `symfony/http-kernel` y `symfony/routing` suben de 8.1.8 a 8.1.11 por seis avisos publicados el 4 nov (CVE-2026-118514, CVE-2026-118516 y otros: peticiones HEAD que se saltan reglas por método, reglas de ruta delante de PHP, proxies de confianza con direcciones IPv6 mapeadas, URL generadas con un host elegido por el cliente). Solo cambia `composer.lock`; no hay cambio visible.

@@ -519,6 +519,11 @@ body.acceso { background-color: var(--fondo-acceso); min-height: 100vh; display:
 .tema-esmeralda .btn-icono.editar:hover { background: #10b981; color: #fff; }
 .tema-esmeralda .campo:focus, .tema-esmeralda .buscador input:focus, .tema-esmeralda .filtro-select:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.15); outline: none; }
 .tema-esmeralda .barra-filtros { max-width: 920px; }
+/* Acciones del encabezado (Credenciales, Exportar, Importar) y filtros en su propio renglón: nada se encima con el título */
+.acciones-pantalla { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.acciones-pantalla .btn { min-height: 44px; border-radius: 10px; white-space: nowrap; }
+.barra-filtros.barra-filtros-renglon { max-width: none; flex-wrap: wrap; }
+@media (min-width: 576px) { .barra-filtros.barra-filtros-renglon .buscador { flex: 1 1 260px; } }
 .tema-esmeralda .barra-filtros .filtro-select { max-width: 250px; }
 @media (max-width: 575.98px) { .tema-esmeralda .barra-filtros .filtro-select { max-width: none; width: 100%; } }
 .btn-esmeralda { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }

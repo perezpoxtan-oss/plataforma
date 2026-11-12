@@ -41,7 +41,8 @@
             </div>
         @endif
 
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        {{-- Encabezado: título a la izquierda y acciones a la derecha; los filtros van en su propio renglón (antes se encimaban sobre el título) --}}
+        <div class="d-flex flex-column flex-md-row flex-wrap justify-content-between align-items-md-center gap-3 mb-3">
             <div class="encabezado-pantalla m-0">
                 <div class="icono"><i class="bi bi-person-vcard text-success" aria-hidden="true"></i></div>
                 <div>
@@ -49,15 +50,20 @@
                     <p>Directorio de personal y contratistas internos.</p>
                 </div>
             </div>
-            <div class="barra-filtros justify-content-md-end">
-                {{-- C-43 (E-13): «Exportar a Excel» con su permiso, sin datos personales --}}
+            <div class="acciones-pantalla">
                 {{-- C-44 (Etapa 8): lista de credenciales (vigentes, por vencer, vencidas, sin credencial) --}}
                 @can('colaboradores.credencial')
-                    <a href="{{ route('credenciales.index') }}" class="btn btn-outline-secondary" style="min-height:44px;border-radius:10px;"><i class="bi bi-person-vcard me-1" aria-hidden="true"></i>Credenciales</a>
+                    <a href="{{ route('credenciales.index') }}" class="btn btn-outline-secondary"><i class="bi bi-person-vcard me-1" aria-hidden="true"></i>Credenciales</a>
                 @endcan
+                {{-- C-43 (E-13): «Exportar a Excel» con su permiso, sin datos personales --}}
                 @can('colaboradores.exportar')
-                    <a href="{{ route('colaboradores.exportar') }}" class="btn btn-outline-secondary" style="min-height:44px;border-radius:10px;"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Exportar a Excel</a>
+                    <a href="{{ route('colaboradores.exportar') }}" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Exportar a Excel</a>
                 @endcan
+                @include('importaciones._boton', ['tipo' => 'colaboradores', 'modulo' => 'colaboradores'])
+            </div>
+        </div>
+
+        <div class="barra-filtros barra-filtros-renglon mb-4">
                 @if ($sedesFiltro->count() > 1)
                     <select class="filtro-select" aria-label="Filtrar por sede" data-filtro-colab="sede">
                         <option value="">Todas las sedes</option>
@@ -93,8 +99,6 @@
                     <i class="bi bi-search" aria-hidden="true"></i>
                     <input type="search" placeholder="Buscar empleado, número o puesto..." aria-label="Buscar colaborador" data-filtro-colab="texto">
                 </div>
-                @include('importaciones._boton', ['tipo' => 'colaboradores', 'modulo' => 'colaboradores'])
-            </div>
         </div>
 
         <div class="fichas-grid" data-colaboradores>
