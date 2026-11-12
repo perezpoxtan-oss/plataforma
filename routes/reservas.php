@@ -40,8 +40,8 @@ Route::prefix('reservas')->name('reservas.')->group(function () {
     Route::controller(BloqueoReservaController::class)->group(function () {
         Route::get('/bloqueos', 'index')->name('bloqueos');
         Route::get('/bloqueos/nuevo', 'create')->name('bloqueos.create');
-        Route::get('/bloqueos/impacto', 'impacto')->middleware('throttle:reservas.disponibilidad')->name('bloqueos.impacto');
-        Route::post('/bloqueos', 'store')->middleware('throttle:reservas.store')->name('bloqueos.store');
+        Route::get('/bloqueos/impacto', 'impacto')->middleware('throttle:reservas.bloqueos.impacto')->name('bloqueos.impacto');
+        Route::post('/bloqueos', 'store')->middleware('throttle:reservas.bloqueos.store')->name('bloqueos.store');
         Route::patch('/bloqueos/{bloqueo}/baja', 'baja')->whereNumber('bloqueo')->name('bloqueos.baja');
     });
     Route::controller(InformeReservasController::class)->group(function () {
