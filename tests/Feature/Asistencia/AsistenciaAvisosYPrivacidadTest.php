@@ -155,7 +155,8 @@ class AsistenciaAvisosYPrivacidadTest extends TestCase
     {
         $admin = $this->crearUsuario($this->empresa, 'Administrador');
         $this->actingAs($admin)->get('/configuracion/personal')->assertOk()->assertSee('Asistencia: tolerancia y aviso de faltas')
-            ->assertSee('Configurar en Asistencia → Avanzado')->assertSee('Asistencia: notas de las justificaciones');
+            ->assertSee('Configurar en Asistencia → Avanzado');
+        $this->actingAs($admin)->get('/configuracion/seguridad')->assertOk()->assertSee('Asistencia: notas de las justificaciones');
 
         $otra = $this->crearEmpresa('Hotel Sin Asistencia');
         $adminOtra = $this->crearUsuario($otra, 'Administrador');
