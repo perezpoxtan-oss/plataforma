@@ -6,6 +6,7 @@ Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PA
 Bajo «## [Sin publicar]»:
 
 ### Agregado
+- **Capturas del Manual de usuario al día con la versión actual.** Script reutilizable `scripts/capturas-manual/` (preparar la base local con nombres neutros, recorrer cada imagen que usa el manual y regenerarla con el mismo nombre, sin la franja de ambiente). Ver `docs/tecnico/capturas-manual.md`. Manual: Colaboradores e Importar desde Excel dicen dónde quedó **Importar** (junto al título).
 - **Importar estructura** (pedido del dueño: «importar las sedes, con sus zonas, habitaciones y áreas dentro de las habitaciones, con un Excel»). Ver `docs/tecnico/importar-estructura.md`.
   - **Estructura → Sedes → Importar estructura**: plantilla → subir → vista previa renglón por renglón → **Guardar** → resumen, con el mismo flujo de Importar desde Excel. El Super Administrador elige la empresa en «Empresa de trabajo».
   - Plantilla **.xlsx** con hojas «Estructura» (ejemplos ficticios del giro) e «Instrucciones» (columnas y tipos que ya tiene la empresa). Un renglón por lugar: Sede, Código de sede, Ciudad, Estado, Zona o edificio, Piso, Habitación / Oficina / Vivienda / Casa, su tipo, Área común (giros residenciales), Área de la habitación, Tipo de área y Código.
