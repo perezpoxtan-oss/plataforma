@@ -1,6 +1,6 @@
 # Lección 60 · Reservas de áreas
 
-**Duración:** 45 minutos · **Para:** Administrador del cliente (prácticas 1, 6 y 7), quien reserva (2 y 5), quien aprueba (3) y los departamentos (4).
+**Duración:** 55 minutos · **Para:** Administrador del cliente (prácticas 1, 6 y 7), quien reserva (2, 5 y 11), quien aprueba (3), los departamentos (4) y el responsable general de reservas (11).
 
 Aprenderás:
 
@@ -11,6 +11,7 @@ Aprenderás:
 5. A modificar y cancelar.
 6. A leer los informes.
 7. A reservar una zona por sus espacios interiores (habitaciones o salas), a entender el bloqueo entre la zona completa y sus espacios, y a quitar un área de reservas sin perder su historial.
+8. A bloquear un sitio por mantenimiento, a mover una reserva afectada y a reservar con un toque desde el calendario de una sala.
 
 ## Antes de empezar
 
@@ -125,7 +126,19 @@ Comprueba: después de aprobar, cada departamento (también Steward, por el tipo
 5. Como Administrador, en **Configuración** toca el bote de basura de un área con reservas próximas y lee el mensaje (termina con «El espacio sigue en Zonas y edificios.»); toca **Cancelar**.
 6. Edita un área **quitada** (con **Mostrar quitadas**) y guarda: el aviso dice que sigue quitada y ofrece **Ver áreas quitadas para reactivarla**, no **Reservar esta área**.
 
+## Práctica 11 · Bloquear un sitio y reservar a un toque (responsable general y quien reserva)
+
+1. Como quien reserva, haz una reserva en la **Sala de juntas Ceiba** pasado mañana de 10:00 a 11:00.
+2. Como **responsable general de reservas**, en la ficha de la sala toca **Bloquear este sitio**. Pon ese mismo día de 08:00 a 14:00 y el motivo «Mantenimiento». Antes de guardar, el cuadro dice «Hay 1 reserva en esas fechas…». Toca **Guardar · bloquear**.
+3. Comprueba: la pestaña **Bloqueos** muestra la ficha **Programado** con «1 reserva afectada». En el calendario de la sala, ese día dice con rayas rojas **Bloqueado: Mantenimiento**.
+4. Como quien reservó: campana «Tu reserva quedó afectada por un bloqueo…» y **Mis pendientes → Reservas afectadas por un bloqueo**. Abre la reserva, toca **Modificar** y muévela a las 15:00. La insignia **Afectada por bloqueo** desaparece.
+5. Intenta reservar la sala a las 12:00 de ese día: el mensaje dice que está bloqueada y por qué.
+6. En el calendario de la sala (vista **Día**) toca una **hora libre** (por ejemplo **+ 16:00**): se abre **Nueva reserva** con la sala, el día y de 16:00 a 17:00. Arriba del calendario verás quién es el responsable de la sala y el responsable general.
+7. Como responsable general, en **Bloqueos** toca el **candado abierto**, escribe «Terminó antes» y **Dar de baja**. Ya se puede reservar de 08:00 a 14:00.
+
 ## Para recordar
+
+- Un **bloqueo** cierra un sitio por un tiempo con su motivo; bloquear una zona bloquea sus espacios. Las reservas que ya estaban no se cancelan solas: quedan **Afectada por bloqueo** y quien reservó la mueve o la da de baja.
 
 - Una zona se reserva **completa** o **por sus espacios interiores**; si ambas existen, una ocupa a la otra en ese horario.
 - **Editar** es siempre el lápiz y **Eliminar** el bote de basura, como en Zonas y edificios.

@@ -10,6 +10,7 @@ use App\Models\Espacio;
 use App\Models\Reserva;
 use App\Models\ReservaAprobacion;
 use App\Models\ReservaArea;
+use App\Models\ReservaBloqueo;
 use App\Models\ReservaServicio;
 use App\Models\ReservaServicioItem;
 use App\Models\ReservaTipoUso;
@@ -17,6 +18,7 @@ use App\Models\Sede;
 use App\Models\User;
 use App\Services\Reservas\AdministradorReservas;
 use App\Services\Reservas\AjustesReservas;
+use App\Services\Reservas\BloqueosReservas;
 use App\Services\Reservas\CatalogosReservas;
 use App\Services\Reservas\Cotizador;
 use App\Services\Reservas\Disponibilidad;
@@ -114,13 +116,19 @@ class ReservaController extends Controller
             $proximas = Reserva::ocupan()->whereIn('reserva_area_id', $enSede->pluck('id'))->where('fin', '>', now())
                 ->orderBy('inicio')->get(['id', 'reserva_area_id', 'inicio', 'fin'])->groupBy('reserva_area_id');
             $titulares = $nivel->mapWithKeys(fn ($a) => [$a->id => $this->responsables->delArea($a)[0]]);
-            $nombres = User::whereIn('id', $titulares->filter()->unique())->pluck('name', 'id');
+            $suplentes = $nivel->mapWithKeys(fn ($a) => [$a->id => $this->responsables->delArea($a)[1]]);
+            $ajustesEmpresa = $this->ajustes->de($empresaId);
+            $nombres = User::whereIn('id', $titulares->merge($suplentes)->push($ajustesEmpresa['responsable_id'])->push($ajustesEmpresa['suplente_id'])->filter()->unique())->pluck('name', 'id');
+            // Bloqueos de hoy en la sede (una consulta): la ficha dice «Bloqueado hoy»
+            $bloqueosHoy = ReservaBloqueo::vigentes()->with('espacio:id,ruta')->where('sede_id', $sede)
+                ->where('desde', '<', $hoyHasta)->where('hasta', '>', $hoyDesde)->get();
+            $bloqueador = app(BloqueosReservas::class);
             $local = fn ($fecha, $area) => $fecha->copy()->setTimezone($this->disponibilidad->zona($area));
             $moneda = (string) (Empresa::whereKey($empresaId)->value('moneda') ?: 'MXN');
             // Dónde está cada ficha dentro de la zona («Piso 1»), para agruparlas
             $ancestros = $nivel->flatMap(fn ($a) => $a->espacio?->idsAncestros() ?? [])->unique()->values();
             $nombresEspacio = $ancestros->isEmpty() ? collect() : Espacio::whereIn('id', $ancestros)->pluck('nombre', 'id');
-            $fichas = $nivel->map(function (ReservaArea $a) use ($proximas, $titulares, $nombres, $local, $hoyDesde, $hoyHasta, $moneda, $finales, $zona, $nombresEspacio) {
+            $fichas = $nivel->map(function (ReservaArea $a) use ($proximas, $titulares, $suplentes, $nombres, $local, $hoyDesde, $hoyHasta, $moneda, $finales, $zona, $nombresEspacio, $bloqueosHoy, $bloqueador, $actor) {
                 $dentro = $finales((int) $a->id);
                 $ids = $dentro->push((int) $a->id);
                 $suyas = $ids->flatMap(fn ($id) => $proximas->get($id, collect()))->sortBy('inicio')->values();
@@ -133,6 +141,10 @@ class ReservaController extends Controller
 
                 return [
                     'area' => $a, 'responsable' => $titulares[$a->id] ? ($nombres[$titulares[$a->id]] ?? null) : null,
+                    'suplente' => $suplentes[$a->id] ? ($nombres[$suplentes[$a->id]] ?? null) : null,
+                    'bloqueo' => $bloqueosHoy->first(fn ($b) => $b->espacio !== null && $a->espacio !== null
+                        && (str_starts_with((string) $a->espacio->ruta, (string) $b->espacio->ruta) || str_starts_with((string) $b->espacio->ruta, (string) $a->espacio->ruta)))?->motivo,
+                    'puedeBloquear' => $bloqueador->puedeBloquear($actor, $a),
                     'hoy' => $suyas->filter(fn ($r) => $r->inicio->lessThan($hoyHasta) && $r->fin->greaterThan($hoyDesde))->count(),
                     'proxima' => $proxima === null ? null : ReservaController::diaTexto($local($proxima->inicio, $a)).' '.$local($proxima->inicio, $a)->format('d/m H:i'),
                     'tarifa' => $tarifas === [] ? null : collect($tarifas)->map(fn ($v, $k) => ReservaArea::TARIFAS[$k][1].' '.Cotizador::dinero($v, $moneda))->first(),
@@ -153,6 +165,8 @@ class ReservaController extends Controller
                 'sede' => $sedes->firstWhere('id', $sede), 'variasSedes' => $sedes->count() > 1, 'fichas' => $fichas, 'puede' => $puede,
                 'puedeReservar' => $this->reservas->puedeReservarEn($actor, $sede), 'zona' => $zona, 'migas' => $migas,
                 'configurarAqui' => $configurarAqui,
+                'general' => $ajustesEmpresa['responsable_id'] ? ($nombres[$ajustesEmpresa['responsable_id']] ?? null) : null,
+                'generalSuplente' => $ajustesEmpresa['suplente_id'] ? ($nombres[$ajustesEmpresa['suplente_id']] ?? null) : null,
                 'eliminar' => $configurarAqui ? app(CatalogosReservas::class)->resumenParaEliminar($nivel) : [],
                 // La lista para «Agregar área reservable» se pide al abrir el diálogo
                 'opciones' => $configurarAqui && session('errors')?->has('espacio_id') ? app(CatalogosReservas::class)->opcionesParaAgregar([$sede], Empresa::find($empresaId)) : null,
@@ -201,12 +215,20 @@ class ReservaController extends Controller
                 ->where('inicio', '<', $hasta->utc())->where('fin', '>', $desde->utc())
                 ->orderBy('inicio')->get();
             $eventos = $lista->map(fn (Reserva $r) => $this->eventoCalendario($actor, $r, $zona));
+            $bloqueos = $this->bloqueosCalendario($actor, $mostrar, $desde, $hasta, $zona);
+            $unaArea = $area !== null ? $mostrar->first() : null;
+            $hoyLocal = now($zona)->toDateString();
 
             $dias = [];
             for ($d = $desde; $d->lessThan($hasta); $d = $d->addDay()) {
                 $clave = $d->toDateString();
-                $dias[$clave] = ['fecha' => $d, 'eventos' => $eventos->filter(fn ($e) => $e['dia'] === $clave)->values()];
+                $dias[$clave] = ['fecha' => $d, 'eventos' => $eventos->filter(fn ($e) => $e['dia'] === $clave)->values(),
+                    'bloqueos' => $bloqueos->filter(fn ($b) => $b['dia'] === $clave)->values(),
+                    // Calendario de una sola área: los huecos libres se reservan con un toque
+                    'huecos' => $unaArea !== null && $vista !== 'mes' && $clave >= $hoyLocal && $this->reservas->puedeReservarEn($actor, (int) $unaArea->sede_id)
+                        ? $this->huecosLibres($unaArea, $clave) : []];
             }
+            $bloqueador = app(BloqueosReservas::class);
 
             return view('operacion.reservas.calendario', [
                 'sinEmpresa' => false, 'vista' => $vista, 'fecha' => $fecha, 'desde' => $desde, 'hasta' => $hasta, 'dias' => $dias,
@@ -214,8 +236,117 @@ class ReservaController extends Controller
                 'navegar' => $this->navegacion($vista, $fecha), 'hoy' => now($zona)->toDateString(),
                 'puede' => $this->permisosGenerales($actor),
                 'puedeReservar' => $mostrar->filter(fn ($a) => $this->reservas->puedeReservarEn($actor, (int) $a->sede_id))->pluck('id')->all(),
+                // Quién responde por el área elegida y quién es el responsable general (se ve en la pantalla)
+                'quienes' => $unaArea !== null ? $this->quienesDe($unaArea) : null,
+                'puedeBloquear' => $unaArea !== null && $bloqueador->puedeBloquear($actor, $unaArea),
+                'conBloqueos' => $bloqueos->isNotEmpty(),
             ]);
         });
+    }
+
+    /**
+     * Bloqueos vigentes que tocan las áreas que se muestran, uno por día que
+     * cubren (recortados al día) y una sola vez aunque afecten a varias áreas
+     * (bloquear una zona bloquea sus espacios interiores y al revés).
+     *
+     * @param  Collection<int, ReservaArea>  $areas
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function bloqueosCalendario(User $actor, Collection $areas, CarbonImmutable $desde, CarbonImmutable $hasta, string $zona): Collection
+    {
+        if ($areas->isEmpty()) {
+            return collect();
+        }
+        $bloqueos = ReservaBloqueo::vigentes()->with(['espacio:id,nombre,ruta', 'area'])
+            ->whereIn('sede_id', $areas->pluck('sede_id')->unique())
+            ->where('desde', '<', $hasta->utc())->where('hasta', '>', $desde->utc())->orderBy('desde')->get();
+        $bloqueador = app(BloqueosReservas::class);
+        $r = collect();
+        foreach ($bloqueos as $b) {
+            $ruta = (string) $b->espacio?->ruta;
+            $afecta = $areas->filter(fn (ReservaArea $a) => $ruta !== '' && ($a->espacio?->ruta !== null)
+                && (str_starts_with((string) $a->espacio->ruta, $ruta) || str_starts_with($ruta, (string) $a->espacio->ruta)))->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
+            if ($afecta === []) {
+                continue;
+            }
+            $local = $b->area ? $this->disponibilidad->zona($b->area) : $zona;
+            $ini = $b->desde->copy()->setTimezone($local);
+            $fin = $b->hasta->copy()->setTimezone($local);
+            for ($d = CarbonImmutable::instance($ini)->startOfDay(); $d->lessThan($fin); $d = $d->addDay()) {
+                if ($d->lessThan($desde->startOfDay()) || $d->greaterThanOrEqualTo($hasta)) {
+                    continue;
+                }
+                $r->push([
+                    'id' => (int) $b->id, 'dia' => $d->toDateString(), 'areas' => $afecta, 'sitio' => $b->sitio(), 'motivo' => $b->motivo,
+                    'desde' => $ini->greaterThan($d) ? $ini->format('H:i') : '00:00',
+                    'hasta' => $fin->lessThan($d->addDay()) ? $fin->format('H:i') : '24:00',
+                    'url' => $b->area && $bloqueador->puedeBloquear($actor, $b->area) ? route('reservas.bloqueos').'#bloqueo-'.$b->id : null,
+                ]);
+            }
+        }
+
+        return $r;
+    }
+
+    /**
+     * Horas libres de un área en un día (de hora en hora, dentro del horario
+     * del área; sin horario, de 07:00 a 22:00), contando el montaje y el
+     * desmontaje del área, las reservas que comparten lugar y los bloqueos.
+     * Tocar una abre «Nueva reserva» con área, día y hora puestos.
+     *
+     * @return list<string>
+     */
+    private function huecosLibres(ReservaArea $area, string $fecha): array
+    {
+        $zona = $this->disponibilidad->zona($area);
+        $dia = CarbonImmutable::createFromFormat('Y-m-d', $fecha, $zona)->startOfDay();
+        $ventanas = is_array($area->horario) && $area->horario !== [] ? (array) ($area->horario[(string) $dia->dayOfWeekIso] ?? []) : [['07:00', '22:00']];
+        if ($ventanas === []) {
+            return [];
+        }
+        $min = fn (string $h) => ((int) substr($h, 0, 2)) * 60 + (int) substr($h, 3, 2);
+        $ocupado = collect($this->disponibilidad->ocupadoEl($area, $fecha))->map(fn ($o) => [$min($o['desde']), $min($o['hasta'])]);
+        $ahora = now($zona);
+        $ahoraMin = $ahora->toDateString() === $fecha ? $ahora->hour * 60 + $ahora->minute : -1;
+        $antes = (int) $area->montaje_minutos;
+        $despues = (int) $area->desmontaje_minutos;
+        $huecos = [];
+        foreach ($ventanas as $v) {
+            if (! is_array($v) || count($v) !== 2) {
+                continue;
+            }
+            for ($s = $min((string) $v[0]); $s + 60 <= $min((string) $v[1]); $s += 60) {
+                if ($s <= $ahoraMin) {
+                    continue;
+                }
+                $libre = $ocupado->every(fn ($o) => $s + 60 + $despues <= $o[0] || $s - $antes >= $o[1]);
+                if ($libre) {
+                    $huecos[] = sprintf('%02d:%02d', intdiv($s, 60), $s % 60);
+                }
+            }
+        }
+
+        return array_values(array_unique($huecos));
+    }
+
+    /**
+     * Responsable y suplente del área (los suyos o, si no tiene, los
+     * generales) y el responsable general con su suplente, por nombre.
+     *
+     * @return array{responsable: ?string, suplente: ?string, propio: bool, general: ?string, general_suplente: ?string}
+     */
+    private function quienesDe(ReservaArea $area): array
+    {
+        [$titular, $suplente] = $this->responsables->delArea($area);
+        $ajustes = $this->ajustes->de((int) $area->empresa_id);
+        $nombres = User::whereIn('id', array_filter([$titular, $suplente, $ajustes['responsable_id'], $ajustes['suplente_id']]))->pluck('name', 'id');
+
+        return [
+            'responsable' => $titular ? ($nombres[$titular] ?? null) : null, 'suplente' => $suplente ? ($nombres[$suplente] ?? null) : null,
+            'propio' => $area->responsable_id !== null,
+            'general' => $ajustes['responsable_id'] ? ($nombres[$ajustes['responsable_id']] ?? null) : null,
+            'general_suplente' => $ajustes['suplente_id'] ? ($nombres[$ajustes['suplente_id']] ?? null) : null,
+        ];
     }
 
     /**
@@ -232,6 +363,7 @@ class ReservaController extends Controller
             'bloqueo' => $r->bloqueo_desde->copy()->setTimezone($local)->format('H:i').'–'.$r->bloqueo_hasta->copy()->setTimezone($local)->format('H:i'),
             'titulo' => $detalle ? $r->titulo : 'Ocupado', 'estado' => $r->estado, 'estadoTexto' => $r->estadoTexto(),
             'url' => $detalle ? route('reservas.show', $r->id) : null, 'mia' => (int) $r->solicitante_id === (int) $actor->id,
+            'afectada' => $r->bloqueo_id !== null,
         ];
     }
 
@@ -306,19 +438,23 @@ class ReservaController extends Controller
         }
         $estado = array_key_exists((string) $request->query('estado'), Reserva::ESTADOS) ? (string) $request->query('estado') : null;
         $pasadas = $request->boolean('pasadas');
+        // Bloqueos: solo las que un bloqueo dejó «Afectada por bloqueo» (renglón de Mis pendientes)
+        $afectadas = $request->boolean('afectadas');
 
-        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $estado, $pasadas) {
-            $lista = Reserva::with(['area.espacio', 'area.sede', 'aprobaciones.departamento:id,nombre', 'ordenes'])
+        return $this->tenant->conEmpresa($empresaId, function () use ($actor, $estado, $pasadas, $afectadas) {
+            $lista = Reserva::with(['area.espacio', 'area.sede', 'aprobaciones.departamento:id,nombre', 'ordenes', 'bloqueo'])
                 ->where('solicitante_id', $actor->id)
+                ->when($afectadas, fn ($q) => $q->whereNotNull('bloqueo_id')->ocupan())
                 ->when($estado !== null, fn ($q) => $q->where('estado', $estado))
                 ->when($estado === null, fn ($q) => $pasadas ? $q->where('fin', '<', now()) : $q->where('fin', '>=', now()))
                 ->orderBy($pasadas ? 'inicio' : 'inicio', $pasadas ? 'desc' : 'asc')
                 ->paginate(30)->withQueryString();
             $conteos = Reserva::where('solicitante_id', $actor->id)->where('fin', '>=', now())
                 ->selectRaw('estado, COUNT(*) AS total')->groupBy('estado')->pluck('total', 'estado');
+            $conteoAfectadas = Reserva::where('solicitante_id', $actor->id)->where('fin', '>=', now())->ocupan()->whereNotNull('bloqueo_id')->count();
 
             return view('operacion.reservas.mias', [
-                'reservas' => $lista, 'estado' => $estado, 'pasadas' => $pasadas, 'conteos' => $conteos,
+                'reservas' => $lista, 'estado' => $estado, 'pasadas' => $pasadas, 'conteos' => $conteos, 'afectadas' => $afectadas, 'conteoAfectadas' => $conteoAfectadas,
                 'puede' => $this->permisosGenerales($actor), 'textos' => $this->reservas->textos(),
             ]);
         });
@@ -407,7 +543,8 @@ class ReservaController extends Controller
         $valores = $reserva === null ? [
             'reserva_area_id' => (int) $request->query('area', $areas->count() === 1 ? $areas->first()->id : 0),
             'fecha' => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $request->query('fecha')) ? $request->query('fecha') : '',
-            'hora_inicio' => '', 'hora_fin' => '', 'titulo' => '', 'tipo_uso_id' => '', 'montaje_id' => '', 'asistentes' => '',
+            // Desde un hueco libre del calendario: la hora de inicio y una hora de duración
+            'hora_inicio' => self::horaDe($request) ?? '', 'hora_fin' => ($h = self::horaDe($request)) !== null ? self::masUnaHora($h) : '', 'titulo' => '', 'tipo_uso_id' => '', 'montaje_id' => '', 'asistentes' => '',
             'para_cliente' => false, 'cliente_nombre' => '', 'cliente_empresa' => '', 'cliente_correo' => '', 'cliente_telefono' => '',
             'tarifa' => '', 'notas' => '', 'servicios' => [], 'otros' => [], 'residente_id' => '',
             // Orden de evento: el departamento se propone con el del colaborador del usuario
@@ -478,6 +615,22 @@ class ReservaController extends Controller
                     ->get(['id', 'sede_id', 'espacio_id', 'nombre', 'apellido_paterno', 'apellido_materno'])
                 : collect(),
         ]);
+    }
+
+    /** «10:00» de ?hora= (o null si no viene o no es una hora). */
+    private static function horaDe(Request $request): ?string
+    {
+        $hora = (string) $request->query('hora');
+
+        return preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $hora) === 1 ? $hora : null;
+    }
+
+    /** «10:00» → «11:00» (sin pasar de las 23:59). */
+    private static function masUnaHora(string $hora): string
+    {
+        $m = min(23 * 60 + 59, ((int) substr($hora, 0, 2)) * 60 + (int) substr($hora, 3, 2) + 60);
+
+        return sprintf('%02d:%02d', intdiv($m, 60), $m % 60);
     }
 
     /**
@@ -555,7 +708,7 @@ class ReservaController extends Controller
         $reserva = $this->cargar($reserva);
         $reserva->load(['area.espacio', 'area.sede', 'area.montajes', 'sede:id,nombre', 'tipoUso:id,nombre', 'montaje:id,nombre', 'solicitante:id,name,email', 'departamentoSolicitante:id,nombre',
             'items.departamento:id,nombre', 'aprobaciones.departamento:id,nombre', 'aprobaciones.respondidaPor:id,name', 'ordenes.departamento:id,nombre',
-            'ordenes.listaPor:id,name', 'eventos.usuario:id,name', 'canceladaPor:id,name']);
+            'ordenes.listaPor:id,name', 'eventos.usuario:id,name', 'canceladaPor:id,name', 'bloqueo.espacio:id,nombre']);
         $vigentes = $reserva->aprobaciones->where('vigente', true)->values();
         $responder = $vigentes->filter(fn (ReservaAprobacion $a) => $this->responsables->puedeResponder($actor, $a, $reserva))->values();
         $ordenes = $reserva->ordenes->where('estado', '!=', 'cancelada')->values();

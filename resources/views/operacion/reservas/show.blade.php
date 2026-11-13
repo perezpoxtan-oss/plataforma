@@ -28,6 +28,17 @@
                 <span class="res-estado estado-{{ $estadoClase }}">{{ $reserva->estadoTexto() }}</span>
                 <h2 class="mt-2 mb-1">{{ $reserva->titulo }}</h2>
                 <div class="res-meta"><i class="bi bi-door-open" aria-hidden="true"></i> {{ $reserva->area->rutaTexto() }} · {{ $reserva->sede?->nombre }} · <strong>{{ $textos->cuando($reserva) }}</strong></div>
+                @if ($reserva->afectadaPorBloqueo() && $reserva->bloqueo)
+                    {{-- Bloqueos: nada se da de baja solo; quien reservó la mueve o la da de baja --}}
+                    <div class="alert alert-danger small mt-2 mb-0" role="status"><i class="bi bi-lock-fill" aria-hidden="true"></i>
+                        <strong>Afectada por bloqueo:</strong> «{{ $reserva->bloqueo->sitio() }}» está bloqueado {{ \App\Services\Reservas\Disponibilidad::rangoTexto($reserva->bloqueo->desde, $reserva->bloqueo->hasta, $zona) }} ({{ $reserva->bloqueo->motivo }}).
+                        @if ($puede['modificar'] || $puede['cancelar'])
+                            {{ $puede['modificar'] ? 'Toca Modificar para moverla a otro horario u otra área' : '' }}{{ $puede['modificar'] && $puede['cancelar'] ? ', o ' : '' }}{{ $puede['cancelar'] ? ($puede['modificar'] ? 'dala de baja' : 'Toca Dar de baja la reserva si ya no se hará') : '' }}.
+                        @else
+                            Quien la reservó debe moverla o darla de baja.
+                        @endif
+                    </div>
+                @endif
                 @if ($reserva->estado === Reserva::CAMBIO_PEDIDO)
                     <div class="alert alert-warning small mt-2 mb-0" role="status"><i class="bi bi-arrow-repeat" aria-hidden="true"></i>
                         Piden un cambio: {{ $vigentes->firstWhere('estado', ReservaAprobacion::CAMBIO)?->comentario }}.

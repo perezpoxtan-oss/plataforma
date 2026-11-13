@@ -153,6 +153,7 @@ trait EscenarioAuditoria
             'aprobacion' => 'reserva_aprobaciones',
             'orden' => 'reserva_ordenes',
             'area' => 'reserva_areas',
+            'bloqueo' => 'reserva_bloqueos',
             // Privacidad: solicitudes ARCO
             'solicitud' => 'solicitudes_arco',
             // Etapa 5 · C-10: residentes (filas de colaboradores con tipo residente)

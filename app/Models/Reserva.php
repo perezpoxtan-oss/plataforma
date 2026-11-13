@@ -134,6 +134,18 @@ class Reserva extends Model
         return trim(($this->solicitante?->name ?? '—').($this->departamentoSolicitante ? ' — '.$this->departamentoSolicitante->nombre : ''));
     }
 
+    /** Bloqueo que la dejó «Afectada por bloqueo» (docs/tecnico/reservas.md, «Bloqueos»). */
+    public function bloqueo(): BelongsTo
+    {
+        return $this->belongsTo(ReservaBloqueo::class, 'bloqueo_id');
+    }
+
+    /** ¿Un bloqueo vigente cae en su horario? (quien reservó la mueve o la da de baja) */
+    public function afectadaPorBloqueo(): bool
+    {
+        return $this->bloqueo_id !== null && $this->activa() && ! $this->terminada();
+    }
+
     public function canceladaPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cancelada_por');

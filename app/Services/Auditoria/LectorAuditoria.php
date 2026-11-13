@@ -45,6 +45,7 @@ use App\Models\Puesto;
 use App\Models\RecorridoPc;
 use App\Models\Reserva;
 use App\Models\ReservaArea;
+use App\Models\ReservaBloqueo;
 use App\Models\ReservaMontaje;
 use App\Models\ReservaServicio;
 use App\Models\ReservaTipoUso;
@@ -202,7 +203,7 @@ class LectorAuditoria
         'orden_lista' => 'Orden de servicio lista', 'area_reservable' => 'Área marcada como reservable', 'area_no_reservable' => 'Área ya no reservable',
         'area_configurada' => 'Cambio de la configuración del área', 'area_modo' => 'Cambio de cómo se reserva la zona', 'area_quitada' => 'Área eliminada de reservas', 'catalogo_creado' => 'Alta en el catálogo', 'catalogo_actualizado' => 'Edición en el catálogo',
         'catalogo_baja' => 'Baja en el catálogo', 'catalogo_reactivado' => 'Reactivación en el catálogo', 'catalogo_eliminado' => 'Eliminación en el catálogo',
-        'sugeridos_hotel' => 'Carga de servicios sugeridos de hotel',
+        'sugeridos_hotel' => 'Carga de servicios sugeridos de hotel', 'bloqueo_creado' => 'Bloqueo de un sitio', 'bloqueo_baja' => 'Baja de un bloqueo',
         // Verificación en dos pasos (docs/tecnico/dos-pasos.md)
         'dos_pasos' => 'Cambio de a quién se exige la verificación en dos pasos', 'dos_pasos_activada' => 'Verificación en dos pasos activada',
         'dos_pasos_desactivada' => 'Verificación en dos pasos quitada', 'dos_pasos_codigos' => 'Códigos de respaldo nuevos',
@@ -302,6 +303,7 @@ class LectorAuditoria
         ReservaMontaje::class => ['Montaje de reservas', 'nombre'],
         ReservaTipoUso::class => ['Tipo de uso de reservas', 'nombre'],
         ReservaServicio::class => ['Servicio de reservas', 'nombre'],
+        ReservaBloqueo::class => ['Bloqueo de reservas', 'motivo'],
     ];
 
     // Mejoras estructura (ADR-0016): «Ver historial» desde la ficha de cada registro

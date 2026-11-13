@@ -18,7 +18,7 @@ resumen: Apartar un salón, sala o terraza de la sede, pedir servicios y seguir 
 
 ![Tarjetas de sedes](img/reservas/sedes.png)
 
-3. Cada área es una **ficha** con su foto (si tiene), el aforo, los montajes, la tarifa o «Sin costo», quién la aprueba, la **Próxima** reserva y la insignia **Hoy: N** (o «Libre hoy»). Escribe en **Buscar área…** para encontrarla.
+3. Arriba dice quién es el **Responsable general de reservas** y su suplente. Cada área es una **ficha** con su foto (si tiene), el aforo, los montajes, la tarifa o «Sin costo», su **Responsable** (quien la aprueba) y su **suplente**, la **Próxima** reserva y la insignia **Hoy: N** (o «Libre hoy», o **Bloqueado hoy** si alguien la bloqueó). Escribe en **Buscar área…** para encontrarla.
 4. Abajo de cada ficha está su botón principal:
    - **Reservar**: abre la reserva con esa área elegida.
    - **Entrar a sus espacios**: aparece en una **zona** que se reserva por sus espacios interiores (por ejemplo un centro de negocios con varias salas). La ficha dice cuántos **espacios reservables** tiene.
@@ -26,6 +26,7 @@ resumen: Apartar un salón, sala o terraza de la sede, pedir servicios y seguir 
    - **Calendario del área**: lo que está ocupado por día, semana o mes.
    - **Reservar toda la zona** (calendario con +): solo en una zona que se reserva completa y además tiene espacios interiores.
    - **Editar** (lápiz) y **Eliminar de reservas** (bote de basura): solo si administras las reservas (ver [Configurar las reservas](reservas-configuracion.md)). Son los mismos íconos que en Zonas y edificios.
+6. Si te toca bloquear esa área, la ficha trae además el enlace **Bloquear este sitio** (ver [Bloquear un sitio de reservas](reservas-bloqueos.md)).
 
 ![Fichas de las áreas](img/reservas/areas.png)
 
@@ -50,13 +51,24 @@ En el celular las fichas se acomodan una debajo de otra.
 
 ![Calendario de reservas](img/reservas/calendario.png)
 
-**Qué debes ver:** cada reserva con su horario. En **verde** las confirmadas; en **ámbar** las que esperan aprobación o un cambio; en **gris** «Ocupado» (reservas de otras personas que no puedes abrir). El área también queda ocupada mientras se **monta** y se **desmonta**.
+**Qué debes ver:** cada reserva con su horario. En **verde** las confirmadas; en **ámbar** las que esperan aprobación o un cambio; en **gris** «Ocupado» (reservas de otras personas que no puedes abrir); con **rayas rojas** «Bloqueado: el motivo» (nadie puede reservar ese horario, ver [Bloquear un sitio de reservas](reservas-bloqueos.md)). El área también queda ocupada mientras se **monta** y se **desmonta**.
+
+## Cómo reservar con un toque desde el calendario de una sala
+
+1. En la ficha de la sala toca **Calendario del área** (o elige la sala en el calendario).
+2. Arriba ves quién es el **Responsable** de la sala (y su suplente) y el **Responsable general de reservas**.
+3. Debajo de cada día aparecen las **horas libres** (por ejemplo **+ 10:00**, **+ 11:00**). Solo salen las que están dentro del horario de la sala, no chocan con otra reserva ni con un bloqueo, y todavía no pasan.
+4. Toca la hora que quieres.
+
+![Horas libres en el calendario de una sala](img/reservas/calendario-horas-libres.png)
+
+**Qué debes ver:** se abre **Nueva reserva** con la sala, el día y el horario ya puestos (una hora; cámbiala si necesitas más). Solo te falta el nombre del evento y las personas.
 
 ## Cómo reservar
 
 La reserva sigue el formato de una **orden de evento**: dónde, cuándo, cuántas personas, quién la pide y qué tiene que preparar cada departamento.
 
-1. Toca la ficha **Nueva reserva**, el botón **Reservar** de un área o **Reservar** en el día del calendario.
+1. Toca la ficha **Nueva reserva**, el botón **Reservar** de un área, **Reservar** en el día del calendario o una **hora libre** del calendario de la sala.
 2. En **¿Dónde y cuándo?** elige primero la **Zona o área** y después el **Espacio** (la habitación o sala; si la zona se reserva completa verás «Toda la zona»). Si la zona tiene un solo espacio se elige solo. Luego elige el **Día** y las horas **De** y **A**. Abajo aparecen los horarios ya ocupados de ese día y el horario en que el área se puede reservar.
 3. Si necesitas el lugar todo el día, marca **Día completo**: las horas se llenan solas con el horario del área ese día (o de 00:00 a 23:59 si el área no tiene horario).
 4. **Montaje antes** y **Desmontaje después** ya traen los minutos del área. Si tu evento necesita más (o menos) tiempo para acomodar o recoger, cámbialos: el área queda ocupada ese tiempo antes y después. En **Indicaciones para el montaje** escribe lo que debe resaltar en la hoja, por ejemplo «Tener montaje listo 30 min antes».
@@ -96,7 +108,7 @@ En el celular las tarjetas de los departamentos se acomodan una debajo de otra.
 ## Cómo seguir tu reserva
 
 1. Toca **Mis reservas** arriba.
-2. Cada reserva es una ficha con su **insignia de estado**, el área, el día y lo que falta («Falta aprobar: área, Cocina…» o «Servicios listos: 1 de 2»). Filtra con **Próximas**, **Por aprobar**, **Cambio pedido**, **Confirmada** o **Pasadas**.
+2. Cada reserva es una ficha con su **insignia de estado**, el área, el día y lo que falta («Falta aprobar: área, Cocina…» o «Servicios listos: 1 de 2»). Filtra con **Próximas**, **Por aprobar**, **Cambio pedido**, **Confirmada** o **Pasadas**. Si un bloqueo cayó en alguna de tus reservas, aparece la píldora **Afectadas por bloqueo** y la ficha lleva la insignia **Afectada por bloqueo**: muévela o dala de baja (ver [Bloquear un sitio de reservas](reservas-bloqueos.md#si-tu-reserva-quedó-afectada-por-bloqueo)).
 3. En la esquina: **Ver** (ojo), **Modificar** (lápiz, antes de que empiece) e **Imprimir**.
 
 ![Mis reservas](img/reservas/mias.png)
@@ -152,6 +164,7 @@ Solo se modifica antes de que empiece.
 |---|---|---|
 | «El área está ocupada de 09:00 a 12:30 (incluye montaje y desmontaje). Elige otro horario u otra área.» | Otra reserva ocupa ese horario, contando el tiempo de montaje y desmontaje. | Elige otra hora u otra área. Revisa los horarios ocupados que aparecen debajo de la fecha. |
 | «… está reservado de 09:00 a 12:30 y comparte lugar con esta área (la zona completa o uno de sus espacios interiores).» | Alguien reservó la zona completa (y con eso ocupa sus salas) o una sala de la zona (y con eso la zona completa ya no está libre). | Elige otro horario u otro espacio. Debajo de la fecha verás qué espacio lo ocupa. |
+| «El área está bloqueada el 04/11 de 08:00 a 18:00: Mantenimiento. Elige otro horario u otra área.» | Ese sitio (o la zona que lo contiene) está bloqueado en ese horario. | Elige otro horario u otra área. Debajo de la fecha verás «Bloqueado de … a …». |
 | «Esta zona se reserva por sus espacios interiores: elige uno de ellos.» | Esa zona solo agrupa sus salas o habitaciones. | En **Espacio** elige la sala o habitación. |
 | «Fuera del horario del área. El sábado esta área no se reserva.» | El área solo se reserva ciertos días y horas. | Elige otro día u horario dentro del que se indica. |
 | «Son 30 personas y el aforo del montaje Tipo U es de 25: escribe el motivo de la excepción (lo verá quien aprueba).» | En ese acomodo no caben tantas personas. | Elige otro montaje o un área más grande, o escribe el motivo en **Excepción de aforo**. |
@@ -181,11 +194,16 @@ Solo se modifica antes de que empiece.
 
 **Si reservo la zona completa, ¿se pueden reservar sus salas a la misma hora?** No. La zona completa ocupa todos sus espacios en ese horario (con su montaje y desmontaje), y si una sala ya está reservada, la zona completa no se puede reservar a esa hora.
 
+**¿Quién es el responsable de cada sala?** Lo dice la ficha de la sala («Responsable: … · suplente …») y el calendario de la sala. Si la sala no tiene uno propio, responde el **responsable general de reservas**, que aparece arriba de las fichas.
+
+**¿Qué es «Bloqueado» en el calendario?** Alguien cerró ese sitio por un tiempo (mantenimiento, un evento de dirección…). Nadie puede reservarlo en ese horario. Ver [Bloquear un sitio de reservas](reservas-bloqueos.md).
+
 **¿Por qué veo «Ocupado» sin nombre?** Es una reserva de otra persona que tu rol no puede abrir; solo te dice que el horario no está libre.
 
 ## Relacionado
 
 - [Aprobar reservas](reservas-aprobar.md)
 - [Órdenes de servicio de reservas](reservas-departamentos.md)
+- [Bloquear un sitio de reservas](reservas-bloqueos.md)
 - [Configurar las reservas](reservas-configuracion.md)
 - [Menús, Mis pendientes y la campana](menus.md)

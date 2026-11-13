@@ -648,7 +648,7 @@ class ReservasDeAreasTest extends TestCase
     {
         $this->actingAs($this->rita)->get('/')->assertOk()->assertSee('Reservas de áreas');
         $permisos = fn (User $u) => collect(app(Autorizador::class)->permisosEfectivos($u))->keys()->filter(fn ($k) => str_starts_with($k, 'reservas.'))->sort()->values()->all();
-        $this->assertSame(['reservas.aprobar', 'reservas.configurar', 'reservas.crear', 'reservas.exportar', 'reservas.imprimir', 'reservas.ver'], $permisos($this->admin));
+        $this->assertSame(['reservas.aprobar', 'reservas.bloquear', 'reservas.configurar', 'reservas.crear', 'reservas.exportar', 'reservas.imprimir', 'reservas.ver'], $permisos($this->admin));
         $this->assertSame(['reservas.ver'], $permisos($this->director));
         $this->assertSame(['reservas.crear', 'reservas.imprimir', 'reservas.ver'], $permisos($this->rita));
         $this->assertSame(['reservas.aprobar', 'reservas.crear', 'reservas.imprimir', 'reservas.ver'], $permisos($this->julieta));
@@ -754,7 +754,7 @@ class ReservasDeAreasTest extends TestCase
         $this->get('/reservas?sede='.$this->centro->id)->assertOk()
             ->assertSee('data-fichas="reservas-areas"', false)->assertSee('Salón Maya')->assertSee('Sala Ceiba')
             ->assertSee('Hasta 120 personas')->assertSee('Auditorio, Herradura (U)')->assertSee('Por hora $1,000.00 MXN')->assertSee('Sin costo')
-            ->assertSee('Aprueba '.$this->julieta->name)->assertSee('Hoy: 1')->assertSee('Próxima: Lunes 02/11 15:00')
+            ->assertSee('Responsable: '.$this->julieta->name)->assertSee('Hoy: 1')->assertSee('Próxima: Lunes 02/11 15:00')
             ->assertSee('aria-label="Reservar Salón Maya"', false)->assertSee('class="btn-entrar"', false)->assertSee('title="Calendario del área"', false)
             ->assertSee('title="Editar"', false)->assertSee('title="Eliminar de reservas"', false)->assertSee('Agregar área reservable')
             ->assertSee(route('reservas.calendario', ['area' => $this->salon->id, 'sede' => $this->centro->id]))

@@ -14,7 +14,10 @@
         'icono' => 'bi-person-check', 'actual' => 'mias', 'buscar' => ['reservas-mias', 'Buscar reserva...']])
 
     <nav class="pildoras-tipo" aria-label="Filtrar mis reservas">
-        <a href="{{ route('reservas.mias') }}" class="btn-pill-tipo {{ ! $pasadas && $estado === null ? 'active' : '' }}">Próximas</a>
+        <a href="{{ route('reservas.mias') }}" class="btn-pill-tipo {{ ! $pasadas && $estado === null && ! $afectadas ? 'active' : '' }}">Próximas</a>
+        @if ($afectadas || $conteoAfectadas > 0)
+            <a href="{{ route('reservas.mias', ['afectadas' => 1]) }}" class="btn-pill-tipo {{ $afectadas ? 'active' : '' }}"><i class="bi bi-lock me-1" aria-hidden="true"></i>Afectadas por bloqueo <span class="conteo-pill">{{ $conteoAfectadas }}</span></a>
+        @endif
         @foreach ([Reserva::POR_APROBAR, Reserva::CAMBIO_PEDIDO, Reserva::CONFIRMADA] as $e)
             <a href="{{ route('reservas.mias', ['estado' => $e]) }}" class="btn-pill-tipo {{ $estado === $e ? 'active' : '' }}">{{ Reserva::ESTADOS[$e] }} <span class="conteo-pill">{{ $conteos[$e] ?? 0 }}</span></a>
         @endforeach
@@ -41,13 +44,16 @@
                         <span class="etiqueta-estado {{ $clase }} text-nowrap">{{ $r->estadoTexto() }}</span>
                     </div>
                     <div class="ficha-subtitulo">{{ $r->folioTexto() }}</div>
+                    @if ($r->afectadaPorBloqueo())<span class="etiqueta-estado inactivo res-insignia-bloqueo mt-1"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Afectada por bloqueo</span>@endif
                     @if ($r->excede_aforo)<span class="etiqueta-estado pendiente res-insignia-aforo mt-1"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>Excede aforo</span>@endif
                     <ul class="list-unstyled small text-muted mt-2 pt-2 border-top m-0">
                         <li><i class="bi bi-door-open me-1" aria-hidden="true"></i> {{ $r->area->nombre() }} · {{ $r->area->sede?->nombre }}</li>
                         <li><i class="bi bi-calendar-event me-1" aria-hidden="true"></i> {{ $textos->cuando($r) }}</li>
                         <li><i class="bi bi-people me-1" aria-hidden="true"></i> {{ $r->asistentes }} personas · {{ $r->para_cliente ? 'Cliente' : 'Uso interno' }}</li>
                     </ul>
-                    @if ($r->estado === Reserva::CAMBIO_PEDIDO)
+                    @if ($r->afectadaPorBloqueo() && $r->bloqueo)
+                        <span class="ficha-dato"><i class="bi bi-lock" aria-hidden="true"></i> {{ $r->bloqueo->motivo }}: muévela o dala de baja</span>
+                    @elseif ($r->estado === Reserva::CAMBIO_PEDIDO)
                         <span class="ficha-dato"><i class="bi bi-arrow-repeat" aria-hidden="true"></i> Te piden un cambio</span>
                     @elseif ($faltan->isNotEmpty())
                         <span class="ficha-dato"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Falta aprobar: {{ $faltan->map(fn ($a) => $a->tipo === 'area' ? 'área' : $a->departamento?->nombre)->join(', ') }}</span>
@@ -69,7 +75,7 @@
         @empty
             <div class="tarjeta estado-vacio">
                 <div class="icono"><i class="bi bi-calendar2-week" aria-hidden="true"></i></div>
-                <p class="fw-semibold mb-1">No tienes reservas {{ $pasadas ? 'pasadas' : ($estado ? 'en «'.Reserva::ESTADOS[$estado].'»' : 'próximas') }}.</p>
+                <p class="fw-semibold mb-1">No tienes reservas {{ $afectadas ? 'afectadas por un bloqueo' : ($pasadas ? 'pasadas' : ($estado ? 'en «'.Reserva::ESTADOS[$estado].'»' : 'próximas')) }}.</p>
             </div>
         @endforelse
     </div>

@@ -30,6 +30,9 @@
                         <span class="etiqueta-estado pendiente text-nowrap">{{ $a->tipo === 'area' ? 'Área' : $a->departamento?->nombre }}</span>
                     </div>
                     <div class="ficha-subtitulo">{{ $r->folioTexto() }} · solicita {{ $r->solicitadoPorTexto() }} · @fecha($r->created_at)</div>
+                    @if ($r->afectadaPorBloqueo())
+                        <span class="etiqueta-estado inactivo res-insignia-bloqueo mt-1"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Afectada por bloqueo</span>
+                    @endif
                     @if ($r->excede_aforo)
                         <span class="etiqueta-estado pendiente res-insignia-aforo mt-1" title="{{ $r->motivo_excepcion_aforo }}"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>Excede aforo</span>
                     @endif

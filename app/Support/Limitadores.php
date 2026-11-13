@@ -79,6 +79,8 @@ final class Limitadores
         'pagos.webhook' => 60,
         'reservas.store' => 60,
         'reservas.disponibilidad' => 240,
+        'reservas.bloqueos.store' => 30,
+        'reservas.bloqueos.impacto' => 240,
         'proveedores.duplicado' => 120,
         'vehiculos.duplicado' => 120,
         'colaboradores.duplicado' => 120,
