@@ -212,7 +212,7 @@
                             </button>
                         @endif
                     </div>
-                    <div class="ficha-footer">
+                    <div class="ficha-footer ficha-footer-acciones">
                         <span class="etiqueta-estado {{ $c->activo ? ($pendiente ? 'pendiente' : 'activo') : 'inactivo' }}">{{ $c->activo ? ($pendiente ? 'POR VERIFICAR' : 'ACTIVO') : ($c->fusionado_en_id ? 'UNIDO' : 'DE BAJA') }}</span>
                         <div class="d-flex gap-2">
                             {{-- Ronda 5: QR y etiqueta NFC/RFID (gafete o tarjeta del colaborador) en un diálogo --}}
