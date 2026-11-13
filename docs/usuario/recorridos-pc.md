@@ -1,21 +1,21 @@
 ---
-titulo: Recorridos de Protección Civil
+titulo: Recorridos
 modulos: [recorridos_pc]
 seccion: Operación
 orden: 70
 resumen: Revisar extintores, hidrantes, detectores y botiquines con el celular y reportar lo que falla.
 ---
-# Recorridos de Protección Civil
+# Recorridos
 
 **¿Para qué sirve?** Para hacer la **inspección** de extintores, hidrantes, detectores, botiquines y demás equipo de Protección Civil: escaneas cada equipo, marcas lo que está bien y anotas lo que falla. Si algo falla, la plataforma abre sola un **ticket en la Bitácora de novedades** para que alguien lo repare.
 
 Está pensado para hacerse **caminando con el celular**: botones grandes, un equipo a la vez, y cada equipo se guarda al momento.
 
-**Antes de empezar:** necesitas que tu rol pueda **ver** y **crear** en Recorridos de Protección Civil. Los equipos se dan de alta antes en [Equipos de Protección Civil](equipos-pc.md). Si no ves **Nuevo Recorrido**, pide a tu administrador que revise tu rol.
+**Antes de empezar:** necesitas que tu rol pueda **ver** y **crear** en Recorridos. Los equipos se dan de alta antes en [Equipos contra incendios](equipos-pc.md). Si no ves **Nuevo Recorrido**, pide a tu administrador que revise tu rol.
 
 ## Cómo leer la lista de recorridos
 
-1. Entra a **Operación → Protección civil → Recorridos de Protección Civil**.
+1. Entra a **Operación → Protección civil → Recorridos**.
 2. Cada tarjeta es un recorrido con su número (por ejemplo **Recorrido #00003**), la fecha, la sede, la zona, quién lo hizo, cuántos equipos se revisaron y cuántos fallaron.
 3. El color de arriba es su estado: **En Proceso** (azul, se puede continuar), **Completo** (verde, todo bien) o **Con Hallazgos** (amarillo, algo falló; dice qué ticket se abrió).
 
@@ -60,7 +60,7 @@ El **primer** equipo con falla abre un ticket en la Bitácora de novedades con l
 
 Si tu rol no puede crear tickets, **el punto se guarda igual**: la plataforma abre el ticket por ti (dice «Ticket abierto por la plataforma…») y el jefe de seguridad recibe el aviso.
 
-Además, el **jefe de seguridad** de la sede y quien **administra los equipos de Protección Civil** reciben el aviso en su campana («Recorrido #… encontró una falla») y, al finalizar, el resumen («terminó con N hallazgos»). No tienes que avisarles tú.
+Además, el **jefe de seguridad** de la sede y quien **administra los equipos contra incendios** reciben el aviso en su campana («Recorrido #… encontró una falla») y, al finalizar, el resumen («terminó con N hallazgos»). No tienes que avisarles tú.
 
 ## Cómo guardar para después o terminar
 
@@ -95,11 +95,11 @@ Además, el **jefe de seguridad** de la sede y quien **administra los equipos de
 
 - **¿Se pierde lo revisado si se me cierra el celular?** No; cada equipo se guarda al tocar **Guardar y escanear siguiente**.
 - **¿Puedo hacer el recorrido en dos partes?** Sí, con **Guardar y Continuar Después**.
-- **¿Dónde se dan de alta los extintores?** En [Equipos de Protección Civil](equipos-pc.md).
+- **¿Dónde se dan de alta los extintores?** En [Equipos contra incendios](equipos-pc.md).
 - **¿Funciona en iPhone?** Sí, con la cámara. La lectura NFC directa solo funciona en Android.
 
 ## Relacionado
 
-- [Equipos de Protección Civil](equipos-pc.md)
+- [Equipos contra incendios](equipos-pc.md)
 - [Bitácora de novedades](novedades.md)
 - [Etiquetas QR](etiquetas-qr.md)

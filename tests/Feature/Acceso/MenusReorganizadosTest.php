@@ -249,14 +249,18 @@ class MenusReorganizadosTest extends TestCase
         $nombres = require database_path('migrations/2026_10_26_000100_mejoras_padrones_nombres.php');
         // Mejoras estructura (ADR-0016): Identidad pasa después a su sección «Plataforma»
         $estructura = require database_path('migrations/2026_10_27_000100_mejoras_de_estructura.php');
+        // Pedido del dueño (13 nov 2026): «Estacionamiento y almacenes», «Recorridos», «Equipos contra incendios»
+        $nombres1113 = require database_path('migrations/2026_11_25_000100_nombres_modulos_recorridos_equipos_estacionamiento.php');
         $migracion->up();
         $nombres->up();
         $estructura->up();
+        $nombres1113->up();
         $this->assertSame($esperado, $this->acomodo());
 
         $migracion->up(); // segunda vez: sin cambios ni duplicados
         $nombres->up();
         $estructura->up();
+        $nombres1113->up();
         $this->assertSame($esperado, $this->acomodo());
         $this->assertSame(1, Menu::where('clave', 'informes')->count());
         $this->assertNull(Modulo::where('clave', 'autorizaciones')->value('menu_id'));

@@ -133,7 +133,7 @@ Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en e
 1. Abre el tema de la bitácora (**Novedades**, o como se llame en tu empresa) y busca la tarjeta **…: nombre y hallazgos**.
 2. En **Nombre del módulo** elige **Novedades (como siempre)** o **Incidentes**.
 3. Si tu empresa usa otro nombre, elige **Otro nombre (escríbelo en Avanzado)**, abre **Avanzado: otro nombre** y escríbelo (máximo 40 letras).
-4. En **Cuando un Recorrido de Protección Civil encuentra una falla, abrir el ticket como** viene **Mantenimiento de equipo PC (recomendado)**: así un extintor sin presión no cuenta como siniestro. Elige **Siniestro Protección Civil** solo si tu empresa quiere tratar cada falla como emergencia (valor original: **Mantenimiento de equipo PC**).
+4. En **Cuando un recorrido encuentra una falla, abrir el ticket como** viene **Mantenimiento de equipo PC (recomendado)**: así un extintor sin presión no cuenta como siniestro. Elige **Siniestro Protección Civil** solo si tu empresa quiere tratar cada falla como emergencia (valor original: **Mantenimiento de equipo PC**).
 5. Toca **Guardar ajustes de la bitácora**.
 
 ![Ajustes de la Bitácora de novedades](img/configuracion/6-bitacora-novedades.png)
@@ -175,7 +175,7 @@ Está en este tema, junto a «¿Qué hacer? Ver procedimiento» y a los **Proced
 Solo si tu empresa usa **Procedimientos** y tiene alguno publicado.
 
 1. En la tarjeta de la bitácora abre **Avanzado: «¿Qué hacer?» — procedimiento de cada categoría y tipo de equipo**.
-2. Para cada categoría del ticket (Robo, Reporte General, Lost & Found…) o tipo de equipo de Protección Civil (Extintor, Hidrante…) elige el procedimiento, o **— Ninguno —**.
+2. Para cada categoría del ticket (Robo, Reporte General, Lost & Found…) o tipo de equipo contra incendios (Extintor, Hidrante…) elige el procedimiento, o **— Ninguno —**.
 3. Toca **Guardar procedimientos**.
 
 **Qué debes ver:** «Procedimientos de «¿Qué hacer?» guardados…». El expediente del ticket de esa categoría y el punto del recorrido de ese equipo muestran **¿Qué hacer? Ver procedimiento «…»** a quien puede ver procedimientos. Si el procedimiento se retira, el enlace desaparece solo. **Accidente / Lesión** no se ofrece: su formato no cambia.
@@ -189,11 +189,11 @@ Si antes los recorridos abrían sus hallazgos como **Siniestro Protección Civil
 
 **Qué debes ver:** «N hallazgos anteriores pasaron a «Mantenimiento de equipo PC»…». Cada ticket queda con una nota que lo explica. Los siniestros que alguien documentó como siniestro real (con su detalle, servicios, equipos o daños) no se tocan.
 
-### Cómo cambiar cada cuándo se revisan los equipos de Protección Civil
+### Cómo cambiar cada cuándo se revisan los equipos contra incendios
 
 Si un equipo pasa estos días sin aparecer en un recorrido, se avisa a quien administra los equipos en su sede y, una semana después, a quien los administra en toda la empresa.
 
-1. Baja a **Equipos de Protección Civil: frecuencia de revisión** y abre **Avanzado: días por tipo de equipo**.
+1. Baja a **Equipos contra incendios: frecuencia de revisión** y abre **Avanzado: días por tipo de equipo**.
 2. Escribe los días de cada tipo. **0 = sin frecuencia** (no avisa). Valor original: **extintores cada 30 días; lo demás, sin frecuencia**.
 3. Toca **Guardar**.
 

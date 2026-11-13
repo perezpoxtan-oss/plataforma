@@ -8,13 +8,13 @@ Reorganización de la navegación aprobada por el dueño del proyecto (lección 
 |---|---|---|---|
 | 1 | Operación (`operacion`) | Caseta | `accesos` Bitácora de accesos · `prestamo_llaves` Préstamo de llaves · `vouchers` Vouchers de reposición (mapa de procesos; antes en Activos) · `pases_salida` Pases de salida · `transporte` Bitácora de transporte |
 | | | Incidentes | `novedades` **Novedades** · `lost_found` Lost & Found · `robo` **Robo** |
-| | | Protección civil | `recorridos_pc` Recorridos de Protección Civil |
+| | | Protección civil | `recorridos_pc` Recorridos (antes «Recorridos de Protección Civil») |
 | | | Activos | `responsivas` Responsivas |
 | | | Consulta | `procedimientos` Procedimientos |
 | | | Reservas | `reservas` Reservas de áreas (ver [reservas.md](reservas.md)) |
 | 2 | Padrones (`padrones`) | Personas y vehículos | `proveedores` **Empresas externas** · `visitantes` Padrón de personas · `vehiculos` Padrón vehicular |
-| | | Inventarios | `llaves` Catálogo de llaves · `gafetes` Gafetes · `equipos` Equipos de seguridad · `equipos_pc` Equipos de Protección Civil |
-| | | Instalaciones | `estacionamientos` Estacionamientos · `rutas` Rutas de transporte |
+| | | Inventarios | `llaves` Catálogo de llaves · `gafetes` Gafetes · `equipos` Equipos de seguridad · `equipos_pc` Equipos contra incendios (antes «Equipos de Protección Civil») |
+| | | Instalaciones | `estacionamientos` Estacionamiento y almacenes (antes «Estacionamientos y zonas de descarga») · `rutas` Rutas de transporte |
 | | | Herramientas | `etiquetas_qr` Etiquetas QR |
 | 3 | Recursos Humanos (`recursos_humanos`) | Personal | `colaboradores` |
 | | | Recepción y candidatos | `vacantes` Vacantes (lección 36) · `recepcion_rh` Recepción de RR. HH. · `candidatos` |
@@ -26,6 +26,23 @@ Reorganización de la navegación aprobada por el dueño del proyecto (lección 
 | | | Plataforma (solo superadministrador) | `identidad` · `catalogo_comercial` Catálogo comercial |
 
 En **negritas**, los nombres cortos que cambian respecto al nombre del módulo: se guardan en la columna nueva `modulos.nombre_menu` (el nombre del módulo en la Matriz de permisos no cambia). Prioridad del nombre visible: `empresa_modulos.nombre_visible` → terminología del rubro → `nombre_menu` → `nombre`.
+
+### Nombres de fábrica de Recorridos, Equipos contra incendios y Estacionamiento y almacenes (13 nov 2026)
+
+Pedido del dueño: nombres más cortos **en el menú y en el título de la pantalla**, para todas las empresas. Claves, rutas, permisos (`recorridos_pc.*`, `equipos_pc.*`, `estacionamientos.*`), tablas y datos no cambian.
+
+| Módulo | Antes | Ahora (`modulos.nombre`; en `estacionamientos` también `nombre_menu`) |
+|---|---|---|
+| `recorridos_pc` | Recorridos de Protección Civil | Recorridos |
+| `equipos_pc` | Equipos de Protección Civil | Equipos contra incendios |
+| `estacionamientos` | Estacionamientos / menú «Estacionamientos y zonas de descarga» | Estacionamiento y almacenes |
+
+- Migración `2026_11_25_000100_nombres_modulos_recorridos_equipos_estacionamiento`: cambia solo los renglones que siguen con el nombre de fábrica anterior; `down()` regresa los anteriores. `CatalogoSeeder` y `MenuSeeder` traen los nuevos (instalación nueva). Como cambia `modulos.nombre`, la Matriz de permisos, «Lo que verá», el catálogo comercial y Mi suscripción también dicen el nombre nuevo.
+- El nombre propio de la empresa (`empresa_modulos.nombre_visible`, Configuración → General → Nombres en el menú) sigue mandando; **Restablecer** lo deja en nulo y vuelve el nombre nuevo de fábrica.
+- **Título de la pantalla = nombre del menú:** `App\Support\NombresMenu::titulo($clave, $omision)` devuelve `nombre_visible` de la empresa de trabajo → `nombre_menu` → `nombre` → `$omision` (memoria por petición). Lo usan el `<title>` y el `<h1>` de `/recorridos-pc`, `/equipos-pc` y `/estacionamientos`, la miga de pan del detalle del recorrido y los enlaces cruzados «Padrones → Equipos contra incendios» y el botón «Recorridos» del catálogo.
+- Textos que nombran el módulo, alineados: Bitácora del día, Mis avisos (preferencia «Un recorrido encontró una falla en un equipo contra incendios»), Avisos por correo, Etiquetas QR masivas e identificación por lector, Mis pendientes (recargas y revisiones de equipos contra incendios, hallazgos de recorrido), Configuración (tarjeta de la bitácora, «Equipos contra incendios: frecuencia de revisión», tipos de equipo en procedimientos, «Cuando un recorrido encuentra una falla…»), Bitácora de auditoría y Eliminar definitivamente (tipos de registro), notas automáticas del ticket que abre un hallazgo («Hallazgo durante el recorrido #…», ubicación «VER DETALLE EN EL RECORRIDO #…»; los tickets ya guardados no cambian).
+- Se quedan igual a propósito (Protección Civil como autoridad o concepto): la sección del menú «Protección civil», el «Reporte de Auditoría — Recorridos de Protección Civil» (documento para la autoridad) y su archivo CSV, el pie «Protección Civil · …» de la calcomanía del equipo, las categorías de la bitácora «Siniestro Protección Civil» y «Mantenimiento de equipo PC» y su filtro «Protección Civil», el formato del Siniestro, el tipo de acceso de emergencia «Protección Civil», la categoría de procedimientos «Protección civil», el ejemplo «autorizado por Protección Civil» en Reservas y todo Accidentes. En Estacionamiento y almacenes, el tipo de zona sigue diciendo «Zona de descarga» (es el dato guardado).
+- Pruebas: `NombresModulosTest` (menú y título, nombre propio y Restablecer, migración ida y vuelta); `EtapaSieteGlosarioTest` retira «Padrones → Equipos de Protección Civil», «Padrones → Estacionamientos y zonas de descarga», «Protección civil → Recorridos de Protección Civil» y «Catálogo de Equipos de Protección Civil».
 
 **Autorizaciones departamentales** (`autorizaciones`) sale de los menús (`menu_id` nulo): conserva su ruta `/autorizaciones` y su permiso; se llega desde «Mis pendientes», la campana e Inicio.
 

@@ -144,7 +144,7 @@ class Identificacion
         'gafete' => 'el gafete',
         'equipo' => 'el equipo',
         'lost_found' => 'el artículo de Lost & Found',
-        'equipo_pc' => 'el equipo de Protección Civil',
+        'equipo_pc' => 'el equipo contra incendios',
         'procedimiento' => 'el procedimiento',
         'persona' => 'la persona',
         'proveedor' => 'la empresa externa',

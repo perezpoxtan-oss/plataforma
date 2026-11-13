@@ -173,7 +173,7 @@ class EliminarDefinitivoTest extends TestCase
                 fn (?Empresa $e = null) => $this->fila('equipos_pc', ['sede_id' => $this->sedeDe($e), 'categoria' => 'EXTINTOR', 'numero_serie' => 'EXT-'.$this->n], $e),
                 fn (int $id) => $this->fila('recorrido_pc_revisiones', ['recorrido_pc_id' => $this->fila('recorridos_pc', ['sede_id' => $this->centro->id, 'numero' => $this->n]),
                     'equipo_pc_id' => $id, 'identificador' => 'EXT', 'categoria' => 'EXTINTOR', 'criterios' => '[]', 'resultado' => 'ok']),
-                '1 revisión de Protección Civil',
+                '1 revisión de un recorrido',
             ],
             'estacionamientos' => [
                 fn (?Empresa $e = null) => $this->fila('zonas_estacionamiento', ['sede_id' => $this->sedeDe($e), 'nombre' => 'Sótano '.$this->n], $e),

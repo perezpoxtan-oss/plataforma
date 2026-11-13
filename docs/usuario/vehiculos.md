@@ -156,7 +156,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 ## Relacionado
 
 - [Empresas externas](proveedores.md)
-- [Estacionamientos](estacionamientos.md)
+- [Estacionamiento y almacenes](estacionamientos.md)
 - [Etiquetas QR](etiquetas-qr.md)
 - [Altas por verificar](altas-por-verificar.md)
 - [Importar desde Excel](importar-desde-excel.md)

@@ -1,37 +1,37 @@
 ---
-titulo: Equipos de Protección Civil
+titulo: Equipos contra incendios
 modulos: [equipos_pc]
 seccion: Padrones
 orden: 70
-resumen: Catálogo de extintores, hidrantes, detectores y demás equipo fijo que se revisa en los recorridos de Protección Civil.
+resumen: Catálogo de extintores, hidrantes, detectores y demás equipo fijo que se revisa en los recorridos.
 ---
 
-# Equipos de Protección Civil
+# Equipos contra incendios
 
-**¿Para qué sirve?** Es la lista de extintores, hidrantes, detectores, botiquines, lámparas de emergencia y demás equipo **fijo** de Protección Civil de cada sede. Son los equipos que la guardia revisa en los [Recorridos de Protección Civil](recorridos-pc.md). Cada uno tiene su etiqueta con código QR.
+**¿Para qué sirve?** Es la lista de extintores, hidrantes, detectores, botiquines, lámparas de emergencia y demás equipo **fijo** contra incendios y de emergencia de cada sede (antes se llamaba «Equipos de Protección Civil»). Son los equipos que la guardia revisa en los [Recorridos](recorridos-pc.md). Cada uno tiene su etiqueta con código QR.
 
-![Catálogo de equipos de Protección Civil](img/equipos-pc/1-lista.png)
+![Equipos contra incendios](img/equipos-pc/1-lista.png)
 
 ## Antes de empezar
 
-- Para ver la pantalla tu rol debe poder consultar *Equipos de Protección Civil*. Si no aparece en el menú, pide el permiso a tu administrador.
+- Para ver la pantalla tu rol debe poder consultar *Equipos contra incendios*. Si no aparece en el menú, pide el permiso a tu administrador.
 - Para registrar, editar, imprimir o dar de baja necesitas esos permisos. Si no ves **Nuevo Equipo**, tu rol solo consulta.
 - Para elegir la ubicación (zona, piso, área), esos lugares deben existir en [Zonas y edificios](zonas-y-areas.md).
 
 ## Cómo encontrar un equipo
 
-1. Entra a **Padrones → Equipos de Protección Civil**.
+1. Entra a **Padrones → Equipos contra incendios**.
 2. Toca **Activos**, **De baja** o **Todos**.
 3. Si hay varias, elige en **Todas las sedes** o **Todos los tipos**.
 4. Escribe en **Buscar por ID, tipo, ubicación, sede...**.
 
 **Qué debes ver:** tarjetas con el tipo (Extintor, Hidrante…), la **Clave de la etiqueta** (lo que va en el QR, por ejemplo `EXT-01`), la sede, la ubicación, la referencia y **cuándo se revisó por última vez** en un recorrido: en verde «Última revisión: 03/10/2026 · sin falla», en rojo si tuvo falla, o en ámbar «Todavía sin revisar en un recorrido».
 
-![Última revisión en la tarjeta](img/equipos-pc/15-ultima-revision.png) El botón **Recorridos PC** te lleva a los recorridos.
+![Última revisión en la tarjeta](img/equipos-pc/15-ultima-revision.png) El botón **Recorridos** te lleva a los recorridos.
 
 ## Cómo registrar un equipo
 
-1. Toca la tarjeta **Nuevo Equipo**. Se abre **Nuevo Equipo de Protección Civil**.
+1. Toca la tarjeta **Nuevo Equipo**. Se abre **Nuevo Equipo contra incendios**.
 2. Elige la **Sede** (si solo tienes una, ya viene elegida) y el **Tipo de Equipo**.
 3. Escribe la **Clave de la etiqueta** que irá en el QR (por ejemplo `EXT-01`). No se puede repetir en la misma sede; en otra sede sí.
 4. Si quieres, elige **Zona / Piso** y **Área Específica**, y escribe una **Referencia** (por ejemplo «Junto al elevador de servicio»).
@@ -66,12 +66,12 @@ En el celular la ventana ocupa toda la pantalla:
 
 ## Cuándo te avisa de una revisión o una recarga
 
-- **Revisión a tiempo:** cada tipo de equipo tiene cada cuántos días debe aparecer en un recorrido. De fábrica, los **extintores cada 30 días**; los demás, sin frecuencia. Si un equipo pasa ese tiempo sin revisarse, a quien administra los equipos en la sede le llega «Sin revisar a tiempo» a la campana y a **Mis pendientes** («Equipos de Protección Civil sin revisar a tiempo»). Una semana después pasa a quien los administra en toda la empresa. Se apaga solo en cuanto el equipo aparece en un recorrido.
-- **Próxima recarga:** al registrar o editar un equipo puedes capturar la **Próxima recarga** (fecha). La tarjeta la muestra y, **15 días antes**, llega «Recarga de …» a la campana y a **Mis pendientes** («Equipos de Protección Civil por recargar»). El día que vence pasa a quien los administra en toda la empresa. Al recargarlo, cambia la fecha: el aviso se apaga.
+- **Revisión a tiempo:** cada tipo de equipo tiene cada cuántos días debe aparecer en un recorrido. De fábrica, los **extintores cada 30 días**; los demás, sin frecuencia. Si un equipo pasa ese tiempo sin revisarse, a quien administra los equipos en la sede le llega «Sin revisar a tiempo» a la campana y a **Mis pendientes** («Equipos contra incendios sin revisar a tiempo»). Una semana después pasa a quien los administra en toda la empresa. Se apaga solo en cuanto el equipo aparece en un recorrido.
+- **Próxima recarga:** al registrar o editar un equipo puedes capturar la **Próxima recarga** (fecha). La tarjeta la muestra y, **15 días antes**, llega «Recarga de …» a la campana y a **Mis pendientes** («Equipos contra incendios por recargar»). El día que vence pasa a quien los administra en toda la empresa. Al recargarlo, cambia la fecha: el aviso se apaga.
 
 ![Próxima recarga en el formulario](img/equipos-pc/13-proxima-recarga.png)
 
-Los días por tipo los cambia el Administrador en **Configuración → (bitácora) → Equipos de Protección Civil: frecuencia de revisión** (0 = sin frecuencia).
+Los días por tipo los cambia el Administrador en **Configuración → (bitácora) → Equipos contra incendios: frecuencia de revisión** (0 = sin frecuencia).
 
 ## Cómo ver el QR e imprimir la etiqueta
 
@@ -129,7 +129,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 ## Relacionado
 
-- [Recorridos de Protección Civil](recorridos-pc.md)
+- [Recorridos](recorridos-pc.md)
 - [Equipos de seguridad](equipos.md)
 - [Zonas y edificios](zonas-y-areas.md)
 - [Etiquetas QR](etiquetas-qr.md)

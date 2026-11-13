@@ -35,7 +35,7 @@
             @error('nombre_menu')<p class="text-danger small mb-2">{{ $message }}</p>@enderror
         </details>
 
-        <label class="campo-etiqueta" for="nov_categoria_hallazgo">Cuando un Recorrido de Protección Civil encuentra una falla, abrir el ticket como</label>
+        <label class="campo-etiqueta" for="nov_categoria_hallazgo">Cuando un recorrido encuentra una falla, abrir el ticket como</label>
         <select id="nov_categoria_hallazgo" name="categoria_hallazgo_pc" class="campo" @disabled(! $puedeEditar)>
             @foreach (\App\Services\Novedades\AjustesNovedades::CATEGORIAS_HALLAZGO as $clave => $texto)
                 <option value="{{ $clave }}" @selected(($trasErrorNov ? old('categoria_hallazgo_pc') : $categoriaActual) === $clave)>{{ $texto }}</option>
@@ -104,7 +104,7 @@
                 <div class="row g-2">
                     @foreach (\App\Services\Procedimientos\ProcedimientosVinculados::claves() as $claveProc => $textoProc)
                         @if ($loop->first)<div class="col-12 campo-etiqueta mb-0">Categorías del ticket</div>@endif
-                        @if ($claveProc === 'equipo:'.array_key_first(\App\Models\EquipoPc::CATEGORIAS))<div class="col-12 campo-etiqueta mb-0 mt-2">Tipos de equipo de Protección Civil</div>@endif
+                        @if ($claveProc === 'equipo:'.array_key_first(\App\Models\EquipoPc::CATEGORIAS))<div class="col-12 campo-etiqueta mb-0 mt-2">Tipos de equipo contra incendios</div>@endif
                         <div class="col-md-6">
                             <label class="small" for="proc_{{ str_replace(':', '_', $claveProc) }}">{{ $textoProc }}</label>
                             <select id="proc_{{ str_replace(':', '_', $claveProc) }}" name="vinculos[{{ $claveProc }}]" class="campo" @disabled(! $puedeEditar)>

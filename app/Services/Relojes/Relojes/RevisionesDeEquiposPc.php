@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
- * Frecuencia de revisión de los equipos de Protección Civil (DD-17, D-08):
+ * Frecuencia de revisión de los equipos contra incendios (DD-17, D-08):
  * cuando un equipo pasa los días de su tipo sin aparecer en un recorrido (de
  * fábrica, extintores cada 30 días), se avisa a quien administra los equipos
  * en la sede; una semana después pasa a quien los administra en toda la empresa.
@@ -26,12 +26,12 @@ class RevisionesDeEquiposPc extends Reloj
 
     public function nombre(): string
     {
-        return 'Equipos de Protección Civil sin revisar a tiempo';
+        return 'Equipos contra incendios sin revisar a tiempo';
     }
 
     public function suplenteOmision(): string
     {
-        return 'quien administra los equipos de Protección Civil en toda la empresa (o el administrador)';
+        return 'quien administra los equipos contra incendios en toda la empresa (o el administrador)';
     }
 
     public function modulos(): array
@@ -56,12 +56,12 @@ class RevisionesDeEquiposPc extends Reloj
 
     public function renglonDef(): ?array
     {
-        return ['revisiones_pc', 'Equipos de Protección Civil sin revisar a tiempo', 'bi-clipboard-check', route('equipos_pc.index')];
+        return ['revisiones_pc', 'Equipos contra incendios sin revisar a tiempo', 'bi-clipboard-check', route('equipos_pc.index')];
     }
 
     public function textosInicio(): ?array
     {
-        return ['1 equipo de Protección Civil sin revisar a tiempo', '%d equipos de Protección Civil sin revisar a tiempo', 'Pasaron los días de su revisión. Inclúyelos en el siguiente recorrido.', 'Ver equipos'];
+        return ['1 equipo contra incendios sin revisar a tiempo', '%d equipos contra incendios sin revisar a tiempo', 'Pasaron los días de su revisión. Inclúyelos en el siguiente recorrido.', 'Ver equipos'];
     }
 
     public function esperas(?int $empresaId): Collection

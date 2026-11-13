@@ -288,7 +288,7 @@ class AdministradorRecorridosPc
     {
         $ticket = $recorrido->novedad_id !== null ? Novedad::find($recorrido->novedad_id) : null;
         if ($ticket !== null && ! $ticket->resuelto()) {
-            $this->novedades->anotar($ticket, $actor, "Nuevo hallazgo en el Recorrido de Protección Civil {$recorrido->folio()}:\n".$revision->resumenHallazgo(), 'sistema');
+            $this->novedades->anotar($ticket, $actor, "Nuevo hallazgo en el recorrido {$recorrido->folio()}:\n".$revision->resumenHallazgo(), 'sistema');
 
             return;
         }
@@ -300,9 +300,9 @@ class AdministradorRecorridosPc
 
         $recorrido->loadMissing('sede', 'espacio');
         $edificio = $recorrido->espacio !== null && $recorrido->espacio->activo ? $recorrido->espacio->id : null;
-        $descripcion = "Hallazgo durante Recorrido de Protección Civil {$recorrido->folio()}:\n".$revision->resumenHallazgo();
+        $descripcion = "Hallazgo durante el recorrido {$recorrido->folio()}:\n".$revision->resumenHallazgo();
         // C-30 (D-15): el titular es el lugar real del equipo, no «Ver detalle…» (si se conoce)
-        $ubicacion = $revision->ubicacion ?: 'Ver detalle en Recorrido PC '.$recorrido->folio();
+        $ubicacion = $revision->ubicacion ?: 'Ver detalle en el recorrido '.$recorrido->folio();
         $ahoraLocal = CarbonImmutable::now($recorrido->sede?->zonaHoraria() ?? config('app.timezone'));
         if ($puedeCrear) {
             $ticket = $this->novedades->crear($actor, [
@@ -314,13 +314,13 @@ class AdministradorRecorridosPc
                 'area_edificio_id' => $edificio,
                 'ocurrio_en' => $ahoraLocal->format('Y-m-d\TH:i'),
             ], $categoria === 'proteccion_civil' ? null : $categoria);
-            $this->novedades->anotar($ticket, $actor, "Ticket abierto automáticamente desde el Recorrido de Protección Civil {$recorrido->folio()}.", 'sistema');
+            $this->novedades->anotar($ticket, $actor, "Ticket abierto automáticamente desde el recorrido {$recorrido->folio()}.", 'sistema');
         } else {
             // C-29 (D-06): el punto se guarda igual; la plataforma abre el ticket y el aviso llega al jefe (AvisosNovedades::hallazgo)
             $ticket = $this->novedades->abrirPorLaPlataforma($actor, [
                 'sede_id' => (int) $recorrido->sede_id, 'categoria' => $categoria, 'reportado_por' => $actor->name,
                 'ubicacion' => $ubicacion, 'descripcion' => $descripcion, 'area_id' => $edificio, 'ocurrio_en' => $ahoraLocal->utc(),
-            ], "Ticket abierto por la plataforma desde el Recorrido de Protección Civil {$recorrido->folio()}: quien hizo el recorrido no puede crear tickets en esta sede.");
+            ], "Ticket abierto por la plataforma desde el recorrido {$recorrido->folio()}: quien hizo el recorrido no puede crear tickets en esta sede.");
         }
 
         $anterior = $recorrido->novedad_id;

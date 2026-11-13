@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Empresa;
 use App\Models\Menu;
 use App\Models\Modulo;
+use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -96,6 +97,36 @@ final class NombresMenu
         });
 
         return [$antes, $resumen(collect(self::de($empresa))->flatten(1))];
+    }
+
+    /**
+     * Nombre del módulo para el título de su pantalla: el que la empresa le
+     * puso en el menú (Configuración → General → Nombres en el menú) o, si
+     * no le puso ninguno, el de fábrica (modulos.nombre_menu o nombre). Así
+     * el menú y el título dicen lo mismo. Sin empresa (Super Administrador
+     * sin empresa de trabajo) o sin el módulo en la base, el de fábrica /
+     * $omision. Se recuerda durante la petición.
+     */
+    public static function titulo(string $clave, string $omision, ?int $empresaId = null): string
+    {
+        $usuario = Auth::user();
+        if ($empresaId === null && $usuario !== null) {
+            $empresaId = app(EmpresaDeTrabajo::class)->id($usuario);
+        }
+        $memoria = request()->attributes;
+        $llave = 'nombres_menu.titulo.'.$clave.'.'.($empresaId ?? 0);
+        if ($memoria->has($llave)) {
+            return $memoria->get($llave);
+        }
+
+        $modulo = Modulo::query()->where('clave', $clave)->first(['id', 'nombre', 'nombre_menu']);
+        $propio = $modulo !== null && $empresaId !== null
+            ? DB::table('empresa_modulos')->where('empresa_id', $empresaId)->where('modulo_id', $modulo->id)->value('nombre_visible')
+            : null;
+        $nombre = is_string($propio) && trim($propio) !== '' ? trim($propio) : ($modulo?->nombre_menu ?: $modulo?->nombre ?: $omision);
+        $memoria->set($llave, $nombre);
+
+        return $nombre;
     }
 
     /** «Restablecer valor original»: todos los módulos de la lista vuelven a su nombre de siempre. */

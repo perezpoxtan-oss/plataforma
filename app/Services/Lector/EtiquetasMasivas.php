@@ -24,7 +24,7 @@ use Illuminate\Support\Str;
 /**
  * Ronda 6 (LL-06): impresión masiva de etiquetas QR de todo lo que se
  * identifica con el lector universal (config/lector.php): llaves, gafetes,
- * equipos, equipos de Protección Civil, vehículos, colaboradores, Lost &
+ * equipos, equipos contra incendios, vehículos, colaboradores, Lost &
  * Found, procedimientos… y cualquier tipo que se agregue después.
  *
  * Cada tipo se ofrece solo si el usuario puede «<módulo>.ver» y además la
@@ -48,7 +48,7 @@ class EtiquetasMasivas
         'llave' => 'Llaves',
         'gafete' => 'Gafetes',
         'equipo' => 'Equipos de seguridad',
-        'equipo_pc' => 'Equipos de Protección Civil',
+        'equipo_pc' => 'Equipos contra incendios',
         'vehiculo' => 'Vehículos',
         'colaborador' => 'Colaboradores',
         'lost_found' => 'Lost & Found',

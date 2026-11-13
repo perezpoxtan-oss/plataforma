@@ -1,31 +1,31 @@
 ---
-titulo: Estacionamientos y zonas de descarga
+titulo: Estacionamiento y almacenes
 modulos: [estacionamientos]
 seccion: Padrones
 orden: 80
 resumen: Configurar por sede los estacionamientos (con su cupo) y las zonas de descarga, y ver cuánto están ocupados.
 ---
 
-# Estacionamientos
+# Estacionamiento y almacenes
 
-**¿Para qué sirve?** Aquí configuras, por sede, dónde se dejan los vehículos y ves cuánto están ocupados:
+**¿Para qué sirve?** Aquí configuras, por sede, dónde se dejan los vehículos (estacionamientos y zonas de descarga como almacenes, andenes o el lobby) y ves cuánto están ocupados. Antes se llamaba «Estacionamientos y zonas de descarga». Hay dos tipos de zona:
 
 - **Estacionamiento:** tiene un número de espacios (cupo).
 - **Zona de descarga:** lobby, almacén, andén o patio de maniobras donde los vehículos se detienen un rato. Puede tener una capacidad máxima (opcional).
 
 La caseta elige estas zonas al registrar la entrada de un vehículo en la [Bitácora de accesos](accesos.md).
 
-![Estacionamientos y zonas](img/estacionamientos/01-cupos-por-sede.png)
+![Estacionamiento y almacenes](img/estacionamientos/01-cupos-por-sede.png)
 
 ## Antes de empezar
 
-- Para ver la pantalla tu rol debe poder consultar *Estacionamientos*. Si no aparece en el menú, pide el permiso a tu administrador.
+- Para ver la pantalla tu rol debe poder consultar *Estacionamiento y almacenes*. Si no aparece en el menú, pide el permiso a tu administrador.
 - Para crear, editar o dar de baja zonas necesitas esos permisos. Si no ves **Nueva Zona**, tu rol solo consulta los cupos.
 - Solo ves las zonas de **tus sedes**.
 
 ## Cómo leer la pantalla
 
-1. Entra a **Padrones → Estacionamientos y zonas de descarga**.
+1. Entra a **Padrones → Estacionamiento y almacenes**.
 2. Las zonas aparecen **agrupadas por sede**.
 3. En cada estacionamiento ves **ocupados / cupo** (por ejemplo `2 / 40 espacios`) y una barra. Si se llena, la barra se pone **roja** y aparece **LLENO**.
 4. En las zonas de descarga ves cuántos vehículos la están usando (o `0 / 4 vehículos` si tiene capacidad).
