@@ -4420,6 +4420,39 @@ a.btn-alto-contraste.btn-manual:hover, a.btn-alto-contraste.btn-manual.activo { 
 .lista-avisos-config, .lista-enlaces-config { padding-left: 1.1rem; }
 .lista-avisos-config li, .lista-enlaces-config li { margin-bottom: 0.2rem; }
 .fila-nombre-menu { display: grid; grid-template-columns: minmax(8rem, 1fr) 2fr; gap: 0.5rem; align-items: center; margin-bottom: 0.4rem; }
+/* Configuración en mosaico + buscador (docs/tecnico/configuracion.md) */
+.buscador-config { max-width: 900px; }
+.buscador-config-fila { display: flex; align-items: center; gap: 0.5rem; }
+.buscador-config-campo { position: relative; flex: 1 1 auto; min-width: 0; display: flex; align-items: center; }
+.buscador-config-campo > .bi-search { position: absolute; left: 0.85rem; color: var(--texto-suave); pointer-events: none; }
+.buscador-config-campo .campo { width: 100%; min-height: 48px; padding-left: 2.4rem; }
+.buscador-config .buscador-config-ayuda { margin: 0.4rem 0 0; }
+.buscador-config-fila .btn-azul { min-height: 48px; border-radius: 10px; padding: 0 1.25rem; }
+.resultados-config { max-width: 900px; }
+.lista-resultados-config { list-style: none; margin: 0 0 0.5rem; padding: 0; display: grid; gap: 0.4rem; }
+.lista-resultados-config a { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem; min-height: 44px; padding: 0.5rem 0.9rem; border: 1px solid var(--borde); border-radius: 12px; background: #fff; color: var(--texto); text-decoration: none; }
+.lista-resultados-config a:hover, .lista-resultados-config a:focus-visible { border-color: var(--color-primario); color: var(--color-primario); }
+.mosaico-config { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 1rem; max-width: 1100px; }
+.tarjeta-tema-config { display: flex; align-items: flex-start; gap: 0.85rem; height: 100%; min-height: 96px; padding: 1.1rem 1.1rem 1.1rem 1.2rem; color: var(--texto); text-decoration: none; transition: border-color .15s, box-shadow .15s; }
+.tarjeta-tema-config:hover, .tarjeta-tema-config:focus-visible { border-color: var(--color-primario); box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--color-primario) 35%, transparent); color: var(--texto); }
+.icono-tema-config { flex: 0 0 2.75rem; width: 2.75rem; height: 2.75rem; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: var(--color-primario-suave); color: var(--color-primario); font-size: 1.3rem; }
+.cuerpo-tema-config { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.nombre-tema-config { font-weight: 800; font-size: 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.descripcion-tema-config { font-size: 0.82rem; color: var(--texto-suave); line-height: 1.35; }
+.flecha-tema-config { color: var(--texto-tenue); align-self: center; }
+.insignia-cambiado { display: inline-block; padding: 0.05rem 0.55rem; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: 0.68rem; font-weight: 700; }
+.volver-config { display: inline-flex; align-items: center; gap: 0.25rem; min-height: 44px; font-weight: 700; text-decoration: none; }
+/* El ajuste al que lleva el buscador o un enlace queda resaltado */
+.secciones-config :target { outline: 3px solid var(--color-primario); outline-offset: 3px; animation: resaltar-config 2.4s ease-out 1; }
+@keyframes resaltar-config { from { box-shadow: 0 0 0 8px var(--color-primario-foco); } to { box-shadow: 0 0 0 0 transparent; } }
+html.modo-noche .lista-resultados-config a { background: var(--superficie, #1e293b); }
+html.modo-noche .insignia-cambiado { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+@media (max-width: 575.98px) {
+    .mosaico-config { grid-template-columns: 1fr; gap: 0.75rem; }
+    .buscador-config-fila { flex-wrap: wrap; }
+    .buscador-config-fila .btn-azul { flex: 1 1 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .secciones-config :target { animation: none; } }
 @media (max-width: 575.98px) {
     .fila-nombre-menu { grid-template-columns: 1fr; gap: 0.15rem; }
 }

@@ -624,6 +624,6 @@ class VacantesTest extends TestCase
         $this->assertSame(['recursos_humanos', 'Recepción y candidatos', 'vacantes.index'], [$modulo->menu->clave, $modulo->seccion_menu, $modulo->ruta]);
         $this->assertLessThan(Modulo::where('clave', 'recepcion_rh')->value('orden_menu'), $modulo->orden_menu);
         $this->actingAs($this->rh)->get('/vacantes')->assertOk();
-        $this->actingAs($this->crearUsuario($this->empresa, 'Administrador'))->get('/configuracion')->assertOk()->assertSee('Bolsa de trabajo en internet');
+        $this->actingAs($this->crearUsuario($this->empresa, 'Administrador'))->get('/configuracion/personal')->assertOk()->assertSee('Bolsa de trabajo en internet');
     }
 }

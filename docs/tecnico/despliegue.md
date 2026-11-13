@@ -133,7 +133,7 @@ Antes de autorizar la primera versión de Producción (y al cambiar de hospedaje
 2. **Dos Super Administradores activos**, cada uno con su verificación en dos pasos y sus códigos de respaldo guardados fuera de la plataforma. Inicio avisa en rojo mientras haya uno solo (C-36, DD-21). El hospedaje no tiene terminal: la recuperación del Super Administrador depende de esto (ver [dos-pasos.md](dos-pasos.md)).
 3. **Tareas en proceso** comprobadas (privacidad, plazos, escalamientos): la Bitácora de auditoría muestra `privacidad.conservacion_aplicada` o la tarjeta de Privacidad muestra la «Última revisión» del día.
 4. **Respaldo descargado** desde Configuración → Respaldos y guardado también fuera del servidor. Sin terminal, el respaldo se copia con el **administrador de archivos de cPanel** (carpeta `shared/storage/app/private/respaldos`) y se restaura importando el `.sql.gz` con phpMyAdmin.
-5. **Aviso de privacidad** de cada empresa completado por su abogado y publicado en Configuración → Privacidad (los borradores de los textos legales están en [privacidad.md](privacidad.md)).
+5. **Aviso de privacidad** de cada empresa completado por su abogado y publicado en Configuración → Seguridad y privacidad → Privacidad (los borradores de los textos legales están en [privacidad.md](privacidad.md)).
 6. Prueba en un **teléfono real** (app y navegador): la app de Producción se descarga de **Mi cuenta → App para tu celular** (compilada con la etiqueta, apunta a Producción y está firmada con la llave del repositorio).
 
 ## QA: limpieza única de la base

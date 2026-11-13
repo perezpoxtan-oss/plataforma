@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Nucleo;
 
+use App\Support\TemasConfiguracion;
 use Database\Seeders\CatalogoSeeder;
 use Database\Seeders\MenuSeeder;
 use Tests\TestCase;
@@ -11,7 +12,8 @@ use Tests\TestCase;
  * Cada ruta en negritas del manual que empieza con un menú («**Operación →
  * Caseta → Préstamo de llaves**») o con «Configuración →» se compara con los
  * nombres reales: secciones y pantallas del menú (MenuSeeder, el catálogo y
- * las entradas que agrega ConstructorMenu) y secciones de Configuración.
+ * las entradas que agrega ConstructorMenu) y las tarjetas (temas) del mosaico
+ * de Configuración con sus secciones.
  * Si alguien renombra un menú o mueve un ajuste, esta prueba avisa qué
  * página del manual quedó vieja.
  */
@@ -26,9 +28,45 @@ class ManualRutasTest extends TestCase
         'estructura' => ['Organización' => ['Autorizaciones', 'Personal']],
     ];
 
-    /** Secciones de Configuración (vista administracion/configuracion/index). */
-    private const CONFIGURACION = ['General', 'Caseta y accesos', 'Estructura', 'Recepción y RR. HH.', 'Novedades', 'Bitácora de novedades', '(tu bitácora)',
-        '(bitácora)', 'Activos', 'Transporte', 'Pases de salida', 'Avisos por correo', 'Cuentas y seguridad', 'Privacidad', 'Plataforma', 'Reservas de áreas'];
+    /** El tema de la bitácora se llama como la empresa la nombre: el manual lo escribe así. */
+    private const BITACORA = ['Novedades', 'Bitácora de novedades', '(tu bitácora)', '(bitácora)'];
+
+    /**
+     * Configuración en mosaico: «Configuración → X» nombra una tarjeta del
+     * mosaico (App\Support\TemasConfiguracion::TEMAS) y «Configuración → X → Y»,
+     * si Y es una sección, debe ser de ese tema.
+     *
+     * @return array<string, list<string>> nombre del tema => nombres de sus secciones
+     */
+    private static function temasConfiguracion(): array
+    {
+        $temas = [];
+        foreach (TemasConfiguracion::TEMAS as $slug => [$nombre, , , $secciones]) {
+            $nombres = array_map(fn ($s) => TemasConfiguracion::SECCIONES[$s][0], $secciones);
+            foreach ($slug === 'novedades' ? self::BITACORA : [$nombre] as $alias) {
+                $temas[$alias] = $nombres;
+            }
+        }
+
+        return $temas;
+    }
+
+    /** ¿«Configuración → tema → …» es correcta? Devuelve el problema o null. */
+    private static function problemaConfiguracion(array $partes): ?string
+    {
+        $temas = self::temasConfiguracion();
+        $tema = $partes[0] ?? null;
+        if (! isset($temas[$tema])) {
+            return "«{$tema}» no es una tarjeta (tema) de Configuración";
+        }
+        $siguiente = $partes[1] ?? null;
+        $todas = array_merge(...array_values(array_map(fn ($t) => $t, $temas)));
+        if ($siguiente !== null && in_array($siguiente, $todas, true) && ! in_array($siguiente, $temas[$tema], true) && $siguiente !== $tema) {
+            return "la sección «{$siguiente}» no está en el tema «{$tema}»";
+        }
+
+        return null;
+    }
 
     /** @return array<string, array{nombre: string, secciones: array<string, list<string>>}> */
     private function menus(): array
@@ -97,8 +135,8 @@ class ManualRutasTest extends TestCase
                 }
             } elseif (! in_array($segundo, $pantallas, true)) {
                 $errores[] = "{$pagina}: «".implode(' → ', $partes)."»: «{$segundo}» no es una sección ni una pantalla del menú «{$partes[0]}»";
-            } elseif ($segundo === 'Configuración' && isset($partes[2]) && ! in_array($partes[2], self::CONFIGURACION, true)) {
-                $errores[] = "{$pagina}: «".implode(' → ', $partes)."»: «{$partes[2]}» no es una sección de Configuración";
+            } elseif ($segundo === 'Configuración' && isset($partes[2]) && ($problema = self::problemaConfiguracion(array_slice($partes, 2))) !== null) {
+                $errores[] = "{$pagina}: «".implode(' → ', $partes)."»: {$problema}";
             }
         }
         $this->assertSame([], $errores);
@@ -108,21 +146,28 @@ class ManualRutasTest extends TestCase
     {
         $errores = [];
         foreach ($this->rutasDelManual() as [$pagina, $partes]) {
-            if ($partes[0] === 'Configuración' && isset($partes[1]) && ! in_array($partes[1], self::CONFIGURACION, true)) {
-                $errores[] = "{$pagina}: «".implode(' → ', $partes)."»: «{$partes[1]}» no es una sección de Configuración";
+            if ($partes[0] === 'Configuración' && isset($partes[1]) && ($problema = self::problemaConfiguracion(array_slice($partes, 1))) !== null) {
+                $errores[] = "{$pagina}: «".implode(' → ', $partes)."»: {$problema}";
             }
         }
         $this->assertSame([], $errores);
     }
 
-    public function test_las_secciones_de_configuracion_son_las_de_la_pantalla(): void
+    public function test_los_temas_de_configuracion_son_las_tarjetas_del_mosaico(): void
     {
+        // Cada sección de la pantalla pertenece a un solo tema y cada tema tiene nombre propio
         $vista = (string) file_get_contents(resource_path('views/administracion/configuracion/index.blade.php'));
-        preg_match_all("/\\['(sec-[a-z]+|caseta)', '([^']+)'/u", $vista, $m);
-        foreach ($m[2] as $seccion) {
-            $this->assertContains($seccion, self::CONFIGURACION, "La sección «{$seccion}» de Configuración falta en la lista de la prueba");
+        preg_match_all('/verSeccion\(\'([a-z-]+)\'\)/', $vista, $m);
+        $enTemas = array_merge(...array_column(TemasConfiguracion::TEMAS, 3));
+        foreach (array_unique($m[1]) as $seccion) {
+            $this->assertSame(1, count(array_keys($enTemas, $seccion, true)), "La sección «{$seccion}» debe estar en un solo tema");
         }
-        $this->assertGreaterThanOrEqual(12, count($m[2]));
+        $this->assertGreaterThanOrEqual(12, count(array_unique($m[1])));
+        $this->assertSame(count(TemasConfiguracion::TEMAS), count(array_unique(array_column(TemasConfiguracion::TEMAS, 0))));
+        // La prueba misma detecta una ruta vieja
+        $this->assertNotNull(self::problemaConfiguracion(['Cuentas y seguridad']));
+        $this->assertNotNull(self::problemaConfiguracion(['General', 'Transporte']));
+        $this->assertNull(self::problemaConfiguracion(['Activos, transporte y pases', 'Transporte']));
     }
 
     public function test_menus_md_nombra_cada_pantalla_del_menu(): void

@@ -24,7 +24,7 @@
         <div>Los paquetes contienen <strong>TODA la información, incluidos datos personales</strong>. Descárgalos solo en un equipo de confianza, guárdalos en un lugar seguro (no por correo ni en carpetas compartidas) y bórralos del servidor cuando ya no los necesites. Cada generación, descarga, revisión y borrado queda en la Bitácora de auditoría.</div>
     </div>
 
-    <p class="small mb-3"><a href="{{ route('configuracion.index') }}#t-respaldos"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver a Configuración</a></p>
+    <p class="small mb-3"><a href="{{ \App\Support\TemasConfiguracion::url('cfg-respaldos') }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver a Configuración</a></p>
 
     {{-- ================= Paquete de traslado ================= --}}
     <section class="tarjeta p-4 mb-3" aria-labelledby="t-paquete">
@@ -81,7 +81,7 @@
     <section class="tarjeta p-4 mb-3" aria-labelledby="t-semanal">
         <h2 id="t-semanal" class="h5 fw-bold"><i class="bi bi-calendar-week me-2 text-primary" aria-hidden="true"></i>Respaldo automático</h2>
         <ul class="small mb-2">
-            <li><strong>Base de datos:</strong> todos los días después de las 3:00 y antes de instalar cada versión nueva (se conservan {{ \App\Services\Respaldos\Respaldos::DIAS }} días). Los ves en <a href="{{ route('configuracion.index') }}#t-respaldos">Configuración → Respaldos</a>.</li>
+            <li><strong>Base de datos:</strong> todos los días después de las 3:00 y antes de instalar cada versión nueva (se conservan {{ \App\Services\Respaldos\Respaldos::DIAS }} días). Los ves en <a href="{{ \App\Support\TemasConfiguracion::url('cfg-respaldos') }}">Configuración → Respaldos</a>.</li>
             <li><strong>Fotos, documentos y firmas:</strong> no van en el respaldo diario porque duplicarían todo cada día y podrían llenar el disco. Para ellos está el paquete de traslado: genéralo a mano o enciende el automático semanal.</li>
         </ul>
         <form action="{{ route('traslado.ajustes') }}" method="POST" class="m-0">

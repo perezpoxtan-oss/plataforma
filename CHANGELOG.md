@@ -6,6 +6,12 @@ Formato: [versiones semánticas](https://semver.org/lang/es/) — MAYOR.MENOR.PA
 Bajo «## [Sin publicar]»:
 
 ### Agregado
+- **Configuración en mosaico + buscador** (pedido del dueño, 12 nov 2026). Ver `docs/tecnico/configuracion.md`.
+  - Al entrar: buscador **«¿Qué quieres ajustar?»** y una tarjeta por tema (General, Caseta y accesos, Estructura, Recepción y RR. HH., la bitácora, **Activos, transporte y pases**, Reservas de áreas, Avisos por correo, **Seguridad y privacidad** y, solo SA, Plataforma), con una línea de qué contiene e insignia **Cambiado** si la empresa tiene ajustes distintos de los de fábrica.
+  - Cada tema abre solo sus ajustes en `/configuracion/{tema}` con «‹ Configuración». El buscador filtra tarjetas y encuentra ajustes por nombre o palabra clave (lleva al ajuste resaltado); funciona sin JavaScript (`?q=`) y con JavaScript al escribir.
+  - Se conservan todos los ajustes, formularios, permisos, validaciones, «Restablecer» y valores originales. Tras **Guardar** se vuelve al mismo tema y tarjeta con su mensaje; los enlaces viejos `/configuracion#…` (y `/lost-found/dias-resguardo`) llevan al tema correcto.
+  - **Guardar avisos** en un tema ya no toca los avisos ni las listas de correos de los demás temas (antes, con la página única, se mandaban todas las casillas).
+  - Manual (`configuracion.md` y las páginas que citan rutas de Configuración), capturas nuevas (`mosaico`, `mosaico-celular`, `buscador`, `tema-activos`) y las de Configuración retomadas; lección 73. Sin migraciones.
 - **Reservas de áreas: bloquear un sitio y uso más simple** (pedido del dueño, 12 nov). Ver `docs/tecnico/reservas.md`, «Bloqueos de sitios» y «Uso más simple».
   - **Bloquear un sitio** (área o espacio interior) por un rango de fecha y hora con motivo obligatorio: nadie lo reserva en ese horario; bloquear una zona bloquea sus espacios interiores y al revés. En el calendario se ve «Bloqueado: motivo» con rayas rojas, para todos. Pestaña nueva **Bloqueos** (vigentes, programados, terminados y dados de baja) y **Dar de baja** el bloqueo con «¿Por qué?» opcional; todo auditado.
   - Bloquean el responsable general de reservas y su suplente (cualquier sitio), el responsable y el suplente de cada área (la suya) y quien tenga el permiso nuevo `reservas.bloquear` en la sede (migración `2026_11_24_000200_permiso_bloquear_reservas`: lo reciben los roles que ya configuran reservas, con el mismo alcance; de fábrica el Administrador).

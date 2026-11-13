@@ -3,42 +3,59 @@ titulo: Configuración
 modulos: [configuracion]
 seccion: Estructura
 orden: 50
-resumen: Todos los ajustes de tu empresa ordenados por secciones (General, Caseta y accesos, Estructura, Recepción y RR. HH., Novedades, Activos, Transporte, Pases de salida, Avisos por correo, Cuentas y seguridad, Privacidad) y, para el Super Administrador, la Plataforma.
+resumen: Todos los ajustes de tu empresa en tarjetas por tema (General, Caseta y accesos, Estructura, Recepción y RR. HH., Novedades, Activos, transporte y pases, Reservas de áreas, Avisos por correo, Seguridad y privacidad) con un buscador y, para el Super Administrador, la Plataforma.
 ---
 
 # Configuración
 
-**¿Para qué sirve?** Aquí está **todo lo que tu empresa puede ajustar**, ordenado por **secciones**: General, Caseta y accesos, Estructura, Recepción y RR. HH., Novedades (o como se llame tu bitácora), Activos, Transporte, Pases de salida, Avisos por correo, Cuentas y seguridad y Privacidad. Cada sección junta sus ajustes y sus avisos por correo, y **cada ajuste está en un solo lugar**. Cada ajuste dice su **valor original** y, si lo cambiaste, tiene un botón **Restablecer valor original**. Lo que se configura en otra pantalla aparece con su valor y un botón **Configurar en …** que te lleva directo. El Super Administrador ve además la sección **Plataforma**.
+**¿Para qué sirve?** Aquí está **todo lo que tu empresa puede ajustar**. Al entrar ves un buscador, **¿Qué quieres ajustar?**, y una **tarjeta por tema**: General, Caseta y accesos, Estructura, Recepción y RR. HH., Novedades (o como se llame tu bitácora), Activos, transporte y pases, Reservas de áreas, Avisos por correo y Seguridad y privacidad. Cada tema abre **solo sus ajustes** con sus avisos por correo, y **cada ajuste está en un solo lugar**. Cada ajuste dice su **valor original** y, si lo cambiaste, tiene un botón **Restablecer valor original**. Lo que se configura en otra pantalla aparece con su valor y un botón **Configurar en …** que te lleva directo. El Super Administrador ve además la tarjeta **Plataforma**.
 
-![Configuración por secciones](img/configuracion/secciones-indice.png)
+![Configuración: buscador y tarjetas por tema](img/configuracion/mosaico.png)
 
 ## Antes de empezar
 
-- Solo ves las secciones y los avisos de los módulos que **tu plan incluye** (por ejemplo, sin Recursos Humanos no aparece «Recepción y RR. HH.»).
+- Solo ves los temas, los ajustes y los avisos de los módulos que **tu plan incluye** (por ejemplo, sin Recursos Humanos no aparece la tarjeta «Recepción y RR. HH.»).
 
 - Para ver la pantalla tu rol debe poder consultar *Configuración*. Si tu rol solo consulta, verás los valores pero no los botones **Guardar** ni **Restablecer valor original**.
 - Los ajustes de la empresa los cambia quien tiene el permiso **editar** de Configuración con alcance de **toda la empresa** (normalmente el administrador). Con alcance de una sede solo se consultan.
 - Algunas tarjetas piden además el permiso de su módulo: los días de Lost & Found (**Configurar** de Lost & Found), el kiosco y los plazos de candidatos (**Configurar** de Candidatos), la bolsa de trabajo (**Configurar** de Vacantes), las esperas (**Configurar** de Autorizaciones departamentales), la impresión desde padrones (**Configurar** de Etiquetas QR) y el circuito de pases (**Configurar** de Pases de salida). Si no tienes ese permiso, la tarjeta no aparece.
-- **Privacidad** (conservación de datos, aviso de privacidad y solicitudes ARCO) la ve quien tiene el permiso **Datos personales** de Configuración con alcance de toda la empresa (normalmente el administrador).
-- **Plataforma** (Super Administradores, correo de la plataforma, respaldos, versión de PHP del servidor y enlaces a Identidad y Catálogo comercial) solo la ve el Super Administrador.
+- **Privacidad** (conservación de datos, aviso de privacidad y solicitudes ARCO, dentro de **Seguridad y privacidad**) la ve quien tiene el permiso **Datos personales** de Configuración con alcance de toda la empresa (normalmente el administrador).
+- La tarjeta **Plataforma** (Super Administradores, correo de la plataforma, respaldos, versión de PHP del servidor y enlaces a Identidad y Catálogo comercial) solo la ve el Super Administrador.
 
-## Cómo moverte por las secciones
+## Cómo abrir un tema
 
 1. Entra a **Estructura → Configuración**.
-2. Arriba dice la **Versión instalada** y, debajo, un botón por sección. Toca una sección para ir directo a ella.
-3. Dentro de cada sección hay tarjetas. Las que dicen **Configurar en …** se cambian en su pantalla; toca el botón y llegas ahí.
+2. Arriba dice la **Versión instalada**; debajo están el buscador y las tarjetas de los temas. Cada tarjeta dice en una línea qué contiene. Si dice **Cambiado**, tu empresa tiene ahí algún ajuste distinto del de fábrica.
+3. Toca la tarjeta del tema. Se abre **solo ese tema**, con sus ajustes. Si el tema junta varias partes (por ejemplo **Activos, transporte y pases**), arriba tiene un botón por parte.
+4. Para regresar a las tarjetas toca **‹ Configuración**, arriba a la izquierda.
 
-**Qué debes ver:** la sección elegida, con su título subrayado y sus tarjetas. Debajo de cada campo dice el **Valor original** (el que trae la plataforma).
+![Un tema abierto: Activos, transporte y pases](img/configuracion/tema-activos.png)
+
+**Qué debes ver:** el título del tema y sus tarjetas de ajustes. Las que dicen **Configurar en …** se cambian en su pantalla; toca el botón y llegas ahí. Debajo de cada campo dice el **Valor original** (el que trae la plataforma). En el celular las tarjetas de los temas van una debajo de otra.
+
+![Configuración en el celular](img/configuracion/mosaico-celular.png)
+
+## Cómo buscar un ajuste
+
+Si no sabes en qué tema está un ajuste, búscalo.
+
+1. En **¿Qué quieres ajustar?** escribe su nombre o una palabra (por ejemplo **llaves**, **dos pasos**, **correo** u **horas**). No importan los acentos ni las mayúsculas.
+2. Mientras escribes, se quedan solo las tarjetas de los temas que tienen algo que ver y, arriba, **Ajustes que coinciden**.
+3. Toca el ajuste. Se abre su tema y te lleva directo a ese ajuste, **marcado con un recuadro**.
+
+![Buscar un ajuste](img/configuracion/buscador.png)
+
+**Qué debes ver:** el ajuste que buscabas, resaltado. Si dice «No encontramos …», prueba con otra palabra o abre el tema desde su tarjeta. El buscador solo muestra lo que tu rol puede ver.
 
 ## Cómo cambiar un ajuste y regresarlo a su valor original
 
-1. Busca la tarjeta en su sección (por ejemplo **Activos → Préstamo de llaves: llaves fuera mucho tiempo**).
+1. Abre su tema o búscala (por ejemplo, en **Activos, transporte y pases**, la tarjeta **Préstamo de llaves: llaves fuera mucho tiempo**).
 2. Cambia el valor y toca **Guardar** en esa tarjeta. Solo se guarda esa tarjeta; las demás no cambian.
 3. Para regresar al valor original, toca **Restablecer valor original** en la misma tarjeta y confirma con **Aceptar**. El botón solo aparece si esa tarjeta tiene algo distinto del original.
 
 ![Restablecer valor original](img/configuracion/restablecer.png)
 
-**Qué debes ver:** al guardar, «Ajustes de caseta y activos guardados.» (o el mensaje de esa tarjeta); al restablecer, «Listo: … volvieron a su valor original.»
+**Qué debes ver:** al guardar regresas al mismo tema, en la misma tarjeta, con «Ajustes de caseta y activos guardados.» (o el mensaje de esa tarjeta); al restablecer, «Listo: … volvieron a su valor original.»
 
 ## General
 
@@ -48,7 +65,7 @@ Muestra la **zona horaria** de tu empresa. El nombre, la razón social, el RFC, 
 ### Cómo cambiar «Reloj y suplente»
 Todo lo que espera una respuesta (altas por verificar, vales de taxi, procedimientos, tickets, cuentas, vacantes, pases vencidos…) muestra cuánto lleva, cambia de color, se le recuerda a quien debe responder y, si nadie responde, pasa a un suplente.
 
-1. En **General → Reloj y suplente**, escribe en **Recordatorio y ámbar a las** y en **Suplente y rojo a las** las horas de espera.
+1. En el tema **General**, tarjeta **Reloj y suplente**, escribe en **Recordatorio y ámbar a las** y en **Suplente y rojo a las** las horas de espera.
 2. Deja marcada **Recordar y pasar al suplente** (si la quitas, el reloj y el color siguen, pero no salen avisos).
 3. Si quieres algo distinto para un módulo, abre **Avanzado: horas y suplente de cada módulo**: escribe sus horas (vacío = las generales), elige **A quién pasa** (de fábrica, o un rol) o quita **Encendido**. Lo que tiene su propio reloj dice dónde se configura.
 4. Toca **Guardar**.
@@ -60,13 +77,13 @@ Todo lo que espera una respuesta (altas por verificar, vales de taxi, procedimie
 ### Cómo cambiar el nombre de un módulo en el menú
 Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en el menú.
 
-1. En **General → Nombres en el menú**, abre **Avanzado: cambiar nombres del menú**.
+1. En el tema **General**, tarjeta **Nombres en el menú**, abre **Avanzado: cambiar nombres del menú**.
 2. Junto al nombre de siempre, escribe el nombre que quieres (máximo 40 letras). Deja vacío el que no quieras cambiar.
 3. Toca **Guardar**.
 
 ![Nombres en el menú](img/configuracion/nombres-menu.png)
 
-**Qué debes ver:** «Nombres del menú guardados. Revisa el menú: ya aparecen con el nombre nuevo.» Solo cambia el nombre en el menú: la pantalla, los permisos y las direcciones son los mismos. El nombre de la bitácora (Novedades o Incidentes) se cambia en su propia sección.
+**Qué debes ver:** «Nombres del menú guardados. Revisa el menú: ya aparecen con el nombre nuevo.» Solo cambia el nombre en el menú: la pantalla, los permisos y las direcciones son los mismos. El nombre de la bitácora (Novedades o Incidentes) se cambia en su propio tema.
 
 ### Cómo volver a mostrar «Configura tu empresa» en Inicio
 
@@ -100,7 +117,7 @@ Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en e
 
 ## Recepción y RR. HH.
 
-- **Avisos** de Recepción y candidatos (llegada del candidato, entrevistas, evaluaciones y plazos). El aviso de las visitas que esperan al departamento está en **Caseta y accesos → Autorizaciones de visitas**.
+- **Avisos** de Recepción y candidatos (llegada del candidato, entrevistas, evaluaciones y plazos). El aviso de las visitas que esperan al departamento está en el tema **Caseta y accesos**, tarjeta **Autorizaciones de visitas: avisos por correo**.
 - **Aviso de privacidad y kiosco**: el texto que acepta el candidato y cuánto dura el enlace del kiosco (valor original: 2 horas y 3 veces; el aviso original es un borrador para que lo revise tu abogado). Es el mismo formulario de **Recepción → Ajustes**. Ver [Recepción y autorizaciones](recepcion-y-autorizaciones.md).
 - **Candidatos: plazos y documentos para contratar**: muestra cada plazo con su valor original. Se cambia con **Configurar en Candidatos → Documentos y plazos**.
 - **Criterios para calificar las entrevistas**: se cambian con **Configurar en Candidatos → Criterios de entrevista**.
@@ -113,7 +130,7 @@ Si en tu empresa a un módulo le dicen distinto, puedes cambiar cómo se ve en e
 
 **Novedades** es donde va todo lo que pasa en el día, sin importar su tipo; es el nombre de siempre. Si en tu empresa le dicen **Incidentes**, puedes elegirlo.
 
-1. En la sección de la bitácora, busca la tarjeta **…: nombre y hallazgos**.
+1. Abre el tema de la bitácora (**Novedades**, o como se llame en tu empresa) y busca la tarjeta **…: nombre y hallazgos**.
 2. En **Nombre del módulo** elige **Novedades (como siempre)** o **Incidentes**.
 3. Si tu empresa usa otro nombre, elige **Otro nombre (escríbelo en Avanzado)**, abre **Avanzado: otro nombre** y escríbelo (máximo 40 letras).
 4. En **Cuando un Recorrido de Protección Civil encuentra una falla, abrir el ticket como** viene **Mantenimiento de equipo PC (recomendado)**: así un extintor sin presión no cuenta como siniestro. Elige **Siniestro Protección Civil** solo si tu empresa quiere tratar cada falla como emergencia (valor original: **Mantenimiento de equipo PC**).
@@ -145,7 +162,7 @@ Quien atiende un **Reporte General** puede elegir su tipo (es opcional). De fáb
 
 ### Procedimientos: acuse «Leí y entendí» y recordatorio
 
-Está en esta sección, junto a «¿Qué hacer? Ver procedimiento» y a los **Procedimientos: avisos por correo**.
+Está en este tema, junto a «¿Qué hacer? Ver procedimiento» y a los **Procedimientos: avisos por correo**.
 
 | Qué decides | Valor original | Dónde se cambia |
 |---|---|---|
@@ -196,7 +213,11 @@ Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cu�
 
 **Qué debes ver:** «Los días de resguardo de Lost & Found se guardaron correctamente.» Aplica a todas las sedes de la empresa.
 
-## Activos
+## Activos, transporte y pases
+
+Este tema junta tres partes; arriba tiene un botón para ir a cada una.
+
+### Activos
 
 | Tarjeta | Qué decides | Valor original |
 |---|---|---|
@@ -208,12 +229,12 @@ Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cu�
 
 ![Llaves fuera mucho tiempo](img/configuracion/caseta-y-activos.png)
 
-## Transporte
+### Transporte
 
 - **Firmas del vale de taxi**: quién firma en la pantalla (los dos, solo el guardia, solo el taxista o nadie). Quien no firma en pantalla firma a mano en el vale impreso. Valor original: guardia y taxista firman en pantalla.
 - **Avisos** del vale de taxi: en **Correos que lo reciben** escribe uno por línea o separados por coma; si lo dejas vacío, se envía a quien puede autorizar vales en esa sede.
 
-## Pases de salida
+### Pases de salida
 
 - **Circuito de aprobación**: resumen de quién firma y en qué orden; con **Configurar circuito** se cambia. Ver [Pases de salida](pases-salida.md).
 - **Avisos**: aprobación, resultado, recordatorio de pases vencidos y firmas que tardan.
@@ -222,26 +243,28 @@ Cada tipo de objeto (Otro, Alto Valor, Electrónico, Ropa, Perecedero) tiene cu�
 
 ## Cómo elegir los avisos por correo
 
-1. En cada sección, la tarjeta **…: avisos por correo** tiene un interruptor **Avisos de este módulo encendidos / apagados** que enciende o apaga todos los avisos de ese módulo de un solo toque.
+1. En cada tema, la tarjeta **…: avisos por correo** tiene un interruptor **Avisos de este módulo encendidos / apagados** que enciende o apaga todos los avisos de ese módulo de un solo toque.
 2. Con el interruptor encendido, marca los avisos que quieres que lleguen. Los que dicen **Valor original: apagado** vienen apagados de origen.
-3. Toca **Guardar avisos** en esa tarjeta (guarda los avisos de todas las secciones).
-4. En la sección **Avisos por correo** ves todos los módulos con **encendidos** o **apagados**; toca uno para ir a sus casillas. Ahí está también **Restablecer valor original** para regresar todos los avisos a como vienen de origen (los correos que capturaste se conservan).
+3. Toca **Guardar avisos** en esa tarjeta. Se guardan los avisos de ese tema; los de los demás temas no cambian.
+4. En el tema **Avisos por correo** ves todos los módulos con **encendidos** o **apagados**; toca uno para ir a sus casillas. Ahí está también **Restablecer valor original** para regresar todos los avisos a como vienen de origen (los correos que capturaste se conservan).
 
 ![Resumen de avisos por correo](img/configuracion/avisos-resumen.png)
 
 **Qué debes ver:** «Avisos actualizados.» y, si apagaste alguno, «Apagados por módulo: …». Si el correo de la plataforma aún no está configurado, verás «El correo de la plataforma aún no está configurado…»; los avisos de la campana sí llegan. Cada persona puede silenciar los avisos que no quiere en [Mi cuenta](mi-cuenta.md) → **Mis avisos**.
 
-## Cuentas y seguridad
+## Seguridad y privacidad
+
+Este tema junta **Cuentas y seguridad** (avisos de cuentas, la Bitácora de auditoría, la verificación en dos pasos y el cierre de sesión) y **Privacidad** (datos personales, aviso de privacidad y solicitudes ARCO).
 
 ### Cómo encender o apagar los avisos de movimientos sensibles
 Quien ve toda la Bitácora de auditoría recibe en su **campana** cuando alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales.
 
-1. En **Cuentas y seguridad** busca «Seguridad: avisar en la campana a quien ve toda la Bitácora de auditoría…».
+1. En **Seguridad y privacidad** busca «Seguridad: avisar en la campana a quien ve toda la Bitácora de auditoría…».
 2. Viene **encendido**. Quita o pon la marca.
 3. Toca **Guardar avisos**.
 
 ### Cómo elegir qué ve «Su sede» en la Bitácora de auditoría
-1. En **Cuentas y seguridad**, baja a **Bitácora de auditoría: qué ve «Su sede»**.
+1. En **Seguridad y privacidad**, baja a **Bitácora de auditoría: qué ve «Su sede»**.
 2. Elige **Los movimientos de su sede** (valor original) o **Solo sus propios movimientos**.
 3. Toca **Guardar**.
 
@@ -252,7 +275,7 @@ Quien ve toda la Bitácora de auditoría recibe en su **campana** cuando alguien
 ### Cómo exigir la verificación en dos pasos
 Con la verificación en dos pasos, al entrar se pide la contraseña y un código del teléfono de cada persona (ver [Mi cuenta](mi-cuenta.md)).
 
-1. En **Cuentas y seguridad**, busca la tarjeta **Verificación en dos pasos**. Dice cuántas cuentas de tu empresa ya la tienen activa.
+1. En **Seguridad y privacidad**, busca la tarjeta **Verificación en dos pasos**. Dice cuántas cuentas de tu empresa ya la tienen activa.
 2. En **Exigir la verificación en dos pasos a:** elige:
    - **Nadie** (valor original): cada persona decide si la activa.
    - **Administradores**: quien puede dar de alta o editar usuarios, roles, permisos o la configuración.
@@ -266,12 +289,12 @@ Con la verificación en dos pasos, al entrar se pide la contraseña y un código
 ### Cierre de sesión por inactividad
 La tarjeta dice tras cuántos minutos sin actividad se cierra la sesión (valor original: 20). Es igual para todas las empresas; si necesitas otro tiempo, pídelo a quien administra la plataforma.
 
-## Privacidad
+### Privacidad: datos personales
 
 Aquí cuidas los datos personales de quien visita tus sedes, publicas tu aviso de privacidad y llegas a las solicitudes ARCO. El aviso de privacidad **solo se edita aquí** (Recepción solo muestra su versión). El detalle está en [Privacidad y solicitudes ARCO](privacidad-y-arco.md).
 
 ### Cómo elegir cuántos días se conservan los datos personales
-1. En **Privacidad → Conservación de datos personales** escribe los días para:
+1. En **Seguridad y privacidad**, tarjeta **Conservación de datos personales**, escribe los días para:
    - **Fotos de la persona (caseta)** — valor original: 90 días.
    - **Fotos de la identificación (caseta)** — valor original: 90 días.
    - **Datos de visitantes externos en registros cerrados** (visita, huésped, proveedor, contratista) — valor original: 365 días.
@@ -292,7 +315,7 @@ Aquí cuidas los datos personales de quien visita tus sedes, publicas tu aviso d
 - En todos los casos el registro se queda (el ticket, la reserva, el vale): solo se quitan los datos de la persona.
 
 ### Cómo publicar una versión nueva del aviso de privacidad
-1. En **Privacidad → Aviso de privacidad** revisa el texto. Si un aviso amarillo dice que tiene **datos por completar** entre corchetes, pide a tu abogado el texto definitivo.
+1. En **Seguridad y privacidad**, tarjeta **Aviso de privacidad**, revisa el texto. Si un aviso amarillo dice que tiene **datos por completar** entre corchetes, pide a tu abogado el texto definitivo.
 2. Escribe o pega el texto nuevo.
 3. Toca **Guardar como versión nueva**.
 
@@ -300,7 +323,7 @@ Aquí cuidas los datos personales de quien visita tus sedes, publicas tu aviso d
 
 ## Plataforma (Super Administrador)
 
-Arriba de la sección hay enlaces a **Identidad de la plataforma** (nombre, logotipo y colores), **Catálogo comercial → Ajustes** (moneda, IVA, página pública y suscripciones: días de prueba, días de gracia, descuento anual y avisos de vencimiento), **Catálogo comercial → Clientes** y **Empresas** (módulos contratados). Debajo están la versión de PHP del servidor, el correo de la plataforma y los respaldos.
+Arriba del tema hay enlaces a **Identidad de la plataforma** (nombre, logotipo y colores), **Catálogo comercial → Ajustes** (moneda, IVA, página pública y suscripciones: días de prueba, días de gracia, descuento anual y avisos de vencimiento), **Catálogo comercial → Clientes** y **Empresas** (módulos contratados). Debajo están la versión de PHP del servidor, el correo de la plataforma y los respaldos.
 
 ![Sección Plataforma](img/configuracion/plataforma.png)
 
@@ -308,7 +331,7 @@ Arriba de la sección hay enlaces a **Identidad de la plataforma** (nombre, logo
 
 Debe haber **al menos dos Super Administradores activos**: si uno pierde su teléfono y sus códigos de respaldo, el otro le devuelve el acceso desde aquí, sin entrar al servidor. Mientras haya uno solo, **Inicio** lo avisa en rojo («Falta el segundo Super Administrador»).
 
-1. En **Plataforma → Super Administradores** toca **Agregar Super Administrador**.
+1. En el tema **Plataforma**, tarjeta **Super Administradores**, toca **Agregar Super Administrador**.
 2. Escribe **Nombre completo**, **Usuario** y **Correo** (obligatorio para el Super Administrador).
 3. Si la plataforma tiene correo, deja **Contraseña temporal** vacía y le llega un enlace de bienvenida; si no, escribe una contraseña temporal y dásela en persona.
 4. Escribe **Tu contraseña** y toca **Guardar**.
@@ -335,7 +358,7 @@ Su petición te llega a la **campana**, a **Inicio** («Super Administradores qu
 PHP es el programa del servidor que hace funcionar la plataforma. Cuando sale una falla de seguridad, tu proveedor de hospedaje publica una versión corregida; aquí ves si ya la tienes.
 
 1. Entra a **Estructura → Configuración**.
-2. En el índice toca **Plataforma**.
+2. Toca la tarjeta **Plataforma** (o escribe «php» en el buscador).
 3. Busca la tarjeta **Versión de PHP del servidor**.
 
 ![Versión de PHP del servidor](img/configuracion/version-php.png)
@@ -379,6 +402,8 @@ Las versiones corregidas son **8.5.12**, **8.4.27**, **8.3.36** y **8.2.35** o p
 |---|---|---|
 | No veo los botones **Guardar** ni **Restablecer valor original**. | Tu rol solo puede consultar la Configuración (o tiene alcance de una sede). | Pídelo a tu administrador. |
 | No veo una tarjeta (por ejemplo, plazos o esperas). | Tu rol no tiene el permiso de ese módulo. | Pídelo a tu administrador. |
+| No veo la tarjeta de un tema, o al abrirlo regreso a las tarjetas. | Tu plan no incluye ese módulo o tu rol no puede ver ninguno de sus ajustes. | Pídelo a tu administrador. |
+| «No encontramos …» en el buscador. | Ningún ajuste que tu rol ve tiene esa palabra. | Prueba con otra palabra (por ejemplo «horas», «firma», «avisos») o abre el tema desde su tarjeta. |
 | Escribe solo el nombre del servidor (ej. mail.tudominio.com), sin https:// ni espacios. | El servidor está mal escrito. | Escribe solo el nombre del servidor. |
 | Usa un puerto de correo: … | El puerto no es de correo. | Usa 587 (TLS) o 465 (SSL). |
 | Primero guarda la configuración del correo. | Tocaste **Enviar prueba** sin guardar. | Toca **Guardar correo** y luego prueba. |
@@ -398,9 +423,13 @@ Las versiones corregidas son **8.5.12**, **8.4.27**, **8.3.36** y **8.2.35** o p
 | **Tareas programadas** dice «Sin dato todavía». | La instalación automática aún no anota su versión de PHP. | Espera a la siguiente instalación; si sigue igual, pide a tu proveedor de hospedaje que revise las tareas programadas. |
 | **Debe haber al menos dos Super Administradores activos…** | Darías de baja al penúltimo Super Administrador. | Da de alta otro antes de dar de baja a este. |
 | **Tu contraseña no es correcta.** (Super Administradores) | Cada cambio pide tu propia contraseña. | Escribe la contraseña con la que entras. |
-| No veo la sección **Privacidad**. | Tu rol no tiene el permiso **Datos personales** de Configuración con alcance de toda la empresa. | Pídelo a tu administrador. |
+| No veo **Privacidad** en Seguridad y privacidad. | Tu rol no tiene el permiso **Datos personales** de Configuración con alcance de toda la empresa. | Pídelo a tu administrador. |
 
 ## Preguntas frecuentes
+
+**¿Qué significa «Cambiado» en una tarjeta?** Que en ese tema tu empresa tiene al menos un ajuste distinto del de fábrica. Ábrelo: la tarjeta con el cambio tiene el botón **Restablecer valor original**.
+
+**Guardé un enlace a un ajuste de Configuración, ¿sigue sirviendo?** Sí. Los enlaces de antes llevan al tema correcto y al mismo ajuste.
 
 **¿Qué pasa si toco «Restablecer valor original»?** Esa tarjeta regresa a como viene de origen. Solo esa tarjeta: las demás no cambian. En los avisos, los correos que capturaste se conservan.
 

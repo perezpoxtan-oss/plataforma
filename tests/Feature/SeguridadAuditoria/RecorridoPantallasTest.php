@@ -34,6 +34,7 @@ use App\Services\Borrado\RegistroBorrado;
 use App\Services\Importacion\AdministradorImportaciones;
 use App\Services\Informes\Tablero;
 use App\Services\Informes\Tendencias;
+use App\Support\TemasConfiguracion;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Log\Events\MessageLogged;
@@ -161,7 +162,9 @@ class RecorridoPantallasTest extends TestCase
                 // Privacidad: el aviso de cada empresa y su formulario ARCO son públicos a propósito (como la bolsa de trabajo)
                 && ! in_array($ruta->getName(), ['privacidad.aviso', 'privacidad.empresa.solicitud'], true)
                 // Importar desde Excel: {tipo} es el módulo (colaboradores, zonas…), no un registro
-                && ! in_array($ruta->getName(), ['importaciones.create', 'importaciones.plantilla', 'importaciones.exportar'], true);
+                && ! in_array($ruta->getName(), ['importaciones.create', 'importaciones.plantilla', 'importaciones.exportar'], true)
+                // Configuración en mosaico: {tema} es una parte de la pantalla, no un registro (cada empresa ve la suya)
+                && $ruta->getName() !== 'configuracion.tema';
             foreach ($this->urlsDe($ruta) as [$url, $json]) {
                 $visitas++;
                 $this->app['auth']->forgetGuards();
@@ -396,6 +399,8 @@ class RecorridoPantallasTest extends TestCase
             ])),
             'colaboradores.expediente.documento' => DB::table('candidato_documentos')->where('empresa_id', $e)->whereNotNull('colaborador_id')->limit(2)->get(['colaborador_id', 'id'])
                 ->map(fn ($f) => ['colaborador' => $f->colaborador_id, 'documento' => $f->id])->all() ?: [['colaborador' => (int) $primero(Colaborador::class), 'documento' => 1]],
+            // Configuración en mosaico: cada tema (los que el rol no ve regresan al mosaico)
+            'configuracion.tema' => array_map(fn ($t) => ['tema' => $t], array_keys(TemasConfiguracion::TEMAS)),
             // Manual (lección 37): páginas generales y de módulo, una imagen real y rutas que intentan salir de docs/usuario/img
             'manual.ver' => [['pagina' => 'primeros-pasos'], ['pagina' => 'accesos'], ['pagina' => 'usuarios'], ['pagina' => 'guia'], ['pagina' => 'no-existe']],
             'manual.imagen' => [['carpeta' => 'primeros-pasos', 'archivo' => 'acceso.png'], ['carpeta' => 'primeros-pasos', 'archivo' => '..env'],

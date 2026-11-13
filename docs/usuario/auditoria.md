@@ -15,7 +15,7 @@ resumen: Quién hizo qué y cuándo en la plataforma, con el antes y el después
 ## Antes de empezar
 
 - Para ver la bitácora tu rol debe poder consultar *Bitácora de auditoría*. La traen el **Administrador** y el **Director** (toda la empresa) y el **Jefe de seguridad** (su sede). Para descargarla necesitas el permiso **Exportar**.
-- Si tu rol la ve con alcance **Su sede** (como el Jefe de seguridad), ves **los movimientos de tu sede**: lo que se hizo en registros de tu sede y lo que hizo el personal asignado a ella. Tu empresa puede elegir en **Configuración → Cuentas y seguridad** que veas **solo tus propios movimientos**. Arriba dice cuál de los dos ves.
+- Si tu rol la ve con alcance **Su sede** (como el Jefe de seguridad), ves **los movimientos de tu sede**: lo que se hizo en registros de tu sede y lo que hizo el personal asignado a ella. Tu empresa puede elegir en **Configuración → Seguridad y privacidad** que veas **solo tus propios movimientos**. Arriba dice cuál de los dos ves.
 - Si ves toda la bitácora, te llega a la **campana** un aviso cada vez que alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales. Viene encendido; tu empresa lo puede apagar en [Configuración](configuracion.md).
 
 ## Cómo buscar un movimiento

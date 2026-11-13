@@ -34,6 +34,7 @@ use App\Support\CorreoPlataforma;
 use App\Support\Entrada;
 use App\Support\GruposAvisos;
 use App\Support\NombresMenu;
+use App\Support\TemasConfiguracion;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use App\Support\ZonasHorarias;
@@ -71,7 +72,84 @@ class ConfiguracionController extends Controller
         private readonly Tenant $tenant,
     ) {}
 
+    /**
+     * Mosaico (pedido del dueño, 12 nov 2026): buscador «¿Qué quieres
+     * ajustar?» y una tarjeta por tema. Sin JavaScript, el buscador manda
+     * `?q=` y aquí se filtran las tarjetas y los ajustes.
+     */
     public function index(Request $request): View
+    {
+        $datos = $this->datos($request);
+        $busqueda = mb_substr(trim(Entrada::texto($request->query('q'))), 0, 80);
+        $nombres = $this->nombresDeTemas($datos);
+        $temas = [];
+        foreach (TemasConfiguracion::TEMAS as $slug => [, $icono, $descripcion, $secciones]) {
+            if (! collect($secciones)->contains(fn ($s) => $datos['secciones'][$s] ?? false)) {
+                continue;
+            }
+            $temas[$slug] = ['nombre' => $nombres[$slug], 'icono' => $icono, 'descripcion' => $descripcion, 'url' => route('configuracion.tema', $slug),
+                'cambiado' => $datos['cambiados'][$slug] ?? false];
+        }
+        // Ajustes que encuentra el buscador: solo los de las tarjetas que este rol ve
+        $ajustes = [];
+        foreach (TemasConfiguracion::AJUSTES as [$nombre, $palabras, $ancla]) {
+            $seccion = TemasConfiguracion::seccionDe($ancla);
+            $tema = $seccion === null ? null : TemasConfiguracion::temaDeSeccion($seccion);
+            if ($tema === null || ! isset($temas[$tema]) || ! ($datos['secciones'][$seccion] ?? false) || ! ($datos['tarjetas'][$ancla] ?? true)) {
+                continue;
+            }
+            $ajustes[] = ['nombre' => $nombre, 'tema' => $temas[$tema]['nombre'], 'slug' => $tema, 'url' => TemasConfiguracion::url($ancla),
+                'buscar' => $nombre.' '.$palabras.' '.$temas[$tema]['nombre'], 'coincide' => $busqueda !== '' && TemasConfiguracion::coincide($busqueda, $nombre.' '.$palabras.' '.$temas[$tema]['nombre'])];
+        }
+        foreach ($temas as $slug => $t) {
+            $temas[$slug]['buscar'] = $t['nombre'].' '.$t['descripcion'];
+            $temas[$slug]['coincide'] = $busqueda === '' || TemasConfiguracion::coincide($busqueda, $temas[$slug]['buscar'])
+                || collect($ajustes)->contains(fn ($a) => $a['coincide'] && $a['slug'] === $slug);
+        }
+
+        return view('administracion.configuracion.index', $datos + [
+            'tema' => null, 'temas' => $temas, 'ajustes' => $ajustes, 'busqueda' => $busqueda,
+            'mapaAnclas' => collect(TemasConfiguracion::mapaAnclas())->map(fn ($t) => route('configuracion.tema', $t))->all(),
+        ]);
+    }
+
+    /**
+     * Un tema del mosaico: solo sus secciones, con «‹ Configuración» para
+     * volver. Un tema que este rol no ve regresa al mosaico.
+     */
+    public function tema(Request $request, string $tema): View|RedirectResponse
+    {
+        abort_unless(isset(TemasConfiguracion::TEMAS[$tema]), 404);
+        $datos = $this->datos($request);
+        [, $icono, $descripcion, $secciones] = TemasConfiguracion::TEMAS[$tema];
+        $visibles = array_values(array_filter($secciones, fn ($s) => $datos['secciones'][$s] ?? false));
+        if ($visibles === []) {
+            return redirect()->route('configuracion.index');
+        }
+
+        return view('administracion.configuracion.index', $datos + [
+            'tema' => $tema, 'temaNombre' => $this->nombresDeTemas($datos)[$tema], 'temaIcono' => $icono, 'temaDescripcion' => $descripcion,
+            'seccionesDelTema' => $visibles,
+            'mapaAnclas' => collect(TemasConfiguracion::mapaAnclas())->map(fn ($t) => route('configuracion.tema', $t))->all(),
+        ]);
+    }
+
+    /** @return array<string, string> slug => nombre (el de la bitácora es el que eligió la empresa) */
+    private function nombresDeTemas(array $datos): array
+    {
+        $nombres = array_map(fn ($t) => $t[0], TemasConfiguracion::TEMAS);
+        $nombres['novedades'] = $datos['nombreBitacora'];
+
+        return $nombres;
+    }
+
+    /**
+     * Datos de la Configuración (los mismos para el mosaico y para cada tema)
+     * y qué secciones y tarjetas ve este rol.
+     *
+     * @return array<string, mixed>
+     */
+    private function datos(Request $request): array
     {
         $actor = $request->user();
         // Entra quien ve Configuración o quien configura los días de resguardo de Lost & Found
@@ -80,7 +158,7 @@ class ConfiguracionController extends Controller
         $empresaId = $this->empresa->id($actor);
         $correo = $this->correo->datos();
 
-        return view('administracion.configuracion.index', [
+        $datos = [
             'esSuperadmin' => $actor->es_superadmin,
             'correo' => array_merge($correo, ['contrasena' => null]),
             'tieneContrasena' => ! empty($correo['contrasena']),
@@ -111,7 +189,71 @@ class ConfiguracionController extends Controller
             // Verificación en dos pasos (docs/tecnico/dos-pasos.md) y Privacidad (docs/tecnico/privacidad.md)
             'dosPasos' => $empresaId === null ? null : $this->datosDosPasos(Empresa::find($empresaId)),
             'privacidad' => $empresaId === null ? null : app(ConservacionDatos::class)->paraConfiguracion($actor, Empresa::find($empresaId)),
-        ]);
+        ];
+        $datos['nombreBitacora'] = $empresaId === null ? AjustesNovedades::NOMBRE_OMISION : app(AjustesNovedades::class)->nombreMenu($empresaId);
+        [$datos['secciones'], $datos['tarjetas']] = $this->visibles($actor, $datos);
+        $datos['cambiados'] = $datos['empresa'] === null ? [] : TemasConfiguracion::cambiados($datos['empresa']);
+
+        return $datos;
+    }
+
+    /**
+     * Qué secciones ve este rol (C-03: solo las de los módulos contratados) y
+     * qué tarjetas con condición propia aparecen (para el buscador).
+     *
+     * @param  array<string, mixed>  $d
+     * @return array{0: array<string, bool>, 1: array<string, bool>}
+     */
+    private function visibles(User $actor, array $d): array
+    {
+        $empresa = $d['empresa'];
+        $tiene = fn (string ...$modulos) => $empresa === null || collect($modulos)->contains(fn ($m) => $this->autorizador->moduloActivo((int) $empresa->id, $m));
+        $mostrarAvisos = $empresa !== null && $d['verConfiguracion'];
+        $enOtras = $d['enOtras'];
+        $verPases = $empresa !== null && $actor->can('pases_salida.configurar');
+        $verRecepcion = $empresa !== null && $actor->can('candidatos.configurar');
+        $verBolsa = $empresa !== null && $actor->can('vacantes.configurar');
+        $verReservas = $empresa !== null && $actor->can('reservas.configurar');
+        // Decisión 10: Equipos de acceso (ZKTeco, Hikvision) en «Caseta y accesos»
+        $verEquipos = $mostrarAvisos && $tiene('accesos');
+
+        $secciones = [
+            'sec-general' => $mostrarAvisos,
+            'caseta' => $mostrarAvisos || isset($enOtras['esperas']) || isset($enOtras['impresion']) || $verEquipos,
+            'sec-estructura' => $mostrarAvisos && $tiene('colaboradores'),
+            'sec-rh' => (($mostrarAvisos || $verRecepcion || $verBolsa) && $tiene('candidatos', 'recepcion_rh', 'vacantes')) || isset($enOtras['asistencia']),
+            'sec-novedades' => ($mostrarAvisos || $d['lostFound'] !== null) && $tiene('novedades', 'procedimientos'),
+            'sec-activos' => $mostrarAvisos && $tiene('llaves', 'prestamo_llaves', 'responsivas', 'vouchers'),
+            'sec-transporte' => $mostrarAvisos && $tiene('transporte'),
+            'sec-pases' => ($mostrarAvisos || $verPases) && $tiene('pases_salida'),
+            'sec-reservas' => ($mostrarAvisos || $verReservas) && $tiene('reservas'),
+            'sec-avisos' => $mostrarAvisos,
+            'sec-cuentas' => $mostrarAvisos,
+            'sec-privacidad' => $d['privacidad'] !== null,
+            'sec-plataforma' => (bool) $d['esSuperadmin'],
+        ];
+
+        $tarjetas = [
+            'configura-tu-empresa' => $actor->can('configuracion.editar'),
+            'cfg-empresa' => isset($enOtras['empresa']),
+            'cfg-esperas' => isset($enOtras['esperas']), 'cfg-impresion' => isset($enOtras['impresion']), 'cfg-equipos-acceso' => $verEquipos,
+            'cfg-motivos' => $verEquipos, 'cfg-permanencia' => $verEquipos, 'cfg-noche' => $verEquipos,
+            'recepcion' => $verRecepcion, 'cfg-plazos' => isset($enOtras['plazos']), 'cfg-criterios' => isset($enOtras['criterios']),
+            'cfg-asistencia' => isset($enOtras['asistencia']), 'bolsa-trabajo' => $verBolsa,
+            'novedades' => $mostrarAvisos && $actor->can('novedades.ver'), 'novedades-procedimientos' => $mostrarAvisos && $actor->can('novedades.ver'),
+            'cfg-procedimientos' => $mostrarAvisos && $tiene('procedimientos'), 'cfg-equipos-pc' => $mostrarAvisos && $tiene('equipos_pc'),
+            'lost-found' => $d['lostFound'] !== null,
+            'cfg-llaves' => $mostrarAvisos && $tiene('prestamo_llaves'), 'cfg-responsivas' => $mostrarAvisos && $tiene('responsivas'),
+            'cfg-transporte' => $mostrarAvisos, 't-pases-salida' => $verPases,
+            'sec-reservas' => $actor->can('reservas.configurar'), 'cfg-reservas-areas' => $actor->can('reservas.configurar'),
+            'cfg-dos-pasos' => $d['dosPasos'] !== null,
+        ];
+        foreach ($d['grupos'] as $grupo => $def) {
+            $tarjetas['config-'.$grupo] = $mostrarAvisos && ($def['modulo'] === null || $tiene($def['modulo']));
+        }
+        $tarjetas['config-auditoria'] = $tarjetas['config-cuentas'] ?? false;
+
+        return [$secciones, $tarjetas];
     }
 
     /**
@@ -199,7 +341,7 @@ class ConfiguracionController extends Controller
             $this->auditoria->auditar($request->user(), 'configuracion.menu', $empresa, ['nombres' => $antes], ['nombres' => $despues]);
         }
 
-        return redirect()->to(route('configuracion.index').'#cfg-menu')->with('ok', 'Nombres del menú guardados. Revisa el menú: ya aparecen con el nombre nuevo.');
+        return redirect()->to(TemasConfiguracion::url('cfg-menu'))->with('ok', 'Nombres del menú guardados. Revisa el menú: ya aparecen con el nombre nuevo.');
     }
 
     // --------------------------------------------- Restablecer valor original
@@ -261,7 +403,7 @@ class ConfiguracionController extends Controller
 
         [$texto, $ancla] = self::RESTABLECIBLES[$ajuste];
 
-        return redirect()->to(route('configuracion.index').'#'.$ancla)->with('ok', "Listo: {$texto} a su valor original.".($ajuste === 'avisos' ? ' Los correos que capturaste se conservan.' : ''));
+        return redirect()->to(TemasConfiguracion::url($ancla))->with('ok', "Listo: {$texto} a su valor original.".($ajuste === 'avisos' ? ' Los correos que capturaste se conservan.' : ''));
     }
 
     /** @param  list<string>  $claves */
@@ -339,7 +481,7 @@ class ConfiguracionController extends Controller
         $empresa->forceFill(['preferencias' => array_merge($empresa->preferencias ?? [], ['auditoria_sede' => $valor])])->save();
         $this->auditoria->auditar($request->user(), 'configuracion.auditoria', $empresa, ['auditoria_sede' => $antes], ['auditoria_sede' => $valor]);
 
-        return redirect()->to(route('configuracion.index').'#config-cuentas')->with('ok', $valor === 'sede'
+        return redirect()->to(TemasConfiguracion::url('config-auditoria'))->with('ok', $valor === 'sede'
             ? 'Listo: quien tiene la bitácora con alcance «Su sede» ahora ve los movimientos de su sede. Puedes revisarlo en la Bitácora de auditoría.'
             : 'Listo: quien tiene la bitácora con alcance «Su sede» ve solo sus propios movimientos.');
     }
@@ -361,7 +503,7 @@ class ConfiguracionController extends Controller
 
         app(VerificacionDosPasos::class)->guardarPolitica($request->user(), Empresa::findOrFail($empresaId), $valor);
 
-        return redirect()->to(route('configuracion.index').'#cfg-dos-pasos')->with('ok', match ($valor) {
+        return redirect()->to(TemasConfiguracion::url('cfg-dos-pasos'))->with('ok', match ($valor) {
             'nadie' => 'Listo: cada persona decide si activa la verificación en dos pasos en Mi cuenta.',
             'administradores' => 'Listo: quien administra usuarios, roles, permisos o la configuración la activará la próxima vez que entre. Avísales que tengan a la mano su teléfono.',
             default => 'Listo: todas las cuentas la activarán la próxima vez que entren. Avisa a tu personal que tenga a la mano su teléfono.',
@@ -381,7 +523,7 @@ class ConfiguracionController extends Controller
         $ajustes->guardar($empresa, $request->only('frecuencia_dias'));
         $this->auditoria->auditar($request->user(), 'configuracion.equipos_pc', $empresa, $antes, $ajustes->frecuencias($empresa->refresh()));
 
-        return redirect()->to(route('configuracion.index').'#cfg-equipos-pc')->with('ok', 'Frecuencia de revisión de los equipos guardada.');
+        return redirect()->to(TemasConfiguracion::url('cfg-equipos-pc'))->with('ok', 'Frecuencia de revisión de los equipos guardada.');
     }
 
     // ------------------------------------------- Lost & Found: días de resguardo
@@ -400,7 +542,7 @@ class ConfiguracionController extends Controller
 
         $this->tenant->conEmpresa($empresaId, fn () => $this->lostFound->guardarUmbrales($actor, $request->only('dias')));
 
-        return redirect()->to(route('configuracion.index').'#lost-found')->with('ok', 'Los días de resguardo de Lost & Found se guardaron correctamente.');
+        return redirect()->to(TemasConfiguracion::url('lost-found'))->with('ok', 'Los días de resguardo de Lost & Found se guardaron correctamente.');
     }
 
     /**
@@ -438,7 +580,7 @@ class ConfiguracionController extends Controller
 
         app(AjustesNovedades::class)->guardar($request->user(), Empresa::findOrFail($empresaId), $request->only(['nombre_opcion', 'nombre_menu', 'categoria_hallazgo_pc', 'reloj_horas', 'departamento_accidentes', 'subtipos_reporte_general']));
 
-        return redirect()->to(route('configuracion.index').'#novedades')->with('ok', 'Ajustes de '.app(AjustesNovedades::class)->bitacoraConArticulo($empresaId).' guardados.');
+        return redirect()->to(TemasConfiguracion::url('novedades'))->with('ok', 'Ajustes de '.app(AjustesNovedades::class)->bitacoraConArticulo($empresaId).' guardados.');
     }
 
     /** C-31 (D-20): procedimiento de cada categoría y tipo de equipo («¿Qué hacer?»). */
@@ -451,7 +593,7 @@ class ConfiguracionController extends Controller
 
         $this->tenant->conEmpresa($empresaId, fn () => app(ProcedimientosVinculados::class)->guardar($request->user(), Empresa::findOrFail($empresaId), $request->only('vinculos')));
 
-        return redirect()->to(route('configuracion.index').'#novedades')->with('ok', 'Procedimientos de «¿Qué hacer?» guardados. Ya aparecen en los tickets y en los recorridos.');
+        return redirect()->to(TemasConfiguracion::url('novedades'))->with('ok', 'Procedimientos de «¿Qué hacer?» guardados. Ya aparecen en los tickets y en los recorridos.');
     }
 
     /**
@@ -468,7 +610,7 @@ class ConfiguracionController extends Controller
 
         $total = $this->tenant->conEmpresa($empresaId, fn () => app(AjustesNovedades::class)->reclasificarHallazgos($request->user(), Empresa::findOrFail($empresaId)));
 
-        return redirect()->to(route('configuracion.index').'#novedades')->with('ok', $total === 0
+        return redirect()->to(TemasConfiguracion::url('novedades'))->with('ok', $total === 0
             ? 'No hay hallazgos anteriores que reclasificar.'
             : ($total === 1 ? '1 hallazgo anterior pasó' : $total.' hallazgos anteriores pasaron').' a «Mantenimiento de equipo PC». Cada ticket tiene una nota que lo explica.');
     }
@@ -508,7 +650,7 @@ class ConfiguracionController extends Controller
         $this->auditar($request, 'configuracion.correo', ['host' => $datos['host'], 'puerto' => $datos['puerto'], 'usuario' => $datos['usuario'] ?? null,
             'remitente' => $datos['remitente_correo'], 'contrasena' => $contrasena ? 'cambiada' : ($request->boolean('quitar_contrasena') ? 'quitada' : 'sin cambio')]);
 
-        return redirect()->route('configuracion.index')->with('ok', 'Configuración de correo guardada. Envía un correo de prueba para confirmar que funciona.');
+        return redirect()->to(TemasConfiguracion::url('cfg-correo'))->with('ok', 'Configuración de correo guardada. Envía un correo de prueba para confirmar que funciona.');
     }
 
     public function probarCorreo(Request $request): RedirectResponse
@@ -540,9 +682,15 @@ class ConfiguracionController extends Controller
 
         $empresa = Empresa::findOrFail($empresaId);
         $antes = $empresa->preferencias['avisos'] ?? [];
-        $avisos = collect(Empresa::AVISOS)->mapWithKeys(fn ($v, $clave) => [$clave => $request->boolean("avisos.{$clave}")])->all();
+        // Configuración en mosaico: cada tema manda solo las casillas de sus grupos (cada tarjeta trae su
+        // interruptor «avisos_modulos[grupo]»); los avisos y correos de los demás grupos se conservan.
+        $grupos = GruposAvisos::agrupados();
+        $enviados = is_array($request->input('avisos_modulos')) ? array_intersect_key($grupos, $request->input('avisos_modulos')) : $grupos;
+        $deEsteFormulario = collect($enviados)->flatMap(fn ($g) => array_keys($g['avisos']))->all();
+        $avisos = collect(Empresa::AVISOS)->mapWithKeys(fn ($v, $clave) => [$clave => in_array($clave, $deEsteFormulario, true)
+            ? $request->boolean("avisos.{$clave}") : (bool) ($antes[$clave] ?? $v[1])])->all();
         // Avisos con lista de correos (p. ej. vales de taxi): uno por línea o separados por coma
-        $destinatarios = $this->destinatariosAvisos($request);
+        $destinatarios = array_merge($empresa->preferencias['avisos_destinatarios'] ?? [], $this->destinatariosAvisos($request, $enviados === $grupos));
         // Interruptor general por módulo (ADR-0016): solo los que vienen en el formulario; los demás se conservan
         $modulosAntes = $empresa->preferencias['avisos_modulos'] ?? [];
         $modulos = $modulosAntes;
@@ -557,7 +705,7 @@ class ConfiguracionController extends Controller
 
         $apagados = collect($modulos)->filter(fn ($v) => $v === false)->keys()->map(fn ($g) => GruposAvisos::GRUPOS[$g][0] ?? $g);
 
-        return redirect()->to(route('configuracion.index').($request->filled('_grupo') && preg_match('/^[a-z_]+$/', (string) $request->input('_grupo')) ? '#config-'.$request->input('_grupo') : ''))
+        return redirect()->to(TemasConfiguracion::url($request->filled('_grupo') && preg_match('/^[a-z_]+$/', (string) $request->input('_grupo')) ? 'config-'.$request->input('_grupo') : 'sec-avisos'))
             ->with('ok', 'Avisos actualizados.'.($apagados->isNotEmpty() ? ' Apagados por módulo: '.$apagados->join(', ').'.' : ''));
     }
 
@@ -595,15 +743,20 @@ class ConfiguracionController extends Controller
 
     /**
      * Listas de correos de Empresa::AVISOS_CON_DESTINATARIOS (máximo 20 por aviso).
+     * Con $todos en falso solo las que vienen en el formulario.
      *
      * @return array<string, list<string>>
      */
-    private function destinatariosAvisos(Request $request): array
+    private function destinatariosAvisos(Request $request, bool $todos = true): array
     {
         $resultado = [];
         $errores = [];
         // Ronda 5: más las tres copias del voucher con cobro (Seguridad, Recepción, Administración)
         foreach ([...Empresa::AVISOS_CON_DESTINATARIOS, ...array_keys(Empresa::DESTINATARIOS_VOUCHER)] as $clave) {
+            // Un tema que no trae esta lista la conserva (la guarda la tarjeta de su tema)
+            if (! $todos && ! $request->has("destinatarios.{$clave}")) {
+                continue;
+            }
             $texto = $request->input("destinatarios.{$clave}");
             $correos = collect(preg_split('/[\s,;]+/', is_string($texto) ? mb_strtolower($texto) : '') ?: [])->filter()->unique()->values();
             $invalidos = $correos->reject(fn ($c) => filter_var($c, FILTER_VALIDATE_EMAIL) !== false && mb_strlen($c) <= 150);

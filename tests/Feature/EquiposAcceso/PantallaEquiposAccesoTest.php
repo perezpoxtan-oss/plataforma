@@ -45,7 +45,7 @@ class PantallaEquiposAccesoTest extends TestCase
 
     public function test_configuracion_lleva_a_equipos_de_acceso(): void
     {
-        $this->actingAs($this->admin)->get(route('configuracion.index'))->assertOk()
+        $this->actingAs($this->admin)->get(route('configuracion.tema', 'caseta'))->assertOk()
             ->assertSee('Equipos de acceso')->assertSee(route('equipos-acceso.index'), false);
         $this->actingAs($this->admin)->get(route('equipos-acceso.index'))->assertOk()
             ->assertSee('Nuevo equipo')->assertSee('Cuando un equipo se queda sin conexión');

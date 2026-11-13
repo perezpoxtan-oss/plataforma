@@ -317,7 +317,7 @@ class AjustesRonda5Test extends TestCase
         $l = $this->llave('HDC-BOD-01');
 
         // Configuración: una lista por copia
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Copia Seguridad')->assertSee('Copia Recepción')->assertSee('Copia Administración')
+        $this->actingAs($this->admin)->get('/configuracion/activos')->assertOk()->assertSee('Copia Seguridad')->assertSee('Copia Recepción')->assertSee('Copia Administración')
             ->assertSee('El colaborador responsable no recibe copia.');
         $this->actingAs($this->admin)->put('/configuracion/avisos', ['avisos' => ['voucher_cobro' => 1], 'destinatarios' => [
             'voucher_seguridad' => 'seguridad@ejemplo.com', 'voucher_recepcion' => "recepcion@ejemplo.com\nfront@ejemplo.com", 'voucher_administracion' => 'no-es-correo',

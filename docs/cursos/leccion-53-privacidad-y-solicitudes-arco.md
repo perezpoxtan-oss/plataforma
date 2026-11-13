@@ -20,7 +20,7 @@ Usa la cuenta del **Administrador** de la empresa de prueba (necesita el permiso
 
 ## Práctica 1 · Revisar la conservación
 
-1. **Estructura → Configuración → Privacidad → Conservación de datos personales**.
+1. **Estructura → Configuración → Seguridad y privacidad → Privacidad → Conservación de datos personales**.
 2. Lee los días (fotos de la persona 90, fotos de la identificación 90, visitantes 365) y el recuadro gris «hoy se quitarían…».
 
 Comprueba: entiendes cuántos registros se afectarían. Los candidatos tienen su propio plazo en Candidatos → Documentos y plazos.
@@ -77,5 +77,5 @@ Comprueba: la solicitud aparece en la bandeja de esa empresa y su administrador 
 - ¿Cuándo empieza el plazo de 20 días hábiles? *Cuando la persona confirma su correo (o cuando confirmas su identidad en persona y tocas Aprobar).*
 - ¿Qué colores tiene el reloj? *Verde, ámbar cuando faltan pocos días y rojo cuando vence; vencida, también se avisa al Super Administrador.*
 - ¿Se pueden eliminar los datos de un colaborador desde una solicitud ARCO? *No: se rectifican en su ficha; la relación laboral obliga a conservarlos (tampoco sus accidentes de trabajo).*
-- ¿Dónde se edita el aviso de privacidad? *Solo en Configuración → Privacidad; Recepción muestra su versión.*
+- ¿Dónde se edita el aviso de privacidad? *Solo en Configuración → Seguridad y privacidad → Privacidad; Recepción muestra su versión.*
 - ¿Qué módulos alcanza ARCO? *Padrón, caseta, candidatos, colaboradores (consulta), Lost & Found, novedades, accidentes, reservas y transporte.*

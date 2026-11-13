@@ -7,6 +7,7 @@ use App\Models\SolicitudCuenta;
 use App\Models\User;
 use App\Services\Cuenta\SolicitudesCuenta;
 use App\Services\Plataforma\SuperAdministradores;
+use App\Support\TemasConfiguracion;
 use App\Support\Tenancy\EmpresaScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\RedirectResponse;
@@ -91,6 +92,6 @@ class SuperAdministradoresController extends Controller
 
     private function volver(): RedirectResponse
     {
-        return redirect()->to(route('configuracion.index').'#'.self::VOLVER);
+        return redirect()->to(TemasConfiguracion::url(self::VOLVER));
     }
 }

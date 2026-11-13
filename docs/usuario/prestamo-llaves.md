@@ -90,7 +90,7 @@ También puedes escanear el QR del llavero **con la cámara del celular, fuera d
 
 ## Llaves que llevan mucho tiempo fuera
 
-Cada ficha de **Llaves en Uso** dice **Fuera hace …** y cambia de color. Viene encendido: ámbar a las **12 horas** y rojo a las **24** (tu empresa lo cambia o lo apaga en **Estructura → Configuración → Activos**):
+Cada ficha de **Llaves en Uso** dice **Fuera hace …** y cambia de color. Viene encendido: ámbar a las **12 horas** y rojo a las **24** (tu empresa lo cambia o lo apaga en **Estructura → Configuración → Activos, transporte y pases**):
 
 | Color | Qué significa | Quién recibe el aviso |
 |---|---|---|
@@ -122,7 +122,7 @@ Al recibir la llave, los avisos se quitan solos. Si tu empresa lo apagó (0 hora
 
 > Todo préstamo, recepción y «No regresó» también queda en **Entregas y recepciones** de la ficha de la llave (botón de las dos flechas en **Padrones → Catálogo de llaves**). Ver [Entregar y recibir](entregar-y-recibir.md).
 >
-> Si tu empresa pide **identificación obligatoria** (Configuración → Activos → Avanzado: garantía de la llave), la opción **Ninguna (Riesgo)** no aparece.
+> Si tu empresa pide **identificación obligatoria** (Configuración → Activos, transporte y pases → Avanzado: garantía de la llave), la opción **Ninguna (Riesgo)** no aparece.
 
 ## Cómo descargar el reporte
 
@@ -160,7 +160,7 @@ La pantalla se acomoda al celular: una ficha por renglón y la ventana de prést
 
 - **¿Puedo prestar varias llaves seguidas?** Sí: la ventana se queda abierta con **Guardar y capturar siguiente**.
 - **¿Y recibir varias seguidas?** Sí: escanea una tras otra en **Recibir: escanea la llave que te devuelven**.
-- **¿Quién decide cuántas horas puede estar fuera una llave?** El administrador, en **Configuración → Activos** (ver [Configuración](configuracion.md)).
+- **¿Quién decide cuántas horas puede estar fuera una llave?** El administrador, en **Configuración → Activos, transporte y pases** (ver [Configuración](configuracion.md)).
 - **¿Qué pasa si el colaborador no deja identificación?** Elige **Ninguna (Riesgo)**; queda anotado.
 - **¿Dónde veo quién tiene una llave desde el catálogo?** En el [Catálogo de llaves](llaves.md) la llave dice **EN USO por …**.
 - **¿Se le puede prestar a un proveedor?** Sí: a una persona del padrón o a una empresa externa (ver «Cómo prestar a alguien de fuera»).

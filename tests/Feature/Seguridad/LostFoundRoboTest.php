@@ -324,8 +324,8 @@ class LostFoundRoboTest extends PruebaNovedades
         // El Administrador los cambia desde el botón «Días de resguardo» del archivo y desde Estructura → Configuración
         $this->actingAs($this->admin)->get('/lost-found')->assertOk()->assertSee('Días de resguardo')
             ->assertSee('value="dias-lf"', false);
-        $this->actingAs($this->admin)->get('/lost-found/dias-resguardo')->assertStatus(301)->assertRedirect(route('configuracion.index').'#lost-found');
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Lost &amp; Found: días de resguardo', false)
+        $this->actingAs($this->admin)->get('/lost-found/dias-resguardo')->assertStatus(301)->assertRedirect(route('configuracion.tema', 'novedades').'#lost-found');
+        $this->actingAs($this->admin)->get('/configuracion/novedades')->assertOk()->assertSee('Lost &amp; Found: días de resguardo', false)
             ->assertSee('Guardar días de resguardo')->assertSee('id="lost-found"', false);
 
         $dias = ['OTRO' => 60, 'ALTO_VALOR' => 365, 'ELECTRONICO' => 120, 'ROPA' => 15, 'PERECEDERO' => 1];
@@ -334,8 +334,8 @@ class LostFoundRoboTest extends PruebaNovedades
         $this->actingAs($this->admin)->put('/configuracion/lost-found', ['dias' => ['OTRO' => 'mucho'] + $dias])
             ->assertSessionHasErrors(['dias.OTRO' => 'Los días de «Otro» deben ser un número entero.']);
         $this->actingAs($this->admin)->put('/configuracion/lost-found', ['dias' => $dias])
-            ->assertRedirect(route('configuracion.index').'#lost-found')->assertSessionHas('ok', 'Los días de resguardo de Lost & Found se guardaron correctamente.');
-        $this->actingAs($this->admin)->get('/configuracion')->assertSee('value="15"', false)->assertSee('Editado por '.$this->admin->name);
+            ->assertRedirect(route('configuracion.tema', 'novedades').'#lost-found')->assertSessionHas('ok', 'Los días de resguardo de Lost & Found se guardaron correctamente.');
+        $this->actingAs($this->admin)->get('/configuracion/novedades')->assertSee('value="15"', false)->assertSee('Editado por '.$this->admin->name);
 
         $this->assertEquals($dias, $this->enEmpresa(fn () => LostFoundUmbral::vigentes()));
         $this->assertSame(15, Auditoria::where('evento', 'lost_found.configurado')->firstOrFail()->despues['ROPA']);
@@ -364,7 +364,7 @@ class LostFoundRoboTest extends PruebaNovedades
         $this->assertSame(12, Auditoria::where('evento', 'lost_found.configurado')->latest('id')->firstOrFail()->despues['ROPA']);
 
         // Una sola fuente de verdad: Configuración muestra lo guardado desde el archivo, y al revés
-        $this->actingAs($this->admin)->get('/configuracion')->assertSee('id="dias_ROPA"', false)->assertSee('value="12"', false);
+        $this->actingAs($this->admin)->get('/configuracion/novedades')->assertSee('id="dias_ROPA"', false)->assertSee('value="12"', false);
         $this->actingAs($this->admin)->put('/configuracion/lost-found', ['dias' => ['ROPA' => 20] + $dias])->assertSessionHasNoErrors();
         $this->actingAs($this->admin)->get('/lost-found')->assertSee('id="lf_dias_ROPA"', false)->assertSee('value="20"', false)
             ->assertSee('Editado por '.$this->admin->name);

@@ -13,6 +13,7 @@ use App\Services\Novedades\AdministradorNovedades;
 use App\Services\Novedades\ArchivoLostFound;
 use App\Services\Permisos\Autorizador;
 use App\Support\HoraLocal;
+use App\Support\TemasConfiguracion;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
@@ -260,7 +261,7 @@ class LostFoundController extends Controller
         $verConfiguracion = $actor->can('configuracion.ver') || $this->archivo->puedeConfigurar($actor);
 
         return $verConfiguracion
-            ? redirect()->to(route('configuracion.index').'#lost-found', 301)
+            ? redirect()->to(TemasConfiguracion::url('lost-found'), 301)
             : redirect()->route('lost_found.archivo', [], 301);
     }
 

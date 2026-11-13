@@ -194,7 +194,7 @@ class AutenticacionSesionTest extends TestCase
     public function test_aut04_la_contrasena_smtp_no_se_guarda_en_la_sesion_al_fallar_la_validacion(): void
     {
         $this->actingAs($this->crearSuperadmin())
-            ->from('/configuracion')
+            ->from('/configuracion/plataforma')
             ->put('/configuracion/correo', [
                 'host' => 'https://no-valido', 'puerto' => 587, 'cifrado' => 'tls', 'usuario' => 'avisos',
                 'contrasena' => 'SmtpSuperSecreta1', 'remitente_correo' => 'avisos@ejemplo.mx',

@@ -7,6 +7,7 @@ use App\Models\Empresa;
 use App\Services\Permisos\AdministradorRoles;
 use App\Services\Permisos\Autorizador;
 use App\Support\AjustesCaseta;
+use App\Support\TemasConfiguracion;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,7 +56,7 @@ class AjustesCasetaController extends Controller
         $tarjeta = $request->input('_tarjeta');
         $ancla = is_string($tarjeta) && isset(AjustesCaseta::GRUPOS[$tarjeta]) ? 'cfg-'.$tarjeta : 'caseta';
 
-        return redirect()->to(route('configuracion.index').'#'.$ancla)
+        return redirect()->to(TemasConfiguracion::url($ancla))
             ->with('ok', $guardar === [] ? 'Ajustes de caseta guardados: todo funciona como el diseño original.' : 'Ajustes de caseta y activos guardados.');
     }
 }

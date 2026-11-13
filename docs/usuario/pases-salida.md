@@ -183,7 +183,7 @@ Un pase no puede salir con un regreso que «ya debió ocurrir». Si al tocar **D
 
 ## Cómo configurar quién aprueba (administrador)
 
-1. Toca **Circuito** en la lista (o **Estructura → Configuración → Pases de salida**).
+1. Toca **Circuito** en la lista (o **Estructura → Configuración → Activos, transporte y pases → Pases de salida**).
 2. Para cada paso escribe su **nombre** (por ejemplo «Contraloría») y elige **quién firma**: **el jefe del departamento del solicitante**, cualquiera con permiso Aprobar, los usuarios de un **rol**, o **usuarios específicos**.
 3. Indica si es **obligatorio** y a qué **motivos** aplica. Usa las flechas para el orden.
 4. Toca **Guardar circuito**.

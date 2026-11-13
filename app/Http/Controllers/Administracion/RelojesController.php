@@ -9,6 +9,7 @@ use App\Services\Permisos\Autorizador;
 use App\Services\Relojes\AjustesRelojes;
 use App\Services\Relojes\MotorRelojes;
 use App\Support\AjustesCaseta;
+use App\Support\TemasConfiguracion;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,6 +55,6 @@ class RelojesController extends Controller
         $this->auditoria->auditar($actor, 'configuracion.relojes', $empresa, $antes,
             ['horas' => $this->ajustes->generales($empresa->refresh()), 'modulos' => $empresa->preferencias[AjustesRelojes::CLAVE] ?? null]);
 
-        return redirect()->to(route('configuracion.index').'#cfg-vobo')->with('ok', '«Reloj y suplente» guardado.');
+        return redirect()->to(TemasConfiguracion::url('cfg-vobo'))->with('ok', '«Reloj y suplente» guardado.');
     }
 }

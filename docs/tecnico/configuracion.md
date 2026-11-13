@@ -1,10 +1,42 @@
 # Configuración
 
-Pantalla `GET /configuracion` (módulo `configuracion`, área Dirección), **ordenada por secciones con índice** (petición del dueño, 2026-10-15). El inventario completo de ajustes (por empresa, de plataforma, `.env` y constantes revisadas) está en [configuracion-inventario.md](configuracion-inventario.md).
+Pantalla `GET /configuracion` (módulo `configuracion`, área Dirección), **en mosaico con buscador** (pedido del dueño, 12 nov 2026; antes una sola página por secciones con índice, petición del 2026-10-15). El inventario completo de ajustes (por empresa, de plataforma, `.env` y constantes revisadas) está en [configuracion-inventario.md](configuracion-inventario.md).
 
-Entra quien tiene `configuracion.ver` **o** quien configura los días de resguardo de Lost & Found (`lost_found.configurar` con alcance de empresa); este último solo ve su sección.
+Entra quien tiene `configuracion.ver` **o** quien configura los días de resguardo de Lost & Found (`lost_found.configurar` con alcance de empresa); este último solo ve su tema.
 
-## Secciones (anclas del índice)
+## Mosaico y temas
+
+| Ruta | Nombre | Qué muestra |
+|---|---|---|
+| `GET /configuracion` (`?q=` opcional) | `configuracion.index` | Título, versión instalada, buscador «¿Qué quieres ajustar?», resultados («Ajustes que coinciden») y una tarjeta por tema visible (ícono, nombre, una línea, insignia **Cambiado**). Ningún formulario. |
+| `GET /configuracion/{tema}` | `configuracion.tema` | Solo las secciones de ese tema, con «‹ Configuración» y, si el tema tiene varias secciones, su índice de chips. `{tema}` se restringe a `TemasConfiguracion::TEMAS`; un tema sin ninguna sección visible para el rol redirige al mosaico; uno desconocido, 404. |
+
+Fuente única: **`App\Support\TemasConfiguracion`**.
+
+| Tema (`slug`) | Tarjeta | Secciones (anclas de siempre) |
+|---|---|---|
+| `general` | General | `#sec-general` |
+| `caseta` | Caseta y accesos | `#caseta` |
+| `estructura` | Estructura | `#sec-estructura` |
+| `personal` | Recepción y RR. HH. | `#sec-rh` |
+| `novedades` | (nombre de la bitácora: Novedades, Incidentes…) | `#sec-novedades` |
+| `activos` | Activos, transporte y pases | `#sec-activos`, `#sec-transporte`, `#sec-pases` |
+| `reservas` | Reservas de áreas | `#sec-reservas` (los ajustes generales de Reservas y el enlace «Configurar en Reservas de áreas» a áreas y catálogos; no se duplica nada) |
+| `avisos` | Avisos por correo | `#sec-avisos` |
+| `seguridad` | Seguridad y privacidad | `#sec-cuentas`, `#sec-privacidad` |
+| `plataforma` | Plataforma (solo SA) | `#sec-plataforma` (enlaces, Super Administradores, PHP, correo `#cfg-correo`, respaldos `#cfg-respaldos`) |
+
+- **Visibilidad:** `ConfiguracionController::visibles()` decide qué secciones ve el rol (C-03: módulos contratados; las mismas reglas que tenía la vista) y qué tarjetas con condición propia existen (para el buscador). La vista solo pinta las secciones del tema abierto (`$verSeccion`).
+- **Ningún ajuste cambió de sección ni de formulario:** mismas rutas `PUT`, permisos, validaciones, «Restablecer» y valores originales.
+- **Anclas viejas:** `TemasConfiguracion::url($ancla)` arma `/configuracion/{tema}#ancla` a partir de `ANCLAS` (tarjeta → sección), `SECCIONES`, `t-sec-*` y `config-<grupo>` (`SECCION_DE_GRUPO`). Todos los `redirect()` de Configuración (Configuración, caseta, relojes, credenciales, privacidad, Super Administradores, Lost & Found, asistente de arranque) y los enlaces de la campana usan esa función: **tras Guardar se vuelve al mismo tema, a la misma tarjeta, con su mensaje**. `GET /lost-found/dias-resguardo` sigue siendo 301, ahora a `/configuracion/novedades#lost-found`.
+- **Enlaces viejos con `#` (marcadores, otros módulos):** el fragmento no llega al servidor; la página lleva `data-anclas` (mapa ancla → tema) y `public/js/configuracion.js` hace `location.replace()` al tema. Si la página traía un mensaje (p. ej. `ConfiguracionReservasController` aún regresa a `/configuracion#sec-reservas`), lo pasa al tema por `sessionStorage`. Sin JavaScript se queda en el mosaico con el mensaje.
+- **Buscador:** `TemasConfiguracion::AJUSTES` ([nombre, palabras clave, ancla]). Sin JS: `GET /configuracion?q=` filtra en el servidor (`coincide()`: todas las palabras, sin acentos ni mayúsculas). Con JS: filtra al escribir; Enter con un solo resultado lleva a él. Solo lista lo que el rol ve (sección visible y tarjeta presente). El ajuste destino se resalta con `:target` (CSS).
+- **Insignia «Cambiado»:** `TemasConfiguracion::cambiados()` revisa lo guardado en `empresas.preferencias` (grupos de `caseta`, `relojes`, `credenciales`, `novedades`, `equipos_pc`, `dos_pasos`, `auditoria_sede`, avisos distintos del de fábrica o interruptores apagados), nombres propios del menú y días de Lost & Found. Lo que vive en otro módulo trae su propio «Valor original» en su tarjeta.
+- **Avisos por tema:** el formulario único `#formAvisos` existe en cada tema; `PUT /configuracion/avisos` ahora solo cambia los avisos de los grupos cuyo interruptor `avisos_modulos[grupo]` viene en el formulario (y solo las listas de correos que vienen); los demás se conservan. Sin `avisos_modulos` en la petición se comporta como antes (todos).
+- **Celular:** tarjetas en una columna, toques ≥ 44 px (`.mosaico-config`, `.tarjeta-tema-config`).
+- **Pruebas:** `tests/Feature/Direccion/ConfiguracionMosaicoTest.php`; `TestCase::configuracionCompleta()` junta el mosaico y todos los temas que el usuario abre (para revisar que algo aparece o no en toda la Configuración). `ManualRutasTest` compara «Configuración → X» del manual con las tarjetas (y «→ X → Y» con las secciones de ese tema).
+
+## Secciones (dentro de cada tema)
 
 | Ancla | Sección | Tarjetas | Quién edita |
 |---|---|---|---|
@@ -20,7 +52,7 @@ Entra quien tiene `configuracion.ver` **o** quien configura los días de resguar
 | `#sec-cuentas` | Cuentas y seguridad | Avisos, qué ve «Su sede» (`#config-auditoria`), cierre por inactividad (solo lectura, `#cfg-sesion`) | `configuracion.editar` empresa |
 | `#sec-plataforma` | Plataforma (solo SA) | Enlaces a Identidad, Catálogo comercial (Ajustes y Clientes: suscripciones) y Empresas (módulos); Correo de la plataforma; Respaldos | Super Administrador |
 
-- Cada sección se muestra si alguna de sus tarjetas aplica al rol. Las tarjetas de avisos (`_avisos-grupo.blade.php`, ancla `#config-<grupo>`) se pintan **todas** cuando hay `configuracion.ver` (el formulario único `#formAvisos` manda todas las casillas); un grupo nuevo de `GruposAvisos` que no esté mapeado a una sección cae en «Avisos por correo».
+- Cada sección se muestra si alguna de sus tarjetas aplica al rol. Las tarjetas de avisos (`_avisos-grupo.blade.php`, ancla `#config-<grupo>`) se pintan en el tema de su sección cuando hay `configuracion.ver` (el formulario `#formAvisos` de cada tema manda solo sus casillas); un grupo nuevo de `GruposAvisos` que no esté en `TemasConfiguracion::SECCION_DE_GRUPO` cae en «Avisos por correo».
 - **Una sola fuente de verdad:** lo que vive en otro módulo (esperas y escalamiento, plazos, documentos, criterios, impresión desde padrones, circuito de pases, datos de la empresa) se muestra con su valor y su enlace «Configurar en …» (`ConfiguracionController::ajustesEnOtrasPantallas()`, solo si el rol tiene el permiso de esa pantalla). Los formularios compartidos (privacidad y kiosco, bolsa, días de Lost & Found) son la misma vista y la misma ruta en los dos lugares.
 - **Valor original:** cada ajuste muestra «Valor original: …» (`.valor-original`).
 - **Restablecer valor original** (`PUT /configuracion/restablecer`, `ajuste` ∈ `ConfiguracionController::RESTABLECIBLES`, 30 por minuto): un botón por tarjeta, con confirmación, solo si la tarjeta tiene algo distinto del original y el rol puede guardarla. `transporte|llaves|responsivas|procedimientos|permanencia|noche|vobo` quitan sus claves de `preferencias.caseta` (`vobo` también quita `preferencias.relojes`); `menu` deja `nombre_visible` en nulo (salvo la bitácora); `novedades` regresa a «Novedades» y Siniestro PC; `lost_found` guarda `LostFoundUmbral::POR_OMISION` (`lost_found.configurar` empresa); `auditoria` quita `auditoria_sede`; `avisos` quita `avisos` y `avisos_modulos` (**conserva** `avisos_destinatarios`). Auditoría `configuracion.restablecido` («Ajuste regresado a su valor original»). «Restablecer» no está en los diez verbos (criterio 4): excepción pedida por el dueño en esta petición.
@@ -54,9 +86,9 @@ Antes era la pantalla `/lost-found/dias-resguardo` dentro de Lost & Found; ahora
 | Método | Ruta | Nombre | Permiso |
 |---|---|---|---|
 | PUT | `/configuracion/lost-found` (`dias[OTRO|ALTO_VALOR|ELECTRONICO|ROPA|PERECEDERO]`) | `configuracion.lost_found` | `lost_found.configurar` con alcance de empresa (con alcance de sede → 403) |
-| GET | `/lost-found/dias-resguardo` (dirección anterior) | `lost_found.umbrales` | `lost_found.ver` → **301** a `/configuracion#lost-found` si puede abrir Configuración; si no, 301 a `/lost-found` |
+| GET | `/lost-found/dias-resguardo` (dirección anterior) | `lost_found.umbrales` | `lost_found.ver` → **301** a `/configuracion/novedades#lost-found` si puede abrir Configuración; si no, 301 a `/lost-found` |
 
-- Reglas, mensajes y auditoría sin cambios: `ArchivoLostFound::guardarUmbrales()` (1 a 3650 días por tipo de valor, `lost_found.configurado` sobre la empresa). Al guardar regresa a `/configuracion#lost-found`.
+- Reglas, mensajes y auditoría sin cambios: `ArchivoLostFound::guardarUmbrales()` (1 a 3650 días por tipo de valor, `lost_found.configurado` sobre la empresa). Al guardar regresa a `/configuracion/novedades#lost-found`.
 - Cada tipo muestra cuándo se pone en amarillo (70 %) y en rojo, y «Editado por … · fecha» con `@fecha`.
 - ~~En `/lost-found` se quitó el botón «Configurar Días»~~ **Decisión del dueño (2026-10-12):** los días también se editan desde el propio archivo de Lost & Found (botón y diálogo «Días de resguardo», `PUT /lost-found/dias-resguardo`, ver docs/tecnico/lost-found-y-robo.md). Una sola fuente de verdad: `lost_found_umbrales` y `ArchivoLostFound::guardarUmbrales()`; los campos de las dos pantallas son la misma vista `seguridad/lost-found/_dias-campos.blade.php`. Los días de cada tipo se siguen viendo en el filtro de tipo de valor y en cada artículo.
 - La sección de Avisos por correo ahora solo se muestra a quien tiene `configuracion.ver`.

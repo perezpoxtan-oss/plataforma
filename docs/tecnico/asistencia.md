@@ -75,7 +75,7 @@ Plantillas (`RolesPlantillaSeeder::ASISTENCIA`, misma tabla en la migración): A
 ## Privacidad
 
 - **ARCO** (`DatosDePersona`, tipo `asistencia`): la búsqueda por nombre encuentra al colaborador con cuántas entradas y justificaciones tiene; la exportación entrega `asistencia_entradas_salidas` (de `accesos`) y `asistencia_justificaciones`. **Eliminar** solo actúa sobre quien ya **causó baja**: quita la `nota` de sus justificaciones y marca `datos_eliminados_en` (el día, el tipo y el motivo quedan como constancia laboral); con relación laboral vigente se omite. Las entradas y salidas son de la Bitácora de accesos (evidencia de seguridad) y siguen su propio plazo.
-- **Conservación** (`ConservacionDatos`, `asistencia_dias`, 1825 días, mínimo 365): la revisión de cada noche quita la nota de las justificaciones más viejas. Está en `AMPLIADOS`: en una empresa que aún no confirma los plazos ampliados no se aplica. En Configuración → Privacidad el campo solo se ve con el módulo encendido.
+- **Conservación** (`ConservacionDatos`, `asistencia_dias`, 1825 días, mínimo 365): la revisión de cada noche quita la nota de las justificaciones más viejas. Está en `AMPLIADOS`: en una empresa que aún no confirma los plazos ampliados no se aplica. En Configuración → Seguridad y privacidad → Privacidad el campo solo se ve con el módulo encendido.
 - Inventario (`InventarioDatosPersonales`): `asistencia_justificaciones` (trato `arco`, tipo `asistencia`, columna `nota`).
 
 ## Vínculos con otros módulos

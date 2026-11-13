@@ -222,7 +222,7 @@ class EtapaCuatroOperacionProgramadaTest extends TestCase
         $this->assertSame([0, 0], $this->avisos('equipo_pc_revision', $extintores->first(), abiertos: true), 'Sin frecuencia, se apaga');
         $this->assertGreaterThan(0, $this->avisos('equipo_pc_revision', $botiquin)[0]);
 
-        $this->actingAs($admin)->get(route('configuracion.index'))->assertOk()->assertSee('frecuencia de revisión', false)
+        $this->actingAs($admin)->get(route('configuracion.tema', 'novedades'))->assertOk()->assertSee('frecuencia de revisión', false)
             ->assertSee('Valor original: extintores cada 30 días', false);
         $this->actingAs($admin)->put(route('configuracion.restablecer'), ['ajuste' => 'equipos_pc'])->assertSessionHas('ok');
         $this->assertSame(30, app(AjustesEquiposPc::class)->frecuencias($this->hotel->refresh())['EXTINTOR']);

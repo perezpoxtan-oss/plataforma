@@ -188,7 +188,7 @@ class MejorasEstructuraTest extends TestCase
 
         $avisos = collect(Empresa::AVISOS)->map(fn ($d) => $d[1] ? 1 : null)->filter()->all();
         $this->actingAs($this->admin)->put('/configuracion/avisos', ['avisos' => $avisos, 'avisos_modulos' => ['pases_salida' => 0, 'cuentas' => 1], '_grupo' => 'pases_salida'])
-            ->assertRedirect(route('configuracion.index').'#config-pases_salida')->assertSessionHas('ok', fn ($m) => str_contains($m, 'Pases de salida'));
+            ->assertRedirect(route('configuracion.tema', 'activos').'#config-pases_salida')->assertSessionHas('ok', fn ($m) => str_contains($m, 'Pases de salida'));
 
         $empresa = $this->empresa->fresh();
         $this->assertFalse($empresa->aviso('pase_salida_aprobacion'));
@@ -196,8 +196,8 @@ class MejorasEstructuraTest extends TestCase
         $this->assertTrue($empresa->aviso('vale_taxi'));
         $this->assertTrue($empresa->aviso('cuenta_bloqueada'));
 
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()
-            ->assertSeeInOrder(['Versión instalada', 'Cuentas y seguridad', 'Pases de salida', 'Avisos de este módulo', 'apagados'], false);
+        $this->actingAs($this->admin)->get('/configuracion/activos')->assertOk()
+            ->assertSeeInOrder(['Pases de salida', 'Pases de salida: avisos por correo', 'Avisos de este módulo', 'apagados'], false);
     }
 
     public function test_la_configuracion_muestra_la_version_instalada(): void

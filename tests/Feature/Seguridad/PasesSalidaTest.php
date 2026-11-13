@@ -573,7 +573,7 @@ class PasesSalidaTest extends TestCase
     {
         $this->actingAs($this->admin)->get('/pases-salida/circuito')->assertOk()->assertSee('Circuito de aprobación')
             ->assertSee('Jefe del departamento del solicitante → Contraloría → Gerencia')->assertSee('Guardar circuito');
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Pases de salida')->assertSee('Configurar circuito')
+        $this->actingAs($this->admin)->get('/configuracion/activos')->assertOk()->assertSee('Pases de salida')->assertSee('Configurar circuito')
             ->assertSee('Pases de salida: avisar a quien debe aprobar el siguiente paso');
 
         // Validaciones dentro de la pantalla

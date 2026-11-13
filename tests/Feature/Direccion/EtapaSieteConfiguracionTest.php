@@ -44,11 +44,11 @@ class EtapaSieteConfiguracionTest extends TestCase
 
     public function test_cada_ajuste_esta_en_un_solo_lugar(): void
     {
-        $html = $this->actingAs($this->admin)->get('/configuracion')->assertOk()->getContent();
+        $html = $this->actingAs($this->admin)->configuracionCompleta()->getContent();
 
         $estructura = $this->seccion($html, 'sec-estructura');
         $this->assertStringContainsString('id="config-colaboradores"', $estructura);
-        $this->assertStringContainsString('<a href="#sec-estructura" class="chip-config">', $html);
+        $this->assertStringContainsString('href="'.route('configuracion.tema', 'estructura').'"', $html); // su tarjeta en el mosaico
 
         $caseta = $this->seccion($html, 'caseta');
         $this->assertStringContainsString('id="config-autorizaciones"', $caseta);
@@ -77,7 +77,7 @@ class EtapaSieteConfiguracionTest extends TestCase
     public function test_los_procedimientos_se_siguen_guardando_y_regresan_a_su_ancla(): void
     {
         $this->actingAs($this->admin)->put('/configuracion/caseta', ['_tarjeta' => 'procedimientos', 'procedimientos_acuse' => 'casilla', 'procedimientos_recordatorio_dias' => '5'])
-            ->assertSessionHasNoErrors()->assertRedirect(route('configuracion.index').'#cfg-procedimientos');
+            ->assertSessionHasNoErrors()->assertRedirect(route('configuracion.tema', 'novedades').'#cfg-procedimientos');
         $this->assertSame(5, $this->empresa->refresh()->preferencias['caseta']['procedimientos_recordatorio_dias']);
     }
 

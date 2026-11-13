@@ -55,12 +55,12 @@ class VersionPhpTest extends TestCase
         $admin = $this->crearUsuario($empresa, 'Administrador');
         $sa = $this->crearSuperadmin();
 
-        $this->actingAs($sa)->get('/configuracion')->assertOk()
+        $this->actingAs($sa)->get('/configuracion/plataforma')->assertOk()
             ->assertSee('Versión de PHP del servidor')->assertSee('PHP 8.4.27')->assertSee('Al día')
             ->assertSee('Aceleración (OPcache)')->assertSee('Memoria máxima')->assertSee('Tiempo máximo por página')
             ->assertDontSee('Requiere actualización')->assertDontSee(self::AVISO);
 
-        $respuesta = $this->actingAs($admin)->get('/configuracion')->assertOk()
+        $respuesta = $this->actingAs($admin)->configuracionCompleta()
             ->assertDontSee('Versión de PHP del servidor')->assertDontSee('PHP 8.4.27')->assertDontSee('id="cfg-php"', false);
         // Nunca en cabeceras HTTP
         foreach ($respuesta->headers->all() as $nombre => $valores) {
@@ -81,7 +81,7 @@ class VersionPhpTest extends TestCase
     public function test_version_vieja_de_su_rama_requiere_actualizacion_con_el_aviso(): void
     {
         $this->conVersion('8.4.20');
-        $this->actingAs($this->crearSuperadmin())->get('/configuracion')->assertOk()
+        $this->actingAs($this->crearSuperadmin())->get('/configuracion/plataforma')->assertOk()
             ->assertSee('PHP 8.4.20')->assertSee('Requiere actualización')->assertSee(self::AVISO);
     }
 
@@ -128,7 +128,7 @@ class VersionPhpTest extends TestCase
         $this->conVersion('8.5.12');
         $this->conEstadoDespliegue('PHP del cron:    8.4.20 (/opt/alt/php84/usr/bin/php)');
 
-        $this->actingAs($this->crearSuperadmin())->get('/configuracion')->assertOk()
+        $this->actingAs($this->crearSuperadmin())->get('/configuracion/plataforma')->assertOk()
             ->assertSee('Tareas programadas')->assertSee('PHP 8.5.12')->assertSee('PHP 8.4.20')
             ->assertSee('Al día')->assertSee('Requiere actualización')->assertSee(self::AVISO)
             // Solo la versión: nada de rutas del servidor
@@ -139,7 +139,7 @@ class VersionPhpTest extends TestCase
     {
         $this->conVersion('8.5.12');
         $sa = $this->crearSuperadmin();
-        $this->actingAs($sa)->get('/configuracion')->assertOk()->assertSee('Sin dato todavía')->assertDontSee('Requiere actualización');
+        $this->actingAs($sa)->get('/configuracion/plataforma')->assertOk()->assertSee('Sin dato todavía')->assertDontSee('Requiere actualización');
 
         $this->conEstadoDespliegue('PHP del cron:    sin detectar');
         $this->assertNull(app(VersionPhp::class)->cron());
