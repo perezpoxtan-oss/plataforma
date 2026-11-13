@@ -241,6 +241,7 @@ Bajo «## [Sin publicar]»:
   - Manual: `reservas-de-areas.md`, `reservas-aprobar.md`, `reservas-departamentos.md`, `reservas-configuracion.md` (con capturas). Curso: lección 60. Pruebas en `ReservasDeAreasTest`.
 
 ### Corregido
+- **Colaboradores (escritorio):** en las fichas, el último botón de abajo (Dar de baja) se salía de la tarjeta cuando había seis acciones. Ahora el estado va arriba y los botones se acomodan a la derecha, como en Empresas.
 - **Logo de la empresa roto aunque el enlace `storage` exista:** si el hospedaje no entrega `/storage/...`, ahora Laravel entrega el logo (ruta `imagen-publica`, solo logos e identidad con nombre aleatorio, sin sesión). Prueba en `ImagenPublicaTest`.
 - **Logo de la empresa roto** en la ficha de Empresas (y en impresiones): si en el sitio quedó una carpeta `storage` real (por ejemplo de una instalación manual anterior), `desplegar.sh` creaba el enlace a los archivos subidos dentro de ella y `/storage/...` no los encontraba. Ahora la aparta (`.storage-anterior-<fecha>`, sin borrar nada) y crea el enlace correcto. Prueba en `DesplegarScriptTest`.
 - **Ficha de la empresa:** el logo va arriba y el nombre debajo, para que el nombre use todo el ancho (también en el celular).
