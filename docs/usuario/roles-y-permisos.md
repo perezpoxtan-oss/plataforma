@@ -59,7 +59,7 @@ Son para el personal que **no trabaja en la caseta** (Recepción, Ama de llaves,
 5. En **Sede** elige la sede donde trabaja.
 6. Escribe **Usuario**, **Correo** y **Contraseña** (si es nueva la cuenta) y toca **Guardar usuario** (o **Guardar Cambios** si la editaste).
 7. Para que el jefe firme los pases de su gente, responda visitas o entreviste candidatos: entra a **Estructura → Autorizaciones → Responsables por departamento**, toca **Elegir responsables** en su departamento, agrégalo con su sede y toca **Guardar responsables**.
-8. Solo si el circuito de pases de tu empresa es distinto al de siempre: en **Estructura → Configuración → Pases de salida → Configurar circuito**, revisa que haya un paso con **El jefe del departamento del solicitante**; si no lo tiene, toca **Agregar el paso del jefe del departamento**. El circuito de siempre ya lo trae como primer paso.
+8. Solo si el circuito de pases de tu empresa es distinto al de siempre: en **Estructura → Configuración → Activos, transporte y pases → Pases de salida → Configurar circuito**, revisa que haya un paso con **El jefe del departamento del solicitante**; si no lo tiene, toca **Agregar el paso del jefe del departamento**. El circuito de siempre ya lo trae como primer paso.
 
 ![Matriz de permisos](img/roles/3-matriz.png)
 

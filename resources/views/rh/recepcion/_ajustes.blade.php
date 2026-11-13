@@ -11,17 +11,17 @@
     <h2 id="t-recepcion" class="h5 fw-bold"><i class="bi bi-shield-lock me-2 text-success" aria-hidden="true"></i>Recepción de candidatos: aviso de privacidad y kiosco</h2>
     <p class="small text-muted">El candidato debe marcar «Acepto el aviso de privacidad» antes de guardar su CV (en el kiosco o con Recursos Humanos). Se guarda cuándo, desde qué equipo y la versión exacta del texto que aceptó.</p>
     @if ($ajustesRecepcion->esBorrador($empresa))
-        <div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i><strong>El aviso tiene datos por completar</strong> (por ejemplo, el nombre y el domicilio de tu empresa, entre corchetes). Complétalo con tu abogado y publícalo en Configuración → Privacidad.</div>
+        <div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i><strong>El aviso tiene datos por completar</strong> (por ejemplo, el nombre y el domicilio de tu empresa, entre corchetes). Complétalo con tu abogado y publícalo en Configuración → Seguridad y privacidad → Privacidad.</div>
     @endif
     @unless ($puedeGuardarRecepcion)
         <div class="alert alert-secondary small py-2"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Tu rol solo puede consultar estos ajustes.</div>
     @endunless
-    {{-- C-37 (E-09): el aviso de privacidad se edita en un solo lugar (Configuración → Privacidad), con el mismo número de versión --}}
+    {{-- C-37 (E-09): el aviso de privacidad se edita en un solo lugar (Configuración → Seguridad y privacidad → Privacidad), con el mismo número de versión --}}
     @php $avisoVigente = app(\App\Services\Privacidad\AvisosPrivacidad::class)->vigente($empresa); @endphp
     <div class="tarjeta-enlace-config small mb-3" id="recepcion-aviso">
-        <p class="mb-2"><i class="bi bi-file-earmark-lock me-1" aria-hidden="true"></i>Aviso de privacidad: <strong>versión {{ $avisoVigente?->numero ?? 1 }}</strong>@if ($avisoVigente), publicada el @fecha($avisoVigente->publicado_en, 'd/m/Y')@endif. Es el que acepta el candidato. Se edita en un solo lugar: Configuración → Privacidad.</p>
+        <p class="mb-2"><i class="bi bi-file-earmark-lock me-1" aria-hidden="true"></i>Aviso de privacidad: <strong>versión {{ $avisoVigente?->numero ?? 1 }}</strong>@if ($avisoVigente), publicada el @fecha($avisoVigente->publicado_en, 'd/m/Y')@endif. Es el que acepta el candidato. Se edita en un solo lugar: Configuración → Seguridad y privacidad → Privacidad.</p>
         @can('configuracion.datos_personales')
-            <a href="{{ route('configuracion.index') }}#cfg-aviso" class="btn-enlace-config"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Editar en Configuración → Privacidad</a>
+            <a href="{{ \App\Support\TemasConfiguracion::url('cfg-aviso') }}" class="btn-enlace-config"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Editar en Configuración → Seguridad y privacidad → Privacidad</a>
         @endcan
     </div>
     <form action="{{ route('recepcion.ajustes.guardar') }}" method="POST">

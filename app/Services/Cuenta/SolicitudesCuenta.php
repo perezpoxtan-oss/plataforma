@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\Notificaciones\CentroNotificaciones;
 use App\Services\Usuarios\AdministradorUsuarios;
 use App\Support\CorreoPlataforma;
+use App\Support\TemasConfiguracion;
 use App\Support\Tenancy\EmpresaScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -247,7 +248,7 @@ class SolicitudesCuenta
         ];
         if ($usuario->es_superadmin) {
             $otros = User::where('es_superadmin', true)->where('activo', true)->whereKeyNot($usuario->id)->pluck('id');
-            $this->campana->avisarPlataforma($otros, self::TIPO_AVISO, $datos + ['url' => route('configuracion.index').'#cfg-superadmins']);
+            $this->campana->avisarPlataforma($otros, self::TIPO_AVISO, $datos + ['url' => TemasConfiguracion::url('cfg-superadmins')]);
 
             return;
         }

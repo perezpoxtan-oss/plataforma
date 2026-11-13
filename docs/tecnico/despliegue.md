@@ -32,7 +32,7 @@ El `index.php` del subdominio lee el destino de `actual` en cada visita con `rea
 1. Descarga y verifica el paquete; lo descomprime en `releases/<nombre>`.
 2. Enlaza `.env` y `storage` compartidos y limpia la caché de arranque.
 3. Pone el sitio en mantenimiento, corre `migrate` y los `seeders` (son repetibles) y genera las cachés.
-4. Copia los archivos públicos al subdominio y cambia `actual` a la versión nueva.
+4. Copia los archivos públicos al subdominio, crea el enlace `storage` → `shared/storage/app/public` (logos, fotos y firmas subidos) y cambia `actual` a la versión nueva. Si en el subdominio había una carpeta `storage` real (instalación manual anterior), la aparta como `.storage-anterior-<fecha>` sin borrarla; antes, el enlace quedaba dentro de ella y las imágenes subidas salían rotas.
 5. Consulta `/up`. Si no responde 200, **regresa solo a la versión anterior**, marca la nueva como fallida y no la reintenta hasta que llegue otra.
 6. **App de Android:** si el paquete trae `app-movil/smart-centinel.apk` y `app-movil/app-movil.json` (los compila la CI, `.github/workflows/apk.yml`), comprueba que el sha256 del APK sea el del JSON y los copia a `shared/storage/app/private/app-movil/` (`smart-centinel-<sha256>.apk`, `app-movil.json` con `instalado_en`, `historial.jsonl` con las últimas 20). Primero el APK y al final el JSON; borra el APK anterior. Sin app en el paquete (p. ej. sin la llave de firma) o con huella distinta no toca nada: se conserva la que había y el despliegue sigue. Corre después de comprobar `/up` y en cada revisión (si una corrida no alcanzó a copiarla, la siguiente lo hace). Sin descargas extra: el APK viaja dentro del paquete. Ver [app-movil.md](app-movil.md), «Compilación automática».
 
@@ -133,7 +133,7 @@ Antes de autorizar la primera versión de Producción (y al cambiar de hospedaje
 2. **Dos Super Administradores activos**, cada uno con su verificación en dos pasos y sus códigos de respaldo guardados fuera de la plataforma. Inicio avisa en rojo mientras haya uno solo (C-36, DD-21). El hospedaje no tiene terminal: la recuperación del Super Administrador depende de esto (ver [dos-pasos.md](dos-pasos.md)).
 3. **Tareas en proceso** comprobadas (privacidad, plazos, escalamientos): la Bitácora de auditoría muestra `privacidad.conservacion_aplicada` o la tarjeta de Privacidad muestra la «Última revisión» del día.
 4. **Respaldo descargado** desde Configuración → Respaldos y guardado también fuera del servidor. Sin terminal, el respaldo se copia con el **administrador de archivos de cPanel** (carpeta `shared/storage/app/private/respaldos`) y se restaura importando el `.sql.gz` con phpMyAdmin.
-5. **Aviso de privacidad** de cada empresa completado por su abogado y publicado en Configuración → Privacidad (los borradores de los textos legales están en [privacidad.md](privacidad.md)).
+5. **Aviso de privacidad** de cada empresa completado por su abogado y publicado en Configuración → Seguridad y privacidad → Privacidad (los borradores de los textos legales están en [privacidad.md](privacidad.md)).
 6. Prueba en un **teléfono real** (app y navegador): la app de Producción se descarga de **Mi cuenta → App para tu celular** (compilada con la etiqueta, apunta a Producción y está firmada con la llave del repositorio).
 
 ## QA: limpieza única de la base

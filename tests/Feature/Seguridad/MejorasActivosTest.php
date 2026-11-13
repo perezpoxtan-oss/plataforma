@@ -268,7 +268,7 @@ class MejorasActivosTest extends TestCase
     public function test_sin_configurar_todo_funciona_como_el_diseno_original(): void
     {
         $this->assertSame(AjustesCaseta::OMISION, AjustesCaseta::de($this->empresa));
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()
+        $this->actingAs($this->admin)->configuracionCompleta()
             // Configuración por secciones: las tarjetas de caseta y activos van en su sección (Caseta y accesos, Activos, Transporte)
             ->assertSee('Caseta y accesos')->assertSee('Activos')->assertSee('Guardia y taxista firman en pantalla (original)')
             ->assertSee('Casilla «Leí y entendí» y firma dibujada en cada versión (original)')->assertSee('id="cfg-llaves"', false);

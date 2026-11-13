@@ -90,6 +90,7 @@ use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\RecorridosPc\AdministradorRecorridosPc;
 use App\Services\Reservas\AdministradorReservas;
 use App\Services\Reservas\AjustesReservas;
+use App\Services\Reservas\BloqueosReservas;
 use App\Services\Reservas\CatalogosReservas;
 use App\Services\Reservas\FlujoReservas;
 use App\Services\Reservas\ResponsablesReservas;
@@ -473,6 +474,11 @@ class CrearDatosDemo extends Command
         if ($sistemas !== null) {
             $como($u('jefe.demo'), fn () => $flujo->marcarLista($u('jefe.demo'), $sistemas, 'Proyector probado'));
         }
+        // Bloqueo de ejemplo (docs/tecnico/reservas.md, «Bloqueos»): el responsable general cierra el salón por fumigación, sin reservas afectadas
+        $dia = now($zona)->addDays(22)->toDateString();
+        $como($u('jefedepto.demo'), fn () => app(BloqueosReservas::class)->crear($u('jefedepto.demo'), [
+            'reserva_area_id' => $areaSalon->id, 'fecha_desde' => $dia, 'hora_desde' => '07:00', 'fecha_hasta' => $dia, 'hora_hasta' => '12:00', 'motivo' => 'Fumigación',
+        ]));
     }
 
     /**

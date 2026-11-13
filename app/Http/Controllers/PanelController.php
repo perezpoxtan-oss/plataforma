@@ -15,6 +15,7 @@ use App\Services\Recepcion\AjustesRecepcion;
 use App\Services\Relojes\MotorRelojes;
 use App\Services\Relojes\Reloj;
 use App\Support\Menu\MisPendientes;
+use App\Support\TemasConfiguracion;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use Illuminate\Http\Request;
@@ -139,7 +140,7 @@ class PanelController extends Controller
     private function pendientesDePlataforma(User $actor): array
     {
         $lista = [];
-        $url = route('configuracion.index').'#cfg-superadmins';
+        $url = TemasConfiguracion::url('cfg-superadmins');
         $super = app(SuperAdministradores::class);
         if ($super->faltan()) {
             $lista[] = ['clave' => 'superadmins', 'titulo' => 'Falta el segundo Super Administrador', 'icono' => 'bi-shield-exclamation', 'total' => $super->activos(),

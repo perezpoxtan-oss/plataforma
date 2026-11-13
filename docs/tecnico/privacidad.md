@@ -6,7 +6,7 @@ Etapa 3 aprobada por el dueño (LFPDPPP). Ampliada con **C-37** (2026-10-26, X-0
 
 ## Permiso
 
-Acción nueva **`configuracion.datos_personales`** («Datos personales» del módulo Configuración) con **alcance de empresa**. La declaran Configuración → Privacidad, la bandeja de solicitudes ARCO y Mis pendientes. La migración la otorga a todo rol que hoy tiene `configuracion.editar` con alcance de empresa (Administrador y su plantilla); en instalaciones nuevas la plantilla Administrador la recibe (regla general). El Director no.
+Acción nueva **`configuracion.datos_personales`** («Datos personales» del módulo Configuración) con **alcance de empresa**. La declaran Configuración → Seguridad y privacidad → Privacidad, la bandeja de solicitudes ARCO y Mis pendientes. La migración la otorga a todo rol que hoy tiene `configuracion.editar` con alcance de empresa (Administrador y su plantilla); en instalaciones nuevas la plantilla Administrador la recibe (regla general). El Director no.
 
 ## Migración `2026_11_04_000200_privacidad_y_solicitudes_arco`
 
@@ -24,7 +24,7 @@ Acción nueva **`configuracion.datos_personales`** («Datos personales» del mó
 
 ## 1. Conservación de datos personales (`ConservacionDatos`)
 
-Ajustes por empresa en `empresas.preferencias.privacidad` (Configuración → Privacidad, `PUT /configuracion/privacidad`, auditoría `privacidad.conservacion`):
+Ajustes por empresa en `empresas.preferencias.privacidad` (Configuración → Seguridad y privacidad → Privacidad, `PUT /configuracion/privacidad`, auditoría `privacidad.conservacion`):
 
 | Clave | Qué | Original | Rango |
 |---|---|---|---|
@@ -55,7 +55,7 @@ Migración `2026_11_10_003710_privacidad_en_todos_los_modulos`: `datos_eliminado
 | `incidentes_dias` | Tickets **resueltos** (`cerrado_en`) con involucrados, testigos, sospechoso, observados del Reporte General o accidente de huésped: `involucrados`, nombre y declaración de testigos, descripción del sospechoso, `novedad_reportes_generales.observados`; si es accidente de huésped, `DatosDePersona::anonimizarAccidente()` (abajo). **Nunca** los accidentes de colaborador (relación laboral). La descripción del hecho se conserva | `cerrado_en` | 1825 | 365–3650 |
 | `reservas_dias` | Nombre, empresa, correo y teléfono del cliente (y su nombre en título, notas e indicaciones) | `fin` | 1825 | 365–3650 |
 | `transporte_dias` | Firma del taxista (archivo y columna). La del guardia es personal de la empresa | `fecha` | 1825 | 365–3650 |
-| `asistencia_dias` | Asistencia (ADR-0024): la `nota` de `asistencia_justificaciones` (el día, el tipo y el motivo se conservan como constancia laboral). El campo solo se ve en Configuración → Privacidad con el módulo encendido | `fecha` | 1825 | 365–3650 |
+| `asistencia_dias` | Asistencia (ADR-0024): la `nota` de `asistencia_justificaciones` (el día, el tipo y el motivo se conservan como constancia laboral). El campo solo se ve en Configuración → Seguridad y privacidad → Privacidad con el módulo encendido | `fecha` | 1825 | 365–3650 |
 
 `ConservacionDatos::QUITA` lista lo que se cuenta y se quita; `vencidos()` arma las consultas; `aplicar()` salta los plazos de `AMPLIADOS` si la empresa no los confirmó (`ajustes()['ampliados']`, `plazos_ampliados` en preferencias, `true` si no existe la clave = empresas nuevas). Guardar la tarjeta con los plazos nuevos los confirma. Un formulario sin esos campos (anterior) los conserva (`nullable`). La auditoría `privacidad.conservacion_aplicada` guarda los conteos de cada clave.
 
@@ -116,8 +116,8 @@ Enlaces al aviso/formulario: kiosco y solicitud de empleo (`_cv.blade.php`, `$ar
 
 ## 3. Aviso de privacidad con versiones (`AvisosPrivacidad`)
 
-- **Empresa:** el texto sigue en `preferencias.recepcion.aviso_privacidad` (lo leen kiosco, solicitud de empleo y bolsa). `vigente($empresa)` devuelve la última versión y, si el texto cambió por otro camino o no hay ninguna, crea la siguiente. Publicar desde **Configuración → Privacidad** (`POST /configuracion/privacidad/aviso`) guarda el texto y crea la versión con autor (`privacidad.aviso_publicado`); un texto igual no crea versión. Historial y «Ver texto» (`GET /configuracion/privacidad/aviso/{version}`).
-- **Un solo lugar (C-37, E-09):** Recepción → Ajustes ya **no** edita el texto: muestra «versión N» (el mismo número de Privacidad, de `AvisosPrivacidad::vigente()`) con el enlace «Editar en Configuración → Privacidad» (si el rol tiene `configuracion.datos_personales`). `AjustesRecepcion::guardar()` ignora `aviso_privacidad` aunque llegue; la parte «privacidad» de ese formulario es el kiosco. Antes Recepción mostraba la huella (`c79528b1f8`) y Privacidad «versión 1»: eran dos números del mismo texto. `registrarCambio()` queda sin uso desde Recepción.
+- **Empresa:** el texto sigue en `preferencias.recepcion.aviso_privacidad` (lo leen kiosco, solicitud de empleo y bolsa). `vigente($empresa)` devuelve la última versión y, si el texto cambió por otro camino o no hay ninguna, crea la siguiente. Publicar desde **Configuración → Seguridad y privacidad → Privacidad** (`POST /configuracion/privacidad/aviso`) guarda el texto y crea la versión con autor (`privacidad.aviso_publicado`); un texto igual no crea versión. Historial y «Ver texto» (`GET /configuracion/privacidad/aviso/{version}`).
+- **Un solo lugar (C-37, E-09):** Recepción → Ajustes ya **no** edita el texto: muestra «versión N» (el mismo número de Privacidad, de `AvisosPrivacidad::vigente()`) con el enlace «Editar en Configuración → Seguridad y privacidad → Privacidad» (si el rol tiene `configuracion.datos_personales`). `AjustesRecepcion::guardar()` ignora `aviso_privacidad` aunque llegue; la parte «privacidad» de ese formulario es el kiosco. Antes Recepción mostraba la huella (`c79528b1f8`) y Privacidad «versión 1»: eran dos números del mismo texto. `registrarCambio()` queda sin uso desde Recepción.
 - **Texto original:** `AjustesRecepcion::PRIVACIDAD_BORRADOR` ya no empieza con «Borrador — validar con su abogado» (los textos legales se marcan como borrador aquí, no en pantalla). Las empresas que seguían con el texto original reciben la siguiente versión automáticamente la primera vez que se consulta (cambió la huella); quien ya aceptó conserva la versión que aceptó. `esBorrador()`/`porCompletar()` reconocen `[NOMBRE DE LA EMPRESA]` (y la marca anterior).
 - **Plataforma:** el aviso de la página pública (Catálogo comercial → Ajustes). Su versión (empresa nula) se crea sola al primer uso o cuando cambia el texto.
 - **Qué versión aceptó cada persona:** `AdministradorCandidatos::aceptarPrivacidad()` (kiosco, RR. HH., bolsa de trabajo) guarda `candidatos.aviso_privacidad_id` además de la huella de siempre; la solicitud de compra de la landing guarda `solicitudes_compra.aviso_privacidad_id`. La ficha del candidato muestra «versión N». La caseta no muestra ni hace aceptar un aviso hoy: no aplica.
@@ -133,7 +133,7 @@ Enlaces al aviso/formulario: kiosco y solicitud de empleo (`_cv.blade.php`, `$ar
 5. **Transporte.** «Si conduces un taxi contratado por nosotros, tratamos tu nombre, placas y firma del vale. Los conservamos [5 años].»
 6. **Derechos ARCO.** «Puedes ejercer tus derechos de acceso, rectificación, cancelación u oposición en [DIRECCIÓN DE LA PÁGINA DEL AVISO] o en [CORREO]. Respondemos en un máximo de 20 días hábiles.»
 
-Plazos sugeridos = valores originales de `ConservacionDatos::DIAS`; el abogado puede pedir otros y el cliente los cambia en Configuración → Privacidad.
+Plazos sugeridos = valores originales de `ConservacionDatos::DIAS`; el abogado puede pedir otros y el cliente los cambia en Configuración → Seguridad y privacidad → Privacidad.
 
 ### Puntos para que decida el abogado (revisión independiente del PR #86)
 

@@ -104,12 +104,12 @@ class DecisionesInformesYAuditoriaTest extends TestCase
     {
         $admin = $this->crearUsuario($this->empresa, 'Administrador');
         // Empresa nueva o que nunca guardó el ajuste: «Los movimientos de su sede» marcado
-        $this->actingAs($admin)->get('/configuracion')->assertOk()->assertSee('name="auditoria_sede" value="sede" checked', false);
+        $this->actingAs($admin)->get('/configuracion/seguridad')->assertOk()->assertSee('name="auditoria_sede" value="sede" checked', false);
 
         // La empresa que guardó «Solo sus propios movimientos» lo conserva
         $this->empresa->forceFill(['preferencias' => ['auditoria_sede' => 'propios']])->save();
         $this->actingAs($this->jefe)->get('/auditoria')->assertOk()->assertSee('Ves solo tus propios movimientos.');
-        $this->actingAs($admin)->get('/configuracion')->assertOk()->assertSee('name="auditoria_sede" value="propios" checked', false);
+        $this->actingAs($admin)->get('/configuracion/seguridad')->assertOk()->assertSee('name="auditoria_sede" value="propios" checked', false);
 
         // Otros ajustes guardados sin este (valor ausente): aplica el valor por omisión
         $this->empresa->forceFill(['preferencias' => ['avisos' => ['vale_taxi' => true]]])->save();
@@ -139,7 +139,7 @@ class DecisionesInformesYAuditoriaTest extends TestCase
         $this->assertTrue($this->empresa->fresh()->aviso('movimientos_sensibles'));
 
         $admin = $this->crearUsuario($this->empresa, 'Administrador');
-        $this->actingAs($admin)->get('/configuracion')->assertOk()
+        $this->actingAs($admin)->get('/configuracion/seguridad')->assertOk()
             ->assertSee('name="avisos[movimientos_sensibles]" value="1" form="formAvisos" checked', false);
 
         $this->empresa->forceFill(['preferencias' => ['avisos' => ['movimientos_sensibles' => false]]])->save();

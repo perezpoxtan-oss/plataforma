@@ -5,6 +5,7 @@ namespace App\Services\Reservas;
 use App\Models\Espacio;
 use App\Models\Reserva;
 use App\Models\ReservaArea;
+use App\Models\ReservaBloqueo;
 use App\Models\Sede;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -138,6 +139,35 @@ class Disponibilidad
     }
 
     /**
+     * Bloqueos vigentes que se cruzan con ese horario en el área o en un lugar
+     * que comparte espacio con ella (bloquear una zona bloquea sus espacios
+     * interiores y al revés). docs/tecnico/reservas.md, «Bloqueos».
+     *
+     * @return Collection<int, ReservaBloqueo>
+     */
+    public function bloqueos(ReservaArea $area, CarbonImmutable $desde, CarbonImmutable $hasta): Collection
+    {
+        return ReservaBloqueo::vigentes()->with('espacio:id,nombre')->whereIn('espacio_id', $this->espaciosRelacionados($area))
+            ->where('desde', '<', $hasta)->where('hasta', '>', $desde)
+            ->orderBy('desde')->get();
+    }
+
+    /**
+     * «de 08:00 a 18:00» (mismo día) o «del 04/11 08:00 al 06/11 18:00», en la
+     * hora local de la sede.
+     */
+    public static function rangoTexto(\DateTimeInterface $desde, \DateTimeInterface $hasta, string $zona): string
+    {
+        $d = CarbonImmutable::instance($desde)->setTimezone($zona);
+        $h = CarbonImmutable::instance($hasta)->setTimezone($zona);
+        if ($d->toDateString() === $h->toDateString() || ($h->format('H:i') === '00:00' && $d->toDateString() === $h->subMinute()->toDateString())) {
+            return 'el '.$d->format('d/m').' de '.$d->format('H:i').' a '.($h->format('H:i') === '00:00' ? '24:00' : $h->format('H:i'));
+        }
+
+        return 'del '.$d->format('d/m H:i').' al '.$h->format('d/m H:i');
+    }
+
+    /**
      * ¿El horario del área permite de inicio a fin? (mismo día local, dentro de una ventana)
      */
     public function enHorario(ReservaArea $area, CarbonImmutable $inicio, CarbonImmutable $fin): bool
@@ -203,6 +233,12 @@ class Disponibilidad
             throw ValidationException::withMessages(['asistentes' => "Son más personas que el aforo {$deQue}: máximo {$aforo}."]);
         }
         [$desde, $hasta] = $this->bloqueo($area, $inicio, $fin, $montajeMinutos, $desmontajeMinutos);
+        $bloqueo = $this->bloqueos($area, $desde, $hasta)->first();
+        if ($bloqueo !== null) {
+            $sitio = (int) $bloqueo->espacio_id === (int) $area->espacio_id ? 'El área' : '«'.$bloqueo->sitio().'» (comparte lugar con esta área)';
+            throw ValidationException::withMessages(['hora_inicio' => "{$sitio} está bloqueada ".self::rangoTexto($bloqueo->desde, $bloqueo->hasta, $this->zona($area))
+                .": {$bloqueo->motivo}. Elige otro horario u otra área."]);
+        }
         $choque = $this->choques($area, $desde, $hasta, $excepto)->first();
         if ($choque !== null) {
             $zona = $this->zona($area);
@@ -221,14 +257,30 @@ class Disponibilidad
     /**
      * Bloques ocupados de un día local (para el formulario y el calendario).
      *
-     * @return list<array{desde: string, hasta: string, inicio: string, fin: string, id: int, otro: string|null}>
+     * Los bloqueos del sitio vienen con «bloqueado» = su motivo (recortados
+     * al día: un bloqueo de varios días se ve de 00:00 a 24:00).
+     *
+     * @return list<array{desde: string, hasta: string, inicio: string, fin: string, id: int, otro: string|null, bloqueado: string|null}>
      */
     public function ocupadoEl(ReservaArea $area, string $fecha, ?int $excepto = null): array
     {
         $zona = $this->zona($area);
         $dia = CarbonImmutable::createFromFormat('Y-m-d', $fecha, $zona)->startOfDay();
+        $hora = function (\DateTimeInterface $momento) use ($dia, $zona): string {
+            $local = CarbonImmutable::instance($momento)->setTimezone($zona);
+            if ($local->lessThanOrEqualTo($dia)) {
+                return '00:00';
+            }
 
-        return $this->choques($area, $dia->utc(), $dia->addDay()->utc(), $excepto)
+            return $local->greaterThanOrEqualTo($dia->addDay()) ? '24:00' : $local->format('H:i');
+        };
+        $bloqueos = $this->bloqueos($area, $dia->utc(), $dia->addDay()->utc())
+            ->map(fn (ReservaBloqueo $b) => [
+                'id' => (int) $b->id, 'desde' => $hora($b->desde), 'hasta' => $hora($b->hasta), 'inicio' => $hora($b->desde), 'fin' => $hora($b->hasta),
+                'otro' => (int) $b->espacio_id !== (int) $area->espacio_id ? $b->sitio() : null, 'bloqueado' => $b->motivo,
+            ]);
+
+        return $bloqueos->concat($this->choques($area, $dia->utc(), $dia->addDay()->utc(), $excepto)
             ->map(fn (Reserva $r) => [
                 'id' => (int) $r->id,
                 'desde' => $r->bloqueo_desde->setTimezone($zona)->format('H:i'),
@@ -237,6 +289,7 @@ class Disponibilidad
                 'fin' => $r->fin->setTimezone($zona)->format('H:i'),
                 // Reserva de la zona completa o de un espacio interior que también ocupa esta área
                 'otro' => (int) $r->espacio_id !== (int) $area->espacio_id ? $r->area?->nombre() : null,
-            ])->values()->all();
+                'bloqueado' => null,
+            ]))->sortBy('desde')->values()->all();
     }
 }

@@ -292,7 +292,7 @@ class PlanesOperanTest extends TestCase
         app(RegistroTerminos::class)->olvidar();
         $this->assertArrayNotHasKey('huesped', $motivos->para($hotel->id));
         $this->assertSame('general', $motivos->porOmision($hotel->id));
-        $this->actingAs($admin)->get('/configuracion')->assertOk()->assertSee('Motivo de la visita');
+        $this->actingAs($admin)->get('/configuracion/caseta')->assertOk()->assertSee('Motivo de la visita');
 
         // Condominio: la visita a un residente se sigue registrando
         $condoAdmin = $this->cuenta('condo.admin.demo');

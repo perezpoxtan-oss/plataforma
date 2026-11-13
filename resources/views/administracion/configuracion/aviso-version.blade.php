@@ -14,6 +14,6 @@
     <section class="tarjeta p-4">
         <div class="texto-privacidad" style="white-space:pre-line;">{{ $aviso->texto }}</div>
     </section>
-    <p class="mt-3"><a href="{{ route('configuracion.index') }}#cfg-aviso"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver a Configuración → Privacidad</a></p>
+    <p class="mt-3"><a href="{{ \App\Support\TemasConfiguracion::url('cfg-aviso') }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Volver a Configuración → Seguridad y privacidad → Privacidad</a></p>
 </div>
 @endsection

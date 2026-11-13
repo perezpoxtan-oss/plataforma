@@ -1,0 +1,6 @@
+Sede,Código de sede,Ciudad,Estado,Zona o edificio,Piso,Habitación,Tipo de habitación,Área de la habitación,Tipo de área,Código
+Hotel Centro,HCEN,Cancún,Quintana Roo,Torre A,Piso 1,101,Habitación,,,TA-101
+Hotel Centro,HCEN,Cancún,Quintana Roo,Torre A,Piso 1,102,Suite,Terraza,Terraza,
+Hotel Centro,HCEN,Cancún,Quintana Roo,Torre A,Piso 1,102,,Baño,Baño,
+Hotel Centro,HCEN,Cancún,Quintana Roo,Zona exterior,,Alberca principal,Alberca,,,
+Hotel Centro,HCEN,Cancún,Quintana Roo,Edificio Principal,Planta baja,Lobby,Lobby,,,

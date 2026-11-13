@@ -329,12 +329,12 @@ class MejorasIncidentesTest extends PruebaNovedades
     {
         $this->actingAs($this->agente)->get('/novedades')->assertOk()->assertSee('Despacho y Novedades');
         // Selector en Configuración: «Novedades» por omisión, con su explicación corta
-        $config = $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Bitácora de novedades')->assertSee('Nombre del módulo')
+        $config = $this->actingAs($this->admin)->get('/configuracion/novedades')->assertOk()->assertSee('Bitácora de novedades')->assertSee('Nombre del módulo')
             ->assertSee('es donde va todo lo que pasa en el día, sin importar su tipo')->getContent();
         $this->assertMatchesRegularExpression('/<option value="Novedades" selected>Novedades \(como siempre\)<\/option>/u', $config);
 
         $this->actingAs($this->admin)->put('/configuracion/novedades', ['nombre_opcion' => 'Incidentes', 'nombre_menu' => 'Ignorado', 'categoria_hallazgo_pc' => 'proteccion_civil'])
-            ->assertSessionHasNoErrors()->assertRedirect(route('configuracion.index').'#novedades')
+            ->assertSessionHasNoErrors()->assertRedirect(route('configuracion.tema', 'novedades').'#novedades')
             ->assertSessionHas('ok', 'Ajustes de la Bitácora de incidentes guardados.');
         $this->assertTrue(Auditoria::where('evento', 'novedades.configurado')->exists());
 
@@ -375,7 +375,7 @@ class MejorasIncidentesTest extends PruebaNovedades
         $this->assertSame("Te canalizaron el ticket {$n->folio()} · Incidentes", $this->avisos($this->agente, 'novedad_canalizada')->sole()->titulo);
 
         // Configuración (avisos por módulo) y Mi cuenta (preferencias) con el nombre elegido
-        $this->actingAs($this->admin)->get('/configuracion')->assertSee('Bitácora de incidentes: avisar por correo')->assertDontSee('Bitácora de novedades: avisar');
+        $this->actingAs($this->admin)->get('/configuracion/novedades')->assertSee('Bitácora de incidentes: avisar por correo')->assertDontSee('Bitácora de novedades: avisar');
         $opciones = app(PreferenciasAvisos::class)->opciones($this->agente);
         $this->assertArrayHasKey('Bitácora de incidentes', $opciones['campana']);
         $this->assertArrayNotHasKey('Bitácora de novedades', $opciones['campana']);

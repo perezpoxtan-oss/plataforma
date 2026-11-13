@@ -119,7 +119,7 @@ Necesitas que tu rol pueda **Exportar** en *Responsivas* (si no ves el botón, p
 ## Preguntas frecuentes
 
 - **¿Qué diferencia hay entre Turno y Fijo?** **Turno** se devuelve al terminar el turno; **Fijo** es una asignación que se queda con la persona y no tiene hora de regreso.
-- **¿Quién decide a qué hora deben regresar los equipos de Turno?** El administrador, en **Estructura → Configuración → Activos** (ver [Configuración](configuracion.md)). Si no lo configura, no hay hora de regreso.
+- **¿Quién decide a qué hora deben regresar los equipos de Turno?** El administrador, en **Estructura → Configuración → Activos, transporte y pases** (ver [Configuración](configuracion.md)). Si no lo configura, no hay hora de regreso.
 - **¿Qué hago si un equipo se perdió?** Recíbelo como **Faltante** con **Dañado o falta**: se genera el voucher de reposición.
 - **¿Puedo entregar equipo de otra sede?** No; solo de la sede elegida.
 - **¿Dónde veo quién tiene un radio?** En [Equipos de seguridad](equipos.md) la ficha del equipo dice **A cargo de**.

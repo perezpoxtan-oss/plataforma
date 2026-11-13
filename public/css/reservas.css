@@ -17,6 +17,17 @@
 .res-evento.estado-por_aprobar, .res-evento.estado-cambio_pedido { border-left-color: #d97706; background: #fffbeb; }
 .res-evento.estado-confirmada { border-left-color: #15803d; background: #f0fdf4; }
 .res-evento.ajena { border-left-color: #94a3b8; background: #f1f5f9; color: #475569; }
+/* Bloqueos: rayas rojas, visibles para todos («Bloqueado: motivo») */
+.res-evento.bloqueado { border-left-color: #b91c1c; color: #7f1d1d; background: repeating-linear-gradient(135deg, #fee2e2 0 8px, #fecaca 8px 16px); }
+.res-evento.bloqueado .res-area { color: #7f1d1d; }
+.res-leyenda .res-leyenda-bloqueo::before { background: repeating-linear-gradient(135deg, #fecaca 0 3px, #b91c1c 3px 5px); }
+.res-insignia-bloqueo { display: inline-block; }
+/* Horas libres del calendario de una sala: un toque abre la reserva con área, día y hora */
+.res-huecos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.res-hueco { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; min-width: 64px; padding: 4px 10px; border: 1px dashed #15803d; border-radius: 8px; color: #166534; background: #fff; font-size: .8rem; font-weight: 600; text-decoration: none; }
+.res-hueco:hover, .res-hueco:focus-visible { background: #f0fdf4; border-style: solid; }
+@media (pointer: coarse) { .res-hueco { min-height: 44px; } }
+.res-quienes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 10px 14px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: .875rem; }
 .res-leyenda { display: flex; flex-wrap: wrap; gap: 12px; font-size: .8rem; color: #475569; margin-top: 10px; }
 .res-leyenda span::before { content: ''; display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; background: var(--res-color, #94a3b8); }
 .res-dia-lista .res-area-dia { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 10px; }
@@ -112,6 +123,9 @@ html.modo-noche .res-dato-valor, html.modo-noche .res-evento { color: #e2e8f0; }
 html.modo-noche .res-evento { background: #172554; }
 html.modo-noche .res-evento.estado-confirmada { background: #14532d; }
 html.modo-noche .res-evento.estado-por_aprobar, html.modo-noche .res-evento.estado-cambio_pedido { background: #451a03; }
+html.modo-noche .res-evento.bloqueado, html.modo-noche .res-evento.bloqueado .res-area { color: #fecaca; background: repeating-linear-gradient(135deg, #450a0a 0 8px, #7f1d1d 8px 16px); }
+html.modo-noche .res-hueco { background: transparent; color: #86efac; border-color: #22c55e; }
+html.modo-noche .res-quienes { background: #0f172a; border-color: #334155; }
 
 /* «Mostrar quitadas / dados de baja (N)»: píldora discreta junto al título de cada sección de Configuración */
 .res-ver-ocultas { padding: 0.3rem 0.85rem; font-size: 0.8rem; text-decoration: none; }

@@ -146,7 +146,7 @@ class EtapaTresCoberturaTest extends TestCase
         // Inicio: «Sin quien autorice en Recepción (Playa)»
         $this->actingAs($this->admin)->get('/')->assertOk()->assertSee('Sin quien autorice en Recepción ('.$this->playa->nombre.')');
         // Configuración: la verdad de hoy
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('hoy 1 departamento no tiene');
+        $this->actingAs($this->admin)->get('/configuracion/caseta')->assertOk()->assertSee('hoy 1 departamento no tiene');
 
         // La bitácora: reloj y a quién espera; el agente no puede autorizar, el supervisor sí
         $this->actingAs($this->agentePlaya)->get('/accesos?pestana=pendientes')->assertOk()

@@ -67,7 +67,7 @@ class EtapaSeisTest extends PruebaNovedades
         $this->assertStringNotContainsString('Siniestro Protección Civil', $tablero);
 
         // Configuración: «Mantenimiento» es el valor original y se ofrece primero
-        $config = $this->actingAs($this->admin)->get('/configuracion')->assertOk()->getContent();
+        $config = $this->actingAs($this->admin)->get('/configuracion/novedades')->assertOk()->getContent();
         $this->assertMatchesRegularExpression('/<option value="mantenimiento_pc" selected>Mantenimiento de equipo PC \(recomendado\)<\/option>/u', $config);
         $this->assertStringContainsString('Valor original: Mantenimiento de equipo PC.', $config);
 
@@ -112,7 +112,7 @@ class EtapaSeisTest extends PruebaNovedades
         $this->enEmpresa(fn () => SiniestroServicio::create(['novedad_id' => $r2->novedad_id, 'servicio' => 'BOMBEROS']));
         $suelto = $this->novedad(['categoria' => 'proteccion_civil']); // siniestro capturado a mano: no es de un recorrido
 
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('hallazgos anteriores registrados como siniestro (1)');
+        $this->actingAs($this->admin)->get('/configuracion/novedades')->assertOk()->assertSee('hallazgos anteriores registrados como siniestro (1)');
         // Sin permiso de toda la empresa, no
         $this->actingAs($this->jefe)->put('/configuracion/novedades/reclasificar-hallazgos')->assertForbidden();
 
@@ -126,7 +126,7 @@ class EtapaSeisTest extends PruebaNovedades
 
         // Una segunda vez no hay nada que hacer y la sección desaparece
         $this->actingAs($this->admin)->put('/configuracion/novedades/reclasificar-hallazgos')->assertSessionHas('ok', 'No hay hallazgos anteriores que reclasificar.');
-        $this->actingAs($this->admin)->get('/configuracion')->assertDontSee('hallazgos anteriores registrados como siniestro');
+        $this->actingAs($this->admin)->get('/configuracion/novedades')->assertDontSee('hallazgos anteriores registrados como siniestro');
     }
 
     // ------------------------------------------------------------------ C-32

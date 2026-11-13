@@ -52,7 +52,7 @@ Comprueba: al entrar te avisó «Entraste con un código de respaldo… Te queda
 
 ## Práctica 5 · Exigirla en tu empresa (Administrador)
 
-1. **Estructura → Configuración → Cuentas y seguridad → Verificación en dos pasos**.
+1. **Estructura → Configuración → Seguridad y privacidad → Verificación en dos pasos**.
 2. Elige **Administradores** → **Guardar**.
 3. Con una cuenta de administrador que no la tenga, sal y vuelve a entrar.
 

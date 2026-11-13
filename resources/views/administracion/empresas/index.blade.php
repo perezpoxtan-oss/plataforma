@@ -59,7 +59,8 @@
             <div class="ficha-card" id="empresa-{{ $emp->id }}" data-ficha data-estado="{{ $emp->activo ? 1 : 0 }}"
                  data-texto="{{ mb_strtolower($emp->nombre_comercial.' '.$emp->razon_social.' '.$emp->rfc) }}">
                 <div>
-                    <div class="d-flex align-items-center gap-3">
+                    {{-- Logo arriba y nombre abajo: el nombre usa todo el ancho de la ficha (también en el celular) --}}
+                    <div class="d-flex flex-column align-items-start gap-2">
                         @if ($emp->logo_ruta)
                             <img src="{{ asset($emp->logo_ruta) }}" alt="Logo de {{ $emp->nombre_comercial }}" class="logo-empresa-ficha">
                         @endif

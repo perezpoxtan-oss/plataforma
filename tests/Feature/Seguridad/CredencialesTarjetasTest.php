@@ -80,7 +80,7 @@ class CredencialesTarjetasTest extends TestCase
     public function test_de_fabrica_solo_qr_y_no_se_pide_tarjeta(): void
     {
         $this->assertSame([], AjustesCredenciales::de($this->empresa)['tarjetas']);
-        $this->actingAs($this->admin)->get(route('configuracion.index'))->assertOk()
+        $this->actingAs($this->admin)->get(route('configuracion.tema', 'estructura'))->assertOk()
             ->assertSee('Tecnología de la credencial')->assertSee('Tarjeta Proximidad 125 kHz')->assertSee('Tarjeta MIFARE 13.56 MHz')
             ->assertSee('Lector USB de proximidad 125 kHz (escribe el número como un teclado)')
             ->assertSee('NFC del celular Android o lector USB de 13.56 MHz (MIFARE)')
@@ -134,7 +134,7 @@ class CredencialesTarjetasTest extends TestCase
         $this->habilitar(['mifare_1356', 'proximidad_125']);
         // Se guardan en el orden de la lista, sin repetir
         $this->assertSame(['proximidad_125', 'mifare_1356'], AjustesCredenciales::de($this->empresa->fresh())['tarjetas']);
-        $this->actingAs($this->admin)->get(route('configuracion.index'))->assertOk()
+        $this->actingAs($this->admin)->get(route('configuracion.tema', 'estructura'))->assertOk()
             ->assertSee('id="cfg_cred_tarjeta_proximidad_125" name="tarjetas[]" value="proximidad_125" checked', false)
             ->assertSee('id="cfg_cred_tarjeta_mifare_1356" name="tarjetas[]" value="mifare_1356" checked', false);
 

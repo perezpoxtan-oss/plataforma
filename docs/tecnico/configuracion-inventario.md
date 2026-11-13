@@ -55,7 +55,7 @@ Convenciones:
 | Avisos de Recepción y candidatos | pref. `avisos.*` | Configuración → Recepción y RR. HH. | `configuracion.editar` empresa | encendidos |
 | Asistencia: tolerancia de retardo y aviso de faltas al jefe (ADR-0024) | pref. `asistencia.tolerancia_minutos`, `asistencia.aviso_faltas` | Asistencia → Avanzado (resumen con «Configurar en…» en Configuración → Recepción y RR. HH.) | `asistencia.configurar` empresa | 10 min, apagado |
 | Asistencia: días que se trabaja cada turno | `turnos.dias_laborables` | Turnos → Editar → Avanzado (solo con Asistencia encendida) | `turnos.editar` empresa | todos los días |
-| Asistencia: conservación de las notas de justificaciones | pref. `privacidad.asistencia_dias` | Configuración → Privacidad (solo con Asistencia encendida) | `configuracion.datos_personales` empresa | 1825 días |
+| Asistencia: conservación de las notas de justificaciones | pref. `privacidad.asistencia_dias` | Configuración → Seguridad y privacidad → Privacidad (solo con Asistencia encendida) | `configuracion.datos_personales` empresa | 1825 días |
 
 ### Novedades / Incidentes
 
@@ -70,11 +70,11 @@ Convenciones:
 
 | Ajuste | Dónde se guarda | Pantalla | Quién | Por omisión |
 |---|---|---|---|---|
-| Semáforo de llaves fuera (ámbar / rojo, horas) | pref. `caseta.llaves_horas_*` | Configuración → Activos | `configuracion.editar` empresa | 12 / 24 (encendido, DD-10) |
-| Equipos de «Turno»: regreso y escalamiento (horas) | pref. `caseta.responsivas_horas_*` | Configuración → Activos | ídem | 0 / 0 (apagado) |
-| Vouchers con cobro: correos de las tres copias | pref. `avisos_destinatarios.voucher_*` | Configuración → Activos | ídem | vacíos (quien imprime vouchers) |
-| Firmas del vale de taxi en pantalla | pref. `caseta.transporte_firmas` | Configuración → Transporte | ídem | `ambas` |
-| Correos que reciben el vale de taxi | pref. `avisos_destinatarios.vale_taxi` | Configuración → Transporte | ídem | vacío (quien autoriza vales) |
+| Semáforo de llaves fuera (ámbar / rojo, horas) | pref. `caseta.llaves_horas_*` | Configuración → Activos, transporte y pases | `configuracion.editar` empresa | 12 / 24 (encendido, DD-10) |
+| Equipos de «Turno»: regreso y escalamiento (horas) | pref. `caseta.responsivas_horas_*` | Configuración → Activos, transporte y pases | ídem | 0 / 0 (apagado) |
+| Vouchers con cobro: correos de las tres copias | pref. `avisos_destinatarios.voucher_*` | Configuración → Activos, transporte y pases | ídem | vacíos (quien imprime vouchers) |
+| Firmas del vale de taxi en pantalla | pref. `caseta.transporte_firmas` | Configuración → Activos, transporte y pases → Transporte | ídem | `ambas` |
+| Correos que reciben el vale de taxi | pref. `avisos_destinatarios.vale_taxi` | Configuración → Activos, transporte y pases → Transporte | ídem | vacío (quien autoriza vales) |
 
 ### Pases de salida
 
@@ -82,7 +82,7 @@ Convenciones:
 |---|---|---|---|---|
 | Circuito de aprobación (pasos, roles, motivos, valor) | `pases_salida_pasos` | Pases de salida → Circuito (resumen y botón «Configurar circuito» en Configuración) | `pases_salida.configurar` | Jefe del departamento del solicitante → Contraloría → Gerencia |
 | Firmas en caseta, rechazo, tiempos de espera | pref. `pases_salida.*` | ídem | ídem | dos firmas; empezar desde el primer paso; sin tiempos |
-| Avisos de pases | pref. `avisos.*` | Configuración → Pases de salida | `configuracion.editar` empresa | encendidos |
+| Avisos de pases | pref. `avisos.*` | Configuración → Activos, transporte y pases → Pases de salida | `configuracion.editar` empresa | encendidos |
 
 ### Reservas de áreas
 
@@ -104,21 +104,21 @@ Sección **Configuración → Reservas de áreas** (al final del índice). Ver [
 |---|---|---|---|---|
 | Cada aviso (20) e interruptor por módulo | pref. `avisos.*`, `avisos_modulos.*` | Configuración → cada sección; resumen en Avisos por correo | `configuracion.editar` empresa | encendidos, salvo los dos de la bitácora |
 | Avisos que una persona silencia | `users.preferencias_avisos` | Mi cuenta → Mis avisos | cada persona | ninguno silenciado |
-| Qué ve «Su sede» en la Bitácora de auditoría | pref. `auditoria_sede` | Configuración → Cuentas y seguridad | `configuracion.editar` empresa | `sede` |
-| Movimientos sensibles a la campana | pref. `avisos.movimientos_sensibles` | Configuración → Cuentas y seguridad | ídem | encendido |
+| Qué ve «Su sede» en la Bitácora de auditoría | pref. `auditoria_sede` | Configuración → Seguridad y privacidad | `configuracion.editar` empresa | `sede` |
+| Movimientos sensibles a la campana | pref. `avisos.movimientos_sensibles` | Configuración → Seguridad y privacidad | ídem | encendido |
 | Cierre de sesión por inactividad | `.env` `PLATAFORMA_INACTIVIDAD_MINUTOS` | Solo se **muestra** en Cuentas y seguridad (es de plataforma) | quien administra el servidor | 20 min |
-| 🆕 Exigir la verificación en dos pasos a: nadie / administradores / todos ([dos-pasos.md](dos-pasos.md)) | pref. `dos_pasos` | Configuración → Cuentas y seguridad (`PUT /configuracion/dos-pasos`, Restablecer valor original) | `configuracion.editar` empresa | `nadie` (el Super Administrador siempre la necesita, no es configurable) |
+| 🆕 Exigir la verificación en dos pasos a: nadie / administradores / todos ([dos-pasos.md](dos-pasos.md)) | pref. `dos_pasos` | Configuración → Seguridad y privacidad (`PUT /configuracion/dos-pasos`, Restablecer valor original) | `configuracion.editar` empresa | `nadie` (el Super Administrador siempre la necesita, no es configurable) |
 | 🆕 Verificación en dos pasos de cada cuenta | `users.two_factor_*` | Mi cuenta → Verificación en dos pasos (restablecer: Usuarios) | cada persona / `usuarios.desbloquear` | sin activar |
 
 ### 🆕 Privacidad ([privacidad.md](privacidad.md))
 
 | Ajuste | Dónde se guarda | Pantalla | Quién | Por omisión |
 |---|---|---|---|---|
-| Quitar automáticamente los datos vencidos (tarea de conservación) | pref. `privacidad.conservacion_activa` | Configuración → Privacidad (`PUT /configuracion/privacidad`) | `configuracion.datos_personales` empresa | **encendida** en empresas nuevas; **apagada** en las que ya existían (la migración la guardó en `false`) |
+| Quitar automáticamente los datos vencidos (tarea de conservación) | pref. `privacidad.conservacion_activa` | Configuración → Seguridad y privacidad → Privacidad (`PUT /configuracion/privacidad`) | `configuracion.datos_personales` empresa | **encendida** en empresas nuevas; **apagada** en las que ya existían (la migración la guardó en `false`) |
 | Días: fotos de la persona / fotos de la identificación / datos de visitantes externos en registros cerrados | pref. `privacidad.fotos_persona_dias`, `fotos_identificacion_dias`, `visitantes_dias` | ídem | ídem | 90 / 90 / 365 |
 | Candidatos no contratados: borrar a los N meses | pref. `recepcion.plazos.borrar_meses` (ya existía) | Enlace en Privacidad → Candidatos → Documentos y plazos | `candidatos.configurar` empresa | 12 meses |
-| Solicitudes ARCO: recordar cuando falten N días hábiles | pref. `privacidad.arco_recordar_dias` | Configuración → Privacidad | `configuracion.datos_personales` empresa | 5 |
-| Aviso de privacidad (versiones) | `avisos_privacidad` + pref. `recepcion.aviso_privacidad` (texto vigente) | Configuración → Privacidad (publicar versión) y Recepción → Ajustes (mismo texto, también crea versión) | `configuracion.datos_personales` / `candidatos.configurar` empresa | borrador para el abogado |
+| Solicitudes ARCO: recordar cuando falten N días hábiles | pref. `privacidad.arco_recordar_dias` | Configuración → Seguridad y privacidad → Privacidad | `configuracion.datos_personales` empresa | 5 |
+| Aviso de privacidad (versiones) | `avisos_privacidad` + pref. `recepcion.aviso_privacidad` (texto vigente) | Configuración → Seguridad y privacidad → Privacidad (publicar versión) y Recepción → Ajustes (mismo texto, también crea versión) | `configuracion.datos_personales` / `candidatos.configurar` empresa | borrador para el abogado |
 | Plazo legal de respuesta ARCO | constante `SolicitudesArco::DIAS_HABILES` | — (es de la ley) | — | 20 días hábiles |
 
 ## 2. Ajustes de plataforma (Super Administrador)

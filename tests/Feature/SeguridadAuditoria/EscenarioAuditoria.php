@@ -153,6 +153,7 @@ trait EscenarioAuditoria
             'aprobacion' => 'reserva_aprobaciones',
             'orden' => 'reserva_ordenes',
             'area' => 'reserva_areas',
+            'bloqueo' => 'reserva_bloqueos',
             // Privacidad: solicitudes ARCO
             'solicitud' => 'solicitudes_arco',
             // Etapa 5 · C-10: residentes (filas de colaboradores con tipo residente)
@@ -234,6 +235,8 @@ trait EscenarioAuditoria
                 return 'primeros-pasos';
             case 'catalogo': // Reservas de áreas
                 return 'montajes';
+            case 'tema': // Configuración en mosaico (no son de ninguna empresa)
+                return 'caseta';
             case 'firma':
                 $pase = $this->consulta('pases_salida', $sede)->pluck('id');
 
@@ -291,7 +294,7 @@ trait EscenarioAuditoria
     {
         $parametros = [];
         foreach ($ruta->parameterNames() as $nombre) {
-            $esTexto = in_array($nombre, ['cual', 'clave', 'archivo', 'pantalla', 'registro', 'tipo', 'parte', 'pagina', 'carpeta', 'catalogo', 'padron'], true) || ($nombre === 'rol' && $ruta->getName() === 'novedades.firma');
+            $esTexto = in_array($nombre, ['cual', 'clave', 'archivo', 'pantalla', 'registro', 'tipo', 'parte', 'pagina', 'carpeta', 'catalogo', 'padron', 'tema'], true) || ($nombre === 'rol' && $ruta->getName() === 'novedades.firma');
             $valor = match (true) {
                 ! $inexistente || $esTexto => $this->valorParametro((string) $ruta->getName(), $nombre, $sede),
                 $nombre === 'codigo' => 'zzzzzzzzzzzzzzzzzzzzzzzz',

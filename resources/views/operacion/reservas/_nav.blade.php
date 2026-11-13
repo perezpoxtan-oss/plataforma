@@ -10,12 +10,16 @@
 @php
     $pend = app(\App\Support\Menu\MisPendientes::class)->para(auth()->user());
     $porClave = collect($pend['items'] ?? [])->keyBy('clave');
+    // Bloqueos: el responsable general y su suplente, el responsable o suplente de un área, o reservas.bloquear
+    $empresaNav = app(\App\Support\Tenancy\EmpresaDeTrabajo::class)->id(auth()->user());
+    $puedeBloquearNav = $empresaNav !== null && app(\App\Services\Reservas\BloqueosReservas::class)->puedeBloquearAlgo(auth()->user(), (int) $empresaNav);
     $pestanas = array_filter([
         'areas' => ($puede['ver'] || $puede['crear']) ? ['Áreas', 'bi-door-open', route('reservas.index'), 0] : null,
         'calendario' => ($puede['ver'] || $puede['crear']) ? ['Calendario', 'bi-calendar3', route('reservas.calendario'), 0] : null,
-        'mias' => $puede['crear'] ? ['Mis reservas', 'bi-person-check', route('reservas.mias'), (int) ($porClave['reservas_cambio']['total'] ?? 0)] : null,
+        'mias' => $puede['crear'] ? ['Mis reservas', 'bi-person-check', route('reservas.mias'), (int) ($porClave['reservas_cambio']['total'] ?? 0) + (int) ($porClave['reservas_bloqueadas']['total'] ?? 0)] : null,
         'aprobaciones' => ['Por aprobar', 'bi-patch-check', route('reservas.aprobaciones'), (int) ($porClave['reservas_aprobar']['total'] ?? 0)],
         'ordenes' => ['Órdenes de servicio', 'bi-clipboard-check', route('reservas.ordenes'), (int) ($porClave['reservas_ordenes']['total'] ?? 0)],
+        'bloqueos' => $puedeBloquearNav ? ['Bloqueos', 'bi-lock', route('reservas.bloqueos'), 0] : null,
         'informes' => $puede['ver'] ? ['Informes', 'bi-bar-chart', route('reservas.informes'), 0] : null,
         'configuracion' => $puede['configurar'] ? ['Configuración', 'bi-gear', route('reservas.configuracion'), 0] : null,
     ]);

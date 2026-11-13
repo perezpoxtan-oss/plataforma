@@ -293,8 +293,8 @@ class DosPasosTest extends TestCase
 
         // El agente no puede cambiarla; el administrador sí (auditado)
         $this->actingAs($this->agente)->put('/configuracion/dos-pasos', ['dos_pasos' => 'todos'])->assertForbidden();
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Exigir la verificación en dos pasos a:')->assertSee('0 de 2');
-        $this->actingAs($this->admin)->put('/configuracion/dos-pasos', ['dos_pasos' => 'administradores'])->assertRedirect(route('configuracion.index').'#cfg-dos-pasos');
+        $this->actingAs($this->admin)->get('/configuracion/seguridad')->assertOk()->assertSee('Exigir la verificación en dos pasos a:')->assertSee('0 de 2');
+        $this->actingAs($this->admin)->put('/configuracion/dos-pasos', ['dos_pasos' => 'administradores'])->assertRedirect(route('configuracion.tema', 'seguridad').'#cfg-dos-pasos');
         $this->assertSame('administradores', $this->empresa->refresh()->preferencias['dos_pasos']);
         $this->assertTrue(Auditoria::where('evento', 'configuracion.dos_pasos')->exists());
         $this->actingAs($this->admin)->put('/configuracion/dos-pasos', ['dos_pasos' => 'cualquiera'])->assertSessionHasErrors('dos_pasos');
@@ -331,7 +331,7 @@ class DosPasosTest extends TestCase
         // Restablecer valor original: nadie
         $this->post('/logout');
         $this->flushSession();
-        $this->actingAs($this->admin)->put('/configuracion/restablecer', ['ajuste' => 'dos_pasos'])->assertRedirect(route('configuracion.index').'#cfg-dos-pasos');
+        $this->actingAs($this->admin)->put('/configuracion/restablecer', ['ajuste' => 'dos_pasos'])->assertRedirect(route('configuracion.tema', 'seguridad').'#cfg-dos-pasos');
         $this->assertSame('nadie', app(VerificacionDosPasos::class)->politica($this->empresa->refresh()));
     }
 

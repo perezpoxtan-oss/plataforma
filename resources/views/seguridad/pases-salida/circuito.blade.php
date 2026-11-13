@@ -12,7 +12,7 @@
         <div class="icono"><i class="bi bi-diagram-3 text-primary" aria-hidden="true"></i></div>
         <div>
             <h1>Circuito de aprobación</h1>
-            <p>Quién aprueba cada pase de salida y en qué orden. Configuración → Pases de salida.</p>
+            <p>Quién aprueba cada pase de salida y en qué orden. Configuración → Activos, transporte y pases → Pases de salida.</p>
         </div>
     </div>
 

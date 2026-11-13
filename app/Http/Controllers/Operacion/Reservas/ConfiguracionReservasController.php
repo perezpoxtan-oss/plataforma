@@ -16,6 +16,7 @@ use App\Services\Permisos\Autorizador;
 use App\Services\Reservas\AjustesReservas;
 use App\Services\Reservas\CatalogosReservas;
 use App\Services\Reservas\NivelesReservas;
+use App\Support\TemasConfiguracion;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use App\Support\Tenancy\Tenant;
 use App\Support\Terminos;
@@ -351,7 +352,7 @@ class ConfiguracionReservasController extends Controller
         $this->exigirEmpresa($request);
         $empresa = Empresa::findOrFail($this->tenant->empresaId());
         $this->ajustes->guardar($request->user(), $empresa, $request->all());
-        $desde = $request->input('desde') === 'configuracion' ? route('configuracion.index').'#sec-reservas' : route('reservas.configuracion').'#ajustes';
+        $desde = $request->input('desde') === 'configuracion' ? TemasConfiguracion::url('sec-reservas') : route('reservas.configuracion').'#ajustes';
 
         return redirect()->to($desde)->with('ok', 'Ajustes de reservas guardados.');
     }

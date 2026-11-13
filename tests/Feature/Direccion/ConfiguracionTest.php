@@ -67,7 +67,7 @@ class ConfiguracionTest extends TestCase
         $this->assertTrue(app(CorreoPlataforma::class)->configurado());
 
         // La pantalla nunca devuelve la contraseña; guardar sin escribirla la conserva
-        $this->actingAs($this->sa)->get('/configuracion')->assertOk()->assertSee('CONFIGURADO')->assertDontSee('SecretoDePrueba123');
+        $this->actingAs($this->sa)->get('/configuracion/plataforma')->assertOk()->assertSee('CONFIGURADO')->assertDontSee('SecretoDePrueba123');
         $this->actingAs($this->sa)->put('/configuracion/correo', $this->datosCorreo(['contrasena' => '']));
         app(CorreoPlataforma::class)->aplicar();
         $this->assertSame('SecretoDePrueba123', config('mail.mailers.plataforma.password'));
@@ -88,7 +88,7 @@ class ConfiguracionTest extends TestCase
     public function test_solo_el_superadmin_toca_correo_y_respaldos(): void
     {
         $admin = $this->crearUsuario($this->empresa, 'Administrador');
-        $this->actingAs($admin)->get('/configuracion')->assertOk()->assertSee('Avisos por correo')->assertDontSee('Correo de la plataforma')->assertDontSee('Respaldar ahora');
+        $this->actingAs($admin)->configuracionCompleta()->assertSee('Avisos por correo')->assertDontSee('Correo de la plataforma')->assertDontSee('Respaldar ahora');
         $this->actingAs($admin)->put('/configuracion/correo', $this->datosCorreo())->assertForbidden();
         $this->actingAs($admin)->post('/configuracion/respaldos')->assertForbidden();
         $this->actingAs($this->crearUsuario($this->empresa, 'Agente', $this->centro))->get('/configuracion')->assertForbidden();
@@ -131,7 +131,7 @@ class ConfiguracionTest extends TestCase
             $this->assertSame(User::count(), (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn());
         }
 
-        $this->actingAs($this->sa)->get('/configuracion')->assertSee('Respaldar ahora')->assertSee('Manual');
+        $this->actingAs($this->sa)->get('/configuracion/plataforma')->assertSee('Respaldar ahora')->assertSee('Manual');
         $this->actingAs($this->sa)->get('/configuracion/respaldos/'.$r['archivo'])->assertOk()->assertHeader('Content-Type', 'application/gzip');
         $this->assertDatabaseHas('auditoria', ['evento' => 'configuracion.respaldo_descargado']);
         $this->actingAs($this->sa)->get('/configuracion/respaldos/..%2F.env')->assertNotFound();
@@ -154,7 +154,7 @@ class ConfiguracionTest extends TestCase
 
     public function test_textos_de_correo_y_respaldos_sin_nombrar_el_hospedaje(): void
     {
-        $this->actingAs($this->sa)->get('/configuracion')->assertOk()
+        $this->actingAs($this->sa)->get('/configuracion/plataforma')->assertOk()
             ->assertSee('Los datos te los da tu proveedor de correo')
             ->assertSee('pide a tu proveedor de hospedaje o a tu administrador de base de datos que lo importe')
             ->assertDontSee('cPanel')->assertDontSee('phpMyAdmin');

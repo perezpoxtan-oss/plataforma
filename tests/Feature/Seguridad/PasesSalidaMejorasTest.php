@@ -210,7 +210,7 @@ class PasesSalidaMejorasTest extends TestCase
             ->assertSee('Condición de valor')->assertSee('sin condición: aplica a cualquier valor');
         // El formulario de siempre: sin «Valor por pieza»
         $this->actingAs($this->admin)->get('/pases-salida')->assertOk()->assertDontSee('Valor por pieza');
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertDontSee('Firmas en caseta ·');
+        $this->actingAs($this->admin)->get('/configuracion/activos')->assertOk()->assertDontSee('Firmas en caseta ·');
 
         $pase = $this->crearPase();
         $this->assertSame(['Jefe del departamento del solicitante', 'Contraloría', 'Gerencia'], $pase->aprobaciones->pluck('nombre')->all());
@@ -261,7 +261,7 @@ class PasesSalidaMejorasTest extends TestCase
         $this->assertSame(['firmas_caseta' => ['salida' => ['todos' => 'seguridad', 'motivos' => ['reparacion' => 'dos']], 'regreso' => ['todos' => 'ninguna']]], $guardado);
         $this->actingAs($this->admin)->get('/pases-salida/circuito')->assertOk()
             ->assertSee('<option value="seguridad" selected>Solo Seguridad</option>', false);
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Firmas en caseta · Dar salida: Solo Seguridad · Reparación: Dos firmas (persona y Seguridad)');
+        $this->actingAs($this->admin)->get('/configuracion/activos')->assertOk()->assertSee('Firmas en caseta · Dar salida: Solo Seguridad · Reparación: Dos firmas (persona y Seguridad)');
 
         // Préstamo hacia otra sede: salida solo Seguridad, llegada y salida de regreso dos firmas, regreso sin firma
         $pase = $this->crearPase();
@@ -369,7 +369,7 @@ class PasesSalidaMejorasTest extends TestCase
         $this->configurar([], $pasos)->assertSessionHasNoErrors();
         $this->assertSame([null, 50000.0, null], $this->enEmpresa(fn () => PaseSalidaPaso::orderBy('orden')->pluck('valor_minimo')->all()));
         $this->actingAs($this->admin)->get('/pases-salida/circuito')->assertSee('value="50000"', false);
-        $this->actingAs($this->admin)->get('/configuracion')->assertSee('Gerencia — quien tenga «Aprobar» · solo con valor de $50,000.00 o más');
+        $this->actingAs($this->admin)->get('/configuracion/activos')->assertSee('Gerencia — quien tenga «Aprobar» · solo con valor de $50,000.00 o más');
         // El formulario pide el valor de cada artículo
         $this->actingAs($this->admin)->get('/pases-salida')->assertSee('Valor por pieza');
 

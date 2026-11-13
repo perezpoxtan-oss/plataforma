@@ -138,7 +138,7 @@ Si tu empresa es un hotel, puedes llenar el catálogo de una vez con los servici
 ## Cómo elegir quién aprueba, los tiempos y el IVA
 
 1. En **Quién aprueba, tiempos e IVA** (o en **Estructura → Configuración → Reservas de áreas**, es el mismo formulario):
-   - **Responsable general de reservas** (regularmente el asistente de gerencia) y su **Suplente**.
+   - **Responsable general de reservas** (regularmente el asistente de gerencia) y su **Suplente**. Aprueban las áreas que no tienen responsable propio y pueden **bloquear** cualquier sitio (ver [Bloquear un sitio de reservas](reservas-bloqueos.md)). El responsable y el suplente de cada área pueden bloquear la suya.
    - **Recordar a las (horas)** y **Avisar al responsable general a las (horas)**.
    - **Departamento que hace el montaje** (opcional; en un hotel, Steward): el **Tipo de montaje** aparece dentro de su tarjeta al reservar y en la orden de evento, y ese departamento recibe la orden de servicio del montaje aunque no se le pida otra cosa.
    - **IVA de las reservas para clientes** y **Cobrar IVA en las cotizaciones**.
@@ -192,6 +192,7 @@ En la pestaña **Informes** elige las fechas y la sede: **Ocupación por área**
 
 ## Relacionado
 
+- [Bloquear un sitio de reservas](reservas-bloqueos.md)
 - [Reservas de áreas](reservas-de-areas.md)
 - [Zonas y edificios](zonas-y-areas.md)
 - [Departamentos y puestos](departamentos-y-puestos.md)

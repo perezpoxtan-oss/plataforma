@@ -238,7 +238,7 @@ class EtapaSeisDatosQueViajanTest extends PruebaNovedades
         $extintor = $this->procedimientoPublicado('Revisión de extintores');
         $this->assertSame(Procedimiento::PUBLICADO, $robo->estado);
 
-        $config = $this->actingAs($this->admin)->get('/configuracion')->assertOk()->getContent();
+        $config = $this->actingAs($this->admin)->get('/configuracion/novedades')->assertOk()->getContent();
         $this->assertStringContainsString('procedimiento de cada categoría y tipo de equipo', $config);
         $this->assertStringNotContainsString('name="vinculos[novedad:accidente]"', $config, 'Accidente no se ofrece: su formato no se toca');
 

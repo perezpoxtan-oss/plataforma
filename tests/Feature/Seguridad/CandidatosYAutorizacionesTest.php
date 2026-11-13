@@ -316,7 +316,7 @@ class CandidatosYAutorizacionesTest extends TestCase
 
     public function test_el_aviso_de_privacidad_se_edita_solo_en_privacidad_y_recepcion_muestra_su_version(): void
     {
-        // C-37 (E-09): un solo lugar para el texto (Configuración → Privacidad) y un solo número de versión
+        // C-37 (E-09): un solo lugar para el texto (Configuración → Seguridad y privacidad → Privacidad) y un solo número de versión
         $antes = app(AjustesRecepcion::class)->versionPrivacidad($this->empresa);
         $this->assertTrue(app(AjustesRecepcion::class)->esBorrador($this->empresa));
         $this->actingAs($this->agente)->put('/rh/recepcion/ajustes', ['aviso_privacidad' => 'X'])->assertForbidden();
@@ -335,7 +335,7 @@ class CandidatosYAutorizacionesTest extends TestCase
         $this->assertNotSame($antes, app(AjustesRecepcion::class)->versionPrivacidad($empresa));
         $this->assertFalse(app(AjustesRecepcion::class)->esBorrador($empresa));
         $this->actingAs($this->rh)->get('/rh/recepcion/ajustes')->assertOk()->assertSee('versión 2');
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('Recepción de candidatos')->assertSee('Editar en Configuración → Privacidad');
+        $this->actingAs($this->admin)->get('/configuracion/personal')->assertOk()->assertSee('Recepción de candidatos')->assertSee('Editar en Configuración → Seguridad y privacidad → Privacidad');
     }
 
     // ------------------------------------------------------------------ Etapas

@@ -159,9 +159,12 @@ class AdministradorReservas
         }
         $antes = $this->foto($reserva->load('items'));
 
+        $estabaAfectada = $reserva->bloqueo_id !== null;
         DB::transaction(function () use ($actor, $area, $datos, $reserva) {
             $this->bloquear($area);
             $valores = $this->valores($actor, $area, $datos, $reserva);
+            // Ya pasó la disponibilidad (incluye los bloqueos): deja de estar «Afectada por bloqueo»
+            $reserva->forceFill(['bloqueo_id' => null]);
             $reserva->update($valores['reserva']);
             $reserva->items()->delete();
             $this->guardarItems($reserva, $valores['items']);
@@ -171,6 +174,9 @@ class AdministradorReservas
         $despues = $this->foto($reserva);
         $cambios = collect($despues)->filter(fn ($v, $k) => ($antes[$k] ?? null) !== $v)->keys()->map(fn ($k) => self::CAMPOS[$k] ?? $k)->values()->all();
         $this->flujo->evento($reserva, 'modificada', 'Modificada por '.$actor->name.($cambios !== [] ? ': '.implode(', ', $cambios) : ' (sin cambios)'), $actor);
+        if ($estabaAfectada) {
+            $this->flujo->evento($reserva, 'bloqueo_resuelto', 'Ya no está afectada por el bloqueo: se movió fuera del horario bloqueado', $actor);
+        }
         $this->flujo->auditar($actor, 'reservas.modificada', $reserva, $despues, $antes);
         $this->flujo->sincronizar($actor, $reserva);
 

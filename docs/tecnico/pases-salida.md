@@ -106,7 +106,7 @@ Nombres unificados: lo que se captura es **programado** («Salida programada», 
 
 El circuito demo es: 1. **Jefe del departamento del solicitante** → 2. Jefe de Seguridad (rol) → 3. Contraloría (`director.demo`) → 4. Gerencia (rol Administrador; venta, traspaso definitivo y consignación). Antes de armar los pases se asegura que `jefedepto.demo` sea responsable de Recepción en Centro (`rolesSolicitudesDemo()`), así el pase 1 (Recepción) espera a `jefedepto.demo` y los pases de `solicitante.demo` también. En los pases de departamentos que todavía no tienen responsable al crearse el demo, el paso 1 lo firma alguien de ese departamento con «Aprobar» o, si no hay, `admin.demo` (regla general). En un demo ya creado, `pasoJefePasesDemo()` agrega el paso con `agregarPasoJefe()` si falta (solo la empresa demo; los pases en curso no cambian).
 
-## Circuito de aprobación (Configuración → Pases de salida)
+## Circuito de aprobación (Configuración → Activos, transporte y pases → Pases de salida)
 
 - Pantalla `/pases-salida/circuito` (`pases_salida.configurar`). Solo la cambia quien tiene «Configurar» con **alcance de empresa** (como los Avisos); con alcance de sede se consulta. Enlace desde la lista (botón **Circuito**) y desde la sección "Pases de salida" de `/configuracion`.
 - Máximo 8 pasos; cada motivo necesita al menos un paso obligatorio. Guardar reemplaza el circuito; **los pases en curso conservan su copia**; los nuevos y los reenviados usan el vigente.

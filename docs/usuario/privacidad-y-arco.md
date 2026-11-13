@@ -22,7 +22,7 @@ resumen: Atender las solicitudes de las personas sobre sus datos (acceso, rectif
 
 ![Formulario público de derechos ARCO](img/privacidad/formulario-publico.png)
 
-**Qué debes ver:** en **Solicitudes ARCO** (desde Mis pendientes, la campana o **Estructura → Configuración → Privacidad → Abrir solicitudes ARCO**) cada solicitud con su folio (por ejemplo `ARCO-2026-0001`; las que llegaron desde la página de la plataforma empiezan con `ARCO-P-` y conservan ese folio cuando te las canalizan), qué pide y un **reloj**: verde mientras hay tiempo, **ámbar** cuando faltan pocos días (5 hábiles, o lo que elijas en Configuración) y **rojo** cuando vence hoy o ya venció.
+**Qué debes ver:** en **Solicitudes ARCO** (desde Mis pendientes, la campana o **Estructura → Configuración → Seguridad y privacidad → Privacidad → Abrir solicitudes ARCO**) cada solicitud con su folio (por ejemplo `ARCO-2026-0001`; las que llegaron desde la página de la plataforma empiezan con `ARCO-P-` y conservan ese folio cuando te las canalizan), qué pide y un **reloj**: verde mientras hay tiempo, **ámbar** cuando faltan pocos días (5 hábiles, o lo que elijas en Configuración) y **rojo** cuando vence hoy o ya venció.
 
 ![Bandeja de solicitudes ARCO](img/privacidad/bandeja.png)
 
@@ -75,7 +75,7 @@ Las solicitudes que llegan desde la página pública de la plataforma (no desde 
 
 ## Cómo elegir cuántos días se conservan los datos y publicar el aviso
 
-Se hace en **Estructura → Configuración → Privacidad**. Los pasos están en [Configuración](configuracion.md) («Cómo elegir cuántos días se conservan los datos personales» y «Cómo publicar una versión nueva del aviso de privacidad»).
+Se hace en **Estructura → Configuración → Seguridad y privacidad → Privacidad**. Los pasos están en [Configuración](configuracion.md) («Cómo elegir cuántos días se conservan los datos personales» y «Cómo publicar una versión nueva del aviso de privacidad»).
 
 ## Si algo sale mal
 

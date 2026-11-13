@@ -48,7 +48,7 @@ Lo que viene **Dañado** se recibe y la plataforma te ofrece darlo de baja con s
 
 ## Garantía y firma por tipo de objeto
 
-En **Configuración → Activos** (apartados **Avanzado**) tu empresa decide:
+En **Configuración → Activos, transporte y pases** (apartados **Avanzado**) tu empresa decide:
 
 - **Llaves:** si la identificación en garantía es **obligatoria** (ya no se ofrece «Ninguna (Riesgo)»).
 - **Responsivas:** si el colaborador firma **en la pantalla** o **a mano en la hoja impresa**.

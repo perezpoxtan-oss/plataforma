@@ -9,6 +9,7 @@ use App\Services\Permisos\Autorizador;
 use App\Services\Privacidad\AvisosPrivacidad;
 use App\Services\Privacidad\ConservacionDatos;
 use App\Services\Privacidad\SolicitudesArco;
+use App\Support\TemasConfiguracion;
 use App\Support\Tenancy\EmpresaDeTrabajo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -40,7 +41,7 @@ class PrivacidadController extends Controller
             default => 'Días de conservación guardados.'.($nuevos['activa'] ? ' Se aplican en la revisión de esta noche.' : ' La tarea sigue apagada: enciéndela para que se apliquen.'),
         };
 
-        return redirect()->to(route('configuracion.index').'#cfg-conservacion')->with('ok', $mensaje);
+        return redirect()->to(TemasConfiguracion::url('cfg-conservacion'))->with('ok', $mensaje);
     }
 
     public function publicarAviso(Request $request): RedirectResponse
@@ -48,7 +49,7 @@ class PrivacidadController extends Controller
         [$actor, $empresa] = $this->exigir($request);
         $nueva = app(AvisosPrivacidad::class)->publicar($actor, $empresa, (string) $request->input('texto', ''));
 
-        return redirect()->to(route('configuracion.index').'#cfg-aviso')->with('ok', "Versión {$nueva->numero} del aviso publicada: desde ahora es la que aceptan en el kiosco, la solicitud de empleo y la bolsa de trabajo. Revisa cómo se ve en su página pública.");
+        return redirect()->to(TemasConfiguracion::url('cfg-aviso'))->with('ok', "Versión {$nueva->numero} del aviso publicada: desde ahora es la que aceptan en el kiosco, la solicitud de empleo y la bolsa de trabajo. Revisa cómo se ve en su página pública.");
     }
 
     public function version(Request $request, int $version): View

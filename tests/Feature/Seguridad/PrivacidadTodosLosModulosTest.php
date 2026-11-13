@@ -329,7 +329,7 @@ class PrivacidadTodosLosModulosTest extends PruebaNovedades
         $p = $this->empresa->preferencias ?? [];
         $p['privacidad'] = ['plazos_ampliados' => false];
         $this->empresa->forceFill(['preferencias' => $p])->save();
-        $this->actingAs($this->admin)->get('/configuracion')->assertOk()->assertSee('se aplicarán cuando revises los días y guardes esta tarjeta');
+        $this->actingAs($this->admin)->get('/configuracion/seguridad')->assertOk()->assertSee('se aplicarán cuando revises los días y guardes esta tarjeta');
         $this->travel(6 * 365)->days();
         $this->artisan('plataforma:privacidad')->assertSuccessful();
         $this->assertSame(mb_strtoupper(self::NOMBRE), $this->enEmpresa(fn () => LostFoundReportePerdida::findOrFail($reporte->id)->nombre_huesped));

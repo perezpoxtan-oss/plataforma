@@ -76,6 +76,7 @@ use App\Http\Controllers\Seguridad\TransporteController;
 use App\Http\Controllers\Seguridad\VehiculoController;
 use App\Http\Controllers\Seguridad\VoucherController;
 use App\Http\Middleware\PortadaPublica;
+use App\Support\TemasConfiguracion;
 use Illuminate\Support\Facades\Route;
 
 // Acceso
@@ -183,6 +184,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/empresas/{empresa}/estado', [EmpresaController::class, 'estado'])->name('empresas.estado');
     // Configuración: correo y respaldos (plataforma) y avisos (empresa)
     Route::get('/configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
+    // Configuración en mosaico: cada tema abre solo sus secciones (App\Support\TemasConfiguracion)
+    Route::get('/configuracion/{tema}', [ConfiguracionController::class, 'tema'])
+        ->where('tema', implode('|', array_keys(TemasConfiguracion::TEMAS)))->name('configuracion.tema');
     Route::put('/configuracion/correo', [ConfiguracionController::class, 'correo'])->name('configuracion.correo');
     Route::post('/configuracion/correo/prueba', [ConfiguracionController::class, 'probarCorreo'])->middleware('throttle:configuracion.correo.prueba')->name('configuracion.correo.prueba');
     Route::put('/configuracion/avisos', [ConfiguracionController::class, 'avisos'])->name('configuracion.avisos');
