@@ -45,6 +45,8 @@ class CatalogoSeeder extends Seeder
         'credencial' => 'Credencial',
         // Asistencia (ADR-0024): justificar una falta, un retardo o una salida anticipada con su motivo
         'justificar' => 'Justificar',
+        // Reservas de áreas: bloquear un sitio por mantenimiento o un evento (docs/tecnico/reservas.md, «Bloqueos»)
+        'bloquear' => 'Bloquear',
     ];
 
     private const CRUD = ['ver', 'crear', 'editar', 'eliminar'];
@@ -189,7 +191,7 @@ class CatalogoSeeder extends Seeder
             ]],
             // Servicios: lo que la sede ofrece a su personal y a sus clientes (Reservas de áreas)
             'servicios' => ['Servicios', 'bi-calendar-check', [
-                'reservas' => ['Reservas de áreas', 'bi-calendar-check', ['aprobar', 'configurar', 'exportar', 'imprimir'], [], ['ver', 'crear']],
+                'reservas' => ['Reservas de áreas', 'bi-calendar-check', ['aprobar', 'configurar', 'exportar', 'imprimir', 'bloquear'], [], ['ver', 'crear']],
             ]],
         ];
     }

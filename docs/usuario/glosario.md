@@ -29,6 +29,7 @@ resumen: Qué quiere decir cada palabra de la plataforma, para que todos digan l
 | **Novedad o incidente** | Lo que pasa en el día y se registra en la bitácora. Tu empresa elige si el módulo se llama **Novedades** o **Incidentes**. | — |
 | **Bitácora** | El registro de lo que pasa: la **Bitácora de accesos** (quién entra y sale) y la bitácora de novedades o incidentes. En el menú, **Operación → Bitácora** junta Novedades, Lost & Found y Robo. | — |
 | **Reserva (de áreas)** | Apartar un salón, una sala o la casa club en **Reservas**. | Reserva del huésped |
+| **Bloqueo (de reservas)** | Un sitio de **Reservas** que nadie puede reservar por un tiempo (mantenimiento, evento de dirección). Se ve en el calendario como «Bloqueado: motivo». Las reservas que ya estaban quedan **Afectada por bloqueo** hasta que se muevan o se den de baja. | Dar de baja una reserva |
 | **Reserva del huésped** | La estancia de un huésped en el hotel. La plataforma no la administra. | Reserva de áreas |
 | **Equipo de seguridad** | Radios, linternas, chalecos y lo que se presta con una responsiva. | Equipo de Protección Civil |
 | **Equipo de Protección Civil** | Extintores, hidrantes, botiquines y lo que se revisa en los recorridos de Protección Civil. | Equipo de seguridad |

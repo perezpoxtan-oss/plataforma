@@ -64,8 +64,8 @@ class Empresa extends Model
         // Decisión del dueño (mapa de procesos): encendido por omisión. Las empresas que ya lo guardaron conservan su valor.
         'movimientos_sensibles' => ['Seguridad: avisar en la campana a quien ve toda la Bitácora de auditoría cuando alguien cambia roles o permisos, elimina algo definitivamente o exporta datos personales', true],
         // Reservas de áreas (docs/tecnico/reservas.md)
-        'reserva_aprobacion' => ['Reservas de áreas: avisar al responsable del área y a cada departamento cuando una reserva espera su aprobación (y recordarlo si tarda)', true],
-        'reserva_resultado' => ['Reservas de áreas: avisar a quien reservó cuando su reserva se confirma, se rechaza o le piden un cambio', true],
+        'reserva_aprobacion' => ['Reservas de áreas: avisar al responsable del área y a cada departamento cuando una reserva espera su aprobación (y recordarlo si tarda) y cuando un bloqueo afecta reservas de su área', true],
+        'reserva_resultado' => ['Reservas de áreas: avisar a quien reservó cuando su reserva se confirma, se rechaza, le piden un cambio o la afecta un bloqueo del área', true],
         'reserva_orden' => ['Reservas de áreas: enviar a cada departamento su orden de servicio cuando la reserva se confirma, cambia o se cancela', true],
     ];
 
