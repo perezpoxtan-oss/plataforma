@@ -1,4 +1,6 @@
-# Equipos de Protección Civil (catálogo)
+# Equipos contra incendios (catálogo)
+
+> **13 nov 2026:** el módulo `equipos_pc` se llama de fábrica **Equipos contra incendios** (antes «Equipos de Protección Civil») en el menú y en el título de la pantalla; claves, rutas y permisos no cambian. Ver [menus.md](menus.md), «Nombres de fábrica…». Lo que sigue usa el nombre anterior donde describe la historia.
 
 Catálogo de extintores, hidrantes, detectores, botiquines y demás infraestructura fija de Protección Civil de cada sede (SEGCAT: `cat_equipos_pc`, `pc_equipos_lista.php`, `pc_equipos_modal_editar.php`, `pc_equipos_proceso.php`, `pc_equipos_ticket.php`). Es lo que se inspecciona en los [Recorridos de Protección Civil](recorridos-pc.md).
 

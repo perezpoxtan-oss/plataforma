@@ -82,7 +82,7 @@ Si tu empresa asoció un procedimiento a la categoría del ticket, arriba del ex
 | **Siniestro Protección Civil** | Tipo de evento, alarma, evacuación, servicios externos, lesionados, daños y causa. Si hubo lesionados, se abre solo un ticket de Accidente ligado. |
 | **Lost & Found (Objetos Perdidos)** | Artículos encontrados (folio LF-…) y reportes de pérdida (folio RP-…). |
 | **Robo** | Circunstancias, qué se llevaron, sospechoso, testigos, policía y canalización. |
-| **Mantenimiento de equipo PC** | Lo abre solo un Recorrido de Protección Civil cuando un equipo falla (por ejemplo, un extintor sin presión): muestra los equipos con falla. Anota en el Minuto a Minuto lo que se reparó. No cuenta como siniestro en el Tablero ni en Tendencias. |
+| **Mantenimiento de equipo PC** | Lo abre solo un recorrido (Operación → Protección civil → Recorridos) cuando un equipo falla (por ejemplo, un extintor sin presión): muestra los equipos con falla. Anota en el Minuto a Minuto lo que se reparó. No cuenta como siniestro en el Tablero ni en Tendencias. |
 
 En los formatos largos cada apartado se abre o se cierra tocando su título; si tiene un error, se abre solo y dice **Revisar**.
 
@@ -123,7 +123,7 @@ Si tu sede no tiene turnos registrados (Estructura → Turnos), el aviso al pers
 - **Pendiente de turno: ticket #…**: un ticket que se dejó para tu turno.
 - **Ticket #… resuelto**: el caso que levantaste (o que tenías canalizado) se cerró; el aviso dice la resolución.
 
-**Reloj del ticket canalizado:** el renglón **Tickets canalizados a mí** cambia de color según cuánto lleva contigo. A las horas de su categoría se te recuerda (de fábrica: **Accidente 2 h**, **Robo 4 h**, las demás **24 h**) y al triple pasa al jefe de seguridad de la sede. Si lo canalizan a otra persona, su reloj empieza de nuevo. Las horas se cambian en **Configuración → (tu bitácora) → Reloj de los tickets canalizados**. El Accidente que se abre solo desde un Siniestro con lesionados queda canalizado a quien tenía el siniestro (o a quien lo documentó), así que no se queda sin dueño. Un hallazgo de un recorrido de Protección Civil que nadie toma aparece en **Mis pendientes → Hallazgos de recorrido sin atender**.
+**Reloj del ticket canalizado:** el renglón **Tickets canalizados a mí** cambia de color según cuánto lleva contigo. A las horas de su categoría se te recuerda (de fábrica: **Accidente 2 h**, **Robo 4 h**, las demás **24 h**) y al triple pasa al jefe de seguridad de la sede. Si lo canalizan a otra persona, su reloj empieza de nuevo. Las horas se cambian en **Configuración → (tu bitácora) → Reloj de los tickets canalizados**. El Accidente que se abre solo desde un Siniestro con lesionados queda canalizado a quien tenía el siniestro (o a quien lo documentó), así que no se queda sin dueño. Un hallazgo de un recorrido que nadie toma aparece en **Mis pendientes → Hallazgos de recorrido sin atender**.
 
 ## Cuando te canalizan un ticket a tu departamento
 
@@ -186,7 +186,7 @@ Si respondes por un departamento (Mantenimiento, Recursos Humanos…), Seguridad
 - **¿Puedo borrar algo del Minuto a Minuto?** No, así queda constancia de todo.
 - **¿Quién ve los tickets de Lost & Found?** También quien solo tiene permiso de Lost & Found (por ejemplo, Ama de Llaves).
 - **¿Cómo imprimo el expediente?** Con el botón de la impresora, arriba a la derecha del expediente.
-- **¿Dónde se hacen los recorridos de Protección Civil?** En su propia pantalla: [Recorridos de Protección Civil](recorridos-pc.md).
+- **¿Dónde se hacen los recorridos de los equipos contra incendios?** En su propia pantalla: [Recorridos](recorridos-pc.md).
 - **¿Cómo sé qué tickets me canalizaron?** En **Mis pendientes → Tickets canalizados a mí**: abre la lista solo con los tuyos.
 - **¿Por qué no veo Valores a la Vista?** Es una categoría de hotel (la revisión de la habitación con la camarista). En otros giros no se ofrece; usa **Reporte General** con su tipo.
 - **¿Quién decide los tipos de Reporte General?** Tu administrador, en **Estructura → Configuración → Bitácora de novedades → Avanzado: tipos de «Reporte General»**.
@@ -195,5 +195,5 @@ Si respondes por un departamento (Mantenimiento, Recursos Humanos…), Seguridad
 ## Relacionado
 
 - [Lost & Found y Robo](lost-found-y-robo.md)
-- [Recorridos de Protección Civil](recorridos-pc.md)
+- [Recorridos](recorridos-pc.md)
 - [Bitácora de accesos](accesos.md)

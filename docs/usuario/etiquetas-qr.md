@@ -69,7 +69,7 @@ Con **rollo térmico** (Zebra, Brother…) cada etiqueta sale en su propia pági
 
 ## Cómo hacer que los padrones impriman con estas plantillas
 
-Llaves, Gafetes, Vehículos, Equipos de seguridad y Equipos de Protección Civil tienen su propia hoja de impresión (llavero, gafete doble vista, calcomanía…). Quien configura plantillas para **toda la empresa** puede elegir un solo camino:
+Llaves, Gafetes, Vehículos, Equipos de seguridad y Equipos contra incendios tienen su propia hoja de impresión (llavero, gafete doble vista, calcomanía…). Quien configura plantillas para **toda la empresa** puede elegir un solo camino:
 
 1. En la pestaña **Plantillas**, busca el recuadro **¿Cómo imprimen Llaves, Gafetes, Vehículos y Equipos?**.
 2. Elige:

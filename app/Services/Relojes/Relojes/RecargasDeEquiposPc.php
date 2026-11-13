@@ -9,7 +9,7 @@ use App\Services\Relojes\Reloj;
 use Illuminate\Support\Collection;
 
 /**
- * Recarga de un equipo de Protección Civil (DD-17, D-08): 15 días antes de
+ * Recarga de un equipo contra incendios (DD-17, D-08): 15 días antes de
  * la «Próxima recarga» se avisa a quien administra los equipos en la sede;
  * el día que vence, pasa a quien los administra en toda la empresa.
  */
@@ -22,12 +22,12 @@ class RecargasDeEquiposPc extends Reloj
 
     public function nombre(): string
     {
-        return 'Equipos de Protección Civil por recargar';
+        return 'Equipos contra incendios por recargar';
     }
 
     public function suplenteOmision(): string
     {
-        return 'quien administra los equipos de Protección Civil en toda la empresa (o el administrador)';
+        return 'quien administra los equipos contra incendios en toda la empresa (o el administrador)';
     }
 
     public function modulos(): array
@@ -47,17 +47,17 @@ class RecargasDeEquiposPc extends Reloj
 
     public function dondeSeConfigura(): ?string
     {
-        return 'Equipos de Protección Civil: «Próxima recarga» de cada equipo (15 días antes)';
+        return 'Equipos contra incendios: «Próxima recarga» de cada equipo (15 días antes)';
     }
 
     public function renglonDef(): ?array
     {
-        return ['recargas_pc', 'Equipos de Protección Civil por recargar', 'bi-fire', route('equipos_pc.index')];
+        return ['recargas_pc', 'Equipos contra incendios por recargar', 'bi-fire', route('equipos_pc.index')];
     }
 
     public function textosInicio(): ?array
     {
-        return ['1 equipo de Protección Civil por recargar', '%d equipos de Protección Civil por recargar', 'Su próxima recarga está cerca o ya pasó. Prográmala y, al recargarlo, cambia la fecha.', 'Ver equipos'];
+        return ['1 equipo contra incendios por recargar', '%d equipos contra incendios por recargar', 'Su próxima recarga está cerca o ya pasó. Prográmala y, al recargarlo, cambia la fecha.', 'Ver equipos'];
     }
 
     public function esperas(?int $empresaId): Collection

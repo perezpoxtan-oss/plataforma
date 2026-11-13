@@ -31,8 +31,8 @@ resumen: Qué quiere decir cada palabra de la plataforma, para que todos digan l
 | **Reserva (de áreas)** | Apartar un salón, una sala o la casa club en **Reservas**. | Reserva del huésped |
 | **Bloqueo (de reservas)** | Un sitio de **Reservas** que nadie puede reservar por un tiempo (mantenimiento, evento de dirección). Se ve en el calendario como «Bloqueado: motivo». Las reservas que ya estaban quedan **Afectada por bloqueo** hasta que se muevan o se den de baja. | Dar de baja una reserva |
 | **Reserva del huésped** | La estancia de un huésped en el hotel. La plataforma no la administra. | Reserva de áreas |
-| **Equipo de seguridad** | Radios, linternas, chalecos y lo que se presta con una responsiva. | Equipo de Protección Civil |
-| **Equipo de Protección Civil** | Extintores, hidrantes, botiquines y lo que se revisa en los recorridos de Protección Civil. | Equipo de seguridad |
+| **Equipo de seguridad** | Radios, linternas, chalecos y lo que se presta con una responsiva. | Equipo contra incendios |
+| **Equipo contra incendios** | Extintores, hidrantes, botiquines y lo que se revisa en los **Recorridos**. Su catálogo es **Padrones → Equipos contra incendios** (antes se llamaba «Equipos de Protección Civil»). | Equipo de seguridad |
 <!-- fin sin cambiar -->
 
 ## Cómo se llaman los botones

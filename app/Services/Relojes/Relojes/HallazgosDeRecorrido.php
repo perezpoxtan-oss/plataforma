@@ -9,9 +9,9 @@ use App\Services\Relojes\Reloj;
 use Illuminate\Support\Collection;
 
 /**
- * Hallazgo de un Recorrido de Protección Civil sin dueño (C-24, DD-17): el
+ * Hallazgo de un recorrido sin dueño (C-24, DD-17): el
  * ticket que abrió la falla y nadie ha tomado. Se recuerda a quien administra
- * los equipos de Protección Civil en la sede; pasa al de toda la empresa.
+ * los equipos contra incendios en la sede; pasa al de toda la empresa.
  */
 class HallazgosDeRecorrido extends Reloj
 {
@@ -27,7 +27,7 @@ class HallazgosDeRecorrido extends Reloj
 
     public function suplenteOmision(): string
     {
-        return 'quien administra los equipos de Protección Civil en toda la empresa (o el administrador)';
+        return 'quien administra los equipos contra incendios en toda la empresa (o el administrador)';
     }
 
     public function modulos(): array
@@ -47,7 +47,7 @@ class HallazgosDeRecorrido extends Reloj
 
     public function textosInicio(): ?array
     {
-        return ['1 hallazgo de recorrido sin atender', '%d hallazgos de recorrido sin atender', 'Un recorrido de Protección Civil encontró una falla y nadie ha tomado el ticket. Ábrelo y canalízalo o atiéndelo.', 'Atender'];
+        return ['1 hallazgo de recorrido sin atender', '%d hallazgos de recorrido sin atender', 'Un recorrido encontró una falla y nadie ha tomado el ticket. Ábrelo y canalízalo o atiéndelo.', 'Atender'];
     }
 
     public function esperas(?int $empresaId): Collection

@@ -325,7 +325,7 @@ class MejorasPadronesTest extends TestCase
 
         $this->actingAs($this->agente)->get('/estacionamientos')->assertSee('1 / 10 espacios')->assertSee('¿Quién ocupa? (1)')
             ->assertSee(route('estacionamientos.liberar', [$zona->id, $acceso->id]), false)->assertSee('Liberar lugar')->assertDontSee('>Dar salida<', false)
-            ->assertSee('Estacionamientos y zonas de descarga');
+            ->assertSee('Estacionamiento y almacenes');
         // Quien no edita Accesos no ve ni usa el botón
         $director = $this->crearUsuario($this->empresa, 'Director');
         $this->actingAs($director)->get('/estacionamientos')->assertDontSee('¿Quién ocupa?');

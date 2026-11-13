@@ -68,14 +68,14 @@ class EquiposPcTest extends TestCase
     public function test_es_un_modulo_de_padrones_en_inventarios_de_seguridad(): void
     {
         $modulo = Modulo::with('menu', 'area')->where('clave', 'equipos_pc')->firstOrFail();
-        $this->assertSame(['Equipos de Protección Civil', 'seguridad', 'padrones', 'Inventarios', 'equipos_pc.index'],
+        $this->assertSame(['Equipos contra incendios', 'seguridad', 'padrones', 'Inventarios', 'equipos_pc.index'],
             [$modulo->nombre, $modulo->area->clave, $modulo->menu->clave, $modulo->seccion_menu, $modulo->ruta]);
         $this->assertEqualsCanonicalizing(['ver', 'crear', 'editar', 'eliminar', 'imprimir', 'borrar'], $modulo->acciones()->pluck('clave')->all());
 
         // En el menú, justo después de Equipos de seguridad
         $orden = Modulo::where('menu_id', $modulo->menu_id)->orderBy('orden_menu')->pluck('clave')->all();
         $this->assertSame(array_search('equipos', $orden, true) + 1, array_search('equipos_pc', $orden, true));
-        $this->actingAs($this->admin)->get('/')->assertSee('Equipos de Protección Civil')->assertSee(route('equipos_pc.index'), false);
+        $this->actingAs($this->admin)->get('/')->assertSee('Equipos contra incendios')->assertSee(route('equipos_pc.index'), false);
     }
 
     public function test_las_plantillas_dan_los_mismos_permisos_que_antes(): void
@@ -193,7 +193,7 @@ class EquiposPcTest extends TestCase
     {
         $this->actingAs($this->admin)->get('/recorridos-pc')->assertOk()
             ->assertDontSee('Catálogo de Equipos</a>', false)
-            ->assertSee('Padrones → Equipos de Protección Civil')->assertSee(route('equipos_pc.index'), false);
-        $this->actingAs($this->admin)->get('/equipos-pc')->assertOk()->assertSee('Catálogo de Equipos de Protección Civil')->assertSee('Recorridos PC');
+            ->assertSee('Padrones → Equipos contra incendios')->assertSee(route('equipos_pc.index'), false);
+        $this->actingAs($this->admin)->get('/equipos-pc')->assertOk()->assertSee('<h1>Equipos contra incendios</h1>', false)->assertSee('Recorridos</a>', false);
     }
 }

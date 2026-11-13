@@ -198,7 +198,7 @@ class RegistroBorrado
                 'volver' => 'equipos.index',
             ],
             'equipos_pc' => [
-                'modulo' => 'equipos_pc', 'modelo' => EquipoPc::class, 'tipo' => ['equipo de Protección Civil', 'm'],
+                'modulo' => 'equipos_pc', 'modelo' => EquipoPc::class, 'tipo' => ['equipo contra incendios', 'm'],
                 'nombre' => fn (EquipoPc $m) => $m->numero_serie,
                 'alcance' => 'sede',
                 'baja' => ['ruta' => 'equipos_pc.desactivar', 'metodo' => 'PATCH', 'campos' => [], 'permiso' => 'equipos_pc.eliminar'],
