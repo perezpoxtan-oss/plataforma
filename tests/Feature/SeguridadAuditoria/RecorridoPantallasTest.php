@@ -64,7 +64,9 @@ class RecorridoPantallasTest extends TestCase
     /** Rutas que no son pantallas de la aplicación. */
     private const OMITIR = ['storage.local', 'login', 'sesion.expirada',
         // Decisión 10: llamadas de los equipos de acceso (sin número de serie responden 400; sus pruebas están en tests/Feature/EquiposAcceso)
-        'equipos.zkteco.cdata', 'equipos.zkteco.getrequest'];
+        'equipos.zkteco.cdata', 'equipos.zkteco.getrequest',
+        // Respaldo de /storage para logos (no es pantalla; sus pruebas están en ImagenPublicaTest)
+        'imagen-publica'];
 
     /** Texto que delata un error de PHP o de base de datos en la página. */
     private const TEXTO_DE_ERROR = [

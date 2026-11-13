@@ -38,12 +38,13 @@ class SuperficieDeRutasTest extends TestCase
         // «Perdí mi teléfono» (C-36) también exige la cuenta pendiente. «Pedir a mi administrador» (C-36): respuesta uniforme, límite por equipo y por cuenta
         // Credenciales (credenciales.md, C-44): «Vigente» con foto y nombre o «No vigente» por el código del QR impreso, sin datos personales, 30 por minuto por IP
         // Privacidad (privacidad.md): aviso de cada empresa por su código, formulario ARCO con campo trampa y límites, confirmación con enlace de un solo uso
+        // Imágenes públicas (logos e identidad): respaldo de /storage solo para nombres de ImagenSegura en esas dos carpetas, 600 por minuto por IP
         // Equipos de acceso (equipos-acceso.md, decisión 10): llamadas de los equipos ZKTeco (número de serie registrado e IP) y Hikvision (token
         // por equipo), con límite por equipo y por IP, tamaño máximo, validación estricta y respuestas sin datos personales
         $this->assertSame(['GET /.well-known/assetlinks.json', 'GET /app-movil/descargar', 'GET /aviso-de-privacidad', 'GET /contratar', 'GET /contratar/gracias', 'GET /credencial/{codigo}', 'GET /empleos/{empresa}', 'GET /empleos/{empresa}/gracias', 'GET /empleos/{empresa}/{vacante}', 'GET /empleos/{empresa}/{vacante}/postular',
             'GET /iclock/getrequest', 'GET /k', 'GET /k/{token}', 'GET /login', 'GET /login/verificacion', 'GET /manifest.webmanifest', 'GET /olvide-contrasena', 'GET /planes',
             'GET /privacidad/solicitud', 'GET /privacidad/verificar/{token}', 'GET /privacidad/{codigo}', 'GET /privacidad/{codigo}/solicitud',
-            'GET /restablecer-contrasena/{token}', 'GET /sesion/expirada', 'GET /sin-conexion', 'GET /sw.js', 'GET /up', 'GET|POST /iclock/cdata',
+            'GET /restablecer-contrasena/{token}', 'GET /sesion/expirada', 'GET /sin-conexion', 'GET /storage/{ruta}', 'GET /sw.js', 'GET /up', 'GET|POST /iclock/cdata',
             'POST /contratar', 'POST /empleos/{empresa}/{vacante}/postular', 'POST /equipos-acceso/hikvision/{token?}', 'POST /iclock/devicecmd', 'POST /k', 'POST /k/{token}', 'POST /login', 'POST /login/verificacion', 'POST /login/verificacion/cancelar', 'POST /login/verificacion/perdi-mi-telefono', 'POST /olvide-contrasena', 'POST /olvide-contrasena/administrador', 'POST /pagos/webhook/{pasarela}',
             'POST /privacidad/solicitud', 'POST /privacidad/verificar/{token}', 'POST /privacidad/{codigo}/solicitud', 'POST /restablecer-contrasena',
             'POST /sesion/expirada'], $abiertas);

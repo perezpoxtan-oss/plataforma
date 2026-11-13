@@ -50,6 +50,7 @@ use App\Http\Controllers\Padrones\RestriccionController;
 use App\Http\Controllers\Padrones\RutaController;
 use App\Http\Controllers\PanelController;
 use App\Http\Controllers\Publico\EmpleosController;
+use App\Http\Controllers\Publico\ImagenPublicaController;
 use App\Http\Controllers\Publico\PagoWebhookController;
 use App\Http\Controllers\Publico\PlanesController;
 use App\Http\Controllers\Publico\PrivacidadController as PublicoPrivacidadController;
@@ -110,6 +111,12 @@ Route::withoutMiddleware('web')->controller(PwaController::class)->group(functio
     // App Links de la app de Android: 404 mientras no haya huella de la llave de firma (config/app_movil.php)
     Route::get('/.well-known/assetlinks.json', 'assetlinks')->name('pwa.assetlinks');
 });
+
+// Imágenes públicas subidas (logos e identidad): respaldo cuando el hospedaje no entrega /storage por el
+// enlace public/storage. Solo los nombres de ImagenSegura en las dos carpetas públicas; sin sesión ni cookies
+Route::get('/storage/{ruta}', ImagenPublicaController::class)->withoutMiddleware('web')
+    ->where('ruta', '(?:'.ImagenPublicaController::CARPETAS.')/[A-Za-z0-9]{40}\.(?:png|jpg|webp)')
+    ->middleware('throttle:imagen-publica')->name('imagen-publica');
 
 // App para tu celular: el enlace firmado del código QR descarga la app en un celular sin sesión.
 // Sin el grupo «web» (sin sesión ni cookies); la firma la revisa el controlador (enlace vencido = página clara)
