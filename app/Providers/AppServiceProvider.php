@@ -173,6 +173,8 @@ class AppServiceProvider extends ServiceProvider
         ]);
         // Verificación en dos pasos en Mi cuenta: activar, códigos nuevos y quitarla (piden contraseña o código), por cuenta
         // Mi cuenta → App para tu celular: con sesión, por cuenta; con el enlace firmado del QR (sin sesión), por equipo
+        // Imágenes públicas (logos) cuando no las entrega el servidor web: una página carga varias a la vez
+        RateLimiter::for('imagen-publica', fn (Request $r) => Limit::perMinute(600)->by('imagen-publica|'.$ip($r)));
         RateLimiter::for('app-movil-descargar', fn (Request $r) => Limit::perMinute(5)->by('app-movil|'.($r->user()?->getAuthIdentifier() ?? $ip($r))));
         RateLimiter::for('app-movil-enlace', fn (Request $r) => [
             Limit::perMinute(10)->by('app-movil-enlace|'.$ip($r)),
