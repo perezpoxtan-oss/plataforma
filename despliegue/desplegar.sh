@@ -118,6 +118,13 @@ require \$base.'/vendor/autoload.php';
 
 \$app->handleRequest(Request::capture());
 PHPEOF
+  # Si public/storage es una carpeta real (instalacion manual anterior o creada
+  # a mano), "ln -sfn" pondria el enlace DENTRO de ella y los logos y fotos
+  # subidos saldrian rotos: se aparta (sin borrar nada) y se crea el enlace.
+  if [ -d "$PUB/storage" ] && [ ! -L "$PUB/storage" ]; then
+    mv "$PUB/storage" "$PUB/.storage-anterior-$(date +%Y%m%d%H%M%S)"
+    log "public/storage era una carpeta; se aparto y se creo el enlace a los archivos subidos"
+  fi
   ln -sfn "$APP/shared/storage/app/public" "$PUB/storage"
   permisos_publicos
 }
