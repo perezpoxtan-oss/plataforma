@@ -452,6 +452,25 @@ class DesplegarScriptTest extends TestCase
         $this->assertStringContainsString("readlink('".$this->home.'/apps/plataforma-qa/actual', $this->leer('qa.vdcp.com.mx/index.php'));
     }
 
+    public function test_si_public_storage_es_una_carpeta_se_aparta_y_se_crea_el_enlace(): void
+    {
+        // Logo roto: una carpeta storage real (instalación manual) hacía que el
+        // enlace quedara dentro de ella y /storage/... no llegaba a los archivos subidos
+        mkdir($this->home.'/qa.vdcp.com.mx/storage', 0755, true);
+        $this->escribir('qa.vdcp.com.mx/storage/viejo.txt', 'de la instalación manual');
+        $this->publicar('qa', 801, $this->paquete());
+        $this->escribir('env_qa.txt', $this->envQa());
+
+        $this->desplegar('qa');
+
+        $enlace = $this->home.'/qa.vdcp.com.mx/storage';
+        $this->assertTrue(is_link($enlace));
+        $this->assertSame($this->home.'/apps/plataforma-qa/shared/storage/app/public', readlink($enlace));
+        $apartadas = glob($this->home.'/qa.vdcp.com.mx/.storage-anterior-*');
+        $this->assertCount(1, $apartadas);
+        $this->assertSame('de la instalación manual', file_get_contents($apartadas[0].'/viejo.txt'));
+    }
+
     public function test_conserva_la_version_de_php_que_cpanel_asigna_al_sitio(): void
     {
         // PHP 8.5: MultiPHP Manager escribe la versión en el .htaccess del sitio;

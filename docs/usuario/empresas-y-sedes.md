@@ -23,7 +23,7 @@ resumen: Los datos de tu empresa (razón social, RFC, zona horaria, logo) y sus 
 1. Entra a **Estructura → Empresas**. Se abre **Empresas** con la ficha de tu empresa.
 2. Toca el **lápiz** (Editar). Se abre **Editar Empresa**.
 3. Corrige **Nombre Comercial**, **Razón Social**, **RFC** o **Zona Horaria**.
-4. **Logo de la Empresa (opcional):** toca **Elegir archivo** y elige un PNG, JPG o WEBP de hasta 512 KB. Sale en gafetes, vouchers y demás impresiones. Para quitarlo, marca **Quitar el logo actual**.
+4. **Logo de la Empresa (opcional):** toca **Elegir archivo** y elige un PNG, JPG o WEBP de hasta 512 KB. Sale en gafetes, vouchers y demás impresiones. Para quitarlo, marca **Quitar el logo actual**. En la ficha de la empresa el logo aparece arriba y el nombre debajo.
 5. Toca **Guardar Cambios**.
 
 ![Editar empresa](img/empresas/4-editar-empresa.png)
@@ -137,6 +137,7 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 | El teléfono solo puede tener números, espacios, +, guiones y paréntesis. | El teléfono tiene letras. | Corrígelo. |
 | El RFC no tiene un formato válido (12 caracteres para persona moral, 13 para persona física). | El RFC está mal escrito. | Cópialo de la constancia fiscal. |
 | Ya existe una empresa registrada con ese RFC. | Esa empresa ya existe. | Revisa la lista de empresas. |
+| El logo sale como un recuadro con el ícono de imagen rota. | La plataforma guardó el logo, pero el sitio no lo está mostrando. | Avisa a soporte de la plataforma: se corrige en el servidor y no necesitas volver a subirlo. |
 | El logo no debe pesar más de 512 KB. / El logo debe ser PNG, JPG o WEBP (SVG no está permitido por seguridad). | La imagen no se acepta. | Reduce la imagen o cámbiala a PNG. |
 | Los datos de la empresa solo los cambia quien tiene el permiso «editar» de Empresas con alcance de empresa. | Tu rol no puede editar la empresa. | Pídelo a tu administrador. |
 

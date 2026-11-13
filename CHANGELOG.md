@@ -241,6 +241,8 @@ Bajo «## [Sin publicar]»:
   - Manual: `reservas-de-areas.md`, `reservas-aprobar.md`, `reservas-departamentos.md`, `reservas-configuracion.md` (con capturas). Curso: lección 60. Pruebas en `ReservasDeAreasTest`.
 
 ### Corregido
+- **Logo de la empresa roto** en la ficha de Empresas (y en impresiones): si en el sitio quedó una carpeta `storage` real (por ejemplo de una instalación manual anterior), `desplegar.sh` creaba el enlace a los archivos subidos dentro de ella y `/storage/...` no los encontraba. Ahora la aparta (`.storage-anterior-<fecha>`, sin borrar nada) y crea el enlace correcto. Prueba en `DesplegarScriptTest`.
+- **Ficha de la empresa:** el logo va arriba y el nombre debajo, para que el nombre use todo el ancho (también en el celular).
 - **Colaboradores: los botones se encimaban sobre el título.** «Credenciales», «Exportar a Excel» e «Importar» van ahora a la derecha del título y los filtros (sede, departamento, turno, registro y búsqueda) en su propio renglón, que se acomoda en varias líneas si no caben. En el celular se apilan.
 - **Producción no leía `desplegar_version.txt` en el servidor:** el script usaba una sustitución de procesos de bash (`< <(...)`) que en el cron del hospedaje (CageFS, sin `/dev/fd`) devolvía una línea vacía, y el estado decía «Sin version autorizada». Ahora se lee con una variable y `<<<`.
 - **Primera instalación de Producción sin terminal:** `desplegar.sh prod` ahora acepta `prod_inicial.txt` (plantilla en `despliegue/prod_inicial.txt`) para crear el Super Administrador de Producción; nunca siembra datos demo. Guía paso a paso en `docs/tecnico/despliegue.md`.
