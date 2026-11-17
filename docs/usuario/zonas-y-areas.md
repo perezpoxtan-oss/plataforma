@@ -12,7 +12,7 @@ resumen: La estructura física de cada sede (zonas, pisos, habitaciones, áreas 
 
 **Zona / Edificio → Piso → Habitación → Áreas de la habitación → Elementos**
 
-Si tu empresa no es hotel, en lugar de «Habitación» verás Oficina, Vivienda o Casa. La palabra **área** se usa solo para las partes de una habitación (Baño, Terraza, Recámara…). Estos lugares se usan en otras pantallas: lo que abre cada [llave](llaves.md), la ubicación de los [equipos de Protección Civil](equipos-pc.md), los recorridos, la habitación o vivienda y el área de trabajo en la [Bitácora de accesos](accesos.md), el lugar de un incidente en [Novedades](novedades.md) y la vivienda de cada [residente](residentes.md): ahí se eligen de una lista con sugerencias en lugar de escribirse.
+Si tu empresa no es hotel, en lugar de «Habitación» verás Oficina, Vivienda o Casa. La palabra **área** se usa solo para las partes de una habitación (Baño, Terraza, Recámara…). Estos lugares se usan en otras pantallas: lo que abre cada [llave](llaves.md), la ubicación de los [equipos contra incendios](equipos-pc.md), los recorridos, la habitación o vivienda y el área de trabajo en la [Bitácora de accesos](accesos.md), el lugar de un incidente en [Novedades](novedades.md) y la vivienda de cada [residente](residentes.md): ahí se eligen de una lista con sugerencias en lugar de escribirse.
 
 Cada sede tiene su propia pantalla: primero eliges la sede con su tarjeta y ahí ves solo sus zonas, edificios y secciones, sin mezclarse con las de otras sedes.
 
@@ -98,7 +98,7 @@ Si tu sede tiene muchas habitaciones (u oficinas), cárgalas desde un archivo:
 
 ## Cómo detallar una habitación (áreas y elementos)
 
-Las áreas y los elementos son **opcionales**: captúralos solo si los vas a usar en llaves, equipos de Protección Civil o recorridos. Si no, la habitación ya está lista (la pantalla te lo recuerda arriba).
+Las áreas y los elementos son **opcionales**: captúralos solo si los vas a usar en llaves, equipos contra incendios o recorridos. Si no, la habitación ya está lista (la pantalla te lo recuerda arriba).
 
 1. En la habitación toca **Ver detalle**.
 2. Toca **Guardar área** y elige qué **Es un** (Baño, Recámara, Terraza…). La **Etiqueta** es opcional: si la dejas vacía se usa el tipo y, si se repite, se numera (Baño, Baño 2).
@@ -209,5 +209,5 @@ Se mueve con todo lo que tiene dentro (sus áreas y elementos). Sus llaves, equi
 - [Empresas y sedes](empresas-y-sedes.md)
 - [Eliminar definitivamente](eliminar-definitivamente.md)
 - [Catálogo de llaves](llaves.md)
-- [Equipos de Protección Civil](equipos-pc.md)
+- [Equipos contra incendios](equipos-pc.md)
 - [Importar desde Excel](importar-desde-excel.md)

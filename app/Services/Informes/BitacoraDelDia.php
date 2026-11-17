@@ -40,7 +40,7 @@ class BitacoraDelDia
         'transporte' => ['Transporte', 'bi-bus-front-fill', 'transporte.ver'],
         'llaves' => ['Préstamo de llaves', 'bi-key-fill', 'prestamo_llaves.ver'],
         'pases' => ['Pases de salida', 'bi-box-arrow-right', 'pases_salida.ver'],
-        'recorridos' => ['Recorridos de Protección Civil', 'bi-fire', 'recorridos_pc.ver'],
+        'recorridos' => ['Recorridos', 'bi-fire', 'recorridos_pc.ver'],
         // C-31 (D-12): los eventos confirmados del día (inicio y fin)
         'reservas' => ['Eventos de Reservas', 'bi-calendar-event', 'reservas.ver'],
     ];

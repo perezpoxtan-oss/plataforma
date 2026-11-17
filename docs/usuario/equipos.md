@@ -173,5 +173,5 @@ Los mensajes salen en rojo dentro de la ventana; lo que escribiste se conserva.
 
 - [Responsivas](responsivas.md)
 - [Vouchers de reposición](vouchers.md)
-- [Equipos de Protección Civil](equipos-pc.md)
+- [Equipos contra incendios](equipos-pc.md)
 - [Etiquetas QR](etiquetas-qr.md)

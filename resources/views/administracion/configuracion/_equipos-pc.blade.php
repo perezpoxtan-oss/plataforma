@@ -1,10 +1,10 @@
-{{-- Configuración → (bitácora) → Equipos de Protección Civil: frecuencia de revisión por tipo (DD-17). $empresa, $puedeEditar --}}
+{{-- Configuración → (bitácora) → Equipos contra incendios: frecuencia de revisión por tipo (DD-17). $empresa, $puedeEditar --}}
 @php
     $frecuencias = app(\App\Services\RecorridosPc\AjustesEquiposPc::class)->frecuencias($empresa);
     $distintoPc = collect($frecuencias)->contains(fn ($d, $c) => $d !== (\App\Services\RecorridosPc\AjustesEquiposPc::FRECUENCIA_OMISION[$c] ?? 0));
 @endphp
 <div class="tarjeta p-4 config-caseta" id="cfg-equipos-pc">
-    <h3 class="h6 fw-bold"><i class="bi bi-fire me-2 text-danger" aria-hidden="true"></i>Equipos de Protección Civil: frecuencia de revisión</h3>
+    <h3 class="h6 fw-bold"><i class="bi bi-fire me-2 text-danger" aria-hidden="true"></i>Equipos contra incendios: frecuencia de revisión</h3>
     <p class="small text-muted">Cuando un equipo pasa estos días sin aparecer en un recorrido, se avisa a quien administra los equipos en su sede y, una semana después, a quien los administra en toda la empresa. La próxima recarga se captura en cada equipo y se avisa 15 días antes.</p>
     @unless ($puedeEditar)
         <div class="alert alert-secondary small py-2"><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Tu rol solo puede consultar esta configuración, no modificarla.</div>

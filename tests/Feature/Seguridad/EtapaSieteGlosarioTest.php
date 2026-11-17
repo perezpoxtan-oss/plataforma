@@ -45,6 +45,11 @@ class EtapaSieteGlosarioTest extends TestCase
         'módulo Proveedores' => 'Empresas externas',
         'Padrones → Proveedores' => 'Padrones → Empresas externas',
         'dada de baja en Proveedores' => 'Empresas externas',
+        // Pedido del dueño (13 nov 2026): nombres más cortos en el menú y en los títulos
+        'Padrones → Equipos de Protección Civil' => 'Padrones → Equipos contra incendios',
+        'Padrones → Estacionamientos y zonas de descarga' => 'Padrones → Estacionamiento y almacenes',
+        'Protección civil → Recorridos de Protección Civil' => 'Protección civil → Recorridos',
+        'Catálogo de Equipos de Protección Civil' => 'Equipos contra incendios',
     ];
 
     /** Accidentes no se toca (DD-16). */
@@ -87,7 +92,7 @@ class EtapaSieteGlosarioTest extends TestCase
     {
         $glosario = (string) file_get_contents(base_path('docs/usuario/glosario.md'));
         foreach (['Giro', 'Sede', 'Zona', 'Área', 'Vivienda', 'Personal', 'Residente', 'Empresa externa', 'Gafete', 'Credencial', 'Novedad o incidente', 'Bitácora',
-            'Reserva (de áreas)', 'Reserva del huésped', 'Equipo de seguridad', 'Equipo de Protección Civil'] as $termino) {
+            'Reserva (de áreas)', 'Reserva del huésped', 'Equipo de seguridad', 'Equipo contra incendios'] as $termino) {
             $this->assertStringContainsString('| **'.$termino.'** |', $glosario, "Falta «{$termino}» en el glosario");
         }
 

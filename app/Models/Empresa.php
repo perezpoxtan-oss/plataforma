@@ -57,7 +57,7 @@ class Empresa extends Model
         'cuenta_bloqueada' => ['Seguridad: avisar por correo a quien administra usuarios (y a la persona) cuando una cuenta se bloquea por intentos fallidos', true],
         // Mejoras Incidentes (ADR-0013): apagados por omisión (la campana avisa siempre)
         'novedad_canalizada' => ['Bitácora de novedades: avisar por correo a quien se le canaliza un ticket y cuando un ticket «Pendiente de turno» no se atiende', false],
-        'hallazgo_recorrido_pc' => ['Recorridos de Protección Civil: avisar por correo al jefe de seguridad y a quien administra los equipos cuando un recorrido encuentra una falla', false],
+        'hallazgo_recorrido_pc' => ['Recorridos: avisar por correo al jefe de seguridad y a quien administra los equipos cuando un recorrido encuentra una falla', false],
         'pase_salida_espera' => ['Pases de salida: recordar al firmante y avisar al siguiente nivel cuando una firma tarda (según las horas del circuito)', true],
         // Fin Mejoras Incidentes
         // Mejoras estructura (ADR-0016): campana a quien ve toda la Bitácora de auditoría.

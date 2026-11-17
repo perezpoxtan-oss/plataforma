@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('titulo', 'Estacionamientos y Zonas')
+@section('titulo', \App\Support\NombresMenu::titulo('estacionamientos', 'Estacionamiento y almacenes'))
 
 @section('contenido')
 <div class="tema-azul pantalla-estacionamientos">
@@ -10,7 +10,7 @@
     @if ($sinEmpresa)
         <div class="encabezado-pantalla mb-4">
             <div class="icono"><i class="bi bi-p-square-fill text-primary" aria-hidden="true"></i></div>
-            <div><h1>Estacionamientos y zonas de descarga</h1><p>Cupos por sede.</p></div>
+            <div><h1>{{ \App\Support\NombresMenu::titulo('estacionamientos', 'Estacionamiento y almacenes') }}</h1><p>Cupos por sede.</p></div>
         </div>
         <div class="tarjeta estado-vacio">
             <div class="icono"><i class="bi bi-buildings" aria-hidden="true"></i></div>
@@ -27,7 +27,7 @@
             <div class="encabezado-pantalla m-0">
                 <div class="icono"><i class="bi bi-p-square-fill text-primary" aria-hidden="true"></i></div>
                 <div>
-                    <h1>Estacionamientos y zonas de descarga</h1>
+                    <h1>{{ \App\Support\NombresMenu::titulo('estacionamientos', 'Estacionamiento y almacenes') }}</h1>
                     <p>Cupos por sede — Estacionamiento (cuenta espacios) o Zona de Descarga (Lobby, Almacenes, Andén, Patio de maniobras; capacidad opcional).</p>
                 </div>
             </div>

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('titulo', 'Recorrido '.$r->folio().' · Protección Civil')
+@section('titulo', 'Recorrido '.$r->folio().' · '.\App\Support\NombresMenu::titulo('recorridos_pc', 'Recorridos'))
 
 @section('contenido')
 @use('App\Models\EquipoPc')
@@ -29,7 +29,7 @@
     @endif
 
     <nav class="migas" aria-label="Ubicación">
-        <a href="{{ route('recorridos_pc.index') }}"><i class="bi bi-clipboard-check" aria-hidden="true"></i> Recorridos de Protección Civil</a>
+        <a href="{{ route('recorridos_pc.index') }}"><i class="bi bi-clipboard-check" aria-hidden="true"></i> {{ \App\Support\NombresMenu::titulo('recorridos_pc', 'Recorridos') }}</a>
         <i class="bi bi-chevron-right" aria-hidden="true"></i>
         <span class="actual" aria-current="page">Recorrido {{ $r->folio() }}</span>
     </nav>

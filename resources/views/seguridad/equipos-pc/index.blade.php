@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('titulo', 'Catálogo de Equipos PC')
+@section('titulo', \App\Support\NombresMenu::titulo('equipos_pc', 'Equipos contra incendios'))
 
 @section('contenido')
 @use('App\Models\EquipoPc')
@@ -12,11 +12,11 @@
     @if ($sinEmpresa)
         <div class="encabezado-pantalla mb-4">
             <div class="icono"><i class="bi bi-shield-fill-check text-success" aria-hidden="true"></i></div>
-            <div><h1>Catálogo de Equipos de Protección Civil</h1><p>Extintores, hidrantes y demás infraestructura fija — separado del equipo prestable de guardia.</p></div>
+            <div><h1>{{ \App\Support\NombresMenu::titulo('equipos_pc', 'Equipos contra incendios') }}</h1><p>Extintores, hidrantes y demás infraestructura fija — separado del equipo prestable de guardia.</p></div>
         </div>
         <div class="tarjeta estado-vacio">
             <div class="icono"><i class="bi bi-buildings" aria-hidden="true"></i></div>
-            <p class="text-muted small m-0">Elige arriba la <strong>empresa de trabajo</strong> para ver su catálogo de equipos de Protección Civil.</p>
+            <p class="text-muted small m-0">Elige arriba la <strong>empresa de trabajo</strong> para ver su catálogo de equipos contra incendios.</p>
         </div>
     @else
         @php
@@ -29,14 +29,14 @@
             <div class="encabezado-pantalla m-0">
                 <div class="icono"><i class="bi bi-shield-fill-check text-success" aria-hidden="true"></i></div>
                 <div>
-                    <h1>Catálogo de Equipos de Protección Civil</h1>
+                    <h1>{{ \App\Support\NombresMenu::titulo('equipos_pc', 'Equipos contra incendios') }}</h1>
                     <p>Extintores, hidrantes y demás infraestructura fija — separado del equipo prestable de guardia.</p>
                     <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Inventario de: <strong>{{ $empresaNombre }}</strong></p>
                 </div>
             </div>
             @if ($puede['recorridos'])
                 <div class="rpc-acciones-cabecera">
-                    <a href="{{ route('recorridos_pc.index') }}" class="btn-rpc btn-rpc-oscuro-contorno"><i class="bi bi-clipboard-check me-2" aria-hidden="true"></i>Recorridos PC</a>
+                    <a href="{{ route('recorridos_pc.index') }}" class="btn-rpc btn-rpc-oscuro-contorno"><i class="bi bi-clipboard-check me-2" aria-hidden="true"></i>{{ \App\Support\NombresMenu::titulo('recorridos_pc', 'Recorridos') }}</a>
                 </div>
             @endif
         </div>
@@ -175,7 +175,7 @@
                 @unless ($puede['crear'])
                     <div class="tarjeta estado-vacio rpc-vacio">
                         <div class="icono"><i class="bi bi-shield-check" aria-hidden="true"></i></div>
-                        <p class="text-muted small m-0">Aún no hay equipos de Protección Civil registrados{{ $editables !== null ? ' en tus sedes' : '' }}.</p>
+                        <p class="text-muted small m-0">Aún no hay equipos contra incendios registrados{{ $editables !== null ? ' en tus sedes' : '' }}.</p>
                     </div>
                 @endunless
             @endforelse
@@ -201,7 +201,7 @@
             <dialog id="{{ $esNuevo ? 'dialogoNuevoEquipoPc' : 'dialogoEditarEquipoPc' }}" class="dialogo ancho dialogo-recorrido-pc" aria-labelledby="titulo-epc-{{ $modo }}"
                     @if ($trasError || ($esNuevo && $previo !== [])) data-abrir-al-cargar @endif>
                 <div class="dialogo-cabecera">
-                    <h2 id="titulo-epc-{{ $modo }}"><i class="bi {{ $esNuevo ? 'bi-shield-fill-check text-success' : 'bi-pencil-square text-success' }} me-2" aria-hidden="true"></i>{{ $esNuevo ? 'Nuevo Equipo de Protección Civil' : 'Editar Equipo' }}</h2>
+                    <h2 id="titulo-epc-{{ $modo }}"><i class="bi {{ $esNuevo ? 'bi-shield-fill-check text-success' : 'bi-pencil-square text-success' }} me-2" aria-hidden="true"></i>{{ $esNuevo ? 'Nuevo Equipo contra incendios' : 'Editar Equipo' }}</h2>
                     <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
                 </div>
                 <div class="dialogo-cuerpo">

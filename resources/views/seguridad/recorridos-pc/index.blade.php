@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('titulo', 'Recorridos de Protección Civil')
+@section('titulo', \App\Support\NombresMenu::titulo('recorridos_pc', 'Recorridos'))
 
 @section('contenido')
 <div class="tema-recorridos-pc">
@@ -10,11 +10,11 @@
     @if ($sinEmpresa)
         <div class="encabezado-pantalla mb-4">
             <div class="icono"><i class="bi bi-clipboard-check-fill text-success" aria-hidden="true"></i></div>
-            <div><h1>Recorridos de Protección Civil</h1><p>Ronda de inspección de equipos — actividad diaria, se completa en una sola sesión.</p></div>
+            <div><h1>{{ \App\Support\NombresMenu::titulo('recorridos_pc', 'Recorridos') }}</h1><p>Ronda de inspección de equipos — actividad diaria, se completa en una sola sesión.</p></div>
         </div>
         <div class="tarjeta estado-vacio">
             <div class="icono"><i class="bi bi-buildings" aria-hidden="true"></i></div>
-            <p class="text-muted small m-0">Elige arriba la <strong>empresa de trabajo</strong> para ver sus recorridos de Protección Civil.</p>
+            <p class="text-muted small m-0">Elige arriba la <strong>empresa de trabajo</strong> para ver sus recorridos.</p>
         </div>
     @else
         @php
@@ -28,11 +28,11 @@
             <div class="encabezado-pantalla m-0">
                 <div class="icono"><i class="bi bi-clipboard-check-fill text-success" aria-hidden="true"></i></div>
                 <div>
-                    <h1>Recorridos de Protección Civil</h1>
+                    <h1>{{ \App\Support\NombresMenu::titulo('recorridos_pc', 'Recorridos') }}</h1>
                     <p>Ronda de inspección de equipos — actividad diaria, se completa en una sola sesión.</p>
                     <p class="texto-padron-de"><i class="bi bi-building-check" aria-hidden="true"></i> Recorridos de: <strong>{{ $empresaNombre }}</strong></p>
                     @if ($puede['catalogo'])
-                        <p class="small m-0 rpc-enlace-catalogo"><i class="bi bi-fire me-1" aria-hidden="true"></i>Los equipos se dan de alta en <a href="{{ route('equipos_pc.index') }}">Padrones → Equipos de Protección Civil</a>.</p>
+                        <p class="small m-0 rpc-enlace-catalogo"><i class="bi bi-fire me-1" aria-hidden="true"></i>Los equipos se dan de alta en <a href="{{ route('equipos_pc.index') }}">Padrones → {{ \App\Support\NombresMenu::titulo('equipos_pc', 'Equipos contra incendios') }}</a>.</p>
                     @endif
                 </div>
             </div>
@@ -135,7 +135,7 @@
         @if ($puede['crear'])
             <dialog id="dialogoNuevoRecorrido" class="dialogo dialogo-recorrido-pc" aria-labelledby="titulo-nuevo-rpc" @if ($dialogo === 'crear') data-abrir-al-cargar @endif>
                 <div class="dialogo-cabecera">
-                    <h2 id="titulo-nuevo-rpc"><i class="bi bi-clipboard-check-fill text-success me-2" aria-hidden="true"></i>Nuevo Recorrido de Protección Civil</h2>
+                    <h2 id="titulo-nuevo-rpc"><i class="bi bi-clipboard-check-fill text-success me-2" aria-hidden="true"></i>Nuevo Recorrido</h2>
                     <button type="button" class="btn-cerrar" data-cerrar-dialogo aria-label="Cerrar"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
                 </div>
                 <div class="dialogo-cuerpo">

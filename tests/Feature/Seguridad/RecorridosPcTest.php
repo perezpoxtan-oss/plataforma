@@ -111,7 +111,7 @@ class RecorridosPcTest extends TestCase
         $this->assertSame(24, strlen($e->codigo_qr));
 
         $pagina = $this->actingAs($this->admin)->get('/equipos-pc')->assertOk()
-            ->assertSee('Catálogo de Equipos de Protección Civil')->assertSee('EXT 01')->assertSee('Torre A · Piso 1 · Cocina')
+            ->assertSee('<h1>Equipos contra incendios</h1>', false)->assertSee('EXT 01')->assertSee('Torre A · Piso 1 · Cocina')
             ->assertSee('Junto a la estufa')->assertSee('Nuevo Equipo')->assertSee('Creado por')->getContent();
         $this->assertStringContainsString('"zona_id":'.$piso->id, html_entity_decode($pagina));
 
@@ -149,7 +149,7 @@ class RecorridosPcTest extends TestCase
         // La misma etiqueta NFC no puede estar en dos registros
         $this->equipo('EXT-09', 'EXTINTOR', null, ['etiqueta_nfc' => '04AABBCC']);
         $this->actingAs($this->admin)->post('/equipos-pc', ['sede_id' => $this->centro->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'EXT-03', 'etiqueta_nfc' => '04:aa:bb:cc'])
-            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta ya la tiene el equipo de Protección Civil «EXT-09». Quítasela primero o usa otra.']);
+            ->assertSessionHasErrors(['etiqueta_nfc' => 'Esa etiqueta ya la tiene el equipo contra incendios «EXT-09». Quítasela primero o usa otra.']);
         // El mismo ID en otra sede sí se permite
         $this->actingAs($this->admin)->post('/equipos-pc', ['sede_id' => $this->playa->id, 'categoria' => 'EXTINTOR', 'numero_serie' => 'EXT-01'])
             ->assertSessionHasNoErrors();
@@ -325,7 +325,7 @@ class RecorridosPcTest extends TestCase
         $r = $this->fresco($r);
         $ticket = $this->enEmpresa(fn () => Novedad::with('notas')->findOrFail($r->novedad_id));
         $this->assertSame('mantenimiento_pc', $ticket->categoria); // C-29 (DD-17): ya no cuenta como siniestro
-        $this->assertSame('VER DETALLE EN RECORRIDO PC '.$r->folio(), $ticket->ubicacion);
+        $this->assertSame('VER DETALLE EN EL RECORRIDO '.$r->folio(), $ticket->ubicacion);
         $this->assertStringContainsString('EXT-01 (Extintor): Falla en Manómetro, Precinto. Obs: Manómetro en zona roja', $ticket->descripcion);
         $this->assertSame($this->centro->id, $ticket->sede_id);
         $this->assertCount(1, $ticket->notas);
@@ -477,8 +477,8 @@ class RecorridosPcTest extends TestCase
     public function test_lista_filtros_y_menu(): void
     {
         $this->recorrido();
-        $this->actingAs($this->admin)->get('/recorridos-pc')->assertOk()->assertSee('Recorridos de Protección Civil')
-            ->assertDontSee('Catálogo de Equipos')->assertSee('Padrones → Equipos de Protección Civil')->assertSee('Reporte de Auditoría')->assertSee('En Proceso')->assertSee('Con Hallazgos')
+        $this->actingAs($this->admin)->get('/recorridos-pc')->assertOk()->assertSee('<h1>Recorridos</h1>', false)->assertDontSee('Recorridos de Protección Civil')
+            ->assertDontSee('Catálogo de Equipos')->assertSee('Padrones → Equipos contra incendios')->assertSee('Reporte de Auditoría')->assertSee('En Proceso')->assertSee('Con Hallazgos')
             ->assertSee('Iniciado por')->assertSee('data-filtro-rpc-estatus', false);
         $this->assertSame('recorridos_pc.index', Modulo::where('clave', 'recorridos_pc')->value('ruta'));
         $this->assertSame(RevisionRecorridoPc::OK, 'ok');

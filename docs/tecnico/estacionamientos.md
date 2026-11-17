@@ -1,5 +1,7 @@
 # Estacionamientos y zonas
 
+> **13 nov 2026:** el módulo `estacionamientos` se llama de fábrica **Estacionamiento y almacenes** (nombre y menú; antes «Estacionamientos y zonas de descarga») y el título de la pantalla usa ese nombre; claves, rutas, permisos y el tipo «Zona de descarga» no cambian. Ver [menus.md](menus.md), «Nombres de fábrica…».
+
 Réplica de `modules/estacionamientos` de SEGCAT (§4.21). Pantalla "Cupos por sede": estacionamientos con cupo y zonas de descarga (lobby, almacén, andén) sin cupo.
 
 ## Piezas
