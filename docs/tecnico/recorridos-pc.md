@@ -1,5 +1,7 @@
 # Recorridos de Protección Civil
 
+> **13 nov 2026:** el módulo `recorridos_pc` se llama de fábrica **Recorridos** en el menú y en el título de la pantalla (el reporte impreso conserva «Recorridos de Protección Civil»); claves, rutas y permisos no cambian. Las notas automáticas del ticket dicen ahora «Hallazgo durante el recorrido #…» y la ubicación «VER DETALLE EN EL RECORRIDO #…». Ver [menus.md](menus.md), «Nombres de fábrica…».
+
 Réplica de `modules/bitacora/recorridos_pc_*` y `pc_equipos_*` de SEGCAT (`recorridos_pc_lista.php`, `recorridos_pc_proceso.php`, `recorridos_pc_detalle_ajax.php`, `recorridos_pc_pdf.php`, `pc_equipos_lista.php`, `pc_equipos_modal_editar.php`, `pc_equipos_proceso.php`, `pc_equipos_ticket.php`; inventario §4.26). Pantalla `/recorridos-pc` (menú Operación → Recorridos de Protección Civil, submódulo `recorridos_pc` de Bitácora de novedades).
 
 > **QA 4:** el Catálogo de Equipos de Protección Civil pasó a ser el módulo propio `equipos_pc` en Padrones → Inventarios de Seguridad (`/equipos-pc`, permisos `equipos_pc.*`). Sus rutas, permisos y migración están en [equipos-pc.md](equipos-pc.md). El recorrido sigue escaneando los equipos de su sede.

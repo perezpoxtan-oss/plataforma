@@ -11,7 +11,7 @@ resumen: Borrar para siempre algo capturado por error que nadie ha usado.
 
 **Antes de empezar:** necesitas el permiso **Eliminar definitivamente** del módulo. Normalmente solo lo tiene el **Administrador** de la empresa. Si no ves el botón rojo, no lo tienes: pide a tu administrador que lo haga.
 
-Se puede en: Sedes, Zonas y edificios, Departamentos, Puestos, Turnos, Colaboradores, Roles, Empresas externas, Padrón de personas, Padrón vehicular, Catálogo de llaves, Gafetes, Equipos de seguridad, Equipos de Protección Civil, Estacionamientos y Rutas (con sus paraderos).
+Se puede en: Sedes, Zonas y edificios, Departamentos, Puestos, Turnos, Colaboradores, Roles, Empresas externas, Padrón de personas, Padrón vehicular, Catálogo de llaves, Gafetes, Equipos de seguridad, Equipos contra incendios, Estacionamiento y almacenes y Rutas (con sus paraderos).
 
 **Nunca** se borran las bitácoras ni lo que sirve de evidencia: Accesos, Novedades, Préstamo de llaves, Responsivas, Pases de salida, Transporte, Vouchers y la Bitácora de auditoría. Empresas y Usuarios tampoco: esos se dan de baja.
 

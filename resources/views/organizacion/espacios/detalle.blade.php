@@ -34,7 +34,7 @@
     </div>
 
     {{-- Mejoras estructura (ADR-0016): áreas y elementos son opcionales --}}
-    <p class="aviso-opcional small mb-3"><i class="bi bi-info-circle" aria-hidden="true"></i> <strong>Opcional:</strong> captura áreas (Baño, Terraza…) y elementos (Lavabo, Caja fuerte…) solo si los vas a usar en llaves, equipos de Protección Civil o recorridos. Si no, esta {{ mb_strtolower($sing) }} ya está lista.</p>
+    <p class="aviso-opcional small mb-3"><i class="bi bi-info-circle" aria-hidden="true"></i> <strong>Opcional:</strong> captura áreas (Baño, Terraza…) y elementos (Lavabo, Caja fuerte…) solo si los vas a usar en llaves, equipos contra incendios o recorridos. Si no, esta {{ mb_strtolower($sing) }} ya está lista.</p>
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="h5 fw-bold m-0">Áreas de esta {{ $sing }}</h2>

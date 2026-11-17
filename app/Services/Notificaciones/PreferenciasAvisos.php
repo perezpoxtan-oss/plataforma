@@ -133,7 +133,7 @@ class PreferenciasAvisos
         'novedad_resuelta' => ['Bitácora de novedades', 'Se cerró un ticket que levantaste', ['novedades.crear']],
         'novedad_turno' => ['Bitácora de novedades', 'Un ticket «Pendiente de turno» espera a tu turno', ['novedades.editar']],
         'novedad_turno_escalada' => ['Bitácora de novedades', 'Un pendiente de turno terminó sin atenderse', ['novedades.editar']],
-        'recorrido_pc_hallazgo' => ['Recorridos de Protección Civil', 'Un recorrido de Protección Civil encontró una falla', ['recorridos_pc.ver', 'equipos_pc.editar']],
+        'recorrido_pc_hallazgo' => ['Recorridos', 'Un recorrido encontró una falla en un equipo contra incendios', ['recorridos_pc.ver', 'equipos_pc.editar']],
         'pase_firma_recordatorio' => ['Pases de salida', 'Una firma de pase de salida que te toca lleva tiempo esperando', ['pases_salida.aprobar', 'pases_salida.firmar']],
         'pase_firma_escalada' => ['Pases de salida', 'Una firma de pase de salida tardó y pasó al siguiente nivel', ['pases_salida.aprobar', 'pases_salida.configurar']],
         // Mejoras activos (ADR-0014)

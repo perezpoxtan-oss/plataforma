@@ -7,7 +7,7 @@ resumen: Todo lo que pasó en un día en una sola línea de tiempo, para revisar
 ---
 # Bitácora general del día
 
-**¿Para qué sirve?** Para ver en una sola lista, por hora, todo lo que pasó en un día en tu sede: entradas y salidas de **Control de accesos**, tickets de **Novedades** (abiertos, notas y cierres), **Transporte**, **Préstamo de llaves**, **Pases de salida** que salieron o regresaron y **Recorridos de Protección Civil**. Es la hoja para **entregar el turno**.
+**¿Para qué sirve?** Para ver en una sola lista, por hora, todo lo que pasó en un día en tu sede: entradas y salidas de **Control de accesos**, tickets de **Novedades** (abiertos, notas y cierres), **Transporte**, **Préstamo de llaves**, **Pases de salida** que salieron o regresaron y **Recorridos**. Es la hoja para **entregar el turno**.
 
 **Antes de empezar:** necesitas que tu rol pueda **ver** la Bitácora general del día; cada tipo aparece solo si puedes ver su módulo. **Imprimir** y **Exportar** piden su propio permiso.
 

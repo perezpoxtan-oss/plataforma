@@ -53,7 +53,7 @@ Una llave prestada, un gafete EN SITIO o un equipo ASIGNADO o FUERA no se da de 
 
 | Mensaje o síntoma | Qué significa | Qué hacer |
 |---|---|---|
-| «Todavía no se puede dar de baja: atiende primero lo marcado en rojo.» | Hay gente en sitio en la sede o autos en la zona. | Da salida o cambia de zona en la Bitácora de accesos o en Estacionamientos. |
+| «Todavía no se puede dar de baja: atiende primero lo marcado en rojo.» | Hay gente en sitio en la sede o autos en la zona. | Da salida o cambia de zona en la Bitácora de accesos o en Estacionamiento y almacenes. |
 | «Es el único responsable de …: elige quién lo reemplaza …» | Era el único responsable de un departamento. | Elige a una persona en **¿Quién lo reemplaza como responsable?**. |
 | «La llave … está prestada a …: recíbela o márcala «No regresó» en Préstamo de llaves.» | Intentaste dar de baja una llave prestada desde otro lado. | Sigue el mensaje o usa **Dar de baja** desde la lista de llaves. |
 | «El gafete … está EN SITIO con …: dale salida en la Bitácora de accesos …» | Alguien en sitio tiene el gafete. | Dale salida; si no lo devuelve, quita la marca **Devolvió el gafete**. |

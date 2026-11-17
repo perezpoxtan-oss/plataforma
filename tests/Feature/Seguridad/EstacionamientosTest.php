@@ -70,7 +70,7 @@ class EstacionamientosTest extends TestCase
         $this->zona('Temporal', ['activo' => false]);
 
         $pagina = $this->actingAs($this->admin)->get('/estacionamientos')->assertOk()
-            ->assertSee('Estacionamientos y Zonas')
+            ->assertSee('<h1>Estacionamiento y almacenes</h1>', false)->assertDontSee('Estacionamientos y zonas de descarga')
             ->assertSee('Cupos por sede — Estacionamiento (cuenta espacios) o Zona de Descarga (Lobby, Almacenes, Andén, Patio de maniobras; capacidad opcional).')
             ->assertSee('Nueva Zona')->assertSee('ESTACIONAMIENTO')->assertSee('ZONA DE DESCARGA')
             ->assertSee('0 / 40 espacios')->assertSee('0 / 8 espacios')->assertSee('vehículos usando el andén ahora')
