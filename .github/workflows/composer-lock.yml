@@ -10,6 +10,8 @@ on:
 
 permissions:
   contents: write
+  # Para lanzar la CI después de subir el lock (un push con GITHUB_TOKEN no dispara otros flujos)
+  actions: write
 
 jobs:
   lock:
@@ -25,6 +27,8 @@ jobs:
       - name: composer update
         run: composer update --no-interaction --prefer-dist --no-progress --no-scripts
       - name: Subir composer.lock si cambio
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ -n "$(git status --porcelain composer.lock)" ]; then
             git config user.name "github-actions[bot]"
@@ -32,6 +36,8 @@ jobs:
             git add composer.lock
             git commit -m "Actualiza composer.lock"
             git push
+            # Sin esto, el lock nuevo llega a develop sin pruebas y sin paquete para QA
+            gh workflow run ci.yml --ref "${GITHUB_REF_NAME}"
           else
             echo "composer.lock sin cambios"
           fi

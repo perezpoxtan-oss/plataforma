@@ -128,7 +128,8 @@ jobs:
   paquete:
     name: Paquete para QA
     needs: pruebas
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    # También al lanzarla a mano o desde «Actualizar composer.lock» (su push con GITHUB_TOKEN no dispara la CI)
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/develop'
     permissions:
       contents: write
     uses: ./.github/workflows/paquete.yml
