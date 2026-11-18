@@ -10,13 +10,15 @@ on:
 
 permissions:
   contents: write
+  # Para lanzar la CI después de subir el lock (un push con GITHUB_TOKEN no dispara otros flujos)
+  actions: write
 
 jobs:
   lock:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
-      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           # Version MAS BAJA en uso: asi composer.lock solo elige librerias que corren en
           # 8.4 y en 8.5 (la CI prueba ambas). Ver docs/tecnico/despliegue.md.
@@ -25,6 +27,8 @@ jobs:
       - name: composer update
         run: composer update --no-interaction --prefer-dist --no-progress --no-scripts
       - name: Subir composer.lock si cambio
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ -n "$(git status --porcelain composer.lock)" ]; then
             git config user.name "github-actions[bot]"
@@ -32,6 +36,8 @@ jobs:
             git add composer.lock
             git commit -m "Actualiza composer.lock"
             git push
+            # Sin esto, el lock nuevo llega a develop sin pruebas y sin paquete para QA
+            gh workflow run ci.yml --ref "${GITHUB_REF_NAME}"
           else
             echo "composer.lock sin cambios"
           fi
